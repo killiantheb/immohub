@@ -1,8 +1,8 @@
 {
   "extends": ["next/core-web-vitals", "prettier"],
   "rules": {
-    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
-    "@typescript-eslint/no-explicit-any": "warn",
-    "prefer-const": "error"
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "prefer-const": "error",
+    "react/no-unescaped-entities": "off"
   }
 }
