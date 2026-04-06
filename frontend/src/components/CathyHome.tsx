@@ -55,7 +55,7 @@ export default function CathyHome() {
   const { data: profile, isLoading: profileLoading } = useUser();
 
   const [briefing, setBriefing] = useState<Briefing | null>(null);
-  const [loadingBriefing, setLoadingBriefing] = useState(true);
+  const [loadingBriefing, setLoadingBriefing] = useState(false);
   const [isTalking, setIsTalking] = useState(false);
   const [statusText, setStatusText] = useState("chargement…");
   const [chatInput, setChatInput] = useState("");
@@ -79,10 +79,10 @@ export default function CathyHome() {
   }, []);
 
   useEffect(() => {
-    if (!profileLoading && profile) {
+    if (!profileLoading) {
       fetchBriefing();
     }
-  }, [profileLoading, profile, fetchBriefing]);
+  }, [profileLoading, fetchBriefing]);
 
   // Talking animation
   const talkPhrases = [
