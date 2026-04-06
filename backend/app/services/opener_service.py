@@ -426,6 +426,35 @@ class OpenerService:
             pages=math.ceil(total / size) if total else 1,
         )
 
+    async def list_available_missions(
+        self,
+        current_user: "User",
+        page: int = 1,
+        size: int = 20,
+    ) -> PaginatedMissions:
+        """Available (unassigned) missions — visible to openers only."""
+        from fastapi import HTTPException as _HTTPException
+        if current_user.role != "opener":
+            raise _HTTPException(403, "Réservé aux ouvreurs")
+        q = (
+            select(Mission)
+            .where(
+                Mission.status == "pending",
+                Mission.opener_id.is_(None),
+                Mission.is_active.is_(True),
+            )
+            .order_by(Mission.scheduled_at.asc())
+        )
+        total: int = (
+            await self.db.execute(select(func.count()).select_from(q.subquery()))
+        ).scalar_one()
+        rows = (await self.db.execute(q.offset((page - 1) * size).limit(size))).scalars().all()
+        return PaginatedMissions(
+            items=[MissionRead.model_validate(r) for r in rows],
+            total=total, page=page, size=size,
+            pages=math.ceil(total / size) if total else 1,
+        )
+
     async def list_requested_missions(
         self,
         current_user: "User",

@@ -118,7 +118,12 @@ class PropertyService:
                     | (Property.agency_id == current_user.id)
                     | (Property.created_by_id == current_user.id)
                 )
-            # tenant/opener/company: can read all active properties (no ownership filter)
+            else:
+                # opener / tenant / company have no access to the property list
+                raise HTTPException(
+                    status.HTTP_403_FORBIDDEN,
+                    "Accès réservé aux propriétaires et agences",
+                )
 
         # Optional filters
         if type:

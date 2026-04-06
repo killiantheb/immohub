@@ -1,174 +1,93 @@
-"use client";
-
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
-import { AICopilot } from "@/components/AICopilot";
-import { CathyLogo } from "@/components/CathyLogo";
-import {
-  Building2,
-  FileText,
-  LayoutDashboard,
-  LogOut,
-  Users,
-  Handshake,
-  ArrowLeftRight,
-  UserCircle,
-  ClipboardList,
-  ChevronRight,
-  ShieldCheck,
-} from "lucide-react";
-
-const NAV_SECTIONS = [
-  {
-    label: "Principal",
-    items: [
-      { href: "/overview", label: "Tableau de bord", icon: LayoutDashboard },
-      { href: "/properties", label: "Biens", icon: Building2 },
-      { href: "/contracts", label: "Contrats", icon: FileText },
-      { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
-    ],
-  },
-  {
-    label: "Marketplace",
-    items: [
-      { href: "/rfqs", label: "Appels d'offres", icon: ClipboardList },
-      { href: "/openers", label: "Missions ouvreur", icon: Handshake },
-      { href: "/companies", label: "Sociétés", icon: Users },
-    ],
-  },
-  {
-    label: "Profil",
-    items: [
-      { href: "/openers/profile", label: "Mon profil ouvreur", icon: UserCircle },
-    ],
-  },
-];
-
-const ADMIN_SECTION = {
-  label: "Administration",
-  items: [
-    { href: "/admin", label: "Back-office", icon: ShieldCheck },
-    { href: "/admin/users", label: "Utilisateurs", icon: Users },
-    { href: "/admin/transactions", label: "Transactions", icon: ArrowLeftRight },
-  ],
-};
+'use client'
+import { useState } from 'react'
+import { CathySphere } from '@/components/CathySphere'
+import { createClient } from '@/lib/supabase'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, signOut } = useAuth();
-  const pathname = usePathname();
-  const router = useRouter();
+  const [showDashboard, setShowDashboard] = useState(false)
+  const [speaking, setSpeaking] = useState(false)
+  const [status, setStatus] = useState('en attente de votre voix')
+  const [input, setInput] = useState('')
 
-  const isSuperAdmin = (user as { user_metadata?: { role?: string } } | null)
-    ?.user_metadata?.role === "super_admin";
-
-  async function handleSignOut() {
+  async function handleSend() {
+    if (!input.trim()) return
+    const msg = input.trim()
+    setInput('')
+    setSpeaking(true)
+    setStatus('Cathy analyse…')
     try {
-      await signOut();
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token ?? ''
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? ''
+      const res = await fetch(`${apiUrl}/ai/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ message: msg, context: {} }),
+      })
+      // Read SSE stream — collect first meaningful text chunk
+      const reader = res.body?.getReader()
+      const decoder = new TextDecoder()
+      let reply = ''
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          const chunk = decoder.decode(value)
+          for (const line of chunk.split('\n')) {
+            if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+              try {
+                const parsed = JSON.parse(line.slice(6))
+                if (parsed.text) reply += parsed.text
+                if (reply.length > 80) break
+              } catch { /* ignore */ }
+            }
+          }
+          if (reply.length > 80) break
+        }
+        reader.cancel()
+      }
+      const short = reply.trim() || 'Je traite votre demande.'
+      setStatus(short.length > 80 ? short.substring(0, 80) + '…' : short)
     } catch {
-      // ignore
+      setStatus('Réessayez dans un moment.')
+    } finally {
+      setSpeaking(false)
     }
-    window.location.href = "/login";
   }
 
-  const initials = user?.email?.charAt(0).toUpperCase() ?? "?";
-  const displayName = user?.user_metadata?.first_name
-    ? `${user.user_metadata.first_name} ${user.user_metadata.last_name ?? ""}`.trim()
-    : user?.email ?? "";
-
-  // Cathy home — fullscreen, no sidebar
-  if (pathname === "/") {
-    return <>{children}</>;
+  if (!showDashboard) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#060402', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', fontFamily: 'var(--font-sans)' }}>
+        <button onClick={() => setShowDashboard(true)} style={{ position: 'absolute', top: 16, right: 16, padding: '6px 14px', borderRadius: 20, border: '0.5px solid rgba(212,96,26,0.2)', background: 'rgba(255,255,255,0.03)', color: 'rgba(200,95,25,0.5)', fontSize: 10, letterSpacing: '1px', textTransform: 'uppercase', cursor: 'pointer' }}>
+          Tableau de bord
+        </button>
+        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 11, fontWeight: 300, letterSpacing: '8px', color: 'rgba(200,95,25,0.38)', textTransform: 'uppercase', marginBottom: '2rem' }}>Cathy</p>
+        <div style={{ marginBottom: '2rem', filter: 'drop-shadow(0 16px 48px rgba(212,96,26,0.22))', animation: 'cathyFloat 5.5s ease-in-out infinite' }}>
+          <style>{`@keyframes cathyFloat{0%,100%{transform:translateY(0)}40%{transform:translateY(-10px)}70%{transform:translateY(-5px)}}`}</style>
+          <CathySphere size={240} speaking={speaking} />
+        </div>
+        <p style={{ fontSize: 11, letterSpacing: '2.5px', textTransform: 'uppercase', color: 'rgba(200,95,25,0.5)', marginBottom: '1.6rem', textAlign: 'center', minHeight: 16 }}>{status}</p>
+        <button onClick={() => setSpeaking(!speaking)} style={{ width: 48, height: 48, borderRadius: '50%', border: `1px solid ${speaking ? '#D4601A' : 'rgba(212,96,26,0.2)'}`, background: speaking ? 'rgba(212,96,26,0.1)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginBottom: '1rem' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={speaking ? '#D4601A' : 'rgba(200,95,25,0.75)'} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg>
+        </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: 28, padding: '8px 8px 8px 18px', border: '0.5px solid rgba(212,96,26,0.15)', width: 300 }}>
+          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} placeholder="Ou écris ici…" style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: 'rgba(255,195,140,0.85)', fontFamily: 'inherit' }} />
+          <button onClick={handleSend} style={{ width: 32, height: 32, borderRadius: '50%', background: '#D4601A', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F7F3EE]">
-
-      {/* ── Sidebar ────────────────────────────────────────────────────────── */}
-      <aside className="flex w-60 shrink-0 flex-col bg-[#1C1917] text-white">
-
-        {/* Logo */}
-        <div className="flex h-14 items-center gap-2.5 border-b border-white/10 px-5">
-          <CathyLogo size={28} />
-          <span className="text-lg font-bold tracking-tight text-white">CATHY</span>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          {[...NAV_SECTIONS, ...(isSuperAdmin ? [ADMIN_SECTION] : [])].map((section) => (
-            <div key={section.label} className="mb-5">
-              <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-white/30">
-                {section.label}
-              </p>
-              <ul className="space-y-0.5">
-                {section.items.map((item) => {
-                  const isActive =
-                    item.href === "/overview" ? pathname === "/overview" : pathname.startsWith(item.href);
-                  return (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
-                          isActive
-                            ? "bg-[#E8601C] text-white shadow-sm"
-                            : "text-white/60 hover:bg-white/8 hover:text-white"
-                        }`}
-                      >
-                        <item.icon className={`h-4 w-4 shrink-0 transition-colors ${isActive ? "text-white" : "text-white/40 group-hover:text-white/70"}`} />
-                        <span className="flex-1 truncate">{item.label}</span>
-                        {isActive && <ChevronRight className="h-3 w-3 opacity-60" />}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
-        </nav>
-
-        {/* User + logout */}
-        <div className="border-t border-white/10 p-3">
-          <div className="flex items-center gap-3 rounded-lg px-2 py-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E8601C] text-xs font-bold text-white">
-              {initials}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-white">{displayName}</p>
-              <p className="truncate text-[10px] text-white/40">{user?.email}</p>
-            </div>
-          </div>
-          <button
-            onClick={handleSignOut}
-            className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-white/50 hover:bg-white/8 hover:text-white transition-colors"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            Déconnexion
-          </button>
-        </div>
-      </aside>
-
-      {/* ── Main ───────────────────────────────────────────────────────────── */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top bar */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-black/5 bg-white/60 px-8 backdrop-blur-sm">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            {[...NAV_SECTIONS, ADMIN_SECTION].flatMap(s => s.items).find(i =>
-              i.href === "/" ? pathname === "/" : pathname.startsWith(i.href)
-            )?.label ?? "Tableau de bord"}
-          </div>
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span className="h-2 w-2 rounded-full bg-green-400 inline-block" />
-            Connecté
-          </div>
-        </header>
-
-        <main className="flex-1 overflow-y-auto p-8">
-          {children}
-        </main>
-      </div>
-
-      {/* AI Copilot */}
-      <AICopilot />
+    <div>
+      <header style={{ background: '#fff', borderBottom: '0.5px solid rgba(160,92,40,0.1)', padding: '0 1.5rem', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
+        <span style={{ fontFamily: 'var(--font-serif)', fontSize: 20, fontWeight: 300, color: '#D4601A', letterSpacing: '3px' }}>Cathy</span>
+        <button onClick={() => setShowDashboard(false)} style={{ padding: '7px 16px', borderRadius: 20, border: '0.5px solid rgba(160,92,40,0.2)', background: 'transparent', cursor: 'pointer', fontSize: 12, color: '#A05C28', fontFamily: 'inherit' }}>← Retour à Cathy</button>
+      </header>
+      {children}
     </div>
-  );
+  )
 }

@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --cathy-orange: #D4601A;
+  --cathy-orange-light: rgba(212, 96, 26, 0.12);
+  --cathy-beige: #F5EDE0;
+  --cathy-dark: #060402;
+  --cathy-dark-2: #0D0804;
+  --cathy-text: rgba(255, 220, 180, 0.92);
+  --cathy-text-dim: rgba(200, 150, 80, 0.45);
+  --cathy-text-muted: rgba(200, 150, 80, 0.25);
+  --font-serif: 'Cormorant Garamond', serif;
+  --font-sans: 'DM Sans', sans-serif;
+}
+
 @layer base {
   body {
     background-color: theme('colors.beige.100');

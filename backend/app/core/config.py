@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     # AI
     ANTHROPIC_API_KEY: str = ""
 
+    # Commission rates (immutable — do not change)
+    COMMISSION_FRONT_PCT: float = 3.0
+    COMMISSION_BACK_PCT: float = 10.0
+    COMMISSION_FIRST_RENT_PCT: float = 50.0
+
     # Monitoring
     SENTRY_DSN: str = ""
 

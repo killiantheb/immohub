@@ -74,6 +74,10 @@ class ChatRequest(BaseModel):
     context: dict = {}
 
 
+class CopilotResponse(BaseModel):
+    response: str
+
+
 class AnomalyResponse(BaseModel):
     type: str
     severity: str
@@ -158,6 +162,36 @@ async def recommend_quote(
         runner_up_index=result.runner_up_index,
         justification=result.justification,
     )
+
+
+@router.post("/copilot", response_model=CopilotResponse)
+async def copilot(
+    payload: ChatRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+) -> CopilotResponse:
+    """
+    Non-streaming copilot — collects the full Claude response and returns it.
+    Use /chat for SSE streaming.
+    """
+    context = {**payload.context, "role": current_user.role}
+    parts: list[str] = []
+    async for chunk in chat_stream(
+        message=payload.message,
+        context=context,
+        db=db,
+        user_id=str(current_user.id),
+    ):
+        # SSE format: "data: {...}\n\n" or "data: [DONE]\n\n"
+        if chunk.startswith("data: ") and chunk.strip() != "data: [DONE]":
+            import json as _json
+            try:
+                parsed = _json.loads(chunk[6:].strip())
+                if "text" in parsed:
+                    parts.append(parsed["text"].replace("\\n", "\n"))
+            except Exception:
+                pass
+    return CopilotResponse(response="".join(parts))
 
 
 @router.post("/chat")

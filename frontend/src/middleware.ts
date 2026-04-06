@@ -1,12 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_ROUTES = ["/login", "/register", "/api"];
-const AUTH_ROUTES = ["/login", "/register"];
+const ROLE_ROUTES: Record<string, string> = {
+  owner:       "/dashboard",
+  agency:      "/dashboard",
+  opener:      "/opener",
+  tenant:      "/tenant",
+  company:     "/company",
+  super_admin: "/dashboard",
+};
 
-function isPublic(pathname: string): boolean {
-  return PUBLIC_ROUTES.some((p) => pathname.startsWith(p));
-}
+const AUTH_ROUTES       = ["/login", "/register"];
+const PRIVATE_PREFIXES  = ["/dashboard", "/opener", "/tenant", "/company"];
 
 function isAuthRoute(pathname: string): boolean {
   return AUTH_ROUTES.some((p) => pathname.startsWith(p));
@@ -24,7 +29,6 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet: { name: string; value: string; options?: object }[]) {
-          // Propagate cookie mutations to both the request clone and the response
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
@@ -35,24 +39,36 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  // IMPORTANT: call getUser() not getSession() — validates JWT server-side
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  // IMPORTANT: getUser() validates JWT server-side — never use getSession() in middleware
+  const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
+  const role = user?.user_metadata?.role as string | undefined;
 
-  // Authenticated user hitting a login/register page → redirect to home
+  // Authenticated user on auth pages → redirect to role home
   if (user && isAuthRoute(pathname)) {
-    return NextResponse.redirect(new URL("/", request.url));
+    const target = (role && ROLE_ROUTES[role]) || "/dashboard";
+    return NextResponse.redirect(new URL(target, request.url));
   }
 
-  // Unauthenticated user hitting a protected page → redirect to login
-  if (!user && !isPublic(pathname)) {
+  // Unauthenticated user on private route → redirect to login
+  const isPrivate = PRIVATE_PREFIXES.some((p) => pathname.startsWith(p));
+  if (!user && isPrivate) {
     const loginUrl = new URL("/login", request.url);
-    // Preserve the intended destination so we can redirect back after login
     loginUrl.searchParams.set("redirectTo", pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Authenticated user on root → redirect to role home
+  if (user && pathname === "/") {
+    const target = (role && ROLE_ROUTES[role]) || "/dashboard";
+    return NextResponse.redirect(new URL(target, request.url));
+  }
+
+  // Role-based guard on /dashboard — opener/tenant/company don't belong there
+  if (user && pathname.startsWith("/dashboard")) {
+    if (role === "opener") return NextResponse.redirect(new URL("/opener", request.url));
+    if (role === "tenant") return NextResponse.redirect(new URL("/tenant", request.url));
+    if (role === "company") return NextResponse.redirect(new URL("/company", request.url));
   }
 
   return response;
@@ -60,13 +76,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths EXCEPT:
-     * - _next/static (static files)
-     * - _next/image  (image optimisation)
-     * - favicon.ico
-     * - public assets (svg, png, jpg, etc.)
-     */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

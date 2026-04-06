@@ -16,6 +16,27 @@ from app.services.opener_service import OpenerService
 router = APIRouter()
 
 
+# ── List available (opener) ───────────────────────────────────────────────────
+
+@router.get("", response_model=PaginatedMissions)
+async def list_missions(
+    available: bool = Query(False),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """
+    GET /missions?available=true  → available (unassigned) missions for openers.
+    Other roles receive 403.
+    """
+    svc = OpenerService(db)
+    if available:
+        return await svc.list_available_missions(user, page=page, size=size)
+    # Default: return caller's own missions
+    return await svc.list_my_missions(user, page=page, size=size)
+
+
 # ── Create ────────────────────────────────────────────────────────────────────
 
 @router.post("", response_model=MissionRead, status_code=status.HTTP_201_CREATED)
