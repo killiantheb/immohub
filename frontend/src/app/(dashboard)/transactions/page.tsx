@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { Suspense, useCallback, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   CheckCircle,
@@ -53,6 +53,14 @@ function exportCSV(rows: import("@/lib/types").Transaction[]) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function TransactionsPage() {
+  return (
+    <Suspense>
+      <TransactionsContent />
+    </Suspense>
+  );
+}
+
+function TransactionsContent() {
   const searchParams = useSearchParams();
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "");
   const [typeFilter, setTypeFilter] = useState("");
