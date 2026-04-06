@@ -480,3 +480,77 @@ Détecte uniquement des patterns réels : impayés répétés, retards croissant
     except (json.JSONDecodeError, TypeError) as exc:
         log.warning("Failed to parse anomaly JSON: %s", exc)
         return []
+
+
+# ── 6. Cathy home briefing ────────────────────────────────────────────────────
+
+async def generate_briefing(
+    first_name: str,
+    role: str,
+    context: dict,
+    db: AsyncSession,
+    user_id: str,
+) -> dict:
+    """Generate a personalised Cathy home screen briefing (status + priority cards)."""
+    if not _check_rate_limit(user_id):
+        return {"status": f"bonjour {first_name}", "cards": []}
+
+    role_hints = {
+        "owner": "propriétaire immobilier gérant ses biens et locataires",
+        "agency": "agence immobilière gérant un portefeuille de biens",
+        "super_admin": "administrateur de la plateforme",
+        "opener": "ouvreur terrain qui effectue des missions (visites, remises de clés)",
+        "tenant": "locataire qui paie son loyer et suit son contrat",
+        "company": "artisan/société qui répond à des appels d'offres",
+    }
+
+    prompt = f"""Tu es Cathy, l'assistante IA d'une plateforme immobilière.
+Génère un briefing personnalisé pour {first_name}, {role_hints.get(role, role)}.
+
+Données temps réel:
+{json.dumps(context, ensure_ascii=False, indent=2)}
+
+Retourne UNIQUEMENT ce JSON (aucun texte avant/après):
+{{
+  "status": "message ultra-court personnalisé (max 55 chars)",
+  "cards": [
+    {{
+      "id": "identifiant_unique",
+      "type": "urgent|success|info|mission",
+      "label": "label court",
+      "badge": "texte badge court",
+      "badgeColor": "red|green|blue|amber",
+      "title": "titre principal",
+      "subtitle": "description courte et utile",
+      "primaryAction": {{"label": "Action", "type": "navigate|mark_paid|accept_mission", "path": "/chemin_si_navigate", "id": "uuid_si_action"}},
+      "secondaryAction": {{"label": "Voir", "type": "navigate", "path": "/chemin"}}
+    }}
+  ]
+}}
+
+Règles:
+- 2 à 4 cartes maximum, seulement les plus urgentes/utiles
+- Si données vides: suggère 1-2 actions utiles selon le rôle
+- type "urgent" = rouge, "success" = vert, "info" = bleu, "mission" = amber
+- Actions: navigate (chemin de la page), mark_paid (id transaction), accept_mission (id mission)
+- Chemins disponibles: /properties, /contracts, /transactions, /rfqs, /openers, /companies, /overview
+- Réponds en français, sois concis et proactif"""
+
+    client = _client()
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=1500,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    await _log_usage(db, user_id, "generate_briefing", message.usage)
+
+    raw = message.content[0].text.strip()  # type: ignore[union-attr]
+    if "```" in raw:
+        raw = raw.split("```")[1].lstrip("json").strip()
+
+    try:
+        return json.loads(raw)
+    except (json.JSONDecodeError, TypeError) as exc:
+        log.warning("Failed to parse briefing JSON: %s | raw: %.200s", exc, raw)
+        return {"status": f"bonjour {first_name}", "cards": []}
