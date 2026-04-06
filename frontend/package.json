@@ -1,0 +1,51 @@
+{
+  "name": "immohub-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.9.0",
+    "@supabase/ssr": "^0.5.1",
+    "@supabase/supabase-js": "^2.45.4",
+    "@tanstack/react-query": "^5.59.0",
+    "@tanstack/react-query-devtools": "^5.59.0",
+    "@types/leaflet": "^1.9.21",
+    "@types/recharts": "^1.8.29",
+    "axios": "^1.7.7",
+    "clsx": "^2.1.1",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.454.0",
+    "next": "^14.2.35",
+    "posthog-js": "^1.229.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.53.0",
+    "react-leaflet": "^4.2.1",
+    "recharts": "^3.8.1",
+    "tailwind-merge": "^2.5.3",
+    "zod": "^3.23.8",
+    "zustand": "^5.0.1"
+  },
+  "devDependencies": {
+    "@sentry/nextjs": "^8.49.0",
+    "@types/node": "^20.16.11",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "14.2.29",
+    "eslint-config-prettier": "^9.1.0",
+    "postcss": "^8.4.47",
+    "prettier": "^3.3.3",
+    "prettier-plugin-tailwindcss": "^0.6.8",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.6.3"
+  }
+}

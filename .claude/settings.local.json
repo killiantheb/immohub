@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(python -m venv .venv)",
+      "Bash(.venv/Scripts/pip install:*)",
+      "Bash(.venv/Scripts/alembic init:*)",
+      "Bash(.venv/Scripts/python -c \"import app.models; print\\('OK:', list\\(app.models.__all__\\)\\)\")",
+      "Bash(DATABASE_URL=postgresql+asyncpg://u:p@localhost/immohub .venv/Scripts/alembic upgrade --sql head)",
+      "Bash(DATABASE_URL=postgresql+asyncpg://u:p@localhost/immohub SECRET_KEY=x SUPABASE_URL=https://x.supabase.co SUPABASE_SERVICE_KEY=x SUPABASE_JWT_SECRET=x .venv/Scripts/alembic upgrade --sql head)",
+      "Bash(.venv/Scripts/python -c ':*)",
+      "Bash(find:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm --version)",
+      "Bash(docker --version)",
+      "Bash(pip --version)",
+      "Bash(venv/Scripts/python -m alembic upgrade head --sql)",
+      "Bash(venv/Scripts/python -m alembic upgrade 0002 --sql)",
+      "Bash(venv/Scripts/python -m alembic upgrade 0001:0002 --sql)",
+      "Bash(python -c \"import app.main; print\\('OK'\\)\")",
+      "Bash(grep -v \"^$\")",
+      "Bash(sed -i 's|`/dashboard/contracts/|`/contracts/|g' app/\\\\\\(dashboard\\\\\\)/contracts/page.tsx)",
+      "Bash(sed -i 's|`/dashboard/openers/|`/openers/|g' app/\\\\\\(dashboard\\\\\\)/openers/page.tsx)",
+      "Bash(sed -i 's|`/dashboard/properties/|`/properties/|g' app/\\\\\\(dashboard\\\\\\)/properties/new/page.tsx app/\\\\\\(dashboard\\\\\\)/properties/page.tsx)",
+      "Bash(xargs sed:*)",
+      "Bash(venv/Scripts/python.exe -c \"from app.routers import rfq; print\\('OK'\\)\")",
+      "Bash(curl -s http://localhost:8000/api/openapi.json)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); paths=[p for p in d['paths'] if 'rfq' in p]; print\\('\\\\n'.join\\(paths\\) if paths else 'AUCUNE ROUTE RFQ'\\)\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(list\\(d['paths'].keys\\(\\)\\)\\)\")",
+      "Bash(taskkill /F /IM uvicorn.exe)",
+      "Bash(taskkill /F /IM python.exe)",
+      "Bash(venv/Scripts/python.exe -m uvicorn app.main:app --reload --port 8000)"
+    ]
+  }
+}

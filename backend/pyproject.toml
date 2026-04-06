@@ -1,0 +1,31 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["app"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+ignore = [
+    "E501",   # line too long — handled by formatter
+    "B008",   # do not perform function call in argument defaults (FastAPI Depends pattern)
+    "SIM117", # allow nested with
+]
+
+[tool.ruff.lint.per-file-ignores]
+"alembic/**" = ["E402", "F401", "I001"]
+"app/models/__init__.py" = ["F401"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_return_any = false
+no_strict_optional = true
+exclude = ["alembic/", "venv/"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
