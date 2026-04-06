@@ -4,11 +4,6 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
@@ -23,6 +18,10 @@ from app.services.ai_service import (
     recommend_best_quote,
     score_tenant_application,
 )
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -31,6 +30,7 @@ AuthUserDep = Annotated[User, Depends(get_current_user)]
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
+
 
 class GenerateListingRequest(BaseModel):
     property_id: str
@@ -88,6 +88,7 @@ class AnomalyResponse(BaseModel):
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+
 @router.post("/generate-listing", response_model=GenerateListingResponse)
 async def generate_listing(
     payload: GenerateListingRequest,
@@ -96,8 +97,9 @@ async def generate_listing(
 ) -> GenerateListingResponse:
     """Generate an SEO property description via Claude."""
     import uuid
-    from sqlalchemy import select
+
     from app.models.property import Property
+    from sqlalchemy import select
 
     try:
         pid = uuid.UUID(payload.property_id)
@@ -185,6 +187,7 @@ async def copilot(
         # SSE format: "data: {...}\n\n" or "data: [DONE]\n\n"
         if chunk.startswith("data: ") and chunk.strip() != "data: [DONE]":
             import json as _json
+
             try:
                 parsed = _json.loads(chunk[6:].strip())
                 if "text" in parsed:
@@ -232,14 +235,14 @@ async def get_briefing(
     db: DbDep,
 ) -> dict:
     """Generate a personalised Cathy home screen briefing based on real data."""
-    import uuid as uuid_lib
     from datetime import date, timedelta
-    from sqlalchemy import select, and_
+
     from app.models.contract import Contract
-    from app.models.property import Property as PropertyModel
     from app.models.opener import Mission
+    from app.models.property import Property as PropertyModel
     from app.models.rfq import RFQ
     from app.models.transaction import Transaction as Txn
+    from sqlalchemy import select
 
     role = current_user.role
     first_name = current_user.first_name or (current_user.email or "").split("@")[0]
@@ -252,12 +255,14 @@ async def get_briefing(
         if role in ("owner", "agency", "super_admin"):
             # Late / pending rent
             res = await db.execute(
-                select(Txn).where(
+                select(Txn)
+                .where(
                     Txn.owner_id == uid,
                     Txn.status.in_(["pending", "late"]),
                     Txn.due_date <= today,
                     Txn.is_active.is_(True),
-                ).limit(5)
+                )
+                .limit(5)
             )
             late = res.scalars().all()
             context["late_transactions"] = [
@@ -272,13 +277,15 @@ async def get_briefing(
             ]
             # Expiring contracts (60 days)
             res = await db.execute(
-                select(Contract).where(
+                select(Contract)
+                .where(
                     Contract.owner_id == uid,
                     Contract.status == "active",
                     Contract.end_date.isnot(None),
                     Contract.end_date <= today + timedelta(days=60),
                     Contract.end_date >= today,
-                ).limit(3)
+                )
+                .limit(3)
             )
             expiring = res.scalars().all()
             context["expiring_contracts"] = [
@@ -292,25 +299,33 @@ async def get_briefing(
             ]
             # Vacant properties
             res = await db.execute(
-                select(PropertyModel).where(
+                select(PropertyModel)
+                .where(
                     PropertyModel.owner_id == uid,
                     PropertyModel.status == "available",
                     PropertyModel.is_active.is_(True),
-                ).limit(3)
+                )
+                .limit(3)
             )
             vacant = res.scalars().all()
             context["vacant_properties"] = [
-                {"id": str(p.id), "address": p.address, "city": p.city,
-                 "monthly_rent": float(p.monthly_rent) if p.monthly_rent else 0}
+                {
+                    "id": str(p.id),
+                    "address": p.address,
+                    "city": p.city,
+                    "monthly_rent": float(p.monthly_rent) if p.monthly_rent else 0,
+                }
                 for p in vacant
             ]
 
         elif role == "opener":
             res = await db.execute(
-                select(Mission).where(
+                select(Mission)
+                .where(
                     Mission.status == "pending",
                     Mission.opener_id.is_(None),
-                ).limit(5)
+                )
+                .limit(5)
             )
             missions = res.scalars().all()
             context["available_missions"] = [
@@ -325,10 +340,12 @@ async def get_briefing(
 
         elif role == "tenant":
             res = await db.execute(
-                select(Contract).where(
+                select(Contract)
+                .where(
                     Contract.tenant_id == uid,
                     Contract.status == "active",
-                ).limit(2)
+                )
+                .limit(2)
             )
             contracts = res.scalars().all()
             context["active_contracts"] = [
@@ -340,11 +357,14 @@ async def get_briefing(
                 for c in contracts
             ]
             res = await db.execute(
-                select(Txn).where(
+                select(Txn)
+                .where(
                     Txn.tenant_id == uid,
                     Txn.status == "pending",
                     Txn.due_date >= today,
-                ).order_by(Txn.due_date).limit(3)
+                )
+                .order_by(Txn.due_date)
+                .limit(3)
             )
             upcoming = res.scalars().all()
             context["upcoming_payments"] = [
@@ -357,9 +377,7 @@ async def get_briefing(
             ]
 
         elif role == "company":
-            res = await db.execute(
-                select(RFQ).where(RFQ.status == "published").limit(5)
-            )
+            res = await db.execute(select(RFQ).where(RFQ.status == "published").limit(5))
             rfqs = res.scalars().all()
             context["open_rfqs"] = [
                 {
@@ -376,6 +394,7 @@ async def get_briefing(
 
     except Exception as exc:
         import logging
+
         logging.getLogger(__name__).warning("Briefing context fetch failed: %s", exc)
 
     try:

@@ -1,6 +1,3 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
@@ -12,11 +9,14 @@ from app.schemas.opener import (
     PaginatedMissions,
 )
 from app.services.opener_service import OpenerService
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
 
 # ── List available (opener) ───────────────────────────────────────────────────
+
 
 @router.get("", response_model=PaginatedMissions)
 async def list_missions(
@@ -39,6 +39,7 @@ async def list_missions(
 
 # ── Create ────────────────────────────────────────────────────────────────────
 
+
 @router.post("", response_model=MissionRead, status_code=status.HTTP_201_CREATED)
 async def create_mission(
     payload: MissionCreate,
@@ -50,6 +51,7 @@ async def create_mission(
 
 
 # ── My missions (opener view) ─────────────────────────────────────────────────
+
 
 @router.get("/my", response_model=PaginatedMissions)
 async def my_missions(
@@ -65,6 +67,7 @@ async def my_missions(
 
 # ── Requester view ────────────────────────────────────────────────────────────
 
+
 @router.get("/requested", response_model=PaginatedMissions)
 async def requested_missions(
     status_filter: str | None = Query(None, alias="status"),
@@ -78,6 +81,7 @@ async def requested_missions(
 
 
 # ── Detail ────────────────────────────────────────────────────────────────────
+
 
 @router.get("/{mission_id}", response_model=MissionRead)
 async def get_mission(
@@ -93,6 +97,7 @@ async def get_mission(
 
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
+
 
 @router.put("/{mission_id}/accept", response_model=MissionRead)
 async def accept_mission(
@@ -139,6 +144,7 @@ async def cancel_mission(
 
 # ── Stripe webhook ────────────────────────────────────────────────────────────
 
+
 @router.post("/stripe/webhook", status_code=status.HTTP_200_OK)
 async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """Handle Stripe webhook events (payment_intent.succeeded, etc.)."""
@@ -156,11 +162,10 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     if event["type"] == "payment_intent.payment_failed":
         pi_id = event["data"]["object"]["id"]
         # Mark mission as cancelled on payment failure
-        from sqlalchemy import select
         from app.models.opener import Mission
-        result = await db.execute(
-            select(Mission).where(Mission.stripe_payment_intent_id == pi_id)
-        )
+        from sqlalchemy import select
+
+        result = await db.execute(select(Mission).where(Mission.stripe_payment_intent_id == pi_id))
         mission = result.scalar_one_or_none()
         if mission:
             mission.status = "cancelled"

@@ -14,10 +14,6 @@ import uuid
 from typing import TYPE_CHECKING
 
 import httpx
-from fastapi import HTTPException, UploadFile, status
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.config import settings
 from app.models.audit_log import AuditLog
 from app.models.property import Property, PropertyDocument, PropertyImage
@@ -31,6 +27,9 @@ from app.schemas.property import (
     PropertyRead,
     PropertyUpdate,
 )
+from fastapi import HTTPException, UploadFile, status
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
     from app.models.user import User
@@ -82,7 +81,8 @@ async def _delete_from_storage(bucket: str, path: str) -> None:
 
 # ── Access helpers ─────────────────────────────────────────────────────────────
 
-def _can_write(prop: Property, user: "User") -> bool:
+
+def _can_write(prop: Property, user: User) -> bool:
     if user.role == "super_admin":
         return True
     uid = user.id
@@ -90,6 +90,7 @@ def _can_write(prop: Property, user: "User") -> bool:
 
 
 # ── Service ────────────────────────────────────────────────────────────────────
+
 
 class PropertyService:
     def __init__(self, db: AsyncSession) -> None:
@@ -99,7 +100,7 @@ class PropertyService:
 
     async def list(
         self,
-        current_user: "User",
+        current_user: User,
         page: int = 1,
         size: int = 20,
         type: str | None = None,
@@ -120,10 +121,7 @@ class PropertyService:
                 )
             else:
                 # opener / tenant / company have no access to the property list
-                raise HTTPException(
-                    status.HTTP_403_FORBIDDEN,
-                    "Accès réservé aux propriétaires et agences",
-                )
+                raise HTTPException(403, "Accès réservé aux propriétaires et agences")
 
         # Optional filters
         if type:
@@ -156,7 +154,7 @@ class PropertyService:
 
     # ── Create ────────────────────────────────────────────────────────────────
 
-    async def create(self, payload: PropertyCreate, current_user: "User") -> Property:
+    async def create(self, payload: PropertyCreate, current_user: User) -> Property:
         uid = current_user.id
         prop = Property(
             owner_id=uid,
@@ -172,27 +170,34 @@ class PropertyService:
 
     # ── Get detail ────────────────────────────────────────────────────────────
 
-    async def get_detail(self, property_id: str, current_user: "User") -> PropertyDetail | None:
+    async def get_detail(self, property_id: str, current_user: User) -> PropertyDetail | None:
         prop = await self._get(property_id)
         if prop is None:
             return None
 
         # Load images
         img_rows = (
-            await self.db.execute(
-                select(PropertyImage)
-                .where(PropertyImage.property_id == prop.id)
-                .order_by(PropertyImage.order)
+            (
+                await self.db.execute(
+                    select(PropertyImage)
+                    .where(PropertyImage.property_id == prop.id)
+                    .order_by(PropertyImage.order)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         # Load documents
         doc_rows = (
-            await self.db.execute(
-                select(PropertyDocument)
-                .where(PropertyDocument.property_id == prop.id)
+            (
+                await self.db.execute(
+                    select(PropertyDocument).where(PropertyDocument.property_id == prop.id)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         detail = PropertyDetail.model_validate(prop)
         detail.images = [PropertyImageResponse.model_validate(r) for r in img_rows]
@@ -202,7 +207,7 @@ class PropertyService:
     # ── Update ────────────────────────────────────────────────────────────────
 
     async def update(
-        self, property_id: str, payload: PropertyUpdate, current_user: "User"
+        self, property_id: str, payload: PropertyUpdate, current_user: User
     ) -> Property | None:
         prop = await self._get(property_id)
         if prop is None:
@@ -215,12 +220,18 @@ class PropertyService:
             setattr(prop, field, value)
         await self.db.flush()
         await self.db.refresh(prop)
-        await self._log(current_user, "update", str(prop.id), old_values=old, new_values=payload.model_dump(exclude_unset=True))
+        await self._log(
+            current_user,
+            "update",
+            str(prop.id),
+            old_values=old,
+            new_values=payload.model_dump(exclude_unset=True),
+        )
         return prop
 
     # ── Soft delete ───────────────────────────────────────────────────────────
 
-    async def delete(self, property_id: str, current_user: "User") -> bool:
+    async def delete(self, property_id: str, current_user: User) -> bool:
         prop = await self._get(property_id)
         if prop is None:
             return False
@@ -238,7 +249,7 @@ class PropertyService:
         property_id: str,
         file: UploadFile,
         is_cover: bool,
-        current_user: "User",
+        current_user: User,
     ) -> PropertyImageResponse:
         prop = await self._get_or_404(property_id)
         if not _can_write(prop, current_user):
@@ -246,11 +257,15 @@ class PropertyService:
 
         content_type = file.content_type or "image/jpeg"
         if content_type not in ALLOWED_IMAGE_TYPES:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"Unsupported image type: {content_type}")
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY, f"Unsupported image type: {content_type}"
+            )
 
         data = await file.read()
         if len(data) > MAX_FILE_SIZE:
-            raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "File too large (max 10 MB)")
+            raise HTTPException(
+                status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "File too large (max 10 MB)"
+            )
 
         ext = mimetypes.guess_extension(content_type) or ".jpg"
         image_id = uuid.uuid4()
@@ -259,21 +274,23 @@ class PropertyService:
 
         # Count existing images to set order
         count = (
-            await self.db.execute(
-                select(func.count()).where(PropertyImage.property_id == prop.id)
-            )
+            await self.db.execute(select(func.count()).where(PropertyImage.property_id == prop.id))
         ).scalar_one()
 
         # Unset previous cover if needed
         if is_cover:
             covers = (
-                await self.db.execute(
-                    select(PropertyImage).where(
-                        PropertyImage.property_id == prop.id,
-                        PropertyImage.is_cover.is_(True),
+                (
+                    await self.db.execute(
+                        select(PropertyImage).where(
+                            PropertyImage.property_id == prop.id,
+                            PropertyImage.is_cover.is_(True),
+                        )
                     )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             for c in covers:
                 c.is_cover = False
 
@@ -289,9 +306,7 @@ class PropertyService:
         await self.db.refresh(img)
         return PropertyImageResponse.model_validate(img)
 
-    async def delete_image(
-        self, property_id: str, image_id: str, current_user: "User"
-    ) -> bool:
+    async def delete_image(self, property_id: str, image_id: str, current_user: User) -> bool:
         prop = await self._get_or_404(property_id)
         if not _can_write(prop, current_user):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Access denied")
@@ -322,7 +337,7 @@ class PropertyService:
         property_id: str,
         file: UploadFile,
         doc_type: str,
-        current_user: "User",
+        current_user: User,
     ) -> PropertyDocumentResponse:
         prop = await self._get_or_404(property_id)
         if not _can_write(prop, current_user):
@@ -330,11 +345,15 @@ class PropertyService:
 
         content_type = file.content_type or "application/pdf"
         if content_type not in ALLOWED_DOC_TYPES:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"Unsupported document type: {content_type}")
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY, f"Unsupported document type: {content_type}"
+            )
 
         data = await file.read()
         if len(data) > MAX_FILE_SIZE:
-            raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "File too large (max 10 MB)")
+            raise HTTPException(
+                status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "File too large (max 10 MB)"
+            )
 
         ext = mimetypes.guess_extension(content_type) or ".pdf"
         doc_id = uuid.uuid4()
@@ -357,21 +376,25 @@ class PropertyService:
 
     async def get_history(self, property_id: str, limit: int = 50) -> list[AuditLogResponse]:
         rows = (
-            await self.db.execute(
-                select(AuditLog)
-                .where(
-                    AuditLog.resource_type == "property",
-                    AuditLog.resource_id == property_id,
+            (
+                await self.db.execute(
+                    select(AuditLog)
+                    .where(
+                        AuditLog.resource_type == "property",
+                        AuditLog.resource_id == property_id,
+                    )
+                    .order_by(AuditLog.created_at.desc())
+                    .limit(limit)
                 )
-                .order_by(AuditLog.created_at.desc())
-                .limit(limit)
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return [AuditLogResponse.model_validate(r) for r in rows]
 
     # ── AI description ────────────────────────────────────────────────────────
 
-    async def generate_description(self, property_id: str, current_user: "User") -> str:
+    async def generate_description(self, property_id: str, current_user: User) -> str:
         if not settings.ANTHROPIC_API_KEY:
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Claude API not configured")
 
@@ -398,9 +421,12 @@ class PropertyService:
             f"- Type : {prop.type}\n"
             f"- Adresse : {prop.address}, {prop.city} ({prop.zip_code})\n"
             f"- Caractéristiques : {', '.join(features) or 'non renseignées'}\n"
-            f"- Loyer mensuel : {prop.monthly_rent} € CC" if prop.monthly_rent else ""
-            f"- Prix de vente : {prop.price_sale} €" if prop.price_sale else ""
-            f"\nLa description doit faire 2-3 paragraphes, être engageante et mettre en valeur le bien."
+            f"- Loyer mensuel : {prop.monthly_rent} € CC"
+            if prop.monthly_rent
+            else f"- Prix de vente : {prop.price_sale} €"
+            if prop.price_sale
+            else ""
+            "\nLa description doit faire 2-3 paragraphes, être engageante et mettre en valeur le bien."
         )
 
         async with httpx.AsyncClient(timeout=30) as client:
@@ -426,7 +452,9 @@ class PropertyService:
         # Persist the generated description
         prop.description = description
         await self.db.flush()
-        await self._log(current_user, "ai_description", str(prop.id), new_values={"description": description})
+        await self._log(
+            current_user, "ai_description", str(prop.id), new_values={"description": description}
+        )
 
         return description
 
@@ -450,7 +478,7 @@ class PropertyService:
 
     async def _log(
         self,
-        user: "User",
+        user: User,
         action: str,
         resource_id: str,
         old_values: dict | None = None,

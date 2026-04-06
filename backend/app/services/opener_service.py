@@ -17,10 +17,6 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from fastapi import HTTPException, status
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.config import settings
 from app.models.opener import Mission, Opener
 from app.schemas.opener import (
@@ -31,16 +27,19 @@ from app.schemas.opener import (
     MissionRead,
     OpenerProfileCreate,
     OpenerProfileUpdate,
-    OpenerRead,
     OpenerWithDistance,
     PaginatedMissions,
 )
+from fastapi import HTTPException
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
     from app.models.user import User
 
 
 # ── Geo helpers ───────────────────────────────────────────────────────────────
+
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Great-circle distance in kilometres."""
@@ -79,6 +78,7 @@ def calculate_mission_price(mission_type: str, distance_km: float) -> MissionPri
 
 # ── Priority sort ─────────────────────────────────────────────────────────────
 
+
 def _priority_key(opener: Opener, distance_km: float) -> tuple:
     """Lower tuple = higher priority."""
     tier = 0 if (opener.rating or 0) >= 4.5 else 1
@@ -87,17 +87,19 @@ def _priority_key(opener: Opener, distance_km: float) -> tuple:
 
 # ── Stripe helpers ────────────────────────────────────────────────────────────
 
+
 async def _create_payment_intent(amount_eur: float) -> str | None:
     """Create a Stripe PaymentIntent and return its ID, or None if Stripe not configured."""
     if not settings.STRIPE_SECRET_KEY:
         return None
     try:
         import stripe  # type: ignore[import]
+
         stripe.api_key = settings.STRIPE_SECRET_KEY
         intent = stripe.PaymentIntent.create(
-            amount=int(amount_eur * 100),   # cents
+            amount=int(amount_eur * 100),  # cents
             currency="eur",
-            capture_method="manual",        # capture only on mission completion
+            capture_method="manual",  # capture only on mission completion
             metadata={"source": "immohub"},
         )
         return intent.id
@@ -110,6 +112,7 @@ async def _capture_payment_intent(intent_id: str) -> bool:
         return False
     try:
         import stripe  # type: ignore[import]
+
         stripe.api_key = settings.STRIPE_SECRET_KEY
         stripe.PaymentIntent.capture(intent_id)
         return True
@@ -122,6 +125,7 @@ async def _cancel_payment_intent(intent_id: str) -> None:
         return
     try:
         import stripe  # type: ignore[import]
+
         stripe.api_key = settings.STRIPE_SECRET_KEY
         stripe.PaymentIntent.cancel(intent_id)
     except Exception:
@@ -130,19 +134,16 @@ async def _cancel_payment_intent(intent_id: str) -> None:
 
 # ── Service ───────────────────────────────────────────────────────────────────
 
+
 class OpenerService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
     # ── Opener profile ─────────────────────────────────────────────────────────
 
-    async def upsert_profile(
-        self, payload: OpenerProfileCreate, current_user: "User"
-    ) -> Opener:
+    async def upsert_profile(self, payload: OpenerProfileCreate, current_user: User) -> Opener:
         """Create or replace the opener profile for the current user."""
-        result = await self.db.execute(
-            select(Opener).where(Opener.user_id == current_user.id)
-        )
+        result = await self.db.execute(select(Opener).where(Opener.user_id == current_user.id))
         opener = result.scalar_one_or_none()
 
         if opener is None:
@@ -159,9 +160,7 @@ class OpenerService:
         await self.db.refresh(opener)
         return opener
 
-    async def patch_profile(
-        self, payload: OpenerProfileUpdate, current_user: "User"
-    ) -> Opener:
+    async def patch_profile(self, payload: OpenerProfileUpdate, current_user: User) -> Opener:
         opener = await self._get_my_opener(current_user)
         for field, value in payload.model_dump(exclude_unset=True).items():
             setattr(opener, field, value)
@@ -232,13 +231,17 @@ class OpenerService:
         Only openers whose radius_km covers the distance are included.
         """
         rows = (
-            await self.db.execute(
-                select(Opener).where(
-                    Opener.is_available.is_(True),
-                    Opener.is_active.is_(True),
+            (
+                await self.db.execute(
+                    select(Opener).where(
+                        Opener.is_available.is_(True),
+                        Opener.is_active.is_(True),
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         candidates: list[tuple[Opener, float]] = []
         for opener in rows:
@@ -269,9 +272,7 @@ class OpenerService:
 
     # ── Missions ───────────────────────────────────────────────────────────────
 
-    async def create_mission(
-        self, payload: MissionCreate, current_user: "User"
-    ) -> Mission:
+    async def create_mission(self, payload: MissionCreate, current_user: User) -> Mission:
         try:
             prop_id = uuid.UUID(payload.property_id)
         except ValueError:
@@ -293,18 +294,28 @@ class OpenerService:
                 raise HTTPException(404, "Ouvreur introuvable")
             opener_id = oid
 
-            if payload.property_lat and payload.property_lng and opener.latitude and opener.longitude:
+            if (
+                payload.property_lat
+                and payload.property_lng
+                and opener.latitude
+                and opener.longitude
+            ):
                 distance_km = haversine_km(
-                    payload.property_lat, payload.property_lng,
-                    opener.latitude, opener.longitude,
+                    payload.property_lat,
+                    payload.property_lng,
+                    opener.latitude,
+                    opener.longitude,
                 )
             estimate = calculate_mission_price(payload.type, distance_km)
             price = estimate.total
         else:
             # Auto-match: find the best available opener
             best = await self.find_best_openers(
-                payload.property_lat, payload.property_lng,
-                payload.scheduled_at, payload.type, limit=1,
+                payload.property_lat,
+                payload.property_lng,
+                payload.scheduled_at,
+                payload.type,
+                limit=1,
             )
             if best:
                 opener_id = uuid.UUID(best[0].id)
@@ -340,24 +351,23 @@ class OpenerService:
                 auto_reassign_if_no_accept,
                 notify_available_openers,
             )
+
             notify_available_openers.delay(mission_id_str)
             # Auto-reassign if not accepted within 2 hours
-            auto_reassign_if_no_accept.apply_async(
-                args=[mission_id_str], countdown=7200
-            )
+            auto_reassign_if_no_accept.apply_async(args=[mission_id_str], countdown=7200)
         except Exception:
             pass  # Celery unavailable — mission still created
 
         return mission
 
-    async def get_mission(self, mission_id: str, current_user: "User") -> Mission:
+    async def get_mission(self, mission_id: str, current_user: User) -> Mission:
         mission = await self._get_mission_or_404(mission_id)
         self._assert_mission_access(mission, current_user)
         return mission
 
     async def list_missions(
         self,
-        current_user: "User",
+        current_user: User,
         page: int = 1,
         size: int = 20,
         mission_status: str | None = None,
@@ -384,10 +394,14 @@ class OpenerService:
         ).scalar_one()
 
         rows = (
-            await self.db.execute(
-                q.order_by(Mission.scheduled_at.desc()).offset((page - 1) * size).limit(size)
+            (
+                await self.db.execute(
+                    q.order_by(Mission.scheduled_at.desc()).offset((page - 1) * size).limit(size)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         return PaginatedMissions(
             items=[MissionRead.model_validate(r) for r in rows],
@@ -397,22 +411,21 @@ class OpenerService:
             pages=math.ceil(total / size) if total else 1,
         )
 
-    async def my_missions(self, current_user: "User", page: int = 1, size: int = 20) -> PaginatedMissions:
+    async def my_missions(
+        self, current_user: User, page: int = 1, size: int = 20
+    ) -> PaginatedMissions:
         return await self.list_my_missions(current_user, page=page, size=size)
 
     async def list_my_missions(
         self,
-        current_user: "User",
+        current_user: User,
         status: str | None = None,
         page: int = 1,
         size: int = 20,
     ) -> PaginatedMissions:
         """Missions assigned to the current user's opener profile."""
         opener = await self._get_my_opener(current_user)
-        q = (
-            select(Mission)
-            .where(Mission.opener_id == opener.id, Mission.is_active.is_(True))
-        )
+        q = select(Mission).where(Mission.opener_id == opener.id, Mission.is_active.is_(True))
         if status:
             q = q.where(Mission.status == status)
         q = q.order_by(Mission.scheduled_at.asc())
@@ -422,18 +435,21 @@ class OpenerService:
         rows = (await self.db.execute(q.offset((page - 1) * size).limit(size))).scalars().all()
         return PaginatedMissions(
             items=[MissionRead.model_validate(r) for r in rows],
-            total=total, page=page, size=size,
+            total=total,
+            page=page,
+            size=size,
             pages=math.ceil(total / size) if total else 1,
         )
 
     async def list_available_missions(
         self,
-        current_user: "User",
+        current_user: User,
         page: int = 1,
         size: int = 20,
     ) -> PaginatedMissions:
         """Available (unassigned) missions — visible to openers only."""
         from fastapi import HTTPException as _HTTPException
+
         if current_user.role != "opener":
             raise _HTTPException(403, "Réservé aux ouvreurs")
         q = (
@@ -451,21 +467,22 @@ class OpenerService:
         rows = (await self.db.execute(q.offset((page - 1) * size).limit(size))).scalars().all()
         return PaginatedMissions(
             items=[MissionRead.model_validate(r) for r in rows],
-            total=total, page=page, size=size,
+            total=total,
+            page=page,
+            size=size,
             pages=math.ceil(total / size) if total else 1,
         )
 
     async def list_requested_missions(
         self,
-        current_user: "User",
+        current_user: User,
         status: str | None = None,
         page: int = 1,
         size: int = 20,
     ) -> PaginatedMissions:
         """Missions created by the current user (requester view)."""
-        q = (
-            select(Mission)
-            .where(Mission.requester_id == current_user.id, Mission.is_active.is_(True))
+        q = select(Mission).where(
+            Mission.requester_id == current_user.id, Mission.is_active.is_(True)
         )
         if status:
             q = q.where(Mission.status == status)
@@ -476,18 +493,22 @@ class OpenerService:
         rows = (await self.db.execute(q.offset((page - 1) * size).limit(size))).scalars().all()
         return PaginatedMissions(
             items=[MissionRead.model_validate(r) for r in rows],
-            total=total, page=page, size=size,
+            total=total,
+            page=page,
+            size=size,
             pages=math.ceil(total / size) if total else 1,
         )
 
-    async def accept_mission(self, mission_id: str, current_user: "User") -> Mission:
+    async def accept_mission(self, mission_id: str, current_user: User) -> Mission:
         mission = await self._get_mission_or_404(mission_id)
         opener = await self._get_my_opener(current_user)
 
         if mission.opener_id != opener.id:
             raise HTTPException(403, "Cette mission ne vous est pas assignée")
         if mission.status != "pending":
-            raise HTTPException(409, f"Impossible d'accepter une mission au statut '{mission.status}'")
+            raise HTTPException(
+                409, f"Impossible d'accepter une mission au statut '{mission.status}'"
+            )
 
         mission.status = "confirmed"
         mission.accepted_at = datetime.now(UTC)
@@ -496,7 +517,7 @@ class OpenerService:
         return mission
 
     async def complete_mission(
-        self, mission_id: str, payload: MissionComplete, current_user: "User"
+        self, mission_id: str, payload: MissionComplete, current_user: User
     ) -> Mission:
         mission = await self._get_mission_or_404(mission_id)
         opener = await self._get_my_opener(current_user)
@@ -504,7 +525,9 @@ class OpenerService:
         if mission.opener_id != opener.id:
             raise HTTPException(403, "Cette mission ne vous est pas assignée")
         if mission.status not in ("confirmed", "in_progress"):
-            raise HTTPException(409, f"Impossible de terminer une mission au statut '{mission.status}'")
+            raise HTTPException(
+                409, f"Impossible de terminer une mission au statut '{mission.status}'"
+            )
 
         mission.status = "completed"
         mission.completed_at = datetime.now(UTC)
@@ -524,7 +547,7 @@ class OpenerService:
         return mission
 
     async def rate_mission(
-        self, mission_id: str, payload: MissionRate, current_user: "User"
+        self, mission_id: str, payload: MissionRate, current_user: User
     ) -> Mission:
         mission = await self._get_mission_or_404(mission_id)
 
@@ -547,13 +570,15 @@ class OpenerService:
         return mission
 
     async def cancel_mission(
-        self, mission_id: str, current_user: "User", reason: str | None = None
+        self, mission_id: str, current_user: User, reason: str | None = None
     ) -> Mission:
         mission = await self._get_mission_or_404(mission_id)
         self._assert_mission_access(mission, current_user)
 
         if mission.status in ("completed", "cancelled"):
-            raise HTTPException(409, f"Impossible d'annuler une mission au statut '{mission.status}'")
+            raise HTTPException(
+                409, f"Impossible d'annuler une mission au statut '{mission.status}'"
+            )
 
         mission.status = "cancelled"
         mission.cancelled_at = datetime.now(UTC)
@@ -609,7 +634,7 @@ class OpenerService:
             raise HTTPException(404, "Mission introuvable")
         return mission
 
-    def _assert_mission_access(self, mission: Mission, user: "User") -> None:
+    def _assert_mission_access(self, mission: Mission, user: User) -> None:
         if user.role == "super_admin":
             return
         # Requester or assigned opener can access
@@ -618,7 +643,7 @@ class OpenerService:
             return
         raise HTTPException(403, "Accès refusé")
 
-    async def _get_my_opener(self, user: "User") -> Opener:
+    async def _get_my_opener(self, user: User) -> Opener:
         result = await self.db.execute(
             select(Opener).where(Opener.user_id == user.id, Opener.is_active.is_(True))
         )
@@ -627,7 +652,7 @@ class OpenerService:
             raise HTTPException(404, "Profil ouvreur introuvable — créez votre profil d'abord")
         return opener
 
-    async def _get_my_opener_optional(self, user: "User") -> Opener | None:
+    async def _get_my_opener_optional(self, user: User) -> Opener | None:
         result = await self.db.execute(
             select(Opener).where(Opener.user_id == user.id, Opener.is_active.is_(True))
         )
