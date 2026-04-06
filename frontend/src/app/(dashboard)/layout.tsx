@@ -23,7 +23,7 @@ const NAV_SECTIONS = [
   {
     label: "Principal",
     items: [
-      { href: "/", label: "Tableau de bord", icon: LayoutDashboard },
+      { href: "/overview", label: "Tableau de bord", icon: LayoutDashboard },
       { href: "/properties", label: "Biens", icon: Building2 },
       { href: "/contracts", label: "Contrats", icon: FileText },
       { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
@@ -76,6 +76,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ? `${user.user_metadata.first_name} ${user.user_metadata.last_name ?? ""}`.trim()
     : user?.email ?? "";
 
+  // Cathy home — fullscreen, no sidebar
+  if (pathname === "/") {
+    return <>{children}</>;
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#F7F3EE]">
 
@@ -98,7 +103,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <ul className="space-y-0.5">
                 {section.items.map((item) => {
                   const isActive =
-                    item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+                    item.href === "/overview" ? pathname === "/overview" : pathname.startsWith(item.href);
                   return (
                     <li key={item.href}>
                       <Link
@@ -149,7 +154,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-2 text-sm text-gray-500">
             {[...NAV_SECTIONS, ADMIN_SECTION].flatMap(s => s.items).find(i =>
               i.href === "/" ? pathname === "/" : pathname.startsWith(i.href)
-            )?.label ?? ""}
+            )?.label ?? "Tableau de bord"}
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <span className="h-2 w-2 rounded-full bg-green-400 inline-block" />
