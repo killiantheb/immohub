@@ -50,3 +50,6 @@ htmlcov/
 
 # Alembic
 alembic/versions/*.pyc
+
+.vercel
+.env*.local
