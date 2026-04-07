@@ -1,5 +1,5 @@
 'use client'
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { CathySphere } from '@/components/CathySphere'
@@ -44,11 +44,12 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
   const { signOut } = useAuth()
   const { user } = useAuthStore()
 
-  // Guard onboarding — redirige si l'utilisateur n'a pas complété l'onboarding
-  if (user && !user.user_metadata?.onboarding_completed && pathname !== '/onboarding') {
-    router.push('/onboarding')
-    return null
-  }
+  // Guard onboarding — dans un useEffect pour éviter la boucle infinie
+  useEffect(() => {
+    if (user && !user.user_metadata?.onboarding_completed && pathname !== '/onboarding') {
+      router.push('/onboarding')
+    }
+  }, [user, pathname, router])
 
   async function handleLogout() {
     await signOut()
