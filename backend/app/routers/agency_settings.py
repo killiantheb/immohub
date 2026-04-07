@@ -145,13 +145,13 @@ async def update_settings(
     return _to_read(s)
 
 
-@router.get("/accounting/export")
+@router.get("/accounting/export", response_model=None)
 async def export_accounting(
     db: DbDep,
     current_user: AuthUserDep,
     month: str | None = Query(None, description="Format YYYY-MM, défaut = mois courant"),
     format: str = Query("csv", description="csv | json"),
-) -> StreamingResponse | dict:
+):
     """Export comptable fiduciaire — loyers, commissions, charges par bien."""
     if current_user.role not in ALLOWED_ROLES:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux agences et propriétaires")
