@@ -64,22 +64,22 @@ const PERSONAS = [
 
 const PLANS = [
   {
-    name: 'Starter', price: 49, currency: 'CHF', period: 'mois',
-    desc: 'Pour les propriétaires indépendants',
-    features: ['Jusqu\'à 3 biens', 'Assistant Althy inclus', 'Relances automatiques', 'Documents PDF', 'Support par e-mail'],
-    cta: 'Commencer gratuitement', featured: false,
+    name: 'Gratuit', price: 0, currency: 'CHF', period: 'mois',
+    desc: '1 bien · Pour découvrir Althy',
+    features: ['1 bien géré', 'Assistant Althy inclus', 'Génération d\'annonces IA', 'Documents PDF', 'Accès au tableau de bord'],
+    cta: 'Démarrer gratuitement', featured: false,
   },
   {
-    name: 'Pro', price: 149, currency: 'CHF', period: 'mois',
-    desc: 'Pour les agences et portfolios actifs',
-    features: ['Biens illimités', 'Ouvreurs & artisans intégrés', 'Briefing IA quotidien', 'Rapports avancés', 'API access', 'Support prioritaire'],
-    cta: 'Démarrer en Pro', featured: true,
+    name: 'Starter', price: 29, currency: 'CHF', period: 'mois',
+    desc: 'Pour les propriétaires avec plusieurs biens',
+    features: ['Jusqu\'à 10 biens', 'Relances automatiques', 'Baux & quittances PDF', 'Portail locataire', 'Support par e-mail'],
+    cta: 'Essayer 30 jours gratuit', featured: true,
   },
   {
-    name: 'Agency', price: 399, currency: 'CHF', period: 'mois',
-    desc: 'Pour les grandes agences',
-    features: ['Multi-comptes & marque blanche', 'Onboarding dédié', 'SLA garanti', 'Intégrations sur mesure', 'Manager dédié', 'Formation équipe'],
-    cta: 'Nous contacter', featured: false,
+    name: 'Pro', price: 99, currency: 'CHF', period: 'mois',
+    desc: 'Pour les agences et grands portfolios',
+    features: ['Biens illimités', 'Ouvreurs & artisans intégrés', 'Briefing IA quotidien', 'Export comptable CH', 'Support prioritaire'],
+    cta: 'Démarrer en Pro', featured: false,
   },
 ]
 
@@ -178,6 +178,87 @@ export default function LandingPage() {
 
       <Divider />
 
+      {/* ── Product preview ───────────────────────────────────────────────── */}
+      <Section id="preview">
+        <p style={{ fontSize: 10, letterSpacing: '4px', textTransform: 'uppercase', color: `rgba(200,95,25,0.4)`, marginBottom: '0.8rem', textAlign: 'center' }}>
+          Le produit
+        </p>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 300, textAlign: 'center', color: T, marginBottom: '0.6rem', letterSpacing: '-0.3px' }}>
+          Votre tableau de bord, au complet
+        </h2>
+        <p style={{ textAlign: 'center', color: T5, fontSize: 13, marginBottom: '2.5rem' }}>Un seul endroit pour vos biens, contrats, documents et locataires.</p>
+
+        {/* Dashboard mockup */}
+        <div style={{ background: BG2, border: `0.5px solid ${O20}`, borderRadius: 20, overflow: 'hidden', boxShadow: '0 8px 40px rgba(80,35,8,0.08)' }}>
+          {/* Top bar */}
+          <div style={{ background: '#1C0F06', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f57' }} />
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#febc2e' }} />
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#28c840' }} />
+            <div style={{ flex: 1, height: 20, background: 'rgba(255,255,255,0.06)', borderRadius: 6, margin: '0 auto', maxWidth: 300 }} />
+          </div>
+          {/* Content */}
+          <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', minHeight: 380 }}>
+            {/* Sidebar */}
+            <div style={{ background: 'rgba(28,15,6,0.03)', borderRight: `0.5px solid ${O20}`, padding: '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: T3, padding: '0.5rem 0.5rem 0.8rem' }}>Navigation</div>
+              {[
+                { icon: '◈', label: 'Vue d\'ensemble', active: true },
+                { icon: '⌂', label: 'Mes biens' },
+                { icon: '◻', label: 'Contrats' },
+                { icon: '◇', label: 'Documents' },
+                { icon: '⟳', label: 'Transactions' },
+              ].map(({ icon, label, active }) => (
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px', borderRadius: 8, background: active ? `rgba(212,96,26,0.10)` : 'transparent', color: active ? O : T5, fontSize: 12, fontWeight: active ? 500 : 400 }}>
+                  <span style={{ fontSize: 13 }}>{icon}</span> {label}
+                </div>
+              ))}
+              <div style={{ marginTop: 'auto', padding: '12px 8px 0', borderTop: `0.5px solid ${O20}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px', borderRadius: 8, background: `rgba(212,96,26,0.06)`, fontSize: 12, color: O, fontWeight: 500 }}>
+                  <span>✦</span> Althy IA
+                </div>
+              </div>
+            </div>
+            {/* Main */}
+            <div style={{ padding: '1.5rem' }}>
+              <div style={{ fontSize: 16, fontWeight: 500, color: T, marginBottom: '1rem' }}>Bonjour — voici votre résumé du jour</div>
+              {/* KPI row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: '1rem' }}>
+                {[
+                  { label: 'Loyers attendus', value: '4 200 CHF', sub: 'Ce mois', color: O },
+                  { label: 'Encaissés', value: '3 600 CHF', sub: '85 %', color: '#639922' },
+                  { label: 'En retard', value: '600 CHF', sub: '1 locataire', color: '#E24B4A' },
+                ].map(({ label, value, sub, color }) => (
+                  <div key={label} style={{ background: '#fff', border: `0.5px solid ${O20}`, borderRadius: 10, padding: '0.75rem' }}>
+                    <div style={{ fontSize: 10, color: T3, letterSpacing: '0.5px', marginBottom: 4 }}>{label}</div>
+                    <div style={{ fontSize: 20, fontWeight: 500, color, lineHeight: 1.2 }}>{value}</div>
+                    <div style={{ fontSize: 10, color: T3 }}>{sub}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Property list */}
+              <div style={{ background: '#fff', border: `0.5px solid ${O20}`, borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ fontSize: 11, fontWeight: 500, color: T5, padding: '0.6rem 1rem', borderBottom: `0.5px solid ${O20}` }}>Biens récents</div>
+                {[
+                  { name: 'App. 3.5p · Crans-Montana', status: 'Loué', dot: '#639922' },
+                  { name: 'Studio · Sierre', status: 'Disponible', dot: O },
+                  { name: 'Chalet · Verbier', status: 'Loué', dot: '#639922' },
+                ].map(({ name, status, dot }) => (
+                  <div key={name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 1rem', borderBottom: `0.5px solid rgba(212,96,26,0.06)`, fontSize: 12 }}>
+                    <span style={{ color: T }}>{name}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: T5 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: dot, display: 'inline-block' }} /> {status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <Divider />
+
       {/* ── For who ───────────────────────────────────────────────────────── */}
       <Section id="who">
         <p style={{ fontSize: 10, letterSpacing: '4px', textTransform: 'uppercase', color: `rgba(200,95,25,0.4)`, marginBottom: '0.8rem', textAlign: 'center' }}>
@@ -266,7 +347,7 @@ export default function LandingPage() {
           <span style={{ color: O }}>Althy gérer ?</span>
         </h2>
         <p style={{ fontSize: 15, color: T5, maxWidth: 420, margin: '0 auto 2.5rem', lineHeight: 1.6 }}>
-          Rejoignez des centaines de professionnels qui ont repris le contrôle de leur temps.
+          Rejoignez les premiers propriétaires suisses à tester Althy — gratuitement, sans carte bancaire.
         </p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link href="/register" style={{ padding: '13px 32px', borderRadius: 28, background: O, color: '#fff', fontSize: 14, fontWeight: 500, textDecoration: 'none', letterSpacing: '0.5px' }}>

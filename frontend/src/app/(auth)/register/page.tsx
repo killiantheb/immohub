@@ -40,8 +40,8 @@ const ROLES = [
   { value: "owner", label: "Propriétaire", desc: "Je gère mes biens en direct" },
   { value: "agency", label: "Agence", desc: "Je gère des biens pour des clients" },
   { value: "tenant", label: "Locataire", desc: "Je cherche ou j'occupe un bien" },
-  { value: "opener", label: "Apporteur", desc: "J'apporte des affaires immobilières" },
-  { value: "company", label: "Prestataire", desc: "Plombier, électricien, etc." },
+  { value: "opener", label: "Ouvreur", desc: "J'effectue des visites et états des lieux" },
+  { value: "company", label: "Artisan", desc: "Plombier, électricien, peintre, etc." },
 ] as const;
 
 function PasswordStrength({ password }: { password: string }) {
@@ -113,8 +113,7 @@ export default function RegisterPage() {
           <span className="text-4xl font-bold tracking-tight">ALTHY</span>
         </div>
         <p className="max-w-xs text-center text-primary-100">
-          Rejoignez des centaines de professionnels qui gèrent leur activité
-          immobilière avec ALTHY.
+          Gérez vos biens, contrats et locataires en Suisse — simplement, en français.
         </p>
       </div>
 

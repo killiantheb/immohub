@@ -1,4 +1,4 @@
-# CATHY — Plateforme de gestion immobilière
+# Althy — Assistant immobilier suisse
 
 Stack : **Next.js 14** (frontend) + **FastAPI** (backend) + **Supabase** (auth + storage) + **PostgreSQL** + **Redis/Celery** + **Claude AI**
 
