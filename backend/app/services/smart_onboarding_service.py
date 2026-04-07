@@ -5,6 +5,7 @@ Deux modes : vocal (transcript) ou manuel (boutons)
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 
@@ -12,7 +13,7 @@ from anthropic import AsyncAnthropic
 from app.core.config import settings
 
 client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-MODEL = "claude-sonnet-4-20250514"
+MODEL = "claude-sonnet-4-5"
 
 
 async def detect_profile_from_speech(transcript: str) -> dict:
@@ -174,13 +175,32 @@ UNIQUEMENT le JSON."""
             "notes": "Profil créé — complétez vos disponibilités",
         }
 
-    response = await client.messages.create(
-        model=MODEL,
-        max_tokens=3000,
-        tools=[{"type": "web_search_20250305", "name": "web_search"}],
-        messages=[{"role": "user", "content": search_prompt}],
-    )
-    full_text = "".join(b.text for b in response.content if hasattr(b, "text"))
+    try:
+        response = await asyncio.wait_for(
+            client.messages.create(
+                model=MODEL,
+                max_tokens=3000,
+                tools=[{"type": "web_search_20250305", "name": "web_search"}],
+                messages=[{"role": "user", "content": search_prompt}],
+            ),
+            timeout=45,
+        )
+        full_text = "".join(b.text for b in response.content if hasattr(b, "text"))
+    except Exception:
+        # web_search unavailable or timeout → fallback without tool
+        try:
+            response = await asyncio.wait_for(
+                client.messages.create(
+                    model=MODEL,
+                    max_tokens=1500,
+                    messages=[{"role": "user", "content": search_prompt + "\n\nUtilise uniquement tes connaissances générales, sans recherche web."}],
+                ),
+                timeout=30,
+            )
+            full_text = "".join(b.text for b in response.content if hasattr(b, "text"))
+        except Exception:
+            return {"confidence_score": 0.1, "notes": "Recherche indisponible — complétez manuellement"}
+
     match = re.search(r'\{[\s\S]*\}', full_text)
     if match:
         try:

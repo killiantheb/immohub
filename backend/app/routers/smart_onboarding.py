@@ -62,7 +62,10 @@ async def _stream_search(role: str, name: str, **kwargs):
         yield f"data: {json.dumps({'step': 'searching', 'message': msg, 'progress': progress})}\n\n"
         await asyncio.sleep(0.4)
 
-    result = await deep_search(role, name, **kwargs)
+    try:
+        result = await deep_search(role, name, **kwargs)
+    except Exception as e:
+        result = {"confidence_score": 0.1, "notes": f"Erreur recherche : {e}"}
 
     yield f"data: {json.dumps({'step': 'searching', 'message': messages[-1], 'progress': 95})}\n\n"
     await asyncio.sleep(0.2)
