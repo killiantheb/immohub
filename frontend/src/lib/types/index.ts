@@ -6,7 +6,8 @@ export type UserRole =
   | "owner"
   | "tenant"
   | "opener"
-  | "company";
+  | "company"
+  | "insurance";
 
 export interface UserProfile {
   id: string;
