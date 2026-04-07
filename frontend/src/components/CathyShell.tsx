@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { CathySphere } from '@/components/CathySphere'
 import { createClient } from '@/lib/supabase'
 import { baseURL } from '@/lib/api'
-import { useAuth } from '@/lib/auth'
+import { useAuth, useUser } from '@/lib/auth'
 import { useAuthStore } from '@/lib/store/authStore'
 
 const BG = '#FAF5EB'
@@ -13,6 +13,26 @@ const O  = '#D4601A'
 const T  = '#1C0F06'
 const T5 = 'rgba(80,35,8,0.55)'
 const T3 = 'rgba(80,35,8,0.30)'
+
+// Libellés rôle
+const ROLE_LABELS: Record<string, string> = {
+  owner: 'Propriétaire',
+  agency: 'Agence',
+  super_admin: 'Admin',
+  tenant: 'Locataire',
+  opener: 'Ouvreur',
+  company: 'Artisan',
+  insurance: 'Assureur',
+}
+
+// Page d'accueil par rôle (quand l'utilisateur clique "Mon espace")
+function getHomePath(role?: string) {
+  if (role === 'tenant')    return '/app/tenant'
+  if (role === 'opener')    return '/app/openers'
+  if (role === 'company')   return '/app/rfqs'
+  if (role === 'insurance') return '/app/insurance'
+  return '/app/overview'
+}
 
 // Nav links par rôle
 function getNavLinks(role?: string) {
@@ -36,14 +56,16 @@ function getNavLinks(role?: string) {
   if (role === 'opener') return [
     ...base,
     { href: '/app/openers',      label: 'Missions' },
+    { href: '/app/openers/profile', label: 'Mon profil ouvreur' },
+    { href: '/app/openers/map',  label: 'Carte' },
     { href: '/app/rfqs',         label: 'Appels d\'offre' },
-    { href: '/app/overview',     label: 'Vue d\'ensemble' },
     { href: '/app/advisor',      label: 'Conseiller IA' },
     { href: '/app/profile',      label: 'Profil' },
   ]
   if (role === 'company') return [
     ...base,
     { href: '/app/rfqs',         label: 'Appels d\'offre' },
+    { href: '/app/companies',    label: 'Mon entreprise' },
     { href: '/app/transactions', label: 'Paiements' },
     { href: '/app/advisor',      label: 'Conseiller IA' },
     { href: '/app/profile',      label: 'Profil' },
@@ -74,10 +96,25 @@ function getQuickLinks(role?: string) {
     { href: '/app/profile',      label: 'Profil',      icon: '👤' },
   ]
   if (role === 'insurance') return [
-    { href: '/app/insurance',    label: 'Offres',      icon: '🛡️' },
+    { href: '/app/insurance',    label: 'Mes offres',  icon: '🛡️' },
     { href: '/app/rfqs',         label: 'Appels',      icon: '🔨' },
     { href: '/app/advisor',      label: 'Conseiller',  icon: '⚖️' },
     { href: '/app/profile',      label: 'Profil',      icon: '👤' },
+  ]
+  if (role === 'opener') return [
+    { href: '/app/openers',         label: 'Missions',  icon: '📍' },
+    { href: '/app/openers/profile', label: 'Mon profil',icon: '👤' },
+    { href: '/app/openers/map',     label: 'Carte',     icon: '🗺️' },
+    { href: '/app/rfqs',            label: 'Appels',    icon: '🔨' },
+    { href: '/app/advisor',         label: 'Conseiller',icon: '⚖️' },
+    { href: '/app/profile',         label: 'Compte',    icon: '⚙️' },
+  ]
+  if (role === 'company') return [
+    { href: '/app/rfqs',         label: 'Appels d\'offre', icon: '🔨' },
+    { href: '/app/companies',    label: 'Entreprise',       icon: '🏢' },
+    { href: '/app/transactions', label: 'Paiements',        icon: '💶' },
+    { href: '/app/advisor',      label: 'Conseiller',       icon: '⚖️' },
+    { href: '/app/profile',      label: 'Profil',           icon: '👤' },
   ]
   return [
     { href: '/app/properties',   label: 'Biens',           icon: '🏠' },
@@ -99,12 +136,21 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const { signOut } = useAuth()
   const { user } = useAuthStore()
+  const { data: profile } = useUser()
 
-  const role = user?.user_metadata?.role as string | undefined
+  // Rôle depuis le profil DB (canonique), fallback sur Supabase metadata
+  const role = profile?.role ?? (user?.user_metadata?.role as string | undefined)
   const NAV_LINKS = getNavLinks(role)
   const QUICK_LINKS = getQuickLinks(role)
 
-  // Guard onboarding — dans un useEffect pour éviter la boucle infinie
+  // Auto-show dashboard si on est sur une page de contenu (pas l'accueil sphère)
+  useEffect(() => {
+    if (pathname !== '/app/dashboard') {
+      setShowDashboard(true)
+    }
+  }, [pathname])
+
+  // Guard onboarding
   useEffect(() => {
     if (user && !user.user_metadata?.onboarding_completed && pathname !== '/onboarding') {
       router.push('/onboarding')
@@ -112,7 +158,9 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
   }, [user, pathname, router])
 
   async function handleLogout() {
-    await signOut()
+    try {
+      await signOut()
+    } catch { /* ignore */ }
     router.push('/login')
   }
 
@@ -128,7 +176,6 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
       const token = session?.access_token ?? ''
       const apiUrl = baseURL
 
-      // 1. Essaie d'abord voice-action (intent detection + création directe)
       const actionRes = await fetch(`${apiUrl}/ai/voice-action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -140,15 +187,16 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
         setStatus(action.message?.substring(0, 90) ?? 'Compris.')
 
         if (action.intent === 'create_property' && action.property_id) {
-          setTimeout(() => router.push(`/properties/${action.property_id}`), 1500)
+          setShowDashboard(true)
+          setTimeout(() => router.push(`/app/properties/${action.property_id}`), 1500)
           return
         }
         if (action.intent === 'navigate' && action.navigate_path) {
+          setShowDashboard(true)
           setTimeout(() => router.push(action.navigate_path!), 1000)
           return
         }
         if (action.intent === 'question') {
-          // Fallback sur le chat SSE pour les questions
           const res = await fetch(`${apiUrl}/ai/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -177,7 +225,6 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
         }
         return
       }
-
       setStatus('Réessayez dans un moment.')
     } catch {
       setStatus('Réessayez dans un moment.')
@@ -186,18 +233,34 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // ── Sphere view ──────────────────────────────────────────────────────────────
+  // ── Sphere view (page d'accueil Althy) ──────────────────────────────────────
   if (!showDashboard) {
+    const homePath = getHomePath(role)
     return (
       <div style={{ minHeight: '100vh', background: BG, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', fontFamily: 'var(--font-sans)', padding: '2rem 1.2rem' }}>
 
-        {/* Top-right: tableau de bord */}
-        <button
-          onClick={() => setShowDashboard(true)}
-          style={{ position: 'absolute', top: 16, right: 16, padding: '6px 14px', borderRadius: 20, border: `0.5px solid rgba(212,96,26,0.25)`, background: 'rgba(212,96,26,0.07)', color: O, fontSize: 11, letterSpacing: '0.5px', cursor: 'pointer', fontFamily: 'inherit' }}
-        >
-          Tableau de bord →
-        </button>
+        {/* Rôle badge */}
+        {role && (
+          <div style={{ position: 'absolute', top: 16, left: 16, padding: '5px 12px', borderRadius: 20, background: 'rgba(212,96,26,0.08)', border: `0.5px solid rgba(212,96,26,0.2)`, fontSize: 10, letterSpacing: '1px', textTransform: 'uppercase', color: O }}>
+            {ROLE_LABELS[role] ?? role}
+          </div>
+        )}
+
+        {/* Boutons top-right */}
+        <div style={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => router.push(homePath)}
+            style={{ padding: '6px 14px', borderRadius: 20, border: `0.5px solid rgba(212,96,26,0.25)`, background: O, color: '#fff', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Mon espace →
+          </button>
+          <button
+            onClick={() => setShowDashboard(true)}
+            style={{ padding: '6px 14px', borderRadius: 20, border: `0.5px solid rgba(212,96,26,0.25)`, background: 'rgba(212,96,26,0.07)', color: O, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            Navigation
+          </button>
+        </div>
 
         {/* Title */}
         <p style={{ fontFamily: 'var(--font-serif)', fontSize: 11, fontWeight: 300, letterSpacing: '8px', color: 'rgba(180,80,20,0.45)', textTransform: 'uppercase', marginBottom: '2rem' }}>Althy</p>
@@ -229,7 +292,7 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSend()}
-            placeholder="Ou écris ici…"
+            placeholder="Posez une question à Althy…"
             style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: T, fontFamily: 'inherit' }}
           />
           <button
@@ -246,15 +309,16 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
         {/* Quick access shortcuts */}
         <div style={{ width: '100%', maxWidth: 360 }}>
           <p style={{ fontSize: 10, letterSpacing: '2px', textTransform: 'uppercase', color: T3, marginBottom: '0.8rem', textAlign: 'center' }}>Accès rapide</p>
-          <div className="ql-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
             {QUICK_LINKS.map(link => (
               <Link
                 key={link.href}
                 href={link.href}
+                onClick={() => setShowDashboard(true)}
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '12px 8px', borderRadius: 14, background: '#fff', border: `0.5px solid rgba(212,96,26,0.15)`, textDecoration: 'none' }}
               >
                 <span style={{ fontSize: 20 }}>{link.icon}</span>
-                <span style={{ fontSize: 11, color: T5, letterSpacing: '0.3px' }}>{link.label}</span>
+                <span style={{ fontSize: 11, color: T5, letterSpacing: '0.3px', textAlign: 'center' }}>{link.label}</span>
               </Link>
             ))}
           </div>
@@ -271,18 +335,39 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
     )
   }
 
-  // ── Dashboard view ───────────────────────────────────────────────────────────
+  // ── Dashboard view (nav + contenu) ───────────────────────────────────────────
+  const roleLabel = ROLE_LABELS[role ?? ''] ?? role ?? ''
+
   return (
     <div style={{ minHeight: '100vh', background: BG }}>
       {/* Header */}
       <header style={{ background: '#fff', borderBottom: `0.5px solid rgba(160,92,40,0.12)`, padding: '0 1.5rem', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
-        <span style={{ fontFamily: 'var(--font-serif)', fontSize: 20, fontWeight: 300, color: O, letterSpacing: '3px' }}>Althy</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            onClick={() => {
+              if (pathname === '/app/dashboard') {
+                setShowDashboard(false)
+              } else {
+                router.back()
+              }
+            }}
+            style={{ padding: '6px 12px', borderRadius: 20, border: `0.5px solid rgba(160,92,40,0.2)`, background: 'transparent', cursor: 'pointer', fontSize: 12, color: T5, fontFamily: 'inherit' }}
+          >
+            ←
+          </button>
+          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 20, fontWeight: 300, color: O, letterSpacing: '3px' }}>Althy</span>
+          {roleLabel && (
+            <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, background: 'rgba(212,96,26,0.08)', color: O, letterSpacing: '1px', textTransform: 'uppercase' }}>
+              {roleLabel}
+            </span>
+          )}
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
-            onClick={() => setShowDashboard(false)}
-            style={{ padding: '6px 14px', borderRadius: 20, border: `0.5px solid rgba(160,92,40,0.2)`, background: 'transparent', cursor: 'pointer', fontSize: 12, color: T5, fontFamily: 'inherit' }}
+            onClick={() => router.push(getHomePath(role))}
+            style={{ padding: '6px 14px', borderRadius: 20, border: 'none', background: O, color: '#fff', cursor: 'pointer', fontSize: 12, fontFamily: 'inherit' }}
           >
-            ← Althy
+            Mon espace
           </button>
           <button
             onClick={handleLogout}

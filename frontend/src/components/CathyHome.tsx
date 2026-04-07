@@ -176,8 +176,15 @@ export default function AlthyHome() {
 
   const roleName: Record<string, string> = {
     owner: "Propriétaire", agency: "Agence", super_admin: "Admin",
-    opener: "Ouvreur", tenant: "Locataire", company: "Artisan",
+    opener: "Ouvreur", tenant: "Locataire", company: "Artisan", insurance: "Assureur",
   };
+
+  const homeByRole: Record<string, string> = {
+    owner: "/app/overview", agency: "/app/overview", super_admin: "/app/overview",
+    opener: "/app/openers", tenant: "/app/tenant",
+    company: "/app/rfqs", insurance: "/app/insurance",
+  };
+  const homePath = homeByRole[profile?.role ?? ""] ?? "/app/overview";
 
   return (
     <div style={{ background: "#F5EDE0", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", padding: "2.5rem 1.2rem 2rem", position: "relative", fontFamily: "'DM Sans', sans-serif" }}>
@@ -188,13 +195,13 @@ export default function AlthyHome() {
       </div>
 
       {/* Dashboard button */}
-      <button onClick={() => router.push("/app/overview")} style={{ position: "absolute", top: 16, right: 16, padding: "6px 14px", borderRadius: 20, border: "0.5px solid rgba(160,92,40,0.2)", background: "rgba(255,255,255,0.7)", fontSize: 11, color: "#A05C28", cursor: "pointer", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", gap: 5 }}>
+      <button onClick={() => router.push(homePath)} style={{ position: "absolute", top: 16, right: 16, padding: "6px 14px", borderRadius: 20, border: "0.5px solid rgba(160,92,40,0.2)", background: "rgba(255,255,255,0.7)", fontSize: 11, color: "#A05C28", cursor: "pointer", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", gap: 5 }}>
         <svg viewBox="0 0 16 16" width={12} height={12} fill="none" stroke="currentColor" strokeWidth={1.5}><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
-        Tableau de bord
+        Mon espace
       </button>
 
       {/* Refresh button */}
-      <button onClick={fetchBriefing} style={{ position: "absolute", top: 16, right: 130, padding: "6px 12px", borderRadius: 20, border: "0.5px solid rgba(160,92,40,0.2)", background: "rgba(255,255,255,0.7)", fontSize: 11, color: "#A05C28", cursor: "pointer", backdropFilter: "blur(4px)" }}>
+      <button onClick={fetchBriefing} style={{ position: "absolute", top: 16, right: 118, padding: "6px 12px", borderRadius: 20, border: "0.5px solid rgba(160,92,40,0.2)", background: "rgba(255,255,255,0.7)", fontSize: 11, color: "#A05C28", cursor: "pointer", backdropFilter: "blur(4px)" }}>
         ↻
       </button>
 
