@@ -93,7 +93,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1080, margin: '0 auto', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 300, color: O, letterSpacing: '3px' }}>Althy</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-            <div style={{ display: 'flex', gap: '1.5rem', fontSize: 13, color: T5 }}>
+            <div className="nav-links" style={{ fontSize: 13, color: T5 }}>
               {['Comment ça marche', 'Pour qui', 'Tarifs'].map((lbl, i) => (
                 <Link key={i} href={`#${['how', 'who', 'pricing'][i]}`} style={{ color: T5, textDecoration: 'none', letterSpacing: '0.5px' }}>
                   {lbl}
@@ -134,7 +134,7 @@ export default function LandingPage() {
 
       {/* ── Stats ─────────────────────────────────────────────────────────── */}
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: '3rem 1.5rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', border: `0.5px solid ${O20}`, borderRadius: 20 }}>
+        <div className="stats-grid" style={{ border: `0.5px solid ${O20}`, borderRadius: 20 }}>
           {STATS.map((s, i) => (
             <div key={i} style={{ padding: '2rem 1rem', textAlign: 'center', borderRight: i < 3 ? `0.5px solid ${O20}` : 'none' }}>
               <div style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 300, color: O, letterSpacing: 2, marginBottom: 6 }}>
@@ -158,7 +158,7 @@ export default function LandingPage() {
         <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 300, textAlign: 'center', color: T, marginBottom: '3rem', letterSpacing: '-0.3px' }}>
           Simple comme une conversation
         </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+        <div className="steps-grid">
           {STEPS.map((s, i) => (
             <div key={i} style={{ background: BG2, borderRadius: 20, padding: '2rem', border: `0.5px solid ${O20}`, position: 'relative', overflow: 'hidden' }}>
               <div style={{ fontFamily: 'var(--font-serif)', fontSize: 56, fontWeight: 300, color: O12, position: 'absolute', top: 12, right: 20, lineHeight: 1, userSelect: 'none' }}>
@@ -217,7 +217,7 @@ export default function LandingPage() {
         <p style={{ textAlign: 'center', color: T5, fontSize: 13, marginBottom: '3rem' }}>
           14 jours d&apos;essai gratuit · Pas de carte de crédit requise
         </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'start' }}>
+        <div className="pricing-grid">
           {PLANS.map((plan, i) => (
             <div key={i} style={{ borderRadius: 22, padding: plan.featured ? '2.4rem 2rem' : '2rem', border: plan.featured ? `1px solid ${O}` : `0.5px solid ${O20}`, background: plan.featured ? `rgba(212,96,26,0.06)` : BG2, position: 'relative', overflow: 'hidden' }}>
               {plan.featured && (
@@ -279,6 +279,25 @@ export default function LandingPage() {
       </Section>
 
       <Divider />
+
+      {/* ── Responsive styles ─────────────────────────────────────────────── */}
+      <style>{`
+        .nav-links { display: flex; gap: 1.5rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
+        .steps-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+        .quick-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+        @media (max-width: 768px) {
+          .nav-links { display: none; }
+          .stats-grid { grid-template-columns: repeat(2, 1fr); }
+          .stats-grid > *:nth-child(2) { border-right: none !important; }
+          .steps-grid { grid-template-columns: 1fr; }
+          .pricing-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+          .stats-grid { grid-template-columns: 1fr 1fr; }
+        }
+      `}</style>
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}
       <footer style={{ maxWidth: 1080, margin: '0 auto', padding: '2.5rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>

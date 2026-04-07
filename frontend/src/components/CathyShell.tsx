@@ -163,6 +163,7 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
         <div style={{ width: '100%', maxWidth: 360 }}>
           <p style={{ fontSize: 10, letterSpacing: '2px', textTransform: 'uppercase', color: T3, marginBottom: '0.8rem', textAlign: 'center' }}>Accès rapide</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            <style>{`@media(max-width:360px){.ql-grid{grid-template-columns:repeat(2,1fr)!important}}`}</style>
             {QUICK_LINKS.map(link => (
               <Link
                 key={link.href}

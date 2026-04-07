@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /profile
+Disallow: /properties
+Disallow: /contracts
+Disallow: /transactions
+Disallow: /openers
+Disallow: /rfqs
+Disallow: /companies
+Disallow: /overview
+Disallow: /onboarding
+
+Sitemap: https://althy.ch/sitemap.xml

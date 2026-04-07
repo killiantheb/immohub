@@ -21,8 +21,30 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Althy",
-  description: "Plateforme de gestion immobilière — althy.ch",
+  title: { default: "Althy — Assistant immobilier suisse", template: "%s | Althy" },
+  description: "Althy gère vos biens immobiliers en Suisse : loyers, contrats, missions, devis — par la voix ou en un clic. Propriétaires, agences, locataires, artisans.",
+  keywords: ["gestion immobilière", "Suisse", "assistant IA", "loyer", "contrat", "agence immobilière", "althy.ch"],
+  authors: [{ name: "Althy", url: "https://althy.ch" }],
+  creator: "Althy",
+  metadataBase: new URL("https://althy.ch"),
+  alternates: { canonical: "https://althy.ch" },
+  openGraph: {
+    type: "website",
+    url: "https://althy.ch",
+    siteName: "Althy",
+    title: "Althy — Assistant immobilier suisse",
+    description: "Gérez vos biens immobiliers en Suisse par la voix. Loyers, contrats, missions, devis — Althy s'occupe de tout.",
+    locale: "fr_CH",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Althy — Assistant immobilier" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Althy — Assistant immobilier suisse",
+    description: "Gérez vos biens immobiliers en Suisse par la voix.",
+    images: ["/og-image.png"],
+  },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
+  icons: { icon: "/favicon.ico", apple: "/apple-touch-icon.png" },
 };
 
 export default function RootLayout({
