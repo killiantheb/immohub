@@ -174,7 +174,7 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
             style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: T, fontFamily: 'inherit' }}
           />
           <button
-            onClick={handleSend}
+            onClick={() => handleSend()}
             style={{ width: 32, height: 32, borderRadius: '50%', background: O, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round">
