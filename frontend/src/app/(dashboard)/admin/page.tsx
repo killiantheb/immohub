@@ -26,6 +26,7 @@ import {
   YAxis,
 } from "recharts";
 import { useAdminRevenue, usePlatformStats } from "@/lib/hooks/useAdmin";
+import { useAuthStore } from "@/lib/store/authStore";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -116,8 +117,24 @@ function SkeletonCard() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
+  const { user } = useAuthStore();
   const { data: stats, isLoading } = usePlatformStats();
   const { data: revenue } = useAdminRevenue(12);
+
+  if (user && user.user_metadata?.role !== "super_admin") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="rounded-2xl border border-red-100 bg-white p-8 text-center shadow-sm max-w-sm">
+          <ShieldCheck className="mx-auto mb-4 h-10 w-10 text-red-300" />
+          <h2 className="text-lg font-semibold text-gray-900">Accès réservé</h2>
+          <p className="mt-2 text-sm text-gray-500">
+            Cette page est réservée aux administrateurs Althy.<br />
+            Rôle requis : <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">super_admin</code>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const revenueChartData = (revenue ?? []).map((r) => ({
     label: formatMonth(r.month),
