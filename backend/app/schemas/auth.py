@@ -31,6 +31,10 @@ class UpdateProfileRequest(BaseModel):
     last_name: str | None = Field(None, min_length=1, max_length=100)
     phone: str | None = Field(None, max_length=20)
     avatar_url: str | None = None
+    # Coordonnées bancaires
+    iban: str | None = Field(None, max_length=34)
+    bic: str | None = Field(None, max_length=11)
+    bank_account_holder: str | None = Field(None, max_length=200)
 
 
 # ── Responses ─────────────────────────────────────────────────────────────────
@@ -49,6 +53,12 @@ class UserProfileResponse(BaseModel):
     is_verified: bool
     is_active: bool
     created_at: datetime
+    # Coordonnées bancaires
+    iban: str | None = None
+    bic: str | None = None
+    bank_account_holder: str | None = None
+    # Quota IA
+    monthly_ai_tokens_used: int = 0
 
     @computed_field
     @property
@@ -56,7 +66,6 @@ class UserProfileResponse(BaseModel):
         parts = [self.first_name, self.last_name]
         return " ".join(p for p in parts if p) or self.email
 
-    # ── computed permissions ──────────────────────────────────────────────────
     @computed_field
     @property
     def permissions(self) -> list[str]:

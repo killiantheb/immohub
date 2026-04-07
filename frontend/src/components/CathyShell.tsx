@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { CathySphere } from '@/components/CathySphere'
@@ -20,6 +20,7 @@ const NAV_LINKS = [
   { href: '/openers',      label: 'Missions' },
   { href: '/rfqs',         label: 'Appels d\'offre' },
   { href: '/overview',     label: 'Vue d\'ensemble' },
+  { href: '/profile',      label: 'Profil' },
 ]
 
 const QUICK_LINKS = [
@@ -36,6 +37,7 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
   const [speaking, setSpeaking] = useState(false)
   const [status, setStatus] = useState('à votre écoute')
   const [input, setInput] = useState('')
+  const sessionIdRef = useRef<string>(crypto.randomUUID())
   const pathname = usePathname()
   const router = useRouter()
   const { signOut } = useAuth()
@@ -59,7 +61,7 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${apiUrl}/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ message: msg, context: {} }),
+        body: JSON.stringify({ message: msg, context: { session_id: sessionIdRef.current } }),
       })
       const reader = res.body?.getReader()
       const decoder = new TextDecoder()

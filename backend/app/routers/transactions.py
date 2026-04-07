@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import os
 from typing import Annotated
 
+import stripe
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
@@ -13,7 +16,10 @@ from app.schemas.transaction import (
 )
 from app.services.transaction_service import TransactionService
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 router = APIRouter()
 
@@ -87,6 +93,50 @@ async def mark_paid(
 ) -> TransactionRead:
     tx = await TransactionService(db).mark_paid(transaction_id, current_user=current_user)
     return TransactionRead.model_validate(tx)
+
+
+class CheckoutResponse(BaseModel):
+    checkout_url: str
+
+
+@router.post("/{transaction_id}/checkout", response_model=CheckoutResponse)
+async def create_checkout_session(
+    transaction_id: str,
+    current_user: AuthUserDep,
+    db: DbDep,
+) -> CheckoutResponse:
+    """Create a Stripe Checkout Session so a tenant can pay their rent online."""
+    if not settings.STRIPE_SECRET_KEY:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Paiement en ligne non configuré")
+
+    tx = await TransactionService(db).get(transaction_id, current_user=current_user)
+    if tx is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Transaction introuvable")
+
+    if tx.status == "paid":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cette transaction est déjà réglée")
+
+    amount_cents = int((tx.amount or 0) * 100)
+    if amount_cents <= 0:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Montant invalide")
+
+    frontend_url = os.environ.get("FRONTEND_URL", "https://althy.ch")
+    session = stripe.checkout.Session.create(
+        payment_method_types=["card"],
+        line_items=[{
+            "price_data": {
+                "currency": (tx.currency or "eur").lower(),
+                "product_data": {"name": f"Loyer — {tx.description or transaction_id}"},
+                "unit_amount": amount_cents,
+            },
+            "quantity": 1,
+        }],
+        mode="payment",
+        success_url=f"{frontend_url}/tenant?payment=success",
+        cancel_url=f"{frontend_url}/tenant?payment=cancelled",
+        metadata={"transaction_id": transaction_id, "user_id": str(current_user.id)},
+    )
+    return CheckoutResponse(checkout_url=session.url)
 
 
 @router.post("/generate-monthly")

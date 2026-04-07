@@ -1,18 +1,26 @@
 """
-CATHY AI Service — powered by Claude claude-sonnet-4-20250514.
+Althy AI Service — powered by Claude claude-sonnet-4-20250514.
 
 Features
 --------
 1. generate_listing_description  — SEO property ad
 2. score_tenant_application      — 0-100 tenant risk score
 3. recommend_best_quote          — best contractor quote
-4. chat_stream                   — conversational copilot (SSE generator)
+4. chat_stream                   — conversational copilot with memory (SSE generator)
 5. detect_payment_anomalies      — late-payment pattern detection
 
 Rate limiting
 -------------
-10 AI calls per minute per user, tracked in Redis (falls back to in-memory
-if Redis is unavailable so the service never hard-fails).
+10 AI calls per minute per user, tracked in Redis (falls back to in-memory).
+
+Monthly quota
+-------------
+100 000 tokens par utilisateur par mois. Remise à zéro automatique.
+
+Memory
+------
+Les 10 derniers messages de la session sont passés à Claude pour une
+conversation continue.
 
 All calls are logged to ai_usage_logs.
 """
@@ -26,12 +34,15 @@ import uuid
 from collections import defaultdict
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 import anthropic
 from app.core.config import settings
 from app.models.ai_log import AIUsageLog
+from app.models.conversation_message import ConversationMessage
 from app.models.transaction import Transaction
+from app.models.user import User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,8 +53,10 @@ log = logging.getLogger(__name__)
 
 MODEL = "claude-sonnet-4-20250514"
 MAX_TOKENS = 1000
-RATE_LIMIT = 10  # calls per minute per user
-RATE_WINDOW = 60  # seconds
+RATE_LIMIT = 10          # calls per minute per user
+RATE_WINDOW = 60         # seconds
+MONTHLY_TOKEN_LIMIT = 100_000
+HISTORY_LIMIT = 10       # messages à passer en contexte
 
 # ── In-memory rate-limit fallback ─────────────────────────────────────────────
 
@@ -312,19 +325,91 @@ Retourne UNIQUEMENT un objet JSON valide :
 
 # ── 4. Chat copilot — streaming SSE ──────────────────────────────────────────
 
-SYSTEM_PROMPT = """Tu es CathyAI, le copilote IA d'CATHY — plateforme de gestion immobilière.
+SYSTEM_PROMPT = """Tu es AlthyAI, le copilote IA d'Althy — plateforme de gestion immobilière (althy.ch).
 
 Tu aides les propriétaires, agences et locataires à gérer leur activité immobilière.
 Tu peux :
 - Expliquer les démarches (bail, état des lieux, congé, etc.)
 - Analyser des situations et donner des conseils
 - Suggérer des actions dans l'application (ex: "créer un contrat", "ajouter un bien")
-- Répondre aux questions sur la réglementation locative française
+- Répondre aux questions sur la réglementation locative française et suisse
 
 Quand tu suggères une action dans l'app, utilise ce format JSON en fin de réponse :
 <action>{"type": "navigate", "path": "/contracts/new", "label": "Créer un contrat"}</action>
 
 Sois concis, professionnel et bienveillant. Réponds toujours en français."""
+
+
+async def _get_conversation_history(
+    db: AsyncSession, user_id: str, session_id: str
+) -> list[dict]:
+    """Récupère les N derniers messages de la session pour contexte."""
+    try:
+        uid = uuid.UUID(user_id)
+    except ValueError:
+        return []
+    rows = (
+        await db.execute(
+            select(ConversationMessage)
+            .where(
+                ConversationMessage.user_id == uid,
+                ConversationMessage.session_id == session_id,
+            )
+            .order_by(ConversationMessage.created_at.desc())
+            .limit(HISTORY_LIMIT)
+        )
+    ).scalars().all()
+    # Reverse to get chronological order
+    return [{"role": m.role, "content": m.content} for m in reversed(rows)]
+
+
+async def _save_messages(
+    db: AsyncSession, user_id: str, session_id: str, user_msg: str, assistant_msg: str
+) -> None:
+    """Persiste le message utilisateur et la réponse assistant."""
+    try:
+        uid = uuid.UUID(user_id)
+    except ValueError:
+        return
+    db.add(ConversationMessage(user_id=uid, session_id=session_id, role="user", content=user_msg))
+    db.add(ConversationMessage(user_id=uid, session_id=session_id, role="assistant", content=assistant_msg))
+    await db.flush()
+
+
+async def _check_monthly_quota(db: AsyncSession, user_id: str) -> bool:
+    """
+    Vérifie le quota mensuel. Remet à zéro si on est dans un nouveau mois.
+    Retourne True si l'utilisateur peut encore appeler l'IA.
+    """
+    try:
+        uid = uuid.UUID(user_id)
+    except ValueError:
+        return True
+    result = await db.execute(select(User).where(User.id == uid))
+    user = result.scalar_one_or_none()
+    if user is None:
+        return True
+
+    now = datetime.now(timezone.utc)
+    reset = user.monthly_ai_reset_date
+    if reset is None or reset.year != now.year or reset.month != now.month:
+        user.monthly_ai_tokens_used = 0
+        user.monthly_ai_reset_date = now
+        await db.flush()
+
+    return user.monthly_ai_tokens_used < MONTHLY_TOKEN_LIMIT
+
+
+async def _increment_monthly_tokens(db: AsyncSession, user_id: str, tokens: int) -> None:
+    try:
+        uid = uuid.UUID(user_id)
+    except ValueError:
+        return
+    result = await db.execute(select(User).where(User.id == uid))
+    user = result.scalar_one_or_none()
+    if user:
+        user.monthly_ai_tokens_used = (user.monthly_ai_tokens_used or 0) + tokens
+        await db.flush()
 
 
 async def chat_stream(
@@ -334,12 +419,18 @@ async def chat_stream(
     user_id: str,
 ) -> AsyncGenerator[str, None]:
     """
-    Stream a Claude response as SSE chunks.
+    Stream a Claude response as SSE chunks with conversation memory.
     Yields strings formatted as SSE events: "data: <text>\\n\\n"
     """
     if not _check_rate_limit(user_id):
         yield 'data: {"error": "Limite de débit atteinte. Réessayez dans une minute."}\n\n'
         return
+
+    if not await _check_monthly_quota(db, user_id):
+        yield 'data: {"error": "Quota mensuel IA atteint. Contactez le support."}\n\n'
+        return
+
+    session_id = context.get("session_id") or str(uuid.uuid4())
 
     # Build context block
     ctx_parts = []
@@ -354,19 +445,24 @@ async def chat_stream(
     if ctx_parts:
         system += "\n\nContexte actuel :\n" + "\n".join(ctx_parts)
 
+    # Retrieve conversation history
+    history = await _get_conversation_history(db, user_id, session_id)
+    messages = history + [{"role": "user", "content": message}]
+
     client = _client()
     total_input = 0
     total_output = 0
+    full_reply = ""
 
     try:
         async with client.messages.stream(
             model=MODEL,
             max_tokens=MAX_TOKENS,
             system=system,
-            messages=[{"role": "user", "content": message}],
+            messages=messages,
         ) as stream:
             async for text in stream.text_stream:
-                # Escape newlines for SSE
+                full_reply += text
                 escaped = text.replace("\n", "\\n")
                 yield f"data: {json.dumps({'text': escaped})}\n\n"
 
@@ -376,23 +472,20 @@ async def chat_stream(
 
         yield "data: [DONE]\n\n"
 
+        # Persist conversation + update token quota
+        await _save_messages(db, user_id, session_id, message, full_reply)
+        await _increment_monthly_tokens(db, user_id, total_input + total_output)
+
     except anthropic.APIError as exc:
         log.error("Claude API error in chat_stream: %s", exc)
         yield f"data: {json.dumps({'error': 'Erreur IA temporaire.'})}\n\n"
 
     finally:
-        # Log usage with approximate token counts
         class _FakeUsage:
             input_tokens = total_input
             output_tokens = total_output
 
-        await _log_usage(
-            db,
-            user_id,
-            "chat",
-            _FakeUsage(),  # type: ignore[arg-type]
-            context.get("property_id"),
-        )
+        await _log_usage(db, user_id, "chat", _FakeUsage(), context.get("property_id"))  # type: ignore[arg-type]
 
 
 # ── 5. Payment anomaly detection ──────────────────────────────────────────────

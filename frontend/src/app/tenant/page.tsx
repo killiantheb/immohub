@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { AlthySphere } from '@/components/AlthySphere'
 import { api } from '@/lib/api'
 import { useUser } from '@/lib/auth'
@@ -11,6 +12,7 @@ interface TenantInfo {
   property_address: string
   lease_end_date: string
   status: 'ok' | 'late' | 'pending'
+  pending_transaction_id?: string
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -34,6 +36,8 @@ export default function TenantPage() {
   const [info, setInfo] = useState<TenantInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [reportSent, setReportSent] = useState(false)
+  const [payLoading, setPayLoading] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     api.get<TenantInfo>('/tenants/me')
@@ -48,8 +52,19 @@ export default function TenantPage() {
 
   async function reportIssue() {
     setReportSent(true)
-    // Navigate to a simple issue form — kept minimal for now
     window.location.href = '/tenant/report'
+  }
+
+  async function payRent(transactionId: string) {
+    setPayLoading(true)
+    try {
+      const { data } = await api.post<{ checkout_url: string }>(`/transactions/${transactionId}/checkout`)
+      window.location.href = data.checkout_url
+    } catch {
+      alert('Paiement indisponible pour le moment.')
+    } finally {
+      setPayLoading(false)
+    }
   }
 
   const firstName = profile?.first_name ?? 'Locataire'
@@ -97,6 +112,15 @@ export default function TenantPage() {
               </div>
               {info.property_address && (
                 <div style={{ fontSize: 11, color: 'rgba(80,35,8,0.4)', marginTop: 4 }}>{info.property_address}</div>
+              )}
+              {info.pending_transaction_id && rentStatus !== 'ok' && (
+                <button
+                  onClick={() => payRent(info.pending_transaction_id!)}
+                  disabled={payLoading}
+                  style={{ marginTop: 12, width: '100%', padding: '10px 0', borderRadius: 10, background: '#D4601A', border: 'none', color: '#fff', fontSize: 13, fontWeight: 500, cursor: payLoading ? 'not-allowed' : 'pointer', opacity: payLoading ? 0.7 : 1, fontFamily: 'inherit' }}
+                >
+                  {payLoading ? 'Redirection…' : 'Payer le loyer en ligne →'}
+                </button>
               )}
             </>
           ) : (

@@ -116,6 +116,35 @@ export function useDeleteProperty() {
   });
 }
 
+// ── Image compression helper ──────────────────────────────────────────────────
+
+async function compressImage(file: File, maxPx = 1920, quality = 0.82): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const { width, height } = img;
+      const scale = Math.min(1, maxPx / Math.max(width, height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(width * scale);
+      canvas.height = Math.round(height * scale);
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob || blob.size >= file.size) { resolve(file); return; }
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
+        },
+        "image/jpeg",
+        quality,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 // ── Image mutations ───────────────────────────────────────────────────────────
 
 export function useUploadImage(propertyId: string) {
@@ -123,8 +152,9 @@ export function useUploadImage(propertyId: string) {
 
   return useMutation({
     mutationFn: async ({ file, isCover = false }: { file: File; isCover?: boolean }) => {
+      const compressed = await compressImage(file);
       const form = new FormData();
-      form.append("file", file);
+      form.append("file", compressed);
       form.append("is_cover", String(isCover));
       const { data } = await api.post<PropertyImage>(
         `/properties/${propertyId}/images`,

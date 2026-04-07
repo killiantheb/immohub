@@ -3,6 +3,7 @@ from app.models.audit_log import AuditLog
 from app.models.base import Base, BaseModel
 from app.models.company import Company, Quote
 from app.models.contract import Contract
+from app.models.conversation_message import ConversationMessage
 from app.models.inspection import Inspection
 from app.models.listing import Listing
 from app.models.opener import Mission, Opener
@@ -26,4 +27,5 @@ __all__ = [
     "Inspection",
     "Listing",
     "AuditLog",
+    "ConversationMessage",
 ]

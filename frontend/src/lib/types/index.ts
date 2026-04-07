@@ -19,6 +19,12 @@ export interface UserProfile {
   is_verified: boolean;
   is_active: boolean;
   created_at: string;
+  // banking
+  iban: string | null;
+  bic: string | null;
+  bank_account_holder: string | null;
+  // AI quota
+  monthly_ai_tokens_used: number;
   // computed fields from backend
   full_name: string;
   permissions: string[];
