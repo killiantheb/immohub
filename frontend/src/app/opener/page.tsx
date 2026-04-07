@@ -19,20 +19,20 @@ interface Earnings {
 }
 
 const S = {
-  root: { minHeight: '100vh', background: '#060402', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', padding: '2rem 1.2rem', fontFamily: 'var(--font-sans)' },
-  label: { fontSize: 10, letterSpacing: '3px', textTransform: 'uppercase' as const, color: 'rgba(200,95,25,0.45)', marginBottom: '0.4rem' },
+  root: { minHeight: '100vh', background: '#FAF5EB', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', padding: '2rem 1.2rem', fontFamily: 'var(--font-sans)' },
+  label: { fontSize: 10, letterSpacing: '3px', textTransform: 'uppercase' as const, color: 'rgba(80,35,8,0.45)', marginBottom: '0.4rem' },
   section: { width: '100%', maxWidth: 420, marginBottom: '1.4rem' },
-  card: { background: 'rgba(255,255,255,0.04)', borderRadius: 14, padding: '12px 16px', border: '0.5px solid rgba(212,96,26,0.12)', marginBottom: 8 },
+  card: { background: '#fff', borderRadius: 14, padding: '12px 16px', border: '0.5px solid rgba(212,96,26,0.14)', marginBottom: 8 },
   missionType: { fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: '1.5px', color: '#D4601A', marginBottom: 4 },
-  missionAddr: { fontSize: 13, color: 'rgba(255,195,140,0.9)', fontWeight: 500, marginBottom: 2 },
-  missionMeta: { fontSize: 11, color: 'rgba(200,150,80,0.55)', marginBottom: 8 },
+  missionAddr: { fontSize: 13, color: '#1C0F06', fontWeight: 500, marginBottom: 2 },
+  missionMeta: { fontSize: 11, color: 'rgba(80,35,8,0.5)', marginBottom: 8 },
   btnAccept: { flex: 1, padding: '7px 0', borderRadius: 8, border: 'none', background: '#D4601A', color: '#fff', fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' },
-  btnRefuse: { flex: 1, padding: '7px 0', borderRadius: 8, border: '0.5px solid rgba(212,96,26,0.25)', background: 'transparent', color: 'rgba(200,95,25,0.6)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' },
+  btnRefuse: { flex: 1, padding: '7px 0', borderRadius: 8, border: '0.5px solid rgba(212,96,26,0.3)', background: 'transparent', color: 'rgba(80,35,8,0.55)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' },
   earningsBox: { background: 'rgba(212,96,26,0.07)', borderRadius: 14, padding: '16px', border: '0.5px solid rgba(212,96,26,0.18)', textAlign: 'center' as const },
   earningsNum: { fontSize: 28, fontWeight: 300, color: '#D4601A', fontFamily: 'var(--font-serif)', letterSpacing: 2 },
-  earningsSub: { fontSize: 10, letterSpacing: 2, textTransform: 'uppercase' as const, color: 'rgba(200,95,25,0.45)', marginTop: 4 },
-  empty: { textAlign: 'center' as const, color: 'rgba(200,150,80,0.4)', fontSize: 12, padding: '1.5rem 0' },
-  signout: { marginTop: 'auto', padding: '1rem 0', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase' as const, color: 'rgba(200,95,25,0.25)', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'inherit' },
+  earningsSub: { fontSize: 10, letterSpacing: 2, textTransform: 'uppercase' as const, color: 'rgba(80,35,8,0.45)', marginTop: 4 },
+  empty: { textAlign: 'center' as const, color: 'rgba(80,35,8,0.35)', fontSize: 12, padding: '1.5rem 0' },
+  signout: { marginTop: 'auto', padding: '1rem 0', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase' as const, color: 'rgba(80,35,8,0.25)', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'inherit' },
 }
 
 export default function OpenerPage() {
@@ -87,8 +87,8 @@ export default function OpenerPage() {
     <div style={S.root}>
       {/* Header */}
       <div style={{ width: '100%', maxWidth: 420, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 11, letterSpacing: '6px', color: 'rgba(200,95,25,0.38)', textTransform: 'uppercase', margin: 0 }}>Cathy</p>
-        <span style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(200,95,25,0.35)', padding: '4px 10px', borderRadius: 20, border: '0.5px solid rgba(212,96,26,0.12)' }}>Ouvreur</span>
+        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 11, letterSpacing: '6px', color: 'rgba(180,80,20,0.45)', textTransform: 'uppercase', margin: 0 }}>Cathy</p>
+        <span style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(80,35,8,0.45)', padding: '4px 10px', borderRadius: 20, border: '0.5px solid rgba(212,96,26,0.2)', background: 'rgba(212,96,26,0.05)' }}>Ouvreur</span>
       </div>
 
       {/* Sphere */}
@@ -97,7 +97,7 @@ export default function OpenerPage() {
       </div>
 
       {/* Status */}
-      <p style={{ fontSize: 11, letterSpacing: '2.5px', textTransform: 'uppercase', color: 'rgba(200,95,25,0.5)', marginBottom: '1.8rem', textAlign: 'center' }}>
+      <p style={{ fontSize: 11, letterSpacing: '2.5px', textTransform: 'uppercase', color: 'rgba(80,35,8,0.5)', marginBottom: '1.8rem', textAlign: 'center' }}>
         {status}
       </p>
 
@@ -141,8 +141,8 @@ export default function OpenerPage() {
             {firstName[0]?.toUpperCase()}
           </div>
           <div>
-            <div style={{ fontSize: 13, color: 'rgba(255,195,140,0.9)', fontWeight: 500 }}>{firstName} {profile?.last_name ?? ''}</div>
-            <div style={{ fontSize: 11, color: 'rgba(200,150,80,0.5)', marginTop: 2 }}>{profile?.email ?? ''}</div>
+            <div style={{ fontSize: 13, color: '#1C0F06', fontWeight: 500 }}>{firstName} {profile?.last_name ?? ''}</div>
+            <div style={{ fontSize: 11, color: 'rgba(80,35,8,0.5)', marginTop: 2 }}>{profile?.email ?? ''}</div>
           </div>
         </div>
       </div>
