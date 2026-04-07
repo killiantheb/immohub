@@ -20,13 +20,15 @@ function isAuthRoute(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") || "";
 
-  // Redirect Vercel preview/deployment URLs to althy.ch
-  if (host.endsWith(".vercel.app")) {
-    const url = request.nextUrl.clone();
-    url.host = "althy.ch";
-    url.protocol = "https:";
-    return NextResponse.redirect(url, 301);
-  }
+  // Redirect production domain only (althy.ch) — keep vercel.app accessible for testing
+  // Uncomment when althy.ch is live and configured in Vercel:
+  // if (host === "althy.ch" || host === "www.althy.ch") { /* keep */ }
+  // if (host.endsWith(".vercel.app") && process.env.REDIRECT_VERCEL_TO_ALTHY === "true") {
+  //   const url = request.nextUrl.clone();
+  //   url.host = "althy.ch";
+  //   url.protocol = "https:";
+  //   return NextResponse.redirect(url, 301);
+  // }
 
   let response = NextResponse.next({ request });
 
