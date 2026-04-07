@@ -178,6 +178,52 @@ async def tenant_documents(
     ]
 
 
+@router.get("/me/quittances")
+async def tenant_quittances(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list:
+    """Retourne les quittances de loyer générées pour le locataire connecté."""
+    if current_user.role != "tenant":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux locataires")
+
+    # Find active contract
+    result = await db.execute(
+        select(Contract)
+        .where(and_(Contract.tenant_id == current_user.id))
+        .order_by(Contract.start_date.desc())
+        .limit(5)
+    )
+    contracts = result.scalars().all()
+    if not contracts:
+        return []
+
+    contract_ids = [c.id for c in contracts]
+
+    from app.models.document import GeneratedDocument
+    from sqlalchemy import or_
+    docs_result = await db.execute(
+        select(GeneratedDocument)
+        .where(
+            and_(
+                GeneratedDocument.template_type == "quittance_loyer",
+                or_(*[GeneratedDocument.contract_id == cid for cid in contract_ids]),
+            )
+        )
+        .order_by(GeneratedDocument.created_at.desc())
+        .limit(24)
+    )
+    docs = docs_result.scalars().all()
+    return [
+        {
+            "id": str(d.id),
+            "created_at": d.created_at.isoformat() if d.created_at else "",
+            "status": d.status,
+        }
+        for d in docs
+    ]
+
+
 @router.get("/me/history")
 async def tenant_history(
     db: AsyncSession = Depends(get_db),

@@ -3,7 +3,7 @@ from celery import Celery
 from celery.schedules import crontab
 
 celery_app = Celery(
-    "immohub",
+    "althy",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
     include=[
@@ -17,27 +17,31 @@ celery_app.conf.update(
     task_serializer="json",
     accept_content=["json"],
     result_serializer="json",
-    timezone="Europe/Paris",
+    timezone="Europe/Zurich",
     enable_utc=True,
     task_track_started=True,
     task_acks_late=True,
     worker_prefetch_multiplier=1,
+    # RedBeat — prevents duplicate tasks when beat restarts in production
+    beat_scheduler="redbeat.RedBeatScheduler",
+    redbeat_redis_url=settings.REDIS_URL,
+    redbeat_lock_timeout=300,  # 5 min — kill stale scheduler lock
 )
 
 # ── Celery Beat periodic schedule ─────────────────────────────────────────────
 
 celery_app.conf.beat_schedule = {
-    # 1st of each month at 06:00 Paris time
+    # 1st of each month at 06:00 Zurich time
     "generate-monthly-rents": {
         "task": "tasks.generate_monthly_rents",
         "schedule": crontab(hour=6, minute=0, day_of_month=1),
     },
-    # Every day at 08:00 Paris time
+    # Every day at 08:00 Zurich time
     "send-rent-reminders": {
         "task": "tasks.send_rent_reminders",
         "schedule": crontab(hour=8, minute=0),
     },
-    # Every day at 09:00 Paris time
+    # Every day at 09:00 Zurich time
     "calculate-commissions": {
         "task": "tasks.calculate_commissions",
         "schedule": crontab(hour=9, minute=0),

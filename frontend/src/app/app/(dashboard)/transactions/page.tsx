@@ -11,6 +11,7 @@ import {
   Search,
   X,
 } from "lucide-react";
+import { baseURL } from "@/lib/api";
 import { useGenerateMonthlyRents, useMarkPaid, useTransactions } from "@/lib/hooks/useTransactions";
 import { useRevenueStats } from "@/lib/hooks/useTransactions";
 import { RentStatusBadge } from "@/components/RentStatusBadge";
@@ -126,6 +127,17 @@ function TransactionsContent() {
               Export CSV
             </button>
           )}
+          <button
+            onClick={() => {
+              const year = new Date().getFullYear();
+              window.open(`${baseURL}/transactions/export-csv?year=${year}`, '_blank');
+            }}
+            className="btn-secondary flex items-center gap-2 text-sm"
+            title="Export comptable avec catégories fiscales suisses"
+          >
+            <Download className="h-4 w-4" />
+            Fiscal CH {new Date().getFullYear()}
+          </button>
         </div>
       </div>
 
