@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { CathySphere } from '@/components/CathySphere'
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
+import { useAuthStore } from '@/lib/store/authStore'
 
 const BG = '#FAF5EB'
 const O  = '#D4601A'
@@ -41,6 +42,13 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { signOut } = useAuth()
+  const { user } = useAuthStore()
+
+  // Guard onboarding — redirige si l'utilisateur n'a pas complété l'onboarding
+  if (user && !user.user_metadata?.onboarding_completed && pathname !== '/onboarding') {
+    router.push('/onboarding')
+    return null
+  }
 
   async function handleLogout() {
     await signOut()
