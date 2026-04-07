@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+import uuid as uuid_lib
 
 router = APIRouter()
 
@@ -103,3 +104,75 @@ async def tenant_dashboard(
         status="ok",
         pending_transaction_id=None,
     )
+
+
+class ReportCreate(BaseModel):
+    category: str
+    urgency: str
+    description: str
+
+
+class ReportResponse(BaseModel):
+    id: str
+    message: str
+
+
+@router.post("/me/reports", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
+async def create_report(
+    payload: ReportCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ReportResponse:
+    """Locataire signale un problème — crée un RFQ de type maintenance."""
+    if current_user.role != "tenant":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux locataires")
+
+    from app.models.rfq import RFQ  # local import
+    report_id = uuid_lib.uuid4()
+    rfq = RFQ(
+        id=report_id,
+        title=f"Signalement locataire — {payload.category}",
+        description=payload.description,
+        category=payload.category,
+        urgency=payload.urgency,
+        rfq_status="draft",
+        created_by_id=current_user.id,
+    )
+    db.add(rfq)
+    await db.commit()
+    return ReportResponse(id=str(report_id), message="Signalement enregistré")
+
+
+@router.get("/me/documents")
+async def tenant_documents(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list:
+    """Retourne les documents du bail actif du locataire."""
+    if current_user.role != "tenant":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux locataires")
+
+    result = await db.execute(
+        select(Contract)
+        .where(and_(Contract.tenant_id == current_user.id, Contract.status == "active"))
+        .limit(1)
+    )
+    contract = result.scalar_one_or_none()
+    if not contract:
+        return []
+
+    from app.models.property import PropertyDocument
+    docs_result = await db.execute(
+        select(PropertyDocument).where(PropertyDocument.property_id == contract.property_id)
+    )
+    docs = docs_result.scalars().all()
+    return [
+        {
+            "id": str(d.id),
+            "name": d.filename,
+            "type": d.doc_type or "other",
+            "url": d.url,
+            "created_at": d.created_at.isoformat() if d.created_at else "",
+        }
+        for d in docs
+    ]
