@@ -1,8 +1,14 @@
 import axios from "axios";
 import { createClient } from "./supabase";
 
+// Force HTTPS — the Vercel env var may be set to http:// but CSP blocks non-https traffic
+const rawUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").trim().replace(/\/$/, "");
+export const baseURL = rawUrl.startsWith("http://")
+  ? rawUrl.replace("http://", "https://")
+  : rawUrl;
+
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -28,7 +34,6 @@ api.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       const supabase = createClient();
-      // Only redirect if Supabase session is truly gone (expired/revoked)
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         await supabase.auth.signOut();
