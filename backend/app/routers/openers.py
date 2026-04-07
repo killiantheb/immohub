@@ -1,5 +1,8 @@
+from datetime import datetime, timezone
+
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.models.opener import Mission, Opener
 from app.models.user import User
 from app.schemas.opener import (
     MissionPriceEstimate,
@@ -11,9 +14,17 @@ from app.schemas.opener import (
 )
 from app.services.opener_service import OpenerService
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
+
+
+class EarningsResponse(BaseModel):
+    month_total: float
+    currency: str
+    completed_count: int
 
 
 # ── Profile ───────────────────────────────────────────────────────────────────
@@ -51,6 +62,40 @@ async def patch_profile(
 ):
     svc = OpenerService(db)
     return await svc.patch_profile(payload, user)
+
+
+# ── Earnings ─────────────────────────────────────────────────────────────────
+
+
+@router.get("/me/earnings", response_model=EarningsResponse)
+async def my_earnings(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> EarningsResponse:
+    """Revenus du mois courant pour l'ouvreur connecté."""
+    opener_result = await db.execute(select(Opener).where(Opener.user_id == user.id))
+    opener = opener_result.scalar_one_or_none()
+    if not opener:
+        return EarningsResponse(month_total=0.0, currency="CHF", completed_count=0)
+
+    now = datetime.now(timezone.utc)
+    start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    result = await db.execute(
+        select(func.sum(Mission.price), func.count(Mission.id)).where(
+            and_(
+                Mission.opener_id == opener.id,
+                Mission.status == "completed",
+                Mission.completed_at >= start_of_month,
+            )
+        )
+    )
+    total, count = result.one()
+    return EarningsResponse(
+        month_total=float(total or 0),
+        currency="CHF",
+        completed_count=int(count or 0),
+    )
 
 
 # ── Discovery ─────────────────────────────────────────────────────────────────

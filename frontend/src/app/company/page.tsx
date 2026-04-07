@@ -3,76 +3,118 @@ import { useState, useEffect } from 'react'
 import { AlthySphere } from '@/components/AlthySphere'
 import { api } from '@/lib/api'
 
-interface ServiceRequest {
+// Shapes from backend RFQRead / RFQQuoteRead
+interface RFQQuote {
   id: string
-  title: string
-  description: string
-  specialty: string
-  address: string
-  budget_min: number
-  budget_max: number
-  currency: string
-  deadline: string
-  status: 'open' | 'in_progress' | 'completed'
-}
-
-interface Quote {
-  id: string
-  service_request_id: string
-  title: string
+  rfq_id: string
   amount: number
-  currency: string
+  description: string
   status: 'pending' | 'accepted' | 'rejected'
   created_at: string
 }
 
-const SPEC_COLORS: Record<string, string> = {
-  plomberie: '#185FA5',
-  electricite: '#854F0B',
-  peinture: '#3B6D11',
-  menuiserie: '#A32D2D',
-  maçonnerie: '#4A3060',
-  default: '#555',
+interface RFQ {
+  id: string
+  title: string
+  description: string
+  category: string
+  city: string | null
+  budget_min: number | null
+  budget_max: number | null
+  urgency: string
+  status: string
+  quotes: RFQQuote[]
+}
+
+interface PaginatedRFQs {
+  items: RFQ[]
+  total: number
+}
+
+// Active quote = a quote I submitted that is still pending, enriched with rfq_id
+interface ActiveQuote {
+  quoteId: string
+  rfqId: string
+  title: string
+  amount: number
+  createdAt: string
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  plumbing: '#185FA5', electricity: '#854F0B', painting: '#3B6D11',
+  masonry: '#4A3060', cleaning: '#2D5E4A', roofing: '#7A3B00',
+  hvac: '#1A5C6B', locksmith: '#5C3317', renovation: '#7A2D2D', other: '#555',
 }
 
 export default function CompanyPage() {
-  const [rfqs, setRfqs] = useState<ServiceRequest[]>([])
-  const [quotes, setQuotes] = useState<Quote[]>([])
+  const [rfqs, setRfqs] = useState<RFQ[]>([])
+  const [activeQuotes, setActiveQuotes] = useState<ActiveQuote[]>([])
   const [loadingRfqs, setLoadingRfqs] = useState(true)
   const [actionId, setActionId] = useState<string | null>(null)
-  const [status, setStatus] = useState('à votre écoute')
+  const [statusMsg, setStatusMsg] = useState('à votre écoute')
+
+  // Apply form state — shown inline when user clicks "Postuler"
+  const [applyingRfqId, setApplyingRfqId] = useState<string | null>(null)
+  const [applyAmount, setApplyAmount] = useState('')
+  const [applyDesc, setApplyDesc] = useState('')
 
   useEffect(() => {
-    api.get<ServiceRequest[]>('/service-requests?available=true')
-      .then(r => setRfqs(r.data))
+    // Available RFQs (published, open to bids)
+    api.get<PaginatedRFQs>('/rfqs', { params: { rfq_status: 'published' } })
+      .then(r => setRfqs(r.data.items))
       .catch(() => setRfqs([]))
       .finally(() => setLoadingRfqs(false))
-    api.get<Quote[]>('/service-requests/my-quotes')
-      .then(r => setQuotes(r.data))
-      .catch(() => setQuotes([]))
+
+    // My submitted quotes (RFQs where I have a quote)
+    api.get<PaginatedRFQs>('/rfqs/company/dashboard')
+      .then(r => {
+        const quotes: ActiveQuote[] = []
+        for (const rfq of r.data.items) {
+          for (const q of rfq.quotes) {
+            if (q.status === 'pending') {
+              quotes.push({ quoteId: q.id, rfqId: rfq.id, title: rfq.title, amount: q.amount, createdAt: q.created_at })
+            }
+          }
+        }
+        setActiveQuotes(quotes)
+      })
+      .catch(() => setActiveQuotes([]))
   }, [])
 
-  async function markDone(quoteId: string) {
-    setActionId(quoteId)
+  async function markDone(rfqId: string) {
+    setActionId(rfqId)
     try {
-      await api.put(`/service-requests/quotes/${quoteId}/complete`, {})
-      setQuotes(qs => qs.map(q => q.id === quoteId ? { ...q, status: 'accepted' as const } : q))
-      setStatus('Travaux marqués comme terminés ✓')
+      await api.put(`/rfqs/${rfqId}/complete`, {})
+      setActiveQuotes(qs => qs.filter(q => q.rfqId !== rfqId))
+      setStatusMsg('Travaux marqués comme terminés ✓')
     } catch {
-      setStatus('Erreur, réessayez.')
+      setStatusMsg('Erreur, réessayez.')
     } finally {
       setActionId(null)
     }
   }
 
-  async function applyRfq(id: string) {
-    setActionId(id)
+  async function submitQuote(rfqId: string) {
+    const amount = parseFloat(applyAmount)
+    if (!amount || amount <= 0 || applyDesc.length < 20) {
+      setStatusMsg('Montant et description (20 car. min) requis.')
+      return
+    }
+    setActionId(rfqId)
     try {
-      await api.post(`/service-requests/${id}/apply`, {})
-      setRfqs(rs => rs.filter(r => r.id !== id))
-      setStatus('Candidature envoyée ✓')
+      await api.post(`/rfqs/${rfqId}/quotes`, {
+        amount,
+        description: applyDesc,
+        delay_days: null,
+        warranty_months: null,
+      })
+      setRfqs(rs => rs.filter(r => r.id !== rfqId))
+      setApplyingRfqId(null)
+      setApplyAmount('')
+      setApplyDesc('')
+      setStatusMsg('Devis envoyé ✓')
     } catch {
-      setStatus('Erreur, réessayez.')
+      setStatusMsg('Erreur lors de l\'envoi du devis.')
     } finally {
       setActionId(null)
     }
@@ -82,12 +124,15 @@ export default function CompanyPage() {
     return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
   }
 
-  function specColor(spec: string) {
-    const key = spec?.toLowerCase()
-    return SPEC_COLORS[key] ?? SPEC_COLORS.default
+  function catColor(cat: string) {
+    return CATEGORY_COLORS[cat] ?? CATEGORY_COLORS.other
   }
 
-  const activeQuotes = quotes.filter(q => q.status === 'pending')
+  const CAT_LABELS: Record<string, string> = {
+    plumbing: 'Plomberie', electricity: 'Électricité', painting: 'Peinture',
+    masonry: 'Maçonnerie', cleaning: 'Nettoyage', roofing: 'Toiture',
+    hvac: 'CVC', locksmith: 'Serrurerie', renovation: 'Rénovation', other: 'Autre',
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#FAF5EB', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2rem 1.2rem', fontFamily: 'var(--font-sans)' }}>
@@ -104,7 +149,7 @@ export default function CompanyPage() {
       </div>
 
       <p style={{ fontSize: 11, letterSpacing: '2.5px', textTransform: 'uppercase', color: 'rgba(80,35,8,0.5)', marginBottom: '2rem', textAlign: 'center' }}>
-        {status}
+        {statusMsg}
       </p>
 
       {/* Active quotes */}
@@ -114,20 +159,20 @@ export default function CompanyPage() {
             Devis en cours ({activeQuotes.length})
           </p>
           {activeQuotes.map(q => (
-            <div key={q.id} style={{ background: '#fff', borderRadius: 14, padding: '12px 16px', border: '0.5px solid rgba(212,96,26,0.15)', marginBottom: 8 }}>
+            <div key={q.quoteId} style={{ background: '#fff', borderRadius: 14, padding: '12px 16px', border: '0.5px solid rgba(212,96,26,0.15)', marginBottom: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                 <span style={{ fontSize: 13, color: '#1C0F06', fontWeight: 500, flex: 1, marginRight: 8 }}>{q.title}</span>
-                <span style={{ fontSize: 12, color: '#D4601A', whiteSpace: 'nowrap' }}>{q.amount.toLocaleString('fr-FR')} {q.currency ?? '€'}</span>
+                <span style={{ fontSize: 12, color: '#D4601A', whiteSpace: 'nowrap' }}>{q.amount.toLocaleString('fr-FR')} CHF</span>
               </div>
               <div style={{ fontSize: 11, color: 'rgba(80,35,8,0.5)', marginBottom: 10 }}>
-                Soumis le {formatDate(q.created_at)}
+                Soumis le {formatDate(q.createdAt)}
               </div>
               <button
-                onClick={() => markDone(q.id)}
-                disabled={actionId === q.id}
-                style={{ width: '100%', padding: '8px 0', borderRadius: 8, border: 'none', background: '#D4601A', color: '#fff', fontFamily: 'inherit', fontSize: 12, fontWeight: 500, cursor: 'pointer', opacity: actionId === q.id ? 0.6 : 1 }}
+                onClick={() => markDone(q.rfqId)}
+                disabled={actionId === q.rfqId}
+                style={{ width: '100%', padding: '8px 0', borderRadius: 8, border: 'none', background: '#D4601A', color: '#fff', fontFamily: 'inherit', fontSize: 12, fontWeight: 500, cursor: 'pointer', opacity: actionId === q.rfqId ? 0.6 : 1 }}
               >
-                {actionId === q.id ? '…' : 'Marquer terminé'}
+                {actionId === q.rfqId ? '…' : 'Marquer terminé'}
               </button>
             </div>
           ))}
@@ -144,32 +189,67 @@ export default function CompanyPage() {
         )}
         {!loadingRfqs && rfqs.length === 0 && (
           <p style={{ textAlign: 'center', color: 'rgba(80,35,8,0.4)', fontSize: 12, padding: '1.5rem 0' }}>
-            Aucun appel d&apos;offre disponible pour votre spécialité
+            Aucun appel d&apos;offre disponible pour le moment
           </p>
         )}
         {rfqs.map(r => (
           <div key={r.id} style={{ background: '#fff', borderRadius: 14, padding: '14px 16px', border: '0.5px solid rgba(212,96,26,0.12)', marginBottom: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, padding: '2px 8px', borderRadius: 20, background: `${specColor(r.specialty)}22`, color: specColor(r.specialty) }}>
-                {r.specialty}
+              <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, padding: '2px 8px', borderRadius: 20, background: `${catColor(r.category)}22`, color: catColor(r.category) }}>
+                {CAT_LABELS[r.category] ?? r.category}
               </span>
-              <span style={{ fontSize: 10, color: 'rgba(80,35,8,0.4)', marginLeft: 'auto' }}>avant le {formatDate(r.deadline)}</span>
+              {r.city && <span style={{ fontSize: 10, color: 'rgba(80,35,8,0.4)', marginLeft: 'auto' }}>{r.city}</span>}
             </div>
             <div style={{ fontSize: 13, color: '#1C0F06', fontWeight: 500, marginBottom: 4 }}>{r.title}</div>
-            <div style={{ fontSize: 11, color: 'rgba(80,35,8,0.55)', marginBottom: 4 }}>{r.address}</div>
-            <div style={{ fontSize: 11, color: 'rgba(200,150,80,0.45)', marginBottom: 10 }}>{r.description}</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 12, color: '#D4601A' }}>
-                {r.budget_min.toLocaleString('fr-FR')} – {r.budget_max.toLocaleString('fr-FR')} {r.currency ?? '€'}
-              </span>
+            <div style={{ fontSize: 11, color: 'rgba(80,35,8,0.45)', marginBottom: 10, WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>{r.description}</div>
+
+            {/* Budget */}
+            {(r.budget_min != null || r.budget_max != null) && (
+              <div style={{ fontSize: 12, color: '#D4601A', marginBottom: 10 }}>
+                {r.budget_min != null && r.budget_max != null
+                  ? `${r.budget_min.toLocaleString('fr-FR')} – ${r.budget_max.toLocaleString('fr-FR')} CHF`
+                  : r.budget_min != null ? `Dès ${r.budget_min.toLocaleString('fr-FR')} CHF` : `Jusqu'à ${r.budget_max!.toLocaleString('fr-FR')} CHF`}
+              </div>
+            )}
+
+            {/* Apply form or button */}
+            {applyingRfqId === r.id ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4 }}>
+                <input
+                  type="number"
+                  placeholder="Montant de votre devis (CHF) *"
+                  value={applyAmount}
+                  onChange={e => setApplyAmount(e.target.value)}
+                  style={{ padding: '8px 12px', border: '0.5px solid rgba(160,92,40,0.25)', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none' }}
+                />
+                <textarea
+                  placeholder="Décrivez votre offre (20 caractères min) *"
+                  value={applyDesc}
+                  onChange={e => setApplyDesc(e.target.value)}
+                  rows={3}
+                  style={{ padding: '8px 12px', border: '0.5px solid rgba(160,92,40,0.25)', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', outline: 'none', resize: 'none' }}
+                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => setApplyingRfqId(null)} style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: '0.5px solid rgba(160,92,40,0.2)', background: 'transparent', color: 'rgba(80,35,8,0.55)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Annuler
+                  </button>
+                  <button
+                    onClick={() => submitQuote(r.id)}
+                    disabled={actionId === r.id}
+                    style={{ flex: 2, padding: '7px 0', borderRadius: 8, border: 'none', background: '#D4601A', color: '#fff', fontFamily: 'inherit', fontSize: 11, fontWeight: 500, cursor: 'pointer', opacity: actionId === r.id ? 0.6 : 1 }}
+                  >
+                    {actionId === r.id ? '…' : 'Envoyer le devis'}
+                  </button>
+                </div>
+              </div>
+            ) : (
               <button
-                onClick={() => applyRfq(r.id)}
-                disabled={actionId === r.id}
-                style={{ padding: '6px 16px', borderRadius: 8, border: 'none', background: '#D4601A', color: '#fff', fontFamily: 'inherit', fontSize: 11, fontWeight: 500, cursor: 'pointer', opacity: actionId === r.id ? 0.6 : 1 }}
+                onClick={() => { setApplyingRfqId(r.id); setApplyAmount(r.budget_min ? String(r.budget_min) : '') }}
+                style={{ width: '100%', padding: '8px 0', borderRadius: 8, border: 'none', background: '#D4601A', color: '#fff', fontFamily: 'inherit', fontSize: 11, fontWeight: 500, cursor: 'pointer' }}
               >
-                {actionId === r.id ? '…' : 'Postuler'}
+                Proposer un devis
               </button>
-            </div>
+            )}
           </div>
         ))}
       </div>

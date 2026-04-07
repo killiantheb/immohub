@@ -40,7 +40,7 @@ export default function TenantPage() {
   const router = useRouter()
 
   useEffect(() => {
-    api.get<TenantInfo>('/tenants/me')
+    api.get<TenantInfo>('/tenants/me')  // → GET /api/v1/tenants/me
       .then(r => setInfo(r.data))
       .catch(() => setInfo(null))
       .finally(() => setLoading(false))

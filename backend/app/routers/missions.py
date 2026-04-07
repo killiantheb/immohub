@@ -131,6 +131,17 @@ async def rate_mission(
     return await svc.rate_mission(mission_id, payload, user)
 
 
+@router.put("/{mission_id}/refuse", response_model=MissionRead)
+async def refuse_mission(
+    mission_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """L'ouvreur refuse une mission disponible (alias de cancel côté ouvreur)."""
+    svc = OpenerService(db)
+    return await svc.cancel_mission(mission_id, user, reason="Refusé par l'ouvreur")
+
+
 @router.put("/{mission_id}/cancel", response_model=MissionRead)
 async def cancel_mission(
     mission_id: str,

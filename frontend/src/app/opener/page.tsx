@@ -7,15 +7,22 @@ import { useUser } from '@/lib/auth'
 interface Mission {
   id: string
   type: string
-  address: string
+  property_id: string
   scheduled_at: string
-  amount: number
+  price: number | null
   status: string
+  notes: string | null
+}
+
+interface PaginatedMissions {
+  items: Mission[]
+  total: number
 }
 
 interface Earnings {
   month_total: number
   currency: string
+  completed_count: number
 }
 
 const S = {
@@ -35,16 +42,21 @@ const S = {
   signout: { marginTop: 'auto', padding: '1rem 0', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase' as const, color: 'rgba(80,35,8,0.25)', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'inherit' },
 }
 
+const MISSION_LABELS: Record<string, string> = {
+  visit: 'Visite', check_in: 'État des lieux entrant', check_out: 'État des lieux sortant',
+  inspection: 'Inspection', photography: 'Photographie', other: 'Autre',
+}
+
 export default function OpenerPage() {
   const { data: profile } = useUser()
   const [missions, setMissions] = useState<Mission[]>([])
   const [earnings, setEarnings] = useState<Earnings | null>(null)
   const [actionId, setActionId] = useState<string | null>(null)
-  const [status, setStatus] = useState('à votre écoute')
+  const [statusMsg, setStatusMsg] = useState('à votre écoute')
 
   useEffect(() => {
-    api.get<Mission[]>('/missions?available=true')
-      .then(r => setMissions(r.data))
+    api.get<PaginatedMissions>('/missions', { params: { available: true } })
+      .then(r => setMissions(r.data.items))
       .catch(() => setMissions([]))
     api.get<Earnings>('/openers/me/earnings')
       .then(r => setEarnings(r.data))
@@ -56,9 +68,9 @@ export default function OpenerPage() {
     try {
       await api.put(`/missions/${id}/accept`, {})
       setMissions(ms => ms.filter(m => m.id !== id))
-      setStatus('Mission acceptée ✓')
+      setStatusMsg('Mission acceptée ✓')
     } catch {
-      setStatus('Erreur, réessayez.')
+      setStatusMsg('Erreur, réessayez.')
     } finally {
       setActionId(null)
     }
@@ -69,16 +81,16 @@ export default function OpenerPage() {
     try {
       await api.put(`/missions/${id}/refuse`, {})
       setMissions(ms => ms.filter(m => m.id !== id))
+      setStatusMsg('Mission refusée')
     } catch {
-      setStatus('Erreur, réessayez.')
+      setStatusMsg('Erreur, réessayez.')
     } finally {
       setActionId(null)
     }
   }
 
   function formatDate(iso: string) {
-    const d = new Date(iso)
-    return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    return new Date(iso).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
   }
 
   const firstName = profile?.first_name ?? 'Ouvreur'
@@ -96,9 +108,8 @@ export default function OpenerPage() {
         <AlthySphere size={200} />
       </div>
 
-      {/* Status */}
       <p style={{ fontSize: 11, letterSpacing: '2.5px', textTransform: 'uppercase', color: 'rgba(80,35,8,0.5)', marginBottom: '1.8rem', textAlign: 'center' }}>
-        {status}
+        {statusMsg}
       </p>
 
       {/* Earnings */}
@@ -106,21 +117,25 @@ export default function OpenerPage() {
         <p style={S.label}>Revenus du mois</p>
         <div style={S.earningsBox}>
           <div style={S.earningsNum}>
-            {earnings ? `${earnings.month_total.toLocaleString('fr-FR')} ${earnings.currency ?? '€'}` : '—'}
+            {earnings ? `${earnings.month_total.toLocaleString('fr-FR')} ${earnings.currency}` : '—'}
           </div>
-          <div style={S.earningsSub}>{new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</div>
+          <div style={S.earningsSub}>
+            {earnings?.completed_count ? `${earnings.completed_count} mission(s) terminée(s)` : new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+          </div>
         </div>
       </div>
 
       {/* Missions */}
       <div style={S.section}>
         <p style={S.label}>Missions disponibles ({missions.length})</p>
-        {missions.length === 0 && <p style={S.empty}>Aucune mission proche pour le moment</p>}
+        {missions.length === 0 && <p style={S.empty}>Aucune mission disponible pour le moment</p>}
         {missions.map(m => (
           <div key={m.id} style={S.card}>
-            <div style={S.missionType}>{m.type}</div>
-            <div style={S.missionAddr}>{m.address}</div>
-            <div style={S.missionMeta}>{formatDate(m.scheduled_at)} · {m.amount.toLocaleString('fr-FR')} €</div>
+            <div style={S.missionType}>{MISSION_LABELS[m.type] ?? m.type}</div>
+            <div style={S.missionAddr}>{m.notes ?? `Bien ${m.property_id.slice(0, 8).toUpperCase()}`}</div>
+            <div style={S.missionMeta}>
+              {formatDate(m.scheduled_at)}{m.price ? ` · ${m.price.toLocaleString('fr-FR')} CHF` : ''}
+            </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => accept(m.id)} disabled={actionId === m.id} style={S.btnAccept}>
                 {actionId === m.id ? '…' : 'Accepter'}
