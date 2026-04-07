@@ -16,6 +16,7 @@ import uuid
 from typing import Annotated
 
 import jwt
+from jwt import PyJWKClient, PyJWKClientError
 from app.core.config import settings
 from app.core.database import get_db
 from fastapi import Depends, HTTPException, status
@@ -25,25 +26,54 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 bearer_scheme = HTTPBearer(auto_error=True)
 
+# ── JWKS client (ES256 / RS256 — Supabase asymmetric keys) ───────────────────
+# Supabase now issues ES256-signed JWTs. We use PyJWKClient to fetch and cache
+# the public keys from the JWKS endpoint and verify the signature.
+
+_jwks_client = PyJWKClient(
+    f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json",
+    cache_keys=True,
+    lifespan=3600,  # refresh keys every hour
+)
+
 # ── token decoding ────────────────────────────────────────────────────────────
 
 
 def _decode_token(token: str) -> dict:
-    """Validate a Supabase JWT and return the payload."""
+    """Validate a Supabase JWT and return the payload.
+
+    Supports both ES256 (asymmetric JWKS, current Supabase default) and
+    HS256 (legacy symmetric secret) so the same code works on all projects.
+    """
+    # Peek at the algorithm without verifying
+    unverified_header = jwt.get_unverified_header(token)
+    alg = unverified_header.get("alg", "HS256")
+
     try:
-        return jwt.decode(
-            token,
-            settings.SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
-            audience="authenticated",
-        )
+        if alg in ("ES256", "RS256"):
+            # Asymmetric: verify via JWKS
+            signing_key = _jwks_client.get_signing_key_from_jwt(token)
+            return jwt.decode(
+                token,
+                signing_key.key,
+                algorithms=[alg],
+                audience="authenticated",
+            )
+        else:
+            # Legacy HS256: verify with the project JWT secret
+            return jwt.decode(
+                token,
+                settings.SUPABASE_JWT_SECRET,
+                algorithms=["HS256"],
+                audience="authenticated",
+            )
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token expired",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    except jwt.InvalidTokenError as exc:
+    except (jwt.InvalidTokenError, PyJWKClientError) as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid token: {exc}",
