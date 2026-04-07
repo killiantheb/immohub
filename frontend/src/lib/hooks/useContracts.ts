@@ -54,6 +54,26 @@ interface ContractCreatePayload {
   monthly_rent?: number | null;
   charges?: number | null;
   deposit?: number | null;
+  // Extended fields
+  is_furnished?: boolean;
+  payment_day?: number;
+  notice_period_months?: number;
+  tourist_tax_amount?: number | null;
+  cleaning_fee_hourly?: number;
+  linen_fee_included?: boolean;
+  deposit_type?: string;
+  subletting_allowed?: boolean;
+  animals_allowed?: boolean;
+  smoking_allowed?: boolean;
+  is_for_sale?: boolean;
+  signed_at_city?: string | null;
+  canton?: string;
+  bank_name?: string | null;
+  bank_iban?: string | null;
+  bank_bic?: string | null;
+  occupants_count?: number | null;
+  tenant_nationality?: string | null;
+  payment_communication?: string | null;
 }
 
 export function useCreateContract() {
