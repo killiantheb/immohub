@@ -56,9 +56,9 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
     router.push('/login')
   }
 
-  async function handleSend() {
-    if (!input.trim()) return
-    const msg = input.trim()
+  async function handleSend(transcript?: string) {
+    const msg = (transcript ?? input).trim()
+    if (!msg) return
     setInput('')
     setSpeaking(true)
     setStatus('Althy analyse…')
@@ -67,34 +67,58 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token ?? ''
       const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? ''
-      const res = await fetch(`${apiUrl}/ai/chat`, {
+
+      // 1. Essaie d'abord voice-action (intent detection + création directe)
+      const actionRes = await fetch(`${apiUrl}/ai/voice-action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ message: msg, context: { session_id: sessionIdRef.current } }),
+        body: JSON.stringify({ transcript: msg }),
       })
-      const reader = res.body?.getReader()
-      const decoder = new TextDecoder()
-      let reply = ''
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          const chunk = decoder.decode(value)
-          for (const line of chunk.split('\n')) {
-            if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-              try {
-                const parsed = JSON.parse(line.slice(6))
-                if (parsed.text) reply += parsed.text
-                if (reply.length > 80) break
-              } catch { /* ignore */ }
-            }
-          }
-          if (reply.length > 80) break
+
+      if (actionRes.ok) {
+        const action = await actionRes.json() as { intent: string; message: string; navigate_path?: string; property_id?: string }
+        setStatus(action.message?.substring(0, 90) ?? 'Compris.')
+
+        if (action.intent === 'create_property' && action.property_id) {
+          setTimeout(() => router.push(`/properties/${action.property_id}`), 1500)
+          return
         }
-        reader.cancel()
+        if (action.intent === 'navigate' && action.navigate_path) {
+          setTimeout(() => router.push(action.navigate_path!), 1000)
+          return
+        }
+        if (action.intent === 'question') {
+          // Fallback sur le chat SSE pour les questions
+          const res = await fetch(`${apiUrl}/ai/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ message: msg, context: { session_id: sessionIdRef.current } }),
+          })
+          const reader = res.body?.getReader()
+          const decoder = new TextDecoder()
+          let reply = ''
+          if (reader) {
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) break
+              const chunk = decoder.decode(value)
+              for (const line of chunk.split('\n')) {
+                if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+                  try { const p = JSON.parse(line.slice(6)); if (p.text) reply += p.text } catch { /* */ }
+                }
+              }
+              if (reply.length > 100) break
+            }
+            reader.cancel()
+          }
+          const short = reply.trim() || action.message || 'Je traite votre demande.'
+          setStatus(short.length > 90 ? short.substring(0, 90) + '…' : short)
+          return
+        }
+        return
       }
-      const short = reply.trim() || 'Je traite votre demande.'
-      setStatus(short.length > 80 ? short.substring(0, 80) + '…' : short)
+
+      setStatus('Réessayez dans un moment.')
     } catch {
       setStatus('Réessayez dans un moment.')
     } finally {

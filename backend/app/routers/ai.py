@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import Annotated
 
+import json as _json
+import uuid as _uuid
+
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
@@ -229,6 +232,108 @@ async def chat(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+class VoiceActionRequest(BaseModel):
+    transcript: str
+
+
+@router.post("/voice-action")
+async def voice_action(
+    payload: VoiceActionRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(10, 60),
+):
+    """
+    Analyse un message vocal et exécute l'action détectée.
+    Retourne: {intent, data, message, property_id?}
+    """
+    from anthropic import AsyncAnthropic
+    from app.core.config import settings
+
+    client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+
+    response = await client.messages.create(
+        model="claude-sonnet-4-5",
+        max_tokens=800,
+        messages=[{"role": "user", "content": f"""
+Tu es Althy, assistant immobilier suisse. L'utilisateur a dit :
+"{payload.transcript}"
+
+Détecte l'intention et retourne UNIQUEMENT ce JSON :
+{{
+  "intent": "create_property|navigate|question|unknown",
+  "message": "ta réponse courte en français (1 phrase)",
+  "navigate_path": null,
+  "property": {{
+    "type": "apartment|house|studio|commercial|parking|land",
+    "address": null,
+    "city": null,
+    "zip_code": null,
+    "surface": null,
+    "rooms": null,
+    "monthly_rent": null,
+    "charges": null,
+    "deposit": null,
+    "status": "available",
+    "is_furnished": false,
+    "has_parking": false,
+    "country": "CH"
+  }}
+}}
+
+Règles :
+- "create_property" si l'utilisateur veut ajouter/créer un bien immobilier
+- "navigate" si l'utilisateur veut aller sur une page (property→/properties, contrat→/contracts, etc.)
+- "question" pour toute autre demande
+- Extrais les détails du bien depuis le transcript si intent=create_property
+- type : "apartment"=appartement, "house"=maison/villa, "studio"=studio, "commercial"=commercial
+"""}]
+    )
+
+    raw = response.content[0].text.strip()
+    if "```" in raw:
+        raw = raw.split("```")[1].lstrip("json").strip()
+
+    try:
+        result = _json.loads(raw)
+    except Exception:
+        return {"intent": "question", "message": "Je n'ai pas compris. Reformulez votre demande.", "property": None}
+
+    # Si intent = create_property, on crée directement le bien en base
+    if result.get("intent") == "create_property" and result.get("property"):
+        prop_data = result["property"]
+        if prop_data.get("address") or prop_data.get("city"):
+            from app.models.property import Property
+            new_prop = Property(
+                id=_uuid.uuid4(),
+                type=prop_data.get("type", "apartment"),
+                address=prop_data.get("address") or "",
+                city=prop_data.get("city") or "",
+                zip_code=prop_data.get("zip_code") or "",
+                country=prop_data.get("country") or "CH",
+                surface=prop_data.get("surface"),
+                rooms=prop_data.get("rooms"),
+                monthly_rent=prop_data.get("monthly_rent"),
+                charges=prop_data.get("charges"),
+                deposit=prop_data.get("deposit"),
+                status=prop_data.get("status", "available"),
+                is_furnished=bool(prop_data.get("is_furnished", False)),
+                has_parking=bool(prop_data.get("has_parking", False)),
+                owner_id=current_user.id,
+                created_by_id=current_user.id,
+                is_active=True,
+            )
+            db.add(new_prop)
+            await db.commit()
+            result["property_id"] = str(new_prop.id)
+            result["message"] = f"Bien créé : {new_prop.type} à {new_prop.city or new_prop.address}. Vous pouvez compléter les détails."
+        else:
+            result["intent"] = "need_more_info"
+            result["message"] = "J'ai besoin d'une adresse ou d'une ville pour créer le bien."
+
+    return result
 
 
 @router.get("/briefing")
