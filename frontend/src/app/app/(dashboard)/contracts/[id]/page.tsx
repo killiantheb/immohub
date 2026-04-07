@@ -21,6 +21,14 @@ import {
 } from "@/lib/hooks/useContracts";
 import type { ContractStatus, ContractType } from "@/lib/types";
 import { NotificationDraft } from "@/components/NotificationDraft";
+import { DocumentQuickGenerator } from "@/components/DocumentQuickGenerator";
+
+const CONTRACT_TYPE_TO_BAIL: Record<string, string> = {
+  long_term:  "bail_annee",
+  seasonal:   "bail_saison",
+  short_term: "bail_saison",
+  sale:       "bail_annee_avec_vente",
+};
 
 const TYPE_LABELS: Record<ContractType, string> = {
   long_term:  "Longue durée",
@@ -135,6 +143,20 @@ export default function ContractDetailPage() {
         <div className="flex gap-2">
           {!editing ? (
             <>
+              <DocumentQuickGenerator
+                label="Générer le bail"
+                icon="📄"
+                templateType={CONTRACT_TYPE_TO_BAIL[contract.type] ?? "bail_annee"}
+                contractId={id}
+                variant="primary"
+              />
+              <DocumentQuickGenerator
+                label="Demande de pièces"
+                icon="📋"
+                contractId={id}
+                smartPieces
+                variant="outline"
+              />
               <button
                 onClick={() => setShowNotif(true)}
                 className="btn-secondary flex items-center gap-1.5 text-sm"

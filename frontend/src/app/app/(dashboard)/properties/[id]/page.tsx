@@ -35,6 +35,7 @@ import {
 } from "@/lib/constants/properties";
 import type { PropertyStatus, PropertyType } from "@/lib/types";
 import { RatingWidget } from "@/components/RatingWidget";
+import { DocumentQuickGenerator } from "@/components/DocumentQuickGenerator";
 import { api } from "@/lib/api";
 
 // ── Inline edit field ──────────────────────────────────────────────────────────
@@ -398,7 +399,21 @@ export default function PropertyDetailPage() {
               {property.address}, {property.zip_code} {property.city}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <DocumentQuickGenerator
+              label="Fiche PDF"
+              icon="🏠"
+              templateType="fiche_bien"
+              propertyId={id}
+              variant="primary"
+            />
+            <DocumentQuickGenerator
+              label="Demande de pièces"
+              icon="📋"
+              propertyId={id}
+              smartPieces
+              variant="outline"
+            />
             <button
               onClick={addToFavorites}
               title={favoriteAdded ? "Ajouté aux favoris" : "Ajouter aux favoris"}
