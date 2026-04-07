@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import {
   Building2,
@@ -11,6 +11,7 @@ import {
   MapPin,
   Plus,
   Search,
+  Upload,
   X,
 } from "lucide-react";
 import { useProperties } from "@/lib/hooks/useProperties";
@@ -151,29 +152,76 @@ function PropertyCard({ property }: { property: import("@/lib/types").Property }
 export default function PropertiesPage() {
   const [filters, setFilters] = useState<PropertyFilters>({});
   const [page, setPage] = useState(1);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ count: number; notes: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data, isLoading, isError } = useProperties({ ...filters, page, size: 12 });
+  const { data, isLoading, isError, refetch } = useProperties({ ...filters, page, size: 12 });
 
   const handleFilterChange = (f: PropertyFilters) => {
     setFilters(f);
     setPage(1);
   };
 
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const { api } = await import("@/lib/api");
+      const form = new FormData();
+      form.append("file", file);
+      const { data: res } = await api.post<{ count: number; notes: string; created: unknown[] }>("/ai/import-property", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setImportResult({ count: res.count, notes: res.notes });
+      if (res.count > 0) refetch();
+    } catch {
+      setImportResult({ count: 0, notes: "Erreur lors de l'import. Vérifiez le format du fichier." });
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
   return (
     <div>
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Biens immobiliers</h1>
           <p className="mt-0.5 text-sm text-gray-500">
             {data ? `${data.total} bien${data.total !== 1 ? "s" : ""}` : "Gérez votre portefeuille"}
           </p>
         </div>
-        <Link href="/properties/new" className="btn-primary flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Ajouter un bien
-        </Link>
+        <div className="flex items-center gap-2">
+          <input ref={fileInputRef} type="file" accept=".pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png,.webp" className="hidden" onChange={handleImport} />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+            className="btn-secondary flex items-center gap-2 text-sm"
+          >
+            {importing ? (
+              <><span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600 inline-block" />Import…</>
+            ) : (
+              <><Upload className="h-4 w-4" />Importer un fichier</>
+            )}
+          </button>
+          <Link href="/properties/new" className="btn-primary flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Ajouter un bien
+          </Link>
+        </div>
       </div>
+
+      {/* Import result */}
+      {importResult && (
+        <div className={`mb-4 rounded-xl px-4 py-3 text-sm flex items-start justify-between gap-2 ${importResult.count > 0 ? "bg-green-50 border border-green-200 text-green-800" : "bg-red-50 border border-red-200 text-red-700"}`}>
+          <span>{importResult.count > 0 ? `✅ ${importResult.count} bien${importResult.count > 1 ? "s" : ""} importé${importResult.count > 1 ? "s" : ""} avec succès.` : `❌ ${importResult.notes}`}</span>
+          <button onClick={() => setImportResult(null)} className="shrink-0 opacity-60 hover:opacity-100">✕</button>
+        </div>
+      )}
 
       {/* Filters */}
       <FilterBar filters={filters} onChange={handleFilterChange} />

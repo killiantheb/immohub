@@ -22,7 +22,7 @@ from app.services.ai_service import (
     recommend_best_quote,
     score_tenant_application,
 )
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -334,6 +334,107 @@ Règles :
             result["message"] = "J'ai besoin d'une adresse ou d'une ville pour créer le bien."
 
     return result
+
+
+@router.post("/import-property")
+async def import_property_file(
+    current_user: AuthUserDep,
+    db: DbDep,
+    file: UploadFile = File(...),
+    _=rate_limit(5, 60),
+):
+    """
+    Upload un fichier (PDF, Excel, CSV, image) → Claude extrait les données → crée les biens en DB.
+    Retourne la liste des biens créés.
+    """
+    from app.models.property import Property
+    from app.services.import_service import (
+        extract_from_csv_bytes,
+        extract_from_excel_bytes,
+        extract_from_image_bytes,
+        extract_from_pdf_bytes,
+    )
+
+    if current_user.role not in ("owner", "agency", "super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux propriétaires et agences")
+
+    content_type = file.content_type or ""
+    filename = (file.filename or "").lower()
+    file_bytes = await file.read()
+
+    if len(file_bytes) > 20 * 1024 * 1024:
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "Fichier trop volumineux (max 20 Mo)")
+
+    # ── Dispatch selon le type de fichier ─────────────────────────────────────
+    try:
+        if "pdf" in content_type or filename.endswith(".pdf"):
+            result = await extract_from_pdf_bytes(file_bytes)
+        elif content_type in ("image/jpeg", "image/png", "image/webp") or filename.endswith((".jpg", ".jpeg", ".png", ".webp")):
+            mt = content_type if content_type.startswith("image/") else "image/jpeg"
+            result = await extract_from_image_bytes(file_bytes, mt)
+        elif "spreadsheet" in content_type or "excel" in content_type or filename.endswith((".xlsx", ".xls")):
+            result = await extract_from_excel_bytes(file_bytes)
+        elif "csv" in content_type or filename.endswith(".csv"):
+            result = await extract_from_csv_bytes(file_bytes)
+        else:
+            raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, "Format non supporté. Utilisez PDF, Excel, CSV ou image.")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"Erreur d'extraction : {exc}") from exc
+
+    props_data = result.get("properties", [])
+    if not props_data:
+        return {"created": [], "count": 0, "notes": result.get("notes", "Aucun bien détecté dans le fichier.")}
+
+    # ── Création en base ───────────────────────────────────────────────────────
+    created = []
+    for p in props_data:
+        if not (p.get("address") or p.get("city")):
+            continue  # Skip si pas d'adresse ni ville
+        try:
+            new_prop = Property(
+                id=_uuid.uuid4(),
+                type=p.get("type", "apartment"),
+                address=p.get("address") or "",
+                city=p.get("city") or "",
+                zip_code=p.get("zip_code") or "",
+                country=p.get("country") or "CH",
+                surface=float(p["surface"]) if p.get("surface") else None,
+                rooms=float(p["rooms"]) if p.get("rooms") else None,
+                floor=int(p["floor"]) if p.get("floor") else None,
+                monthly_rent=float(p["monthly_rent"]) if p.get("monthly_rent") else None,
+                charges=float(p["charges"]) if p.get("charges") else None,
+                deposit=float(p["deposit"]) if p.get("deposit") else None,
+                price_sale=float(p["price_sale"]) if p.get("price_sale") else None,
+                status=p.get("status", "available"),
+                is_furnished=bool(p.get("is_furnished", False)),
+                has_parking=bool(p.get("has_parking", False)),
+                pets_allowed=bool(p.get("pets_allowed", False)),
+                description=p.get("description"),
+                owner_id=current_user.id,
+                created_by_id=current_user.id,
+                is_active=True,
+            )
+            db.add(new_prop)
+            await db.flush()
+            created.append({
+                "id": str(new_prop.id),
+                "type": new_prop.type,
+                "address": new_prop.address,
+                "city": new_prop.city,
+                "monthly_rent": new_prop.monthly_rent,
+                "status": new_prop.status,
+            })
+        except Exception:
+            continue
+
+    await db.commit()
+    return {
+        "created": created,
+        "count": len(created),
+        "notes": result.get("notes", ""),
+    }
 
 
 @router.get("/briefing")
