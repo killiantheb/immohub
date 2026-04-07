@@ -34,6 +34,8 @@ import {
   PROPERTY_TYPE_LABELS,
 } from "@/lib/constants/properties";
 import type { PropertyStatus, PropertyType } from "@/lib/types";
+import { RatingWidget } from "@/components/RatingWidget";
+import { api } from "@/lib/api";
 
 // ── Inline edit field ──────────────────────────────────────────────────────────
 
@@ -292,7 +294,6 @@ function HistorySection({ propertyId }: { propertyId: string }) {
 
 // We need a small local query for history since it's not in useProperty
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
 
 function usePropertyHistory(id: string) {
   return useQuery({
@@ -318,6 +319,14 @@ export default function PropertyDetailPage() {
   const generateDesc = useGenerateDescription(id);
   const [tab, setTab] = useState<Tab>("details");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [favoriteAdded, setFavoriteAdded] = useState(false);
+
+  async function addToFavorites() {
+    try {
+      await api.post('/favorites/', { property_id: id })
+      setFavoriteAdded(true)
+    } catch { /* déjà en favoris */ setFavoriteAdded(true) }
+  }
 
   if (isLoading) {
     return (
@@ -390,6 +399,14 @@ export default function PropertyDetailPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={addToFavorites}
+              title={favoriteAdded ? "Ajouté aux favoris" : "Ajouter aux favoris"}
+              className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+            >
+              <Star className={`h-4 w-4 ${favoriteAdded ? "fill-orange-400 text-orange-400" : ""}`} />
+              {favoriteAdded ? "Favori" : "Favoris"}
+            </button>
             {confirmDelete ? (
               <>
                 <button
@@ -539,6 +556,8 @@ export default function PropertyDetailPage() {
       {tab === "images" && <ImagesSection propertyId={id} />}
       {tab === "documents" && <DocumentsSection propertyId={id} />}
       {tab === "history" && <HistorySection propertyId={id} />}
+
+      <RatingWidget entityType="property" entityId={id} title="Avis sur ce bien" />
     </div>
   );
 }

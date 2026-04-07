@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { baseURL } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -19,6 +20,7 @@ import {
   useUpdateContract,
 } from "@/lib/hooks/useContracts";
 import type { ContractStatus, ContractType } from "@/lib/types";
+import { NotificationDraft } from "@/components/NotificationDraft";
 
 const TYPE_LABELS: Record<ContractType, string> = {
   long_term:  "Longue durée",
@@ -49,6 +51,7 @@ export default function ContractDetailPage() {
   const sign = useSignContract(id);
 
   const [editing, setEditing] = useState(false);
+  const [showNotif, setShowNotif] = useState(false);
   const [form, setForm] = useState({
     monthly_rent: "",
     charges: "",
@@ -107,6 +110,14 @@ export default function ContractDetailPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      {showNotif && (
+        <NotificationDraft
+          recipientName="Locataire"
+          context={`Contrat ${contract.reference} — loyer ${contract.monthly_rent ? contract.monthly_rent + ' CHF/mois' : ''} — statut : ${statusCfg.label}`}
+          onClose={() => setShowNotif(false)}
+        />
+      )}
+
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3">
         <Link href="/app/contracts" className="text-gray-400 hover:text-gray-700">
@@ -125,13 +136,19 @@ export default function ContractDetailPage() {
           {!editing ? (
             <>
               <button
+                onClick={() => setShowNotif(true)}
+                className="btn-secondary flex items-center gap-1.5 text-sm"
+              >
+                Notifier
+              </button>
+              <button
                 onClick={() => setEditing(true)}
                 className="btn-secondary flex items-center gap-1.5 text-sm"
               >
                 <PenLine className="h-4 w-4" /> Modifier
               </button>
               <a
-                href={`${process.env.NEXT_PUBLIC_API_URL}/contracts/${id}/pdf`}
+                href={`${baseURL}/contracts/${id}/pdf`}
                 target="_blank"
                 rel="noreferrer"
                 className="btn-secondary flex items-center gap-1.5 text-sm"

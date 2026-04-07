@@ -133,10 +133,10 @@ async def create_report(
         id=report_id,
         title=f"Signalement locataire — {payload.category}",
         description=payload.description,
-        category=payload.category,
-        urgency=payload.urgency,
-        rfq_status="draft",
-        created_by_id=current_user.id,
+        category=payload.category if payload.category in ("plumbing", "electricity", "cleaning", "painting", "locksmith", "roofing", "gardening", "masonry", "hvac", "renovation") else "other",
+        urgency=payload.urgency if payload.urgency in ("low", "medium", "high", "emergency") else "medium",
+        status="draft",
+        owner_id=current_user.id,
     )
     db.add(rfq)
     await db.commit()
@@ -176,3 +176,85 @@ async def tenant_documents(
         }
         for d in docs
     ]
+
+
+@router.get("/me/history")
+async def tenant_history(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list:
+    """Historique de tous les logements (baux passés + actuel) du locataire."""
+    if current_user.role != "tenant":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux locataires")
+
+    result = await db.execute(
+        select(Contract)
+        .where(Contract.tenant_id == current_user.id)
+        .order_by(Contract.start_date.desc())
+    )
+    contracts = result.scalars().all()
+
+    out = []
+    for c in contracts:
+        prop_result = await db.execute(select(Property).where(Property.id == c.property_id))
+        prop = prop_result.scalar_one_or_none()
+        out.append({
+            "id": str(c.id),
+            "reference": c.reference,
+            "status": c.status,
+            "start_date": c.start_date.isoformat() if c.start_date else None,
+            "end_date": c.end_date.isoformat() if c.end_date else None,
+            "monthly_rent": float(c.monthly_rent) if c.monthly_rent else None,
+            "currency": "CHF",
+            "property_address": f"{prop.address}, {prop.city}" if prop else None,
+            "property_type": prop.type if prop else None,
+            "rooms": float(prop.rooms) if prop and prop.rooms else None,
+            "surface": float(prop.surface) if prop and prop.surface else None,
+        })
+    return out
+
+
+@router.get("/me/deposit")
+async def tenant_deposit(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Informations sur la caution (dépôt de garantie) du bail actif."""
+    if current_user.role != "tenant":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux locataires")
+
+    result = await db.execute(
+        select(Contract)
+        .where(and_(Contract.tenant_id == current_user.id, Contract.status == "active"))
+        .order_by(Contract.start_date.desc())
+        .limit(1)
+    )
+    contract = result.scalar_one_or_none()
+    if not contract:
+        return {"status": "no_contract", "deposit_amount": None, "months": 3}
+
+    monthly = float(contract.monthly_rent) if contract.monthly_rent else 0
+    deposit = monthly * 3  # max légal CO: 3 mois
+
+    # Cherche une transaction de type "deposit"
+    tx_result = await db.execute(
+        select(Transaction)
+        .where(
+            and_(
+                Transaction.contract_id == contract.id,
+                Transaction.type == "deposit",
+            )
+        )
+        .limit(1)
+    )
+    tx = tx_result.scalar_one_or_none()
+
+    return {
+        "status": tx.status if tx else "pending",
+        "deposit_amount_chf": deposit,
+        "monthly_rent_chf": monthly,
+        "months": 3,
+        "paid_at": tx.paid_at.isoformat() if tx and tx.paid_at else None,
+        "contract_id": str(contract.id),
+        "reference": contract.reference,
+    }

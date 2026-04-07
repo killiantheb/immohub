@@ -22,6 +22,7 @@ import {
   useRateRFQ,
 } from "@/lib/hooks/useRFQ";
 import type { RFQ, RFQQuote } from "@/lib/types";
+import { RatingWidget } from "@/components/RatingWidget";
 
 const CATEGORY_LABELS: Record<string, string> = {
   plumbing: "Plomberie", electricity: "Électricité", cleaning: "Nettoyage",
@@ -390,6 +391,15 @@ export default function RFQDetailPage() {
                 <p className="mt-2 text-sm text-gray-600 italic">{rfq.rating_comment}</p>
               )}
             </div>
+          )}
+
+          {/* Avis universels sur la mission */}
+          {(rfq.status === "completed" || rfq.status === "rated") && (
+            <RatingWidget
+              entityType="mission"
+              entityId={rfq.id}
+              title="Avis sur cette mission"
+            />
           )}
         </div>
 

@@ -15,6 +15,10 @@ from app.routers import (
     rfq,
     transactions,
 )
+from app.routers.agency_settings import router as agency_settings_router
+from app.routers.favorites import router as favorites_router
+from app.routers.insurance import router as insurance_router
+from app.routers.ratings import router as ratings_router
 from app.routers.smart_onboarding import router as smart_onboarding_router
 from app.routers.tenants import router as tenants_router
 from fastapi import FastAPI, Request
@@ -92,6 +96,10 @@ app.include_router(rfq.router, prefix="/api/v1/rfqs", tags=["rfqs"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(smart_onboarding_router, prefix="/api/v1")
 app.include_router(tenants_router, prefix="/api/v1/tenants", tags=["tenants"])
+app.include_router(ratings_router, prefix="/api/v1/ratings", tags=["ratings"])
+app.include_router(favorites_router, prefix="/api/v1/favorites", tags=["favorites"])
+app.include_router(agency_settings_router, prefix="/api/v1/agency", tags=["agency"])
+app.include_router(insurance_router, prefix="/api/v1/insurance", tags=["insurance"])
 
 
 # ── Health check ──────────────────────────────────────────────────────────────

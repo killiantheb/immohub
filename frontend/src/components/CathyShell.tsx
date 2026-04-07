@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { CathySphere } from '@/components/CathySphere'
 import { createClient } from '@/lib/supabase'
+import { baseURL } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import { useAuthStore } from '@/lib/store/authStore'
 
@@ -13,26 +14,80 @@ const T  = '#1C0F06'
 const T5 = 'rgba(80,35,8,0.55)'
 const T3 = 'rgba(80,35,8,0.30)'
 
-const NAV_LINKS = [
-  { href: '/app/dashboard',    label: 'Accueil' },
-  { href: '/app/properties',   label: 'Biens' },
-  { href: '/app/contracts',    label: 'Contrats' },
-  { href: '/app/transactions', label: 'Transactions' },
-  { href: '/app/openers',      label: 'Missions' },
-  { href: '/app/rfqs',         label: 'Appels d\'offre' },
-  { href: '/app/overview',     label: 'Vue d\'ensemble' },
-  { href: '/app/advisor',      label: 'Conseiller IA' },
-  { href: '/app/profile',      label: 'Profil' },
-]
+// Nav links par rôle
+function getNavLinks(role?: string) {
+  const base = [{ href: '/app/dashboard', label: 'Accueil' }]
+  if (role === 'tenant') return [
+    ...base,
+    { href: '/app/tenant',       label: 'Mon logement' },
+    { href: '/app/contracts',    label: 'Mon bail' },
+    { href: '/app/favorites',    label: 'Favoris' },
+    { href: '/app/rfqs',         label: 'Signalements' },
+    { href: '/app/advisor',      label: 'Conseiller IA' },
+    { href: '/app/profile',      label: 'Profil' },
+  ]
+  if (role === 'insurance') return [
+    ...base,
+    { href: '/app/insurance',    label: 'Mes offres' },
+    { href: '/app/rfqs',         label: 'Appels d\'offre' },
+    { href: '/app/advisor',      label: 'Conseiller IA' },
+    { href: '/app/profile',      label: 'Profil' },
+  ]
+  if (role === 'opener') return [
+    ...base,
+    { href: '/app/openers',      label: 'Missions' },
+    { href: '/app/rfqs',         label: 'Appels d\'offre' },
+    { href: '/app/overview',     label: 'Vue d\'ensemble' },
+    { href: '/app/advisor',      label: 'Conseiller IA' },
+    { href: '/app/profile',      label: 'Profil' },
+  ]
+  if (role === 'company') return [
+    ...base,
+    { href: '/app/rfqs',         label: 'Appels d\'offre' },
+    { href: '/app/transactions', label: 'Paiements' },
+    { href: '/app/advisor',      label: 'Conseiller IA' },
+    { href: '/app/profile',      label: 'Profil' },
+  ]
+  // owner / agency / super_admin
+  return [
+    ...base,
+    { href: '/app/properties',   label: 'Biens' },
+    { href: '/app/contracts',    label: 'Contrats' },
+    { href: '/app/transactions', label: 'Transactions' },
+    { href: '/app/accounting',   label: 'Comptabilité' },
+    { href: '/app/openers',      label: 'Missions' },
+    { href: '/app/rfqs',         label: 'Appels d\'offre' },
+    { href: '/app/overview',     label: 'Vue d\'ensemble' },
+    { href: '/app/advisor',      label: 'Conseiller IA' },
+    { href: '/app/settings',     label: 'Paramètres' },
+    { href: '/app/profile',      label: 'Profil' },
+  ]
+}
 
-const QUICK_LINKS = [
-  { href: '/app/properties',   label: 'Biens',           icon: '🏠' },
-  { href: '/app/contracts',    label: 'Contrats',        icon: '📄' },
-  { href: '/app/transactions', label: 'Transactions',    icon: '💶' },
-  { href: '/app/openers',      label: 'Missions',        icon: '📍' },
-  { href: '/app/rfqs',         label: 'Appels d\'offre', icon: '🔨' },
-  { href: '/app/advisor',      label: 'Conseiller IA',   icon: '⚖️' },
-]
+function getQuickLinks(role?: string) {
+  if (role === 'tenant') return [
+    { href: '/app/tenant',       label: 'Logement',    icon: '🏠' },
+    { href: '/app/favorites',    label: 'Favoris',     icon: '❤️' },
+    { href: '/app/contracts',    label: 'Mon bail',    icon: '📄' },
+    { href: '/app/rfqs',         label: 'Signaler',    icon: '🔔' },
+    { href: '/app/advisor',      label: 'Conseiller',  icon: '⚖️' },
+    { href: '/app/profile',      label: 'Profil',      icon: '👤' },
+  ]
+  if (role === 'insurance') return [
+    { href: '/app/insurance',    label: 'Offres',      icon: '🛡️' },
+    { href: '/app/rfqs',         label: 'Appels',      icon: '🔨' },
+    { href: '/app/advisor',      label: 'Conseiller',  icon: '⚖️' },
+    { href: '/app/profile',      label: 'Profil',      icon: '👤' },
+  ]
+  return [
+    { href: '/app/properties',   label: 'Biens',           icon: '🏠' },
+    { href: '/app/contracts',    label: 'Contrats',        icon: '📄' },
+    { href: '/app/transactions', label: 'Transactions',    icon: '💶' },
+    { href: '/app/accounting',   label: 'Comptabilité',    icon: '📊' },
+    { href: '/app/openers',      label: 'Missions',        icon: '📍' },
+    { href: '/app/advisor',      label: 'Conseiller IA',   icon: '⚖️' },
+  ]
+}
 
 export function CathyShell({ children }: { children: React.ReactNode }) {
   const [showDashboard, setShowDashboard] = useState(false)
@@ -44,6 +99,10 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const { signOut } = useAuth()
   const { user } = useAuthStore()
+
+  const role = user?.user_metadata?.role as string | undefined
+  const NAV_LINKS = getNavLinks(role)
+  const QUICK_LINKS = getQuickLinks(role)
 
   // Guard onboarding — dans un useEffect pour éviter la boucle infinie
   useEffect(() => {
@@ -67,7 +126,7 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
       const supabase = createClient()
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token ?? ''
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? ''
+      const apiUrl = baseURL
 
       // 1. Essaie d'abord voice-action (intent detection + création directe)
       const actionRes = await fetch(`${apiUrl}/ai/voice-action`, {
