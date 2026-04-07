@@ -4,7 +4,7 @@ import { SmartOnboarding } from '@/components/SmartOnboarding'
 import { createClient } from '@/lib/supabase'
 
 const ROLE_ROUTES: Record<string, string> = {
-  owner: '/dashboard', agency: '/dashboard',
+  owner: '/app/dashboard', agency: '/app/dashboard',
   opener: '/opener', tenant: '/tenant', company: '/company',
 }
 
@@ -36,7 +36,7 @@ export default function OnboardingPage() {
       console.error('onboarding patch error', e)
     }
 
-    router.push(ROLE_ROUTES[role] ?? '/dashboard')
+    router.push(ROLE_ROUTES[role] ?? '/app/dashboard')
   }
 
   return <SmartOnboarding onComplete={handleComplete} />

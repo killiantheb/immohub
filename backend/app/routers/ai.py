@@ -286,7 +286,7 @@ Détecte l'intention et retourne UNIQUEMENT ce JSON :
 
 Règles :
 - "create_property" si l'utilisateur veut ajouter/créer un bien immobilier
-- "navigate" si l'utilisateur veut aller sur une page (property→/properties, contrat→/contracts, etc.)
+- "navigate" si l'utilisateur veut aller sur une page (property→/app/properties, contrat→/app/contracts, etc.)
 - "question" pour toute autre demande
 - Extrais les détails du bien depuis le transcript si intent=create_property
 - type : "apartment"=appartement, "house"=maison/villa, "studio"=studio, "commercial"=commercial

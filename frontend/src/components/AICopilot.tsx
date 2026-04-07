@@ -18,12 +18,12 @@ interface Message {
 
 const PAGE_SUGGESTIONS: Record<string, string[]> = {
   "/":              ["Quel est mon taux d'occupation ?", "Comment améliorer mes revenus ?", "Analyser mes impayés"],
-  "/properties":    ["Rédiger une annonce pour mon bien", "Quelles sont les charges déductibles ?"],
-  "/properties/new":["Quels documents fournir pour louer ?", "Comment fixer le loyer ?"],
-  "/contracts":     ["Expliquer le bail meublé vs vide", "Quand peut-on résilier un bail ?"],
-  "/transactions":  ["Comment relancer un locataire en retard ?", "Analyser mes anomalies de paiement"],
-  "/openers":       ["Comment fonctionne la marketplace ouvreur ?", "Quel type de mission choisir ?"],
-  "/companies":     ["Conseils pour choisir un prestataire", "Comparer des devis travaux"],
+  "/app/properties":    ["Rédiger une annonce pour mon bien", "Quelles sont les charges déductibles ?"],
+  "/app/properties/new":["Quels documents fournir pour louer ?", "Comment fixer le loyer ?"],
+  "/app/contracts":     ["Expliquer le bail meublé vs vide", "Quand peut-on résilier un bail ?"],
+  "/app/transactions":  ["Comment relancer un locataire en retard ?", "Analyser mes anomalies de paiement"],
+  "/app/openers":       ["Comment fonctionne la marketplace ouvreur ?", "Quel type de mission choisir ?"],
+  "/app/companies":     ["Conseils pour choisir un prestataire", "Comparer des devis travaux"],
 };
 
 function getSuggestions(pathname: string): string[] {

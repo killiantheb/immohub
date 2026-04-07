@@ -14,24 +14,24 @@ const T5 = 'rgba(80,35,8,0.55)'
 const T3 = 'rgba(80,35,8,0.30)'
 
 const NAV_LINKS = [
-  { href: '/dashboard',    label: 'Accueil' },
-  { href: '/properties',   label: 'Biens' },
-  { href: '/contracts',    label: 'Contrats' },
-  { href: '/transactions', label: 'Transactions' },
-  { href: '/openers',      label: 'Missions' },
-  { href: '/rfqs',         label: 'Appels d\'offre' },
-  { href: '/overview',     label: 'Vue d\'ensemble' },
-  { href: '/advisor',      label: 'Conseiller IA' },
-  { href: '/profile',      label: 'Profil' },
+  { href: '/app/dashboard',    label: 'Accueil' },
+  { href: '/app/properties',   label: 'Biens' },
+  { href: '/app/contracts',    label: 'Contrats' },
+  { href: '/app/transactions', label: 'Transactions' },
+  { href: '/app/openers',      label: 'Missions' },
+  { href: '/app/rfqs',         label: 'Appels d\'offre' },
+  { href: '/app/overview',     label: 'Vue d\'ensemble' },
+  { href: '/app/advisor',      label: 'Conseiller IA' },
+  { href: '/app/profile',      label: 'Profil' },
 ]
 
 const QUICK_LINKS = [
-  { href: '/properties',   label: 'Biens',           icon: '🏠' },
-  { href: '/contracts',    label: 'Contrats',        icon: '📄' },
-  { href: '/transactions', label: 'Transactions',    icon: '💶' },
-  { href: '/openers',      label: 'Missions',        icon: '📍' },
-  { href: '/rfqs',         label: 'Appels d\'offre', icon: '🔨' },
-  { href: '/advisor',      label: 'Conseiller IA',   icon: '⚖️' },
+  { href: '/app/properties',   label: 'Biens',           icon: '🏠' },
+  { href: '/app/contracts',    label: 'Contrats',        icon: '📄' },
+  { href: '/app/transactions', label: 'Transactions',    icon: '💶' },
+  { href: '/app/openers',      label: 'Missions',        icon: '📍' },
+  { href: '/app/rfqs',         label: 'Appels d\'offre', icon: '🔨' },
+  { href: '/app/advisor',      label: 'Conseiller IA',   icon: '⚖️' },
 ]
 
 export function CathyShell({ children }: { children: React.ReactNode }) {
@@ -238,7 +238,7 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
       <nav style={{ background: '#fff', borderBottom: `0.5px solid rgba(160,92,40,0.08)`, overflowX: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
         <div style={{ display: 'flex', padding: '0 1.5rem', gap: 2, minWidth: 'max-content' }}>
           {NAV_LINKS.map(link => {
-            const active = pathname === link.href || (link.href !== '/dashboard' && pathname.startsWith(link.href))
+            const active = pathname === link.href || (link.href !== '/app/dashboard' && pathname.startsWith(link.href))
             return (
               <Link
                 key={link.href}

@@ -41,9 +41,9 @@ function LoginContent() {
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   const ROLE_ROUTES: Record<string, string> = {
-    owner: "/dashboard", agency: "/dashboard",
+    owner: "/app/dashboard", agency: "/app/dashboard",
     opener: "/opener", tenant: "/tenant",
-    company: "/company", super_admin: "/dashboard",
+    company: "/company", super_admin: "/app/dashboard",
   };
 
   const onSubmit = async ({ email, password }: FormValues) => {
@@ -51,7 +51,7 @@ function LoginContent() {
     try {
       const data = await signIn(email, password);
       const role = data.user?.user_metadata?.role as string | undefined;
-      const target = redirectTo ?? (role && ROLE_ROUTES[role]) ?? "/dashboard";
+      const target = redirectTo ?? (role && ROLE_ROUTES[role]) ?? "/app/dashboard";
       router.push(target);
     } catch (err: unknown) {
       const msg =
