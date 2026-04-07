@@ -7,7 +7,7 @@ from typing import Annotated
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from app.core.limiter import limiter
+from app.core.limiter import rate_limit
 from app.services.ai_service import (
     PaymentAlert,
     QuoteRecommendation,
@@ -19,7 +19,7 @@ from app.services.ai_service import (
     recommend_best_quote,
     score_tenant_application,
 )
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -199,12 +199,11 @@ async def copilot(
 
 
 @router.post("/chat")
-@limiter.limit("20/minute")
 async def chat(
-    request: Request,
     payload: ChatRequest,
     current_user: AuthUserDep,
     db: DbDep,
+    _=rate_limit(20, 60),
 ) -> StreamingResponse:
     """
     Conversational copilot — streams SSE events.

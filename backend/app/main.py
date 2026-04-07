@@ -17,13 +17,8 @@ from app.routers import (
 )
 from app.routers.smart_onboarding import router as smart_onboarding_router
 from app.routers.tenants import router as tenants_router
-from app.core.limiter import limiter
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
 
 # ── Sentry ────────────────────────────────────────────────────────────────────
@@ -61,10 +56,6 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
     lifespan=lifespan,
 )
-
-# ── Rate limiting ─────────────────────────────────────────────────────────────
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 app.add_middleware(

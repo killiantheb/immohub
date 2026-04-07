@@ -15,7 +15,7 @@ from app.schemas.auth import (
     UserProfileResponse,
 )
 from app.services.auth_service import AuthService
-from app.core.limiter import limiter
+from app.core.limiter import rate_limit
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -43,8 +43,7 @@ def _bearer_token(request: Request) -> str:
     status_code=status.HTTP_201_CREATED,
     summary="Créer un compte Supabase + profil DB",
 )
-@limiter.limit("5/minute")
-async def register(request: Request, payload: RegisterRequest, db: DbDep) -> AuthResponse:
+async def register(payload: RegisterRequest, db: DbDep, _=rate_limit(5, 60)) -> AuthResponse:
     """
     1. Crée l'utilisateur dans Supabase Auth (Admin API).
     2. Signe l'utilisateur pour obtenir les tokens JWT.
@@ -58,8 +57,7 @@ async def register(request: Request, payload: RegisterRequest, db: DbDep) -> Aut
     response_model=AuthResponse,
     summary="Authentifier via Supabase, retourne JWT + profil",
 )
-@limiter.limit("10/minute")
-async def login(request: Request, payload: LoginRequest, db: DbDep) -> AuthResponse:
+async def login(payload: LoginRequest, db: DbDep, _=rate_limit(10, 60)) -> AuthResponse:
     """
     Authentifie via Supabase (grant_type=password),
     synchronise le profil en DB et retourne les tokens.
