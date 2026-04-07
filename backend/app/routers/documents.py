@@ -594,6 +594,71 @@ def _build_demande_pieces(ctx: dict, profile: str = "annee") -> str:
 """
 
 
+def _build_quittance(ctx: dict) -> str:
+    """Quittance de loyer mensuelle."""
+    agency = ctx["agency"]
+    tenant = ctx["tenant"]
+    prop = ctx["property"]
+    contract = ctx["contract"]
+    extra = ctx.get("extra", {})
+
+    month_num = int(extra.get("quittance_month", datetime.now().month))
+    year = int(extra.get("quittance_year", datetime.now().year))
+    month_label = SWISS_MONTHS_FR[month_num] if 1 <= month_num <= 12 else "…"
+
+    loyer = float(extra.get("quittance_amount") or contract.get("monthly_rent") or 0)
+    charges = float(contract.get("charges") or 0)
+    total = loyer + charges
+    charges_row = f"<tr><td>Charges</td><td style='text-align:right'>CHF {_fmt_chf(charges)}.-</td></tr>" if charges else ""
+    total_row = f"<tr style='border-top:2px solid #1a1a1a;font-weight:700'><td>Total versé</td><td style='text-align:right'>CHF {_fmt_chf(total)}.-</td></tr>" if charges else ""
+
+    signed_city = contract.get("signed_at_city") or prop.get("city", "")
+
+    return f"""
+<h1>Quittance de loyer</h1>
+<p style="text-align:center;font-size:13px;color:#555;">Période : <strong>{month_label} {year}</strong></p>
+
+<h2>Bailleur / Régisseur</h2>
+<table class="info">
+  <tr><td>Nom</td><td><strong>{agency['name']}</strong></td></tr>
+  <tr><td>Adresse</td><td>{agency['address']}, {agency['city']}</td></tr>
+  <tr><td>E-mail</td><td>{agency.get('email','')}</td></tr>
+  <tr><td>Téléphone</td><td>{agency.get('phone','')}</td></tr>
+</table>
+
+<h2>Locataire</h2>
+<table class="info">
+  <tr><td>Nom</td><td><strong>{tenant.get('full_name','')}</strong></td></tr>
+  <tr><td>Adresse du bien</td><td>{prop.get('address','')}, CH-{prop.get('zip_code','')} {prop.get('city','')}</td></tr>
+  {f"<tr><td>Appartement</td><td>N° {prop.get('unit_number')}</td></tr>" if prop.get('unit_number') else ""}
+  <tr><td>Référence contrat</td><td>{contract.get('reference','')}</td></tr>
+</table>
+
+<h2>Montant encaissé</h2>
+<table class="bank" style="width:100%;max-width:400px;">
+  <tr><td>Loyer net</td><td style="text-align:right">CHF {_fmt_chf(loyer)}.-</td></tr>
+  {charges_row}
+  {total_row}
+</table>
+
+<p style="margin-top:1.2rem;">
+Le bailleur, ou son mandataire, reconnaît avoir reçu de <strong>{tenant.get('full_name','…')}</strong>
+la somme de <strong>CHF {_fmt_chf(total)}.-</strong>
+à titre de loyer {f"et charges " if charges else ""}pour le mois de <strong>{month_label} {year}</strong>
+concernant le logement sis <strong>{prop.get('address','')}, {prop.get('city','')}</strong>.
+</p>
+
+<p>Le locataire est à jour de ses paiements pour la période mentionnée.</p>
+
+<p style="margin-top:1.5rem;">Fait à {signed_city}, le {datetime.now().strftime('%d.%m.%Y')}</p>
+
+<div class="signature-block" style="margin-top:2rem;">
+  <div class="signature-line">Le bailleur / régisseur :<br/><br/><br/>…………………………………<br/><small>{agency['name']}</small></div>
+  <div class="signature-line">Accusé de réception :<br/><br/><br/>…………………………………<br/><small>{tenant.get('full_name','Le locataire')}</small></div>
+</div>
+"""
+
+
 def _build_requisition_poursuite(ctx: dict) -> str:
     agency = ctx["agency"]
     tenant = ctx["tenant"]
@@ -829,6 +894,7 @@ TEMPLATE_TYPES = [
     "demande_pieces_annee", "demande_pieces_saison", "demande_pieces_nuitee",
     "demande_pieces_societe", "demande_pieces_commercial",
     "requisition_poursuite",
+    "quittance_loyer",
 ]
 
 
@@ -848,6 +914,7 @@ async def list_template_types() -> list[dict]:
         {"key": "demande_pieces_societe", "label": "Demande de pièces — Société", "icon": "🏢"},
         {"key": "demande_pieces_commercial", "label": "Demande de pièces — Bail commercial", "icon": "🏪"},
         {"key": "requisition_poursuite", "label": "Réquisition de poursuite LP", "icon": "⚖️"},
+        {"key": "quittance_loyer", "label": "Quittance de loyer", "icon": "🧾"},
     ]
 
 
@@ -946,6 +1013,9 @@ async def generate_document(
         body_html = _build_demande_pieces(ctx, profile=profile_map.get(ttype, payload.profile))
     elif ttype == "requisition_poursuite":
         body_html = _build_requisition_poursuite(ctx)
+    elif ttype == "quittance_loyer":
+        ctx["extra"] = payload.extra
+        body_html = _build_quittance(ctx)
     else:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Type de document inconnu: {ttype}")
 

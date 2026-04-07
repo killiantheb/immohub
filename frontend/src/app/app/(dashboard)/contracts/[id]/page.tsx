@@ -157,6 +157,13 @@ export default function ContractDetailPage() {
                 smartPieces
                 variant="outline"
               />
+              <DocumentQuickGenerator
+                label="Quittance"
+                icon="🧾"
+                contractId={id}
+                quittanceMode
+                variant="outline"
+              />
               <button
                 onClick={() => setShowNotif(true)}
                 className="btn-secondary flex items-center gap-1.5 text-sm"
@@ -296,7 +303,7 @@ export default function ContractDetailPage() {
                   />
                 ) : (
                   <p className="text-xl font-bold text-gray-900">
-                    {value != null ? `${value.toLocaleString("fr-FR")} €` : "—"}
+                    {value != null ? `CHF ${value.toLocaleString("fr-CH")}` : "—"}
                   </p>
                 )}
               </div>

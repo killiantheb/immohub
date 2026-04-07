@@ -24,6 +24,8 @@ interface Props {
   extra?: Record<string, string>;
   /** Si vrai, affiche un mini-wizard (demande de pièces smart) */
   smartPieces?: boolean;
+  /** Si vrai, affiche un wizard mois/année pour la quittance */
+  quittanceMode?: boolean;
   /** Style du bouton */
   variant?: "primary" | "outline" | "ghost";
 }
@@ -61,6 +63,8 @@ function btnStyle(variant: string) {
   return { ...base, background: "transparent", color: "#555", border: "1px solid #e5e5e5" };
 }
 
+const now = new Date();
+
 export function DocumentQuickGenerator({
   label,
   icon = "📄",
@@ -69,33 +73,17 @@ export function DocumentQuickGenerator({
   propertyId,
   extra = {},
   smartPieces = false,
+  quittanceMode = false,
   variant = "outline",
 }: Props) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"wizard" | "loading" | "preview">("wizard");
   const [locationType, setLocationType] = useState("annee");
   const [tenantType, setTenantType] = useState("particulier");
+  const [qMonth, setQMonth] = useState(String(now.getMonth() + 1).padStart(2, "0"));
+  const [qYear, setQYear] = useState(String(now.getFullYear()));
   const [html, setHtml] = useState("");
   const [error, setError] = useState("");
-
-  async function generate(ttype: string) {
-    setStep("loading");
-    setError("");
-    try {
-      const { data } = await api.post<{ content_html: string }>("/documents/generate", {
-        template_type: ttype,
-        contract_id: contractId || null,
-        property_id: propertyId || null,
-        extra: { signed_date: new Date().toLocaleDateString("fr-CH"), ...extra },
-      });
-      setHtml(data.content_html);
-      setStep("preview");
-    } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Erreur de génération";
-      setError(msg);
-      setStep("wizard");
-    }
-  }
 
   function handleOpen() {
     setOpen(true);
@@ -103,8 +91,31 @@ export function DocumentQuickGenerator({
     setHtml("");
     setError("");
     // Si pas de wizard → génère directement
-    if (templateType && !smartPieces) {
+    if (templateType && !smartPieces && !quittanceMode) {
       generate(templateType);
+    }
+  }
+
+  function handleQuittanceGenerate() {
+    generate("quittance_loyer", { quittance_month: qMonth, quittance_year: qYear });
+  }
+
+  async function generate(ttype: string, extraOverride?: Record<string, string>) {
+    setStep("loading");
+    setError("");
+    try {
+      const { data } = await api.post<{ content_html: string }>("/documents/generate", {
+        template_type: ttype,
+        contract_id: contractId || null,
+        property_id: propertyId || null,
+        extra: { signed_date: new Date().toLocaleDateString("fr-CH"), ...extra, ...(extraOverride || {}) },
+      });
+      setHtml(data.content_html);
+      setStep("preview");
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Erreur de génération";
+      setError(msg);
+      setStep("wizard");
     }
   }
 
@@ -140,6 +151,38 @@ export function DocumentQuickGenerator({
 
             {/* Body */}
             <div style={{ flex: 1, overflow: "auto", padding: step === "preview" ? 0 : 24 }}>
+
+              {/* Wizard — quittance de loyer */}
+              {step === "wizard" && quittanceMode && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  {error && <div style={{ background: "#fff0f0", border: "1px solid #fca5a5", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#b91c1c" }}>{error}</div>}
+                  <p style={{ fontSize: 13, color: "#555" }}>Sélectionnez le mois pour lequel générer la quittance :</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Mois</p>
+                      <select value={qMonth} onChange={(e) => setQMonth(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: "1.5px solid #e5e5e5", borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "#fff" }}>
+                        {["01","02","03","04","05","06","07","08","09","10","11","12"].map((m, i) => (
+                          <option key={m} value={m}>{["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"][i]}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Année</p>
+                      <select value={qYear} onChange={(e) => setQYear(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: "1.5px solid #e5e5e5", borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "#fff" }}>
+                        {[String(now.getFullYear() - 1), String(now.getFullYear()), String(now.getFullYear() + 1)].map((y) => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{ background: "#f9f6f2", borderRadius: 8, padding: "10px 14px", fontSize: 11, color: "#a05c28" }}>
+                    Quittance pour le mois de <strong>{["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"][parseInt(qMonth)-1]} {qYear}</strong>
+                  </div>
+                  <button onClick={handleQuittanceGenerate} style={{ ...btnStyle("primary"), justifyContent: "center", padding: "11px 0" }}>
+                    🧾 Générer la quittance
+                  </button>
+                </div>
+              )}
 
               {/* Wizard — demande de pièces */}
               {step === "wizard" && smartPieces && (

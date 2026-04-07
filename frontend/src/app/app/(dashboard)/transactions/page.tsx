@@ -35,7 +35,7 @@ function exportCSV(rows: import("@/lib/types").Transaction[]) {
     t.reference,
     TYPE_LABELS[t.type as TransactionType] ?? t.type,
     t.status,
-    t.amount.toFixed(2),
+    t.amount.toFixed(2) + " CHF",
     t.due_date ? new Date(t.due_date).toLocaleDateString("fr-FR") : "",
     t.paid_at ? new Date(t.paid_at).toLocaleDateString("fr-FR") : "",
     t.notes ?? "",
@@ -137,7 +137,7 @@ function TransactionsContent() {
           {/* Mini stats */}
           <div className="mt-3 flex flex-wrap gap-4 border-t pt-3 text-sm">
             {[
-              { label: "Total encaissé", value: `${stats.total.toLocaleString("fr-FR")} €`, color: "text-green-700" },
+              { label: "Total encaissé", value: `CHF ${stats.total.toLocaleString("fr-CH")}`, color: "text-green-700" },
               { label: "En attente", value: stats.pending_count, color: "text-amber-700" },
               { label: "Impayés", value: stats.late_count, color: "text-red-600" },
             ].map(({ label, value, color }) => (
@@ -237,7 +237,7 @@ function TransactionsContent() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                      {tx.amount.toLocaleString("fr-FR")} €
+                      CHF {tx.amount.toLocaleString("fr-CH")}
                     </td>
                     <td className="px-4 py-3 text-gray-600">
                       {tx.due_date ? new Date(tx.due_date).toLocaleDateString("fr-FR") : "—"}

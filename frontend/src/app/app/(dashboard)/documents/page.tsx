@@ -23,6 +23,7 @@ const TYPE_LABELS: Record<string, string> = {
   demande_pieces_societe:    "Demande de pièces — Société",
   demande_pieces_commercial: "Demande de pièces — Commercial",
   requisition_poursuite:     "Réquisition de poursuite",
+  quittance_loyer:           "Quittance de loyer",
 };
 
 export default function DocumentsPage() {
