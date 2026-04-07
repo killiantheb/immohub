@@ -80,6 +80,25 @@ class PropertyCreate(BaseModel):
     is_furnished: bool = False
     has_parking: bool = False
     pets_allowed: bool = False
+    # Extended fields
+    reference_number: str | None = None
+    building_name: str | None = None
+    unit_number: str | None = None
+    bedrooms: int | None = None
+    bathrooms: int | None = None
+    canton: str | None = "VS"
+    nearby_landmarks: str | None = None
+    has_balcony: bool = False
+    has_terrace: bool = False
+    has_garden: bool = False
+    has_storage: bool = False
+    has_fireplace: bool = False
+    has_laundry: bool = False
+    linen_provided: bool = False
+    smoking_allowed: bool = False
+    is_for_sale: bool = False
+    tourist_tax_amount: float | None = None
+    keys_count: int | None = 3
 
 
 class PropertyUpdate(BaseModel):
@@ -100,6 +119,25 @@ class PropertyUpdate(BaseModel):
     is_furnished: bool | None = None
     has_parking: bool | None = None
     pets_allowed: bool | None = None
+    # Extended fields
+    reference_number: str | None = None
+    building_name: str | None = None
+    unit_number: str | None = None
+    bedrooms: int | None = None
+    bathrooms: int | None = None
+    canton: str | None = None
+    nearby_landmarks: str | None = None
+    has_balcony: bool | None = None
+    has_terrace: bool | None = None
+    has_garden: bool | None = None
+    has_storage: bool | None = None
+    has_fireplace: bool | None = None
+    has_laundry: bool | None = None
+    linen_provided: bool | None = None
+    smoking_allowed: bool | None = None
+    is_for_sale: bool | None = None
+    tourist_tax_amount: float | None = None
+    keys_count: int | None = None
 
 
 # ── Property response schemas ──────────────────────────────────────────────────
@@ -132,6 +170,25 @@ class PropertyRead(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    # Extended fields
+    reference_number: str | None = None
+    building_name: str | None = None
+    unit_number: str | None = None
+    bedrooms: int | None = None
+    bathrooms: int | None = None
+    canton: str | None = None
+    nearby_landmarks: str | None = None
+    has_balcony: bool = False
+    has_terrace: bool = False
+    has_garden: bool = False
+    has_storage: bool = False
+    has_fireplace: bool = False
+    has_laundry: bool = False
+    linen_provided: bool = False
+    smoking_allowed: bool = False
+    is_for_sale: bool = False
+    tourist_tax_amount: float | None = None
+    keys_count: int | None = None
 
 
 class PropertyDetail(PropertyRead):

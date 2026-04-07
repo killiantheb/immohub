@@ -10,6 +10,7 @@ from app.models.inspection import Inspection
 from app.models.listing import Listing
 from app.models.opener import Mission, Opener
 from app.models.property import Property, PropertyDocument, PropertyImage
+from app.models.document import DocumentTemplate, GeneratedDocument
 from app.models.rating import Rating
 from app.models.transaction import Transaction
 from app.models.user import User
@@ -34,4 +35,6 @@ __all__ = [
     "Rating",
     "Favorite",
     "AgencySettings",
+    "DocumentTemplate",
+    "GeneratedDocument",
 ]

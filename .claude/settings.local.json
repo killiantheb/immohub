@@ -29,7 +29,13 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(list\\(d['paths'].keys\\(\\)\\)\\)\")",
       "Bash(taskkill /F /IM uvicorn.exe)",
       "Bash(taskkill /F /IM python.exe)",
-      "Bash(venv/Scripts/python.exe -m uvicorn app.main:app --reload --port 8000)"
+      "Bash(venv/Scripts/python.exe -m uvicorn app.main:app --reload --port 8000)",
+      "Bash(xargs -I {} sh -c 'echo \"=== {} ===\" && head -20 {}')",
+      "Bash(grep -r \"class.*Service\" /c/Users/Killan/immohub/backend/app/services/*.py)",
+      "Bash(grep -E \"\\\\.\\(py|ts|tsx\\)$\")",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)"
     ]
   }
 }

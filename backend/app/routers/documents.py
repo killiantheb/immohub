@@ -1,0 +1,1047 @@
+"""Document generation — baux, mandats, fiches, demandes de pièces."""
+
+from __future__ import annotations
+
+import uuid as uuid_lib
+from datetime import datetime
+from typing import Annotated, Any
+
+from app.core.database import get_db
+from app.core.security import get_current_user
+from app.models.contract import Contract
+from app.models.document import DocumentTemplate, GeneratedDocument
+from app.models.property import Property
+from app.models.user import User
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from jinja2 import BaseLoader, Environment
+from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+router = APIRouter()
+
+DbDep = Annotated[AsyncSession, Depends(get_db)]
+AuthDep = Annotated[User, Depends(get_current_user)]
+
+DISCLAIMER_FR = """
+<div style="margin-top:2rem;padding:0.8rem 1rem;background:#fff8f0;border-left:3px solid #D4601A;font-size:11px;color:#666;line-height:1.5;">
+  <strong>Avis important :</strong> Ce document est généré automatiquement à titre indicatif et d'aide à la rédaction.
+  La responsabilité du contenu et des effets juridiques du présent document incombe exclusivement au bailleur, au locataire
+  ou à l'agence signataire. La plateforme Althy décline toute responsabilité quant aux conséquences juridiques
+  découlant de l'utilisation de ce document. Il est recommandé de faire vérifier tout contrat par un professionnel
+  du droit avant signature.
+</div>
+"""
+
+# ─── Jinja2 env ──────────────────────────────────────────────────────────────
+
+_jinja = Environment(loader=BaseLoader(), autoescape=False)
+
+SWISS_MONTHS_FR = [
+    "", "janvier", "février", "mars", "avril", "mai", "juin",
+    "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+]
+
+
+def _fmt_date_long(dt: datetime | None) -> str:
+    if not dt:
+        return "…"
+    return f"{dt.day} {SWISS_MONTHS_FR[dt.month]} {dt.year}"
+
+
+def _fmt_chf(val: float | None) -> str:
+    if val is None:
+        return "…"
+    return f"{val:,.0f}".replace(",", "'")
+
+
+# ─── Base HTML wrapper ────────────────────────────────────────────────────────
+
+def _wrap_html(body: str, agency: dict, title: str) -> str:
+    logo_html = (
+        f'<img src="{agency["logo_url"]}" style="height:48px;object-fit:contain;" />'
+        if agency.get("logo_url")
+        else f'<div style="font-size:22px;font-weight:700;color:#D4601A;letter-spacing:1px;">{agency["name"]}</div>'
+    )
+    return f"""<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<title>{title}</title>
+<style>
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{ font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 12px; color: #1a1a1a; background: #fff; }}
+  .page {{ max-width: 780px; margin: 0 auto; padding: 30px 40px; }}
+  .header {{ display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #D4601A; padding-bottom: 12px; margin-bottom: 20px; }}
+  .agency-info {{ font-size: 11px; color: #555; text-align: right; line-height: 1.6; }}
+  h1 {{ font-size: 16px; font-weight: 700; text-align: center; background: #1a1a1a; color: #fff; padding: 8px 16px; margin: 16px 0; letter-spacing: 0.5px; }}
+  h2 {{ font-size: 12px; font-weight: 700; text-align: center; background: #D4601A; color: #fff; padding: 5px 12px; margin: 14px 0 6px; }}
+  h3 {{ font-size: 11px; font-weight: 700; color: #D4601A; margin: 10px 0 4px; text-decoration: underline; }}
+  table.info {{ width: 100%; border-collapse: collapse; margin: 6px 0; }}
+  table.info td {{ padding: 3px 6px; vertical-align: top; font-size: 11px; }}
+  table.info td:first-child {{ font-weight: 600; width: 160px; white-space: nowrap; }}
+  table.bank {{ width: 100%; border-collapse: collapse; margin: 6px 0; border: 1px solid #ddd; }}
+  table.bank td {{ padding: 4px 8px; border: 1px solid #ddd; font-size: 11px; }}
+  table.bank td:first-child {{ background: #f5f5f5; font-weight: 600; width: 140px; }}
+  ul.clauses {{ margin: 6px 0 6px 18px; }}
+  ul.clauses li {{ margin-bottom: 3px; font-size: 11px; line-height: 1.5; }}
+  p {{ margin: 6px 0; line-height: 1.6; font-size: 11px; }}
+  .important {{ font-weight: 700; color: #D4601A; margin: 8px 0 4px; }}
+  .signature-block {{ display: flex; justify-content: space-between; margin-top: 24px; }}
+  .signature-line {{ width: 44%; border-top: 1px solid #333; padding-top: 4px; font-size: 11px; }}
+  .footer {{ margin-top: 20px; padding-top: 8px; border-top: 1px solid #eee; font-size: 10px; color: #888; text-align: center; }}
+  @media print {{ body {{ print-color-adjust: exact; }} }}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    {logo_html}
+    <div class="agency-info">
+      {agency['address']}<br/>
+      {agency['city']}<br/>
+      {agency.get('phone','')}<br/>
+      {agency.get('email','')}
+    </div>
+  </div>
+  {body}
+  {DISCLAIMER_FR}
+  <div class="footer">
+    Document généré le {datetime.now().strftime('%d.%m.%Y')} • {agency['name']} • {agency.get('website', 'althy.ch')}
+  </div>
+</div>
+</body>
+</html>"""
+
+
+# ─── Template builders ────────────────────────────────────────────────────────
+
+def _build_bail_annee(ctx: dict, with_sale_clause: bool = False) -> str:
+    agency = ctx["agency"]
+    tenant = ctx["tenant"]
+    prop = ctx["property"]
+    contract = ctx["contract"]
+
+    sale_block = ""
+    if with_sale_clause:
+        sale_block = f"""
+<h2>IMPORTANT</h2>
+<p>Le locataire est rendu attentif au fait que <strong>l'appartement est en vente</strong>.</p>
+<p>À la date d'échéance, si l'appartement n'est pas vendu, les deux parties pourront décider ou non de refaire un nouveau contrat d'un an.<br/>
+Si l'appartement est vendu et que l'acte authentique est signé, les locataires devront quitter le logement à la date de fin de la location
+soit le <strong>{contract['end_date_long']}</strong>.</p>
+"""
+
+    partial_block = ""
+    if contract.get("partial_period_days") and contract.get("partial_period_rent"):
+        partial_block = f"""<p>Loyer pour les <strong>{contract['partial_period_days']} jours de {contract['partial_period_label']}</strong> :
+CHF <strong>{_fmt_chf(contract['partial_period_rent'])},-</strong> {contract['charges_label']}</p>"""
+
+    return f"""
+<h1>Bail à loyer{"" if not with_sale_clause else " – Logement en vente"}</h1>
+
+<p><strong>Représentant du bailleur :</strong> {agency['name']}<br/>
+{agency['address']}, {agency['city']}<br/>
+<em>Est mandaté pour conclure un bail au nom et pour le compte d'un représenté.</em></p>
+
+<h2>Locataire</h2>
+<table class="info">
+  <tr><td>Locataire</td><td><strong>{tenant['civility']} {tenant['full_name']}</strong></td></tr>
+  <tr><td>Adresse</td><td>{tenant['address']}</td></tr>
+  <tr><td>Tél</td><td>{tenant.get('phone','')}</td></tr>
+  <tr><td>E-mail</td><td>{tenant.get('email','')}</td></tr>
+  <tr><td>Nationalité</td><td>{tenant.get('nationality','')}</td></tr>
+  <tr><td>Nombre d'occupants</td><td>{contract.get('occupants_count', 1)}</td></tr>
+</table>
+{"<p><em>S'il y a plusieurs signataires sur le bail, alors s'exerce la notion de co-solidarité en droit et en devoir.</em></p>" if contract.get("occupants_count", 1) > 1 else ""}
+
+<h2>Objet du bail</h2>
+<p>Logement N° <strong>{prop.get('unit_number','–')}</strong> de <strong>{prop.get('rooms','–')}</strong> pièces dans l'immeuble <strong>{prop.get('building_name','–')}</strong><br/>
+Adresse : {prop['address']}, CH – {prop['zip_code']} {prop['city']}<br/>
+Description : {prop.get('description','')}</p>
+
+<h2>Durée du contrat</h2>
+<p>Contrat d'une durée déterminée du <strong>{contract['start_date_long']}</strong> au <strong>{contract['end_date_long']}</strong></p>
+<p><em>Lors des entrées ou des sorties, tous les protagonistes qui ont signé le contrat doivent être présents.</em></p>
+
+<h2>Résiliation &amp; Reconduction</h2>
+<p>Une résiliation anticipée est conditionnée au fait que le locataire doit retrouver un nouveau locataire solvable et prêt à reprendre
+le bail aux mêmes conditions. L'agence est chargée de valider la candidature. Dans ce cas, des frais de dossiers d'un montant de
+<strong>CHF {_fmt_chf(contract.get('early_termination_fee', 270))}.- HT</strong> seront facturés aux locataires.</p>
+<p>Il se renouvellera aux mêmes conditions pour une année sauf avis de résiliation de l'une ou l'autre des parties, donné et reçu au moins
+<strong>{contract.get('notice_period_months', 3)} mois et 10 jours de délais postaux</strong> avant la date d'échéance
+{f", soit avant le <strong>{contract['notice_deadline_date']}</strong> de chaque année." if contract.get("notice_deadline_date") else "."}</p>
+
+{sale_block}
+
+<h2>Loyer mensuel payable d'avance</h2>
+{partial_block}
+<p>Loyer : <strong>CHF {_fmt_chf(contract.get('monthly_rent'))},-</strong> par mois {contract.get('charges_label','charges comprises')}</p>
+{"<p>Une attestation d'assurance RC et Ménage est à fournir avant la remise des clefs du logement.</p>" if not contract.get("linen_fee_included") else ""}
+
+<p><strong>Le loyer est à verser au plus tard le {contract.get('payment_day', 5)} de chaque mois sur le compte suivant, ou en cash à l'agence.</strong></p>
+<table class="bank">
+  <tr><td>Banque</td><td>{contract.get('bank_name', agency.get('bank_name','BCV'))}</td></tr>
+  <tr><td>Titulaire</td><td>{agency['name']}, {agency['address']}, {agency['city']}</td></tr>
+  <tr><td>IBAN</td><td>{contract.get('bank_iban', agency.get('iban',''))}</td></tr>
+  <tr><td>BIC</td><td>{contract.get('bank_bic', agency.get('bic',''))}</td></tr>
+  <tr><td>Communication</td><td><strong>{contract.get('payment_communication', '')}</strong></td></tr>
+</table>
+
+<p class="important">IMPORTANT :</p>
+<ul class="clauses">
+  <li>Tous les frais bancaires sont à la charge du locataire.</li>
+  <li>Tous les frais de rappel (CHF {_fmt_chf(contract.get('reminder_fee', 35))},-) et les frais de poursuites sont à la charge du locataire.</li>
+  <li>Le loyer est dû de plein droit.</li>
+  <li>Un intérêt de {contract.get('late_interest_rate', 6)}% l'an sur toutes les sommes restées en souffrance pourra être appliqué.</li>
+</ul>
+{"<p>Taux hypothécaire : " + str(contract.get('mortgage_rate_ref','')) + "% | Indice suisse des prix à la consommation : " + str(contract.get('cpi_index_ref','')) + "</p>" if contract.get('mortgage_rate_ref') else ""}
+
+<h2>Caution</h2>
+<p>Le montant de la caution (3 mois maximum) est fixé à <strong>CHF {_fmt_chf(contract.get('deposit'))},-</strong>.
+Il est destiné à couvrir les dégâts éventuels et les charges non-payées. Le locataire ne peut pas utiliser cette caution pour le dernier loyer.</p>
+<ul class="clauses">
+  <li>Créer une garantie de loyer auprès d'un organisme style Gocaution.</li>
+  <li>Ouvrir un compte épargne garantie de loyer.</li>
+</ul>
+
+<h2>Obligations du locataire</h2>
+<ul class="clauses">
+  <li>Nettoyage final obligatoirement par une femme de ménage professionnelle mandatée par l'agence. 1 heure minimum
+  (CHF {_fmt_chf(contract.get('cleaning_fee_hourly', 42))},-) est facturée pour le contrôle.</li>
+  <li>Le logement est <strong>non-fumeur</strong>{"." if not contract.get('smoking_allowed') else " sauf accord écrit."}</li>
+  <li>La <strong>sous-location n'est pas autorisée</strong>{"." if not contract.get('subletting_allowed') else " — voir accord écrit."}</li>
+  {"<li>Si du linge est mis à disposition, le nettoyage final du linge sera facturé.</li>" if contract.get('linen_fee_included') else ""}
+  <li>Taxes de séjour selon inscription à l'office de la population.</li>
+  {"<li>Animaux acceptés — le locataire est responsable des dégâts et du nettoyage supplémentaire dûs aux animaux.</li>" if contract.get('animals_allowed') else ""}
+</ul>
+
+<h2>Dispositions générales</h2>
+<p>Le présent bail est régi par le Code des Obligations Suisse et les dispositions légales applicables dans le canton de
+<strong>{contract.get('canton','VS')}</strong>, ainsi que par les clauses particulières ci-dessous.</p>
+<p>Les autorités de conciliation et les tribunaux au for de la situation de l'immeuble sont seuls compétents dans le cadre des litiges.</p>
+<p><strong>Le présent contrat vaut reconnaissance de dette au sens de l'article 82 LP</strong> pour le montant de la location
+et pour toutes sommes dues par le locataire.</p>
+
+<h2>Clauses particulières</h2>
+<ul class="clauses">
+  <li>Le logement est non-fumeur – en cas de non-respect, le locataire est responsable du nettoyage supplémentaire et des dégâts éventuels.</li>
+  {"<li>Si les animaux sont acceptés, le locataire est responsable des dégâts occasionnés.</li>" if contract.get('animals_allowed') else ""}
+  <li>Lorsque le contrat est signé par correspondance, le locataire s'engage à accepter le logement tel que décrit. Sans réclamation dans un délai de 24 heures dès l'entrée, le locataire est réputé l'avoir reçu en bon état.</li>
+  <li><em>Électricité</em> : Les locataires étrangers doivent utiliser un adaptateur (prises suisses incompatibles).</li>
+  <li><em>Clés</em> : Le locataire doit contacter le courtier au moins 48h avant son arrivée afin de fixer un rendez-vous de remise des clefs, au plus tard à 17h.</li>
+  <li>Les paliers doivent être libres de tout objet pour des raisons esthétiques et de sécurité.</li>
+  <li>Silence de 22h à 7h (week-end inclus). Aucune fête ne sera admise sans autorisation.</li>
+  <li>Les déchets doivent être mis dans les sacs appropriés et déposés dans les containers prévus à cet effet.</li>
+  <li>Le locataire autorise le courtier à effectuer des visites du logement en vue d'une location future ou de vente, avec préavis.</li>
+</ul>
+
+<h2>Résiliation par le bailleur</h2>
+<p>En cas de non-paiement du loyer ou d'inobservation des clauses du bail, le présent bail peut être résilié par le bailleur
+avant son expiration selon les termes légaux en vigueur.</p>
+
+<p>Établi en 2 exemplaires, à {contract.get('signed_at_city', prop['city'])}, le {contract.get('signed_date', '…')}</p>
+
+<div class="signature-block">
+  <div class="signature-line">Le(s) locataire(s) :<br/><br/><br/>…………………………………</div>
+  <div class="signature-line">{agency['name']} :<br/><br/><br/>…………………………………</div>
+</div>
+"""
+
+
+def _build_bail_saison(ctx: dict) -> str:
+    agency = ctx["agency"]
+    tenant = ctx["tenant"]
+    prop = ctx["property"]
+    contract = ctx["contract"]
+
+    return f"""
+<h1>Bail à loyer – Location Meublée</h1>
+
+<p><strong>Représentant du bailleur :</strong> {agency['name']}<br/>
+{agency['address']}, {agency['city']}<br/>
+<em>Est mandaté pour conclure un bail au nom et pour le compte d'un représenté.</em></p>
+
+<h2>Locataire</h2>
+<table class="info">
+  <tr><td>Locataire</td><td><strong>{tenant['civility']} {tenant['full_name']}</strong></td></tr>
+  <tr><td>Adresse</td><td>{tenant['address']}</td></tr>
+  <tr><td>Tél</td><td>{tenant.get('phone','')}</td></tr>
+  <tr><td>E-mail</td><td>{tenant.get('email','')}</td></tr>
+  <tr><td>Nationalité</td><td>{tenant.get('nationality','')}</td></tr>
+</table>
+
+<h2>Objet du bail</h2>
+<p>Logement de <strong>{prop.get('rooms','–')}</strong> pièces — <strong>{prop.get('building_name','')}</strong><br/>
+Adresse : {prop['address']}, CH – {prop['zip_code']} {prop['city']}<br/>
+Description : {prop.get('description','')}</p>
+
+<h2>Durée du contrat</h2>
+<p>Contrat à durée déterminée du <strong>{contract['start_date_long']}</strong> au <strong>{contract['end_date_long']}</strong> à midi.</p>
+<p>Une prolongation est possible sous réserve d'accord préalable. Le locataire doit avertir l'agence au moins 1 mois avant la fin du présent contrat.</p>
+
+<h2>Résiliation &amp; Reconduction</h2>
+<p>Une résiliation anticipée est conditionnée au fait que le locataire doit retrouver un nouveau locataire solvable et prêt à reprendre le bail
+aux mêmes conditions. Frais de dossier : <strong>CHF {_fmt_chf(contract.get('early_termination_fee', 270))}.- HT</strong>.</p>
+{"<p>S'il y a plusieurs signataires du bail, alors s'exerce la notion de co-solidarité en droits et devoirs.</p>" if contract.get("occupants_count",1) > 1 else ""}
+
+<h2>Loyer (payable d'avance)</h2>
+<p><strong>CHF {_fmt_chf(contract.get('monthly_rent'))},-</strong> {contract.get('charges_label','charges comprises')}</p>
+{"<p>Taxe de séjour : CHF " + _fmt_chf(contract.get("tourist_tax_amount")) + ",- pour le séjour</p>" if contract.get("tourist_tax_amount") else ""}
+<p><strong>Autres charges :</strong> Assurance RC obligatoire</p>
+
+<p><strong>Le loyer est à verser au plus tard le {contract.get('payment_day', 5)} de chaque mois sur le compte suivant :</strong></p>
+<table class="bank">
+  <tr><td>Banque</td><td>{contract.get('bank_name', agency.get('bank_name',''))}</td></tr>
+  <tr><td>Titulaire</td><td>{agency['name']}, {agency['address']}, {agency['city']}</td></tr>
+  <tr><td>IBAN</td><td>{contract.get('bank_iban', agency.get('iban',''))}</td></tr>
+  <tr><td>BIC</td><td>{contract.get('bank_bic', agency.get('bic',''))}</td></tr>
+  <tr><td>Communication</td><td><strong>{contract.get('payment_communication','')}</strong></td></tr>
+</table>
+
+<p class="important">IMPORTANT :</p>
+<ul class="clauses">
+  <li>Tous les frais bancaires sont à la charge du locataire.</li>
+  <li>Tous les frais de rappel (CHF {_fmt_chf(contract.get('reminder_fee', 35))},-) et les frais de poursuites sont à la charge du locataire.</li>
+  <li>Intérêt de {contract.get('late_interest_rate', 6)}% l'an sur toutes les sommes restées en souffrance.</li>
+</ul>
+
+<h2>Caution</h2>
+<p>Le montant de la caution est fixé à <strong>CHF {_fmt_chf(contract.get('deposit'))},-</strong> (3 mois maximum).
+À verser sur le compte de l'agence maximum <strong>{contract.get('deposit_payment_deadline_days', 10)} jours</strong> avant le début du contrat ou en cash avant la remise des clés.</p>
+
+<h2>Charges &amp; Obligations du locataire</h2>
+<ul class="clauses">
+  <li>Nettoyage final obligatoirement par une femme de ménage mandatée par l'agence. 1h minimum (CHF {_fmt_chf(contract.get('cleaning_fee_hourly', 38))}.- HT) pour la vérification.</li>
+  <li>Le logement est <strong>non-fumeur</strong>.</li>
+  {"<li>Linge selon facture finale — le linge utilisé doit être lavé, repassé et rangé à sa place initiale.</li>" if contract.get('linen_fee_included') else ""}
+  <li>Taxes de séjour selon inscription à l'office de la population.</li>
+</ul>
+
+<h2>Dispositions générales</h2>
+<p>Le présent bail est régi par le Code des Obligations Suisse et les dispositions légales du canton de <strong>{contract.get('canton','VS')}</strong>.</p>
+<p><strong>Le présent contrat vaut reconnaissance de dette au sens de l'article 82 LP.</strong></p>
+
+<p>Établi en 2 exemplaires, à {contract.get('signed_at_city', prop['city'])}, le {contract.get('signed_date', '…')}</p>
+
+<div class="signature-block">
+  <div class="signature-line">Le(s) locataire(s) :<br/><br/><br/>…………………………………</div>
+  <div class="signature-line">{agency['name']} :<br/><br/><br/>…………………………………</div>
+</div>
+"""
+
+
+def _build_mandat_gestion(ctx: dict) -> str:
+    agency = ctx["agency"]
+    owner = ctx["owner"]
+    prop = ctx["property"]
+
+    return f"""
+<h1>Contrat de mandat de gestion locative</h1>
+<p>Sous couvert des articles 394ss et suivant du Code des Obligations (CO), il est entendu ce qui suit :</p>
+
+<h2>Article 1 – Parties contractantes</h2>
+<p>Entre (le soussigné) :</p>
+<table class="info">
+  <tr><td>Nom / Prénom</td><td><strong>{owner.get('full_name','')}</strong></td></tr>
+  <tr><td>Adresse</td><td>{owner.get('address','')}</td></tr>
+  <tr><td>Téléphone</td><td>{owner.get('phone','')}</td></tr>
+  <tr><td>E-mail</td><td>{owner.get('email','')}</td></tr>
+</table>
+<p><em>ci-après désigné « le (la) mandant(e) »</em></p>
+
+<p>et (la soussignée) :</p>
+<table class="info">
+  <tr><td></td><td><strong>{agency['name']}</strong></td></tr>
+  <tr><td>Représentée par</td><td>{agency.get('representative','')}</td></tr>
+  <tr><td>Adresse</td><td>{agency['address']}, {agency['city']}</td></tr>
+</table>
+<p><em>ci-après désignée « le courtier »</em></p>
+
+<h2>Article 2 – Contrat</h2>
+<p>Le présent contrat donne au courtier le mandat de gestion locative servant d'intermédiaire entre le mandant et le client afin de louer le logement.</p>
+<p>{agency['name']} fera :</p>
+<ul class="clauses">
+  <li>Un inventaire photos pour la constitution du dossier</li>
+  <li>Une mise-en-ligne du bien sur plusieurs sites Internet</li>
+  <li>Une prise de contact client</li>
+  <li>La préparation du contrat de bail</li>
+  <li>L'encaissement des loyers et de la caution</li>
+  <li>Le versement des loyers au propriétaire</li>
+  <li>Le décompte annuel</li>
+  <li>Les états des lieux entrée-sortie et/ou intermédiaire en cas de vente de l'objet</li>
+  <li>L'organisation du nettoyage à la fin de la location (appartement, linge et draps)</li>
+</ul>
+
+<h2>Article 3 – Désignation de l'objet</h2>
+<table class="info">
+  <tr><td>Logement N°</td><td>{prop.get('unit_number','')}</td></tr>
+  <tr><td>Immeuble</td><td>{prop.get('building_name','')}</td></tr>
+  <tr><td>Adresse</td><td>{prop['address']}, CH – {prop['zip_code']} {prop['city']}</td></tr>
+  <tr><td>Description</td><td>{prop.get('description','')}</td></tr>
+</table>
+
+<h2>Article 4 – Prix de location</h2>
+<p>Les prix sont fixés d'un commun accord entre les deux parties.<br/>
+Le propriétaire autorise {agency['name']} à ajouter tous frais supplémentaires (nettoyage, linge…) à la charge du locataire.</p>
+<p>Les loyers seront versés sur le compte du propriétaire :</p>
+<table class="bank">
+  <tr><td>Banque</td><td>{owner.get('bank_name','')}</td></tr>
+  <tr><td>Titulaire</td><td>{owner.get('full_name','')}</td></tr>
+  <tr><td>IBAN</td><td>{owner.get('iban','')}</td></tr>
+  <tr><td>BIC</td><td>{owner.get('bic','')}</td></tr>
+</table>
+
+<h2>Article 5 – Obligation de la gérance</h2>
+<p>La gérance est autorisée en cas de nécessité à prendre toutes les mesures qui s'imposent pour sauvegarder les intérêts du propriétaire.
+Elle procède à l'encaissement des loyers et n'est pas responsable de l'insolvabilité imprévisible des locataires.</p>
+<p>En cas de litige, tous les courriers rédigés par l'agence seront facturés <strong>CHF 300.- HT</strong>.
+Représentation à la commission de conciliation : <strong>CHF 1'200.- HT</strong>.</p>
+
+<h2>Article 6 – Obligation du propriétaire</h2>
+<ul class="clauses">
+  <li>Le propriétaire s'engage à équiper son logement de tout le nécessaire pour la satisfaction des locataires.</li>
+  <li>La cuisine doit être équipée de tout l'électroménager obligatoire et en bon fonctionnement.</li>
+  <li>En cas de location à la semaine ou à la saison, le linge de salle de bain et de lit doit être fourni.</li>
+  <li>Trois jeux de clefs de l'appartement seront fournis à l'agence.</li>
+</ul>
+
+<h2>Article 7 – Commission du courtier</h2>
+<ul class="clauses">
+  <li>20% HT du montant total pour une location à la semaine + TVA</li>
+  <li>15% HT du montant total pour une location saison + TVA</li>
+  <li>10% HT du montant total pour une location à l'année + TVA</li>
+</ul>
+
+<h2>Article 8 – Durée du contrat</h2>
+<p>Le mandant accorde au courtier le contrat de mandat de gestion locative à compter de la date de signature.
+Le propriétaire peut résilier par courrier conformément à l'article 404 CO s'il n'y a pas de bail signé.</p>
+
+<h2>Article 9 – Droit applicable</h2>
+<p>Le Droit Suisse est seul applicable. Pour tous les conflits, toutes les parties font élection de domicile et de for à {agency.get('legal_city', prop['city'])}.</p>
+
+<p>Fait à {agency.get('city_short', prop['city'])}, le ………………………………</p>
+
+<div class="signature-block">
+  <div class="signature-line">Le (la) mandant(e) :<br/><br/><br/>…………………………………</div>
+  <div class="signature-line">{agency['name']} :<br/><br/><br/>…………………………………</div>
+</div>
+"""
+
+
+def _build_fiche_bien(ctx: dict) -> str:
+    agency = ctx["agency"]
+    prop = ctx["property"]
+    contract = ctx.get("contract", {})
+
+    features = []
+    if prop.get("has_balcony"): features.append("balcon")
+    if prop.get("has_terrace"): features.append("terrasse")
+    if prop.get("has_garden"): features.append("jardin")
+    if prop.get("has_parking"): features.append("place de parc")
+    if prop.get("has_storage"): features.append("cave / storage")
+    if prop.get("has_fireplace"): features.append("cheminée")
+    if prop.get("has_laundry"): features.append("buanderie")
+    if prop.get("is_furnished"): features.append("meublé")
+
+    features_html = " • ".join(features) if features else "—"
+
+    return f"""
+<h1>Fiche de présentation</h1>
+
+<p style="text-align:center;font-size:13px;font-weight:600;color:#D4601A;">{prop.get('status_label','À Louer')}</p>
+<p style="text-align:center;font-size:18px;font-weight:700;">{prop.get('type_label','Appartement')} {prop.get('rooms','')}{'.5' if prop.get('rooms') else ''} pièces à {prop['city']}</p>
+<p style="text-align:center;color:#666;">{prop.get('nearby_landmarks','')}</p>
+
+<div style="display:flex;gap:20px;margin:16px 0;background:#f9f9f9;padding:12px;border-radius:6px;">
+  <div><span style="font-size:20px;font-weight:700;color:#D4601A;">CHF {_fmt_chf(contract.get('monthly_rent') or prop.get('monthly_rent'))}.-</span><br/><span style="font-size:10px;color:#888;">/ mois</span></div>
+  <div><strong>{prop.get('surface','–')} m²</strong><br/><span style="font-size:10px;color:#888;">surface habitable</span></div>
+  <div><strong>{prop.get('rooms','–')}</strong><br/><span style="font-size:10px;color:#888;">pièces</span></div>
+  <div><strong>{prop.get('bedrooms','–')}</strong><br/><span style="font-size:10px;color:#888;">chambres</span></div>
+  <div><strong>{prop.get('bathrooms','–')}</strong><br/><span style="font-size:10px;color:#888;">salles de bain</span></div>
+</div>
+
+<h2>Description</h2>
+<p>{prop.get('description','')}</p>
+
+<h2>Caractéristiques</h2>
+<p>{features_html}</p>
+
+<h2>Données techniques</h2>
+<table class="bank">
+  <tr><td>Loyer mensuel</td><td><strong>CHF {_fmt_chf(contract.get('monthly_rent') or prop.get('monthly_rent'))}.-</strong></td></tr>
+  <tr><td>Caution</td><td>CHF {_fmt_chf(contract.get('deposit') or prop.get('deposit'))}.-</td></tr>
+  <tr><td>Charges</td><td>{contract.get('charges_label', 'Voir contrat')}</td></tr>
+  <tr><td>Nombre de pièces</td><td>{prop.get('rooms','–')}</td></tr>
+  <tr><td>Chambres</td><td>{prop.get('bedrooms','–')}</td></tr>
+  <tr><td>Salles de bain</td><td>{prop.get('bathrooms','–')}</td></tr>
+  <tr><td>Surface habitable</td><td>{prop.get('surface','–')} m²</td></tr>
+  <tr><td>Adresse</td><td>{prop['address']}, {prop['zip_code']} {prop['city']}</td></tr>
+  {"<tr><td>Réf.</td><td>" + str(prop.get('reference_number','')) + "</td></tr>" if prop.get('reference_number') else ""}
+</table>
+
+<h2>Contact</h2>
+<table class="info">
+  <tr><td>Courtier</td><td><strong>{agency.get('representative','')}</strong></td></tr>
+  <tr><td>Téléphone</td><td>{agency.get('phone','')}</td></tr>
+  <tr><td>E-mail</td><td>{agency.get('email','')}</td></tr>
+  <tr><td>Site web</td><td>{agency.get('website','')}</td></tr>
+</table>
+
+<p style="margin-top:16px;font-size:10px;color:#999;font-style:italic;">
+Ce descriptif n'est pas contractuel. Les informations sont indicatives. Ce dossier et son contenu ne peuvent être transmis à des tiers sans autorisation.
+</p>
+"""
+
+
+def _build_demande_pieces(ctx: dict, profile: str = "annee") -> str:
+    """profile: annee | saison | nuitee | societe | commercial"""
+    agency = ctx["agency"]
+    prop = ctx.get("property", {})
+
+    common_info = """
+<ul class="clauses">
+  <li>Votre adresse personnelle</li>
+  <li>Votre nationalité</li>
+  <li>Votre adresse e-mail</li>
+  <li>Vos coordonnées téléphoniques</li>
+  <li>Vos dates exactes de location</li>
+</ul>"""
+
+    docs_by_profile = {
+        "annee": """
+<p>Et nous adresser par mail :</p>
+<ul class="clauses">
+  <li>Pièce d'identité (passeport ou carte d'identité)</li>
+  <li>Permis de séjour (si applicable)</li>
+  <li>Contrat de travail</li>
+  <li>3 derniers bulletins de salaire (si vous en avez)</li>
+  <li>Attestation d'assurance Responsabilité Civile</li>
+  <li>Caution auprès d'un organisme (Gocaution, Swisscaution) ou d'une banque</li>
+  <li>Extrait d'office des poursuites de moins de 3 mois</li>
+  <li>Référence du propriétaire ou de la dernière agence de location</li>
+</ul>""",
+        "saison": """
+<p>Et nous adresser par mail :</p>
+<ul class="clauses">
+  <li>Pièce d'identité (passeport ou carte d'identité)</li>
+  <li>Permis de séjour (si applicable)</li>
+  <li>Attestation d'assurance Responsabilité Civile</li>
+</ul>""",
+        "nuitee": """
+<p>Et nous adresser par mail :</p>
+<ul class="clauses">
+  <li>Pièce d'identité (passeport ou carte d'identité)</li>
+  <li>Attestation d'assurance Responsabilité Civile</li>
+</ul>""",
+        "societe": """
+<p>Et nous adresser par mail :</p>
+<ul class="clauses">
+  <li>Extrait du registre du commerce de la société (Zefix)</li>
+  <li>Pièce d'identité du représentant de la société</li>
+  <li>Permis de séjour du représentant (si applicable)</li>
+  <li>Attestation d'assurance Responsabilité Civile</li>
+  <li>Caution auprès d'une banque ou d'un organisme comme Swisscaution</li>
+  <li>Extrait d'office des poursuites de moins de 3 mois</li>
+</ul>""",
+        "commercial": """
+<p>Et nous adresser par mail :</p>
+<ul class="clauses">
+  <li>Extrait du registre du commerce (Zefix)</li>
+  <li>Statuts de la société</li>
+  <li>Pièce d'identité du représentant légal</li>
+  <li>Attestation d'assurance Responsabilité Civile Professionnelle</li>
+  <li>Bilans et comptes de résultat des 2 derniers exercices</li>
+  <li>Caution bancaire ou garantie d'organisme spécialisé</li>
+  <li>Extrait d'office des poursuites de moins de 3 mois</li>
+  <li>Plan d'affaires si la société est récente</li>
+</ul>""",
+    }
+
+    profile_labels = {
+        "annee": "location à l'année",
+        "saison": "location saisonnière",
+        "nuitee": "location à la nuitée",
+        "societe": "location pour une société",
+        "commercial": "bail commercial",
+    }
+
+    societe_extra = ""
+    if profile == "societe":
+        societe_extra = """
+<p>Merci de nous communiquer également :</p>
+<ul class="clauses">
+  <li>Le nom de la société</li>
+  <li>Le nom du représentant</li>
+  <li>L'adresse du représentant</li>
+  <li>La nationalité du représentant</li>
+</ul>"""
+
+    prop_ref = f" — {prop.get('building_name', '')} {prop.get('address', prop.get('city', ''))}" if prop.get('city') else ""
+
+    return f"""
+<h1>Demande de pièces</h1>
+<p style="text-align:center;">Renseignements et documents nécessaires pour un contrat de {profile_labels.get(profile, profile)}{prop_ref}</p>
+
+<h2>Informations à nous communiquer</h2>
+{common_info}
+{societe_extra}
+{docs_by_profile.get(profile, docs_by_profile['annee'])}
+
+<p style="margin-top:20px;">Merci de nous faire parvenir ces documents à l'adresse : <strong>{agency.get('email','')}</strong></p>
+<p>Pour toute question : <strong>{agency.get('phone','')}</strong></p>
+<p style="margin-top:12px;font-size:10px;color:#888;">Ces documents sont traités de manière confidentielle et utilisés uniquement dans le cadre de votre dossier de location.</p>
+"""
+
+
+def _build_requisition_poursuite(ctx: dict) -> str:
+    agency = ctx["agency"]
+    tenant = ctx["tenant"]
+    contract = ctx.get("contract", {})
+    claims = ctx.get("claims", [])
+
+    claims_rows = ""
+    for i, claim in enumerate(claims[:10], 1):
+        claims_rows += f"<tr><td>{i}</td><td>{claim.get('cause','')}</td><td>CHF {_fmt_chf(claim.get('amount'))}</td><td>{claim.get('interest_rate','')}</td><td>{claim.get('interest_from','')}</td></tr>"
+
+    return f"""
+<h1>Réquisition de poursuite</h1>
+<p style="font-size:10px;color:#888;">À remplir en majuscules — LP RS 281.1</p>
+
+<h2>Débiteur</h2>
+<table class="info">
+  <tr><td>Nom / Prénom</td><td><strong>{tenant.get('full_name','')}</strong></td></tr>
+  <tr><td>Adresse</td><td>{tenant.get('address','')}</td></tr>
+  <tr><td>NPA / Lieu</td><td>{tenant.get('zip','')} {tenant.get('city','')}</td></tr>
+  <tr><td>Date de naissance</td><td>{tenant.get('dob','')}</td></tr>
+</table>
+
+<h2>Créancier</h2>
+<table class="info">
+  <tr><td>Raison sociale</td><td><strong>{agency['name']}</strong></td></tr>
+  <tr><td>Adresse</td><td>{agency['address']}</td></tr>
+  <tr><td>NPA / Lieu</td><td>{agency['city']}</td></tr>
+</table>
+<table class="bank">
+  <tr><td>IBAN</td><td>{agency.get('iban','')}</td></tr>
+  <tr><td>Téléphone</td><td>{agency.get('phone','')}</td></tr>
+  <tr><td>E-mail</td><td>{agency.get('email','')}</td></tr>
+</table>
+
+<h2>Créances</h2>
+<table class="bank" style="width:100%;">
+  <tr style="background:#f5f5f5;">
+    <td style="width:30px;">#</td>
+    <td>Cause de l'obligation / Titre de la créance</td>
+    <td style="width:100px;">Montant (CHF)</td>
+    <td style="width:60px;">Intérêt %</td>
+    <td style="width:80px;">Dès le</td>
+  </tr>
+  {claims_rows if claims_rows else "<tr><td colspan='5'>…</td></tr>"}
+</table>
+
+<p style="margin-top:12px;"><strong>Observations :</strong> Bail à loyer réf. {contract.get('reference','')}, {contract.get('start_date_long','')} – {contract.get('end_date_long','')}</p>
+<p><strong>Votre référence :</strong> {contract.get('reference','')}</p>
+
+<p style="margin-top:16px;">Date et signature : ………………………………</p>
+
+<p style="margin-top:16px;font-size:10px;color:#888;font-style:italic;">
+Ce formulaire doit être adressé à l'office des poursuites compétent selon le for du débiteur (art. 46 LP).
+Pour les personnes domiciliées en Suisse : office des poursuites du domicile du débiteur.
+Pour plus d'informations : www.portaildespoursuites.ch
+</p>
+"""
+
+
+# ─── Context builder ──────────────────────────────────────────────────────────
+
+def _build_ctx(
+    contract: Contract | None,
+    prop: Property | None,
+    owner: User,
+    tenant: User | None,
+    agency_user: User | None,
+    agency_settings: dict | None,
+    extra: dict,
+) -> dict:
+    def _s(val: Any) -> str:
+        return str(val) if val is not None else ""
+
+    agency_info = {
+        "name": agency_settings.get("agency_name") if agency_settings else (
+            f"{agency_user.first_name} {agency_user.last_name}" if agency_user else "—"
+        ),
+        "address": agency_settings.get("address", "") if agency_settings else "",
+        "city": agency_settings.get("city", "") if agency_settings else "",
+        "phone": agency_settings.get("phone", "") if agency_settings else _s(getattr(agency_user, "phone", "")),
+        "email": agency_settings.get("notification_email", "") if agency_settings else _s(getattr(agency_user, "email", "")),
+        "website": agency_settings.get("website", "althy.ch") if agency_settings else "althy.ch",
+        "logo_url": agency_settings.get("logo_url") if agency_settings else None,
+        "representative": agency_settings.get("representative_name", "") if agency_settings else "",
+        "iban": getattr(agency_user, "iban", "") or "",
+        "bic": getattr(agency_user, "bic", "") or "",
+        "bank_name": getattr(agency_user, "bank_account_holder", "") or "",
+        "legal_city": agency_settings.get("city", prop.city if prop else "") if agency_settings else (prop.city if prop else ""),
+    }
+
+    tenant_info: dict = {}
+    if tenant:
+        tenant_info = {
+            "civility": "M." if (tenant.first_name or "").endswith("s") is False else "Mme",
+            "full_name": f"{tenant.first_name or ''} {tenant.last_name or ''}".strip(),
+            "email": tenant.email or "",
+            "phone": tenant.phone or "",
+            "address": "",
+            "nationality": "",
+            "dob": "",
+        }
+    if contract:
+        if hasattr(contract, "tenant_address") and contract.tenant_address:
+            tenant_info["address"] = contract.tenant_address
+        if hasattr(contract, "tenant_nationality") and contract.tenant_nationality:
+            tenant_info["nationality"] = contract.tenant_nationality
+
+    tenant_info.update(extra.get("tenant_extra", {}))
+
+    prop_info: dict = {}
+    if prop:
+        prop_info = {
+            "address": prop.address,
+            "city": prop.city,
+            "zip_code": prop.zip_code,
+            "surface": prop.surface,
+            "rooms": prop.rooms,
+            "description": prop.description or "",
+            "monthly_rent": float(prop.monthly_rent) if prop.monthly_rent else None,
+            "deposit": float(prop.deposit) if prop.deposit else None,
+            "is_furnished": getattr(prop, "is_furnished", False),
+            "has_parking": getattr(prop, "has_parking", False),
+            "has_balcony": getattr(prop, "has_balcony", False),
+            "has_terrace": getattr(prop, "has_terrace", False),
+            "has_garden": getattr(prop, "has_garden", False),
+            "has_storage": getattr(prop, "has_storage", False),
+            "has_fireplace": getattr(prop, "has_fireplace", False),
+            "has_laundry": getattr(prop, "has_laundry", False),
+            "linen_provided": getattr(prop, "linen_provided", False),
+            "building_name": getattr(prop, "building_name", "") or "",
+            "unit_number": getattr(prop, "unit_number", "") or "",
+            "bedrooms": getattr(prop, "bedrooms", None),
+            "bathrooms": getattr(prop, "bathrooms", None),
+            "reference_number": getattr(prop, "reference_number", "") or "",
+            "nearby_landmarks": getattr(prop, "nearby_landmarks", "") or "",
+            "canton": getattr(prop, "canton", "VS") or "VS",
+            "is_for_sale": getattr(prop, "is_for_sale", False),
+            "type_label": {
+                "apartment": "Appartement", "villa": "Villa", "parking": "Parking",
+                "office": "Bureau", "commercial": "Local commercial", "hotel": "Hôtel",
+            }.get(prop.type, "Bien"),
+            "status_label": {
+                "available": "À Louer", "rented": "Loué", "for_sale": "À Vendre",
+                "sold": "Vendu",
+            }.get(prop.status, "Disponible"),
+        }
+
+    contract_info: dict = {}
+    if contract:
+        contract_info = {
+            "reference": contract.reference,
+            "monthly_rent": float(contract.monthly_rent) if contract.monthly_rent else None,
+            "charges": float(contract.charges) if contract.charges else None,
+            "deposit": float(contract.deposit) if contract.deposit else None,
+            "start_date_long": _fmt_date_long(contract.start_date),
+            "end_date_long": _fmt_date_long(contract.end_date) if contract.end_date else "…",
+            "is_furnished": getattr(contract, "is_furnished", False),
+            "payment_day": getattr(contract, "payment_day", 5),
+            "notice_period_months": getattr(contract, "notice_period_months", 3),
+            "notice_deadline_date": getattr(contract, "notice_deadline_date", "") or "",
+            "partial_period_days": getattr(contract, "partial_period_days", None),
+            "partial_period_rent": float(contract.partial_period_rent) if getattr(contract, "partial_period_rent", None) else None,
+            "partial_period_label": extra.get("partial_period_label", ""),
+            "charges_label": extra.get("charges_label", "charges comprises"),
+            "tourist_tax_amount": float(contract.tourist_tax_amount) if getattr(contract, "tourist_tax_amount", None) else None,
+            "cleaning_fee_hourly": float(contract.cleaning_fee_hourly) if getattr(contract, "cleaning_fee_hourly", None) else 42,
+            "linen_fee_included": getattr(contract, "linen_fee_included", False),
+            "reminder_fee": float(contract.reminder_fee) if getattr(contract, "reminder_fee", None) else 35,
+            "late_interest_rate": float(contract.late_interest_rate) if getattr(contract, "late_interest_rate", None) else 6,
+            "mortgage_rate_ref": float(contract.mortgage_rate_ref) if getattr(contract, "mortgage_rate_ref", None) else None,
+            "cpi_index_ref": float(contract.cpi_index_ref) if getattr(contract, "cpi_index_ref", None) else None,
+            "deposit_type": getattr(contract, "deposit_type", "gocaution") or "gocaution",
+            "deposit_payment_deadline_days": getattr(contract, "deposit_payment_deadline_days", 10),
+            "early_termination_fee": float(contract.early_termination_fee) if getattr(contract, "early_termination_fee", None) else 270,
+            "payment_communication": getattr(contract, "payment_communication", "") or "",
+            "subletting_allowed": getattr(contract, "subletting_allowed", False),
+            "animals_allowed": getattr(contract, "animals_allowed", False),
+            "smoking_allowed": getattr(contract, "smoking_allowed", False),
+            "is_for_sale": getattr(contract, "is_for_sale", False),
+            "signed_at_city": getattr(contract, "signed_at_city", "") or (prop.city if prop else ""),
+            "signed_date": extra.get("signed_date", ""),
+            "canton": getattr(contract, "canton", "VS") or "VS",
+            "bank_name": getattr(contract, "bank_name", "") or "",
+            "bank_iban": getattr(contract, "bank_iban", "") or "",
+            "bank_bic": getattr(contract, "bank_bic", "") or "",
+            "occupants_count": getattr(contract, "occupants_count", 1),
+            "tenant_nationality": getattr(contract, "tenant_nationality", "") or "",
+        }
+
+    owner_info = {
+        "full_name": f"{owner.first_name or ''} {owner.last_name or ''}".strip(),
+        "email": owner.email or "",
+        "phone": owner.phone or "",
+        "iban": owner.iban or "",
+        "bic": owner.bic or "",
+        "bank_account_holder": owner.bank_account_holder or "",
+        "address": extra.get("owner_address", ""),
+        "bank_name": extra.get("owner_bank_name", ""),
+    }
+
+    return {
+        "agency": agency_info,
+        "tenant": tenant_info,
+        "property": prop_info,
+        "contract": contract_info,
+        "owner": owner_info,
+        "claims": extra.get("claims", []),
+    }
+
+
+# ─── Pydantic schemas ─────────────────────────────────────────────────────────
+
+class GenerateRequest(BaseModel):
+    template_type: str
+    contract_id: str | None = None
+    property_id: str | None = None
+    profile: str = "annee"
+    extra: dict = {}
+
+
+class GeneratedDocRead(BaseModel):
+    id: str
+    template_type: str
+    content_html: str
+    status: str
+    created_at: str
+    model_config = {"from_attributes": True}
+
+
+TEMPLATE_TYPES = [
+    "bail_annee", "bail_annee_avec_vente", "bail_saison",
+    "mandat_gestion", "fiche_bien",
+    "demande_pieces_annee", "demande_pieces_saison", "demande_pieces_nuitee",
+    "demande_pieces_societe", "demande_pieces_commercial",
+    "requisition_poursuite",
+]
+
+
+# ─── Routes ───────────────────────────────────────────────────────────────────
+
+@router.get("/types")
+async def list_template_types() -> list[dict]:
+    return [
+        {"key": "bail_annee", "label": "Bail à l'année", "icon": "📄"},
+        {"key": "bail_annee_avec_vente", "label": "Bail à l'année + clause vente", "icon": "🏷️"},
+        {"key": "bail_saison", "label": "Bail saisonnier (meublé)", "icon": "❄️"},
+        {"key": "mandat_gestion", "label": "Mandat de gestion locative", "icon": "🤝"},
+        {"key": "fiche_bien", "label": "Fiche de présentation du bien", "icon": "🏠"},
+        {"key": "demande_pieces_annee", "label": "Demande de pièces — Annuel (individuel)", "icon": "📋"},
+        {"key": "demande_pieces_saison", "label": "Demande de pièces — Saisonnier", "icon": "📋"},
+        {"key": "demande_pieces_nuitee", "label": "Demande de pièces — Nuitée", "icon": "📋"},
+        {"key": "demande_pieces_societe", "label": "Demande de pièces — Société", "icon": "🏢"},
+        {"key": "demande_pieces_commercial", "label": "Demande de pièces — Bail commercial", "icon": "🏪"},
+        {"key": "requisition_poursuite", "label": "Réquisition de poursuite LP", "icon": "⚖️"},
+    ]
+
+
+@router.post("/generate", status_code=status.HTTP_201_CREATED)
+async def generate_document(
+    payload: GenerateRequest,
+    db: DbDep,
+    current_user: AuthDep,
+) -> dict:
+    """Generate a document and store it. Returns the generated document with HTML."""
+
+    # Load contract
+    contract: Contract | None = None
+    if payload.contract_id:
+        res = await db.execute(select(Contract).where(Contract.id == uuid_lib.UUID(payload.contract_id)))
+        contract = res.scalar_one_or_none()
+        if not contract:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Contrat introuvable")
+
+    # Load property
+    prop: Property | None = None
+    prop_id = payload.property_id or (str(contract.property_id) if contract else None)
+    if prop_id:
+        res = await db.execute(select(Property).where(Property.id == uuid_lib.UUID(prop_id)))
+        prop = res.scalar_one_or_none()
+
+    # Load tenant
+    tenant: User | None = None
+    if contract and contract.tenant_id:
+        res = await db.execute(select(User).where(User.id == contract.tenant_id))
+        tenant = res.scalar_one_or_none()
+
+    # Load agency
+    agency_user: User | None = None
+    agency_id = contract.agency_id if contract else None
+    if not agency_id and prop:
+        agency_id = prop.agency_id
+    if agency_id:
+        res = await db.execute(select(User).where(User.id == agency_id))
+        agency_user = res.scalar_one_or_none()
+
+    # Determine owner
+    owner = current_user
+    if contract and contract.owner_id != current_user.id:
+        res = await db.execute(select(User).where(User.id == contract.owner_id))
+        found = res.scalar_one_or_none()
+        if found:
+            owner = found
+
+    # Agency settings (try to load)
+    agency_settings: dict | None = None
+    try:
+        from app.models.agency_settings import AgencySettings
+        eff_agency_id = agency_id or (current_user.id if current_user.role == "agency" else None)
+        if eff_agency_id:
+            res = await db.execute(select(AgencySettings).where(AgencySettings.agency_id == eff_agency_id))
+            settings_obj = res.scalar_one_or_none()
+            if settings_obj:
+                agency_settings = {
+                    "agency_name": settings_obj.agency_name,
+                    "notification_email": settings_obj.notification_email,
+                    "logo_url": settings_obj.logo_url,
+                    "representative_name": settings_obj.representative_name,
+                    "address": settings_obj.address if hasattr(settings_obj, "address") else "",
+                    "city": settings_obj.city if hasattr(settings_obj, "city") else "",
+                    "phone": settings_obj.phone if hasattr(settings_obj, "phone") else "",
+                    "website": settings_obj.website if hasattr(settings_obj, "website") else "althy.ch",
+                }
+    except Exception:
+        pass
+
+    ctx = _build_ctx(contract, prop, owner, tenant, agency_user, agency_settings, payload.extra)
+
+    # Generate body HTML
+    ttype = payload.template_type
+    body_html: str
+
+    if ttype == "bail_annee":
+        body_html = _build_bail_annee(ctx, with_sale_clause=False)
+    elif ttype == "bail_annee_avec_vente":
+        body_html = _build_bail_annee(ctx, with_sale_clause=True)
+    elif ttype == "bail_saison":
+        body_html = _build_bail_saison(ctx)
+    elif ttype == "mandat_gestion":
+        body_html = _build_mandat_gestion(ctx)
+    elif ttype == "fiche_bien":
+        body_html = _build_fiche_bien(ctx)
+    elif ttype.startswith("demande_pieces"):
+        profile_map = {
+            "demande_pieces_annee": "annee",
+            "demande_pieces_saison": "saison",
+            "demande_pieces_nuitee": "nuitee",
+            "demande_pieces_societe": "societe",
+            "demande_pieces_commercial": "commercial",
+        }
+        body_html = _build_demande_pieces(ctx, profile=profile_map.get(ttype, payload.profile))
+    elif ttype == "requisition_poursuite":
+        body_html = _build_requisition_poursuite(ctx)
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Type de document inconnu: {ttype}")
+
+    title_map = {
+        "bail_annee": "Bail à l'année",
+        "bail_annee_avec_vente": "Bail à l'année — bien en vente",
+        "bail_saison": "Bail saisonnier",
+        "mandat_gestion": "Mandat de gestion locative",
+        "fiche_bien": "Fiche de présentation",
+        "demande_pieces_annee": "Demande de pièces",
+        "demande_pieces_saison": "Demande de pièces",
+        "demande_pieces_nuitee": "Demande de pièces",
+        "demande_pieces_societe": "Demande de pièces",
+        "demande_pieces_commercial": "Demande de pièces",
+        "requisition_poursuite": "Réquisition de poursuite",
+    }
+
+    full_html = _wrap_html(body_html, ctx["agency"], title_map.get(ttype, "Document"))
+
+    # Save
+    doc = GeneratedDocument(
+        id=uuid_lib.uuid4(),
+        template_type=ttype,
+        contract_id=contract.id if contract else None,
+        property_id=prop.id if prop else None,
+        owner_id=owner.id,
+        agency_id=agency_id,
+        generated_by_id=current_user.id,
+        content_html=full_html,
+        context_data={"extra": payload.extra},
+        status="draft",
+    )
+    db.add(doc)
+    await db.commit()
+    await db.refresh(doc)
+
+    return {
+        "id": str(doc.id),
+        "template_type": doc.template_type,
+        "content_html": doc.content_html,
+        "status": doc.status,
+        "created_at": doc.created_at.isoformat(),
+    }
+
+
+@router.get("/{doc_id}")
+async def get_document(
+    doc_id: str,
+    db: DbDep,
+    current_user: AuthDep,
+) -> dict:
+    res = await db.execute(select(GeneratedDocument).where(GeneratedDocument.id == uuid_lib.UUID(doc_id)))
+    doc = res.scalar_one_or_none()
+    if not doc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Document introuvable")
+    if doc.owner_id != current_user.id and doc.generated_by_id != current_user.id and current_user.role != "super_admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Non autorisé")
+    return {
+        "id": str(doc.id),
+        "template_type": doc.template_type,
+        "content_html": doc.content_html,
+        "status": doc.status,
+        "created_at": doc.created_at.isoformat(),
+    }
+
+
+@router.get("/")
+async def list_documents(
+    db: DbDep,
+    current_user: AuthDep,
+    contract_id: str | None = Query(None),
+    limit: int = Query(20, ge=1, le=100),
+) -> list[dict]:
+    q = select(GeneratedDocument).where(
+        (GeneratedDocument.owner_id == current_user.id) |
+        (GeneratedDocument.generated_by_id == current_user.id)
+    ).order_by(GeneratedDocument.created_at.desc()).limit(limit)
+
+    if contract_id:
+        q = q.where(GeneratedDocument.contract_id == uuid_lib.UUID(contract_id))
+
+    res = await db.execute(q)
+    docs = res.scalars().all()
+    return [
+        {"id": str(d.id), "template_type": d.template_type, "status": d.status, "created_at": d.created_at.isoformat()}
+        for d in docs
+    ]
+
+
+@router.delete("/{doc_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+async def delete_document(doc_id: str, db: DbDep, current_user: AuthDep) -> None:
+    res = await db.execute(select(GeneratedDocument).where(GeneratedDocument.id == uuid_lib.UUID(doc_id)))
+    doc = res.scalar_one_or_none()
+    if not doc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Document introuvable")
+    if doc.generated_by_id != current_user.id and current_user.role != "super_admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Non autorisé")
+    await db.delete(doc)
+    await db.commit()

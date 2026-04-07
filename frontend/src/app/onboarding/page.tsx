@@ -2,6 +2,7 @@
 import { useRouter } from 'next/navigation'
 import { SmartOnboarding } from '@/components/SmartOnboarding'
 import { createClient } from '@/lib/supabase'
+import { baseURL } from '@/lib/api'
 
 const ROLE_ROUTES: Record<string, string> = {
   owner: '/app/dashboard', agency: '/app/dashboard',
@@ -16,9 +17,7 @@ export default function OnboardingPage() {
       const supabase = createClient()
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token ?? ''
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? ''
-
-      await fetch(`${apiUrl}/auth/profile`, {
+      await fetch(`${baseURL}/auth/profile`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({

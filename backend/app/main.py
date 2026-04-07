@@ -16,6 +16,7 @@ from app.routers import (
     transactions,
 )
 from app.routers.agency_settings import router as agency_settings_router
+from app.routers.documents import router as documents_router
 from app.routers.favorites import router as favorites_router
 from app.routers.insurance import router as insurance_router
 from app.routers.ratings import router as ratings_router
@@ -100,6 +101,7 @@ app.include_router(ratings_router, prefix="/api/v1/ratings", tags=["ratings"])
 app.include_router(favorites_router, prefix="/api/v1/favorites", tags=["favorites"])
 app.include_router(agency_settings_router, prefix="/api/v1/agency", tags=["agency"])
 app.include_router(insurance_router, prefix="/api/v1/insurance", tags=["insurance"])
+app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
 
 
 # ── Health check ──────────────────────────────────────────────────────────────

@@ -337,7 +337,114 @@ Tu peux :
 Quand tu suggères une action dans l'app, utilise ce format JSON en fin de réponse :
 <action>{"type": "navigate", "path": "/contracts/new", "label": "Créer un contrat"}</action>
 
+Pour les actions qui nécessitent une validation humaine (paiements, création de documents légaux),
+ajoute requires_validation: true dans l'action JSON.
+
 Sois concis, professionnel et bienveillant. Réponds toujours en français."""
+
+# ── Role-specific system prompts ──────────────────────────────────────────────
+
+_ROLE_PROMPTS: dict[str, str] = {
+    "owner": """Tu es AlthyAI, copilote IA d'un propriétaire sur Althy (althy.ch), plateforme immobilière suisse.
+
+Tes compétences pour ce propriétaire :
+- Gestion complète de ses biens (loyers, locataires, travaux, historique)
+- Rédaction automatique de baux conformes au droit suisse (CO art. 253-274g)
+- États des lieux d'entrée/sortie (EDL) détaillés et opposables
+- Analyse des paiements, détection d'anomalies, relances
+- Résumé de l'historique complet d'un bien (locataires, interventions, incidents)
+- Contenu pour réseaux sociaux (annonces, posts immobiliers)
+- Coordination des interventions techniques
+
+Actions disponibles :
+<action>{"type": "navigate", "path": "/app/properties", "label": "Mes biens"}</action>
+<action>{"type": "navigate", "path": "/app/contracts/new", "label": "Nouveau bail", "requires_validation": true}</action>
+<action>{"type": "navigate", "path": "/app/rfqs/new", "label": "Demander intervention"}</action>
+
+Cite le CO (Code des obligations) et les lois cantonales suisses si pertinent. Max 300 mots.""",
+
+    "agency": """Tu es AlthyAI, copilote IA d'une agence immobilière sur Althy (althy.ch).
+
+Tes compétences pour cette agence :
+- Gestion du portefeuille complet (tous les biens de toutes les agences)
+- Comptabilité officielle exportable fiduciaire (format CSV/PDF structuré)
+- Paramétrage flexible des commissions (gérance 2-5%, location 2-4 mois de loyer selon canton)
+- Rédaction/adaptation de baux au profil de l'agence (clauses spécifiques, logos, coordonnées)
+- EDL professionnels avec rapport complet
+- Analyse de performance du portefeuille
+- Récupération des infos de l'agence (DA, RC, coordonnées légales)
+
+Actions disponibles :
+<action>{"type": "navigate", "path": "/app/properties", "label": "Portefeuille"}</action>
+<action>{"type": "navigate", "path": "/app/contracts", "label": "Contrats"}</action>
+<action>{"type": "navigate", "path": "/app/transactions", "label": "Comptabilité"}</action>
+
+Taux légaux CH : gérance locative 2-5%, honoraires de location 2-4 mois, dépôt max 3 mois (CO art. 257e).""",
+
+    "tenant": """Tu es AlthyAI, copilote IA d'un locataire sur Althy (althy.ch).
+
+Tes compétences pour ce locataire :
+- Expliquer son bail en termes simples et accessibles
+- Historique complet de tous ses logements passés et actuels
+- Suivi des paiements (loyer, charges, caution)
+- Signalement de problèmes et déclenchement d'interventions
+- Droits et obligations (Code des obligations suisse, art. 257-259)
+- Vérification de l'état des lieux (entrée/sortie)
+- Accès aux favoris et alertes de biens disponibles
+
+Actions disponibles :
+<action>{"type": "navigate", "path": "/tenant", "label": "Mon espace"}</action>
+<action>{"type": "navigate", "path": "/tenant/report", "label": "Signaler un problème"}</action>
+<action>{"type": "navigate", "path": "/tenant/documents", "label": "Mes documents"}</action>
+
+Explique le droit suisse simplement. Protège les intérêts du locataire (CO art. 270 hausse de loyer abusive, etc.).""",
+
+    "company": """Tu es AlthyAI, copilote IA d'une entreprise/artisan sur Althy (althy.ch).
+
+Tes compétences pour cette entreprise :
+- Rédiger des devis professionnels à partir d'une description de travaux
+- Gérer les appels d'offres (RFQ) reçus et y répondre
+- Comptabilité des interventions (acceptées, en cours, terminées)
+- Importer des devis existants dans la plateforme
+- Rapport d'intervention complet après travaux
+- Analyse des notes et avis reçus
+
+Actions disponibles :
+<action>{"type": "navigate", "path": "/app/rfqs", "label": "Appels d'offres"}</action>
+<action>{"type": "navigate", "path": "/app/companies", "label": "Mon profil"}</action>
+
+Sois direct et orienté résultat. Aide à maximiser les opportunités business.""",
+
+    "opener": """Tu es AlthyAI, copilote IA d'un ouvreur terrain sur Althy (althy.ch).
+
+Tes compétences pour cet ouvreur :
+- Trouver et accepter des missions proches de sa localisation
+- Rédiger des rapports de visite, états des lieux, remise de clés
+- Suivre ses gains et ses disponibilités
+- Optimiser sa zone d'intervention et ses tarifs
+- Signaler des problèmes découverts lors d'une mission
+
+Actions disponibles :
+<action>{"type": "navigate", "path": "/app/openers", "label": "Mes missions"}</action>
+<action>{"type": "navigate", "path": "/opener", "label": "Tableau de bord ouvreur"}</action>""",
+
+    "super_admin": """Tu es AlthyAI, copilote administrateur de la plateforme Althy.
+Tu as accès à toutes les fonctionnalités. Sois précis sur les données de la plateforme.""",
+}
+
+
+def _build_system_prompt(role: str, user_name: str = "", extra_context: str = "") -> str:
+    """Return a role-specific system prompt enriched with user context."""
+    base = _ROLE_PROMPTS.get(role, SYSTEM_PROMPT)
+    parts: list[str] = []
+    if user_name:
+        parts.append(f"Tu parles à {user_name}.")
+    parts.append(base)
+    if extra_context:
+        parts.append(f"Contexte actuel :\n{extra_context}")
+    parts.append("Quand tu suggères une action dans l'app, utilise le format <action>{{...}}</action>.")
+    parts.append("Réponds toujours en français. Sois concis et actionnable.")
+    return "\n\n".join(parts)
 
 
 async def _get_conversation_history(
@@ -436,14 +543,16 @@ async def chat_stream(
     ctx_parts = []
     if context.get("page"):
         ctx_parts.append(f"Page active : {context['page']}")
-    if context.get("role"):
-        ctx_parts.append(f"Rôle utilisateur : {context['role']}")
     if context.get("property_id"):
         ctx_parts.append(f"Bien sélectionné : {context['property_id']}")
+    if context.get("contract_id"):
+        ctx_parts.append(f"Contrat en cours : {context['contract_id']}")
+    if context.get("mission_id"):
+        ctx_parts.append(f"Mission en cours : {context['mission_id']}")
 
-    system = SYSTEM_PROMPT
-    if ctx_parts:
-        system += "\n\nContexte actuel :\n" + "\n".join(ctx_parts)
+    role = context.get("role", "")
+    user_name = context.get("user_name", "")
+    system = _build_system_prompt(role, user_name, "\n".join(ctx_parts))
 
     # Retrieve conversation history
     history = await _get_conversation_history(db, user_id, session_id)
@@ -587,6 +696,472 @@ Détecte uniquement des patterns réels : impayés répétés, retards croissant
     except (json.JSONDecodeError, TypeError) as exc:
         log.warning("Failed to parse anomaly JSON: %s", exc)
         return []
+
+
+# ── 6. Draft lease (Swiss law) ────────────────────────────────────────────────
+
+
+async def draft_lease(
+    property_data: dict,
+    tenant_data: dict,
+    params: dict,
+    db: AsyncSession,
+    user_id: str,
+) -> str:
+    """
+    Generate a complete Swiss-law compliant residential lease in French.
+    Covers CO art. 253-274g. Returns markdown text ready to render as PDF.
+    """
+    if not _check_rate_limit(user_id):
+        raise RuntimeError("Limite de débit IA atteinte — réessayez dans une minute.")
+
+    prompt = f"""Tu es expert en droit suisse du bail à loyer. Rédige un bail d'habitation COMPLET et juridiquement valide selon le Code des obligations suisse (CO art. 253-274g).
+
+Données du bien :
+{json.dumps(property_data, ensure_ascii=False, indent=2)}
+
+Données du locataire :
+{json.dumps(tenant_data, ensure_ascii=False, indent=2)}
+
+Paramètres du bail :
+{json.dumps(params, ensure_ascii=False, indent=2)}
+
+Rédige le bail complet en markdown avec ces sections obligatoires :
+1. **Parties au contrat** (bailleur, locataire, bien)
+2. **Objet du bail** (description précise du logement)
+3. **Durée du bail** (début, fin si déterminée, durée minimale)
+4. **Loyer et charges** (montant, acompte charges, mode de paiement, IBAN)
+5. **Dépôt de garantie** (max 3 mois selon CO art. 257e — sur compte bloqué)
+6. **Usage de la chose louée** (affectation, sous-location, animaux)
+7. **Entretien et réparations** (art. 259-259i CO — petites réparations à charge locataire)
+8. **Résiliation** (délais légaux : 3 mois pour logements, congé à terme)
+9. **Hausses de loyer** (procédure formule officielle, art. 269d CO)
+10. **État des lieux** (EDL d'entrée joint, réserves)
+11. **Dispositions particulières** (selon paramètres spécifiques)
+12. **Signatures** (lieu, date, espaces bailleur/locataire)
+
+Utilise les formulations légales suisses exactes. Cite les articles du CO si pertinent.
+Note en bas : "Ce bail est fourni à titre indicatif par Althy. Faites-le valider par un juriste avant signature."
+Réponds uniquement le bail, en markdown."""
+
+    client = _client()
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=4000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    await _log_usage(db, user_id, "draft_lease", message.usage)
+    return message.content[0].text.strip()  # type: ignore[union-attr]
+
+
+# ── 7. Draft EDL (état des lieux) ─────────────────────────────────────────────
+
+
+async def draft_edl(
+    property_data: dict,
+    edl_type: str,
+    inspection_date: str,
+    previous_edl: dict | None,
+    db: AsyncSession,
+    user_id: str,
+) -> dict:
+    """
+    Generate a structured entry/exit inspection form (EDL) in French.
+    Returns a structured dict with rooms, checkpoints, and comparison vs previous EDL.
+    """
+    if not _check_rate_limit(user_id):
+        raise RuntimeError("Limite de débit IA atteinte — réessayez dans une minute.")
+
+    edl_label = "entrée" if edl_type == "entry" else "sortie"
+    comparison_block = ""
+    if previous_edl and edl_type == "exit":
+        comparison_block = f"""
+EDL d'ENTRÉE (comparaison) :
+{json.dumps(previous_edl, ensure_ascii=False, indent=2)}
+Identifie les dégradations entre l'état d'entrée et la sortie.
+"""
+
+    prompt = f"""Tu es expert en gestion locative suisse. Génère un état des lieux d'{edl_label} STRUCTURÉ et opposable pour le bien suivant.
+
+Bien :
+{json.dumps(property_data, ensure_ascii=False, indent=2)}
+
+Date d'inspection : {inspection_date}
+Type : {edl_label.upper()}
+{comparison_block}
+
+Retourne UNIQUEMENT ce JSON :
+{{
+  "type": "{edl_type}",
+  "date": "{inspection_date}",
+  "property_summary": "description courte du bien",
+  "general_condition": "bon|moyen|mauvais",
+  "rooms": [
+    {{
+      "name": "Entrée / Hall",
+      "elements": [
+        {{"name": "Sol", "condition": "bon|moyen|mauvais|à noter", "notes": ""}},
+        {{"name": "Murs/Plafond", "condition": "bon", "notes": ""}},
+        {{"name": "Éclairage", "condition": "bon", "notes": ""}},
+        {{"name": "Porte", "condition": "bon", "notes": ""}}
+      ]
+    }}
+  ],
+  "keys_given": {{"entrance": 2, "mailbox": 1, "cellar": 0, "garage": 0}},
+  "meter_readings": {{"electricity_kwh": null, "water_m3": null, "gas_m3": null}},
+  "remarks": "observations générales",
+  "degradations": [],
+  "total_estimated_cost_chf": null,
+  "signatures_required": ["bailleur", "locataire", "témoin_optionnel"]
+}}
+
+Adapte les pièces au type de bien (studio = moins de pièces, villa = plus). Génère une liste réaliste.
+Inclus : cuisine, salle de bain, WC, séjour, chambres selon le bien, cave/local si applicable."""
+
+    client = _client()
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=3000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    await _log_usage(db, user_id, "draft_edl", message.usage)
+
+    raw = message.content[0].text.strip()  # type: ignore[union-attr]
+    if "```" in raw:
+        raw = raw.split("```")[1].lstrip("json").strip()
+
+    try:
+        return json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return {"type": edl_type, "date": inspection_date, "raw": raw, "rooms": []}
+
+
+# ── 8. Mission report (opener) ────────────────────────────────────────────────
+
+
+async def draft_mission_report(
+    mission_data: dict,
+    observations: str,
+    db: AsyncSession,
+    user_id: str,
+) -> str:
+    """Generate a professional mission report for an opener (visit, check-in, check-out)."""
+    if not _check_rate_limit(user_id):
+        raise RuntimeError("Limite de débit IA atteinte — réessayez dans une minute.")
+
+    prompt = f"""Tu es un ouvreur terrain professionnel. Rédige un rapport de mission complet et professionnel.
+
+Mission :
+{json.dumps(mission_data, ensure_ascii=False, indent=2)}
+
+Observations terrain : {observations}
+
+Rédige en markdown avec :
+1. **Résumé de la mission** (type, date, adresse, durée estimée)
+2. **Déroulement** (étapes réalisées, personnes présentes)
+3. **Observations** (état général, points notables)
+4. **Actions réalisées** (remise de clés, photos prises, documents signés, etc.)
+5. **Points d'attention** (problèmes détectés, travaux à prévoir)
+6. **Confirmation** (mission accomplie / partiellement / problème)
+
+Sois factuel, précis et professionnel. Max 400 mots."""
+
+    client = _client()
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=1500,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    await _log_usage(db, user_id, "draft_mission_report", message.usage)
+    return message.content[0].text.strip()  # type: ignore[union-attr]
+
+
+# ── 9. Company quote assistant ────────────────────────────────────────────────
+
+
+async def draft_company_quote(
+    rfq_data: dict,
+    company_data: dict,
+    work_description: str,
+    db: AsyncSession,
+    user_id: str,
+) -> dict:
+    """AI-assisted professional quote draft for a company responding to an RFQ."""
+    if not _check_rate_limit(user_id):
+        raise RuntimeError("Limite de débit IA atteinte — réessayez dans une minute.")
+
+    prompt = f"""Tu es un expert en travaux immobiliers. Génère un devis professionnel complet.
+
+Appel d'offre (RFQ) :
+{json.dumps(rfq_data, ensure_ascii=False, indent=2)}
+
+Profil de l'entreprise :
+{json.dumps(company_data, ensure_ascii=False, indent=2)}
+
+Description complémentaire : {work_description}
+
+Retourne UNIQUEMENT ce JSON :
+{{
+  "title": "titre du devis",
+  "description": "présentation de l'offre (2-3 phrases)",
+  "line_items": [
+    {{"description": "Main d'œuvre", "unit": "h", "qty": 8, "unit_price_chf": 85, "total_chf": 680}},
+    {{"description": "Fournitures et matériaux", "unit": "forfait", "qty": 1, "unit_price_chf": 200, "total_chf": 200}}
+  ],
+  "subtotal_chf": 880,
+  "tva_pct": 8.1,
+  "tva_chf": 71.28,
+  "total_chf": 951.28,
+  "delay_days": 5,
+  "warranty_months": 24,
+  "validity_days": 30,
+  "payment_terms": "30 jours net",
+  "notes": "observations ou conditions particulières"
+}}
+
+Base tes estimations sur les tarifs horaires suisses réels selon le corps de métier.
+TVA CH : 8.1% (taux normal), 3.8% (hébergement), 2.6% (alimentation)."""
+
+    client = _client()
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=2000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    await _log_usage(db, user_id, "draft_company_quote", message.usage)
+
+    raw = message.content[0].text.strip()  # type: ignore[union-attr]
+    if "```" in raw:
+        raw = raw.split("```")[1].lstrip("json").strip()
+
+    try:
+        return json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return {"raw": raw, "line_items": [], "total_chf": 0}
+
+
+# ── 10. Explain contract (tenant) ─────────────────────────────────────────────
+
+
+async def explain_contract(
+    contract_data: dict,
+    db: AsyncSession,
+    user_id: str,
+) -> dict:
+    """
+    Explain a lease contract in plain language for a tenant.
+    Returns structured key points + warnings.
+    """
+    if not _check_rate_limit(user_id):
+        raise RuntimeError("Limite de débit IA atteinte — réessayez dans une minute.")
+
+    prompt = f"""Tu es un conseiller locataire bienveillant. Explique ce bail à un locataire en termes simples.
+
+Contrat :
+{json.dumps(contract_data, ensure_ascii=False, indent=2)}
+
+Retourne UNIQUEMENT ce JSON :
+{{
+  "summary": "résumé en 2 phrases accessibles",
+  "key_points": [
+    {{"title": "Loyer et charges", "value": "CHF XXX/mois + CHF XX charges", "explanation": "Ce que vous payez chaque mois"}},
+    {{"title": "Durée", "value": "...", "explanation": "..."}},
+    {{"title": "Préavis", "value": "3 mois", "explanation": "Délai pour résilier votre bail"}},
+    {{"title": "Dépôt de garantie", "value": "CHF ...", "explanation": "..."}},
+    {{"title": "Animaux", "value": "...", "explanation": "..."}},
+    {{"title": "Sous-location", "value": "...", "explanation": "..."}}
+  ],
+  "rights": [
+    "Droit à une formule officielle pour toute hausse de loyer (CO art. 269d)",
+    "Contestation possible d'une hausse abusive dans les 30 jours"
+  ],
+  "obligations": [
+    "Paiement ponctuel du loyer (avant le 1er du mois)",
+    "Signaler immédiatement tout défaut (CO art. 257g)"
+  ],
+  "warnings": [],
+  "important_dates": [
+    {{"label": "Début du bail", "date": "..."}},
+    {{"label": "Fin du bail", "date": "... ou indéterminée"}}
+  ]
+}}
+
+Sois clair, positif et neutre. Signale dans 'warnings' tout point défavorable ou inhabituel pour le locataire."""
+
+    client = _client()
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=2000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    await _log_usage(db, user_id, "explain_contract", message.usage)
+
+    raw = message.content[0].text.strip()  # type: ignore[union-attr]
+    if "```" in raw:
+        raw = raw.split("```")[1].lstrip("json").strip()
+
+    try:
+        return json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return {"summary": raw, "key_points": [], "rights": [], "obligations": [], "warnings": []}
+
+
+# ── 11. Notification draft (mail / WhatsApp) ──────────────────────────────────
+
+
+async def draft_notification(
+    channel: str,
+    recipient_role: str,
+    subject: str,
+    context: dict,
+    db: AsyncSession,
+    user_id: str,
+) -> dict:
+    """
+    Draft a ready-to-send notification (email or WhatsApp) for any role.
+    channel: "email" | "whatsapp"
+    recipient_role: "tenant" | "owner" | "company" | "opener"
+    """
+    if not _check_rate_limit(user_id):
+        raise RuntimeError("Limite de débit IA atteinte — réessayez dans une minute.")
+
+    tone_map = {
+        "email": "professionnel, formel, avec objet et formule de politesse complète",
+        "whatsapp": "cordial, bref (max 5 lignes), naturel, sans formule longue",
+    }
+    tone = tone_map.get(channel, tone_map["email"])
+
+    prompt = f"""Tu es un assistant immobilier suisse. Rédige un message prêt à envoyer.
+
+Canal : {channel} ({tone})
+Destinataire : {recipient_role}
+Sujet / objectif : {subject}
+Contexte :
+{json.dumps(context, ensure_ascii=False, indent=2)}
+
+Retourne UNIQUEMENT ce JSON :
+{{
+  "subject": "objet du message (pour email) ou null",
+  "body": "corps du message prêt à copier-coller",
+  "tone": "{channel}",
+  "suggested_send_time": "immédiatement|matin|après-midi",
+  "follow_up_days": null
+}}
+
+Pour les relances de loyer impayé : ton ferme mais non menaçant, cite le montant et l'échéance.
+Pour les annonces de travaux : prévenir avec délai, excuse le dérangement.
+Réponds en français."""
+
+    client = _client()
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=1000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    await _log_usage(db, user_id, "draft_notification", message.usage)
+
+    raw = message.content[0].text.strip()  # type: ignore[union-attr]
+    if "```" in raw:
+        raw = raw.split("```")[1].lstrip("json").strip()
+
+    try:
+        return json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return {"subject": subject, "body": raw, "tone": channel}
+
+
+# ── 12. Property full history recap ──────────────────────────────────────────
+
+
+async def generate_property_recap(
+    property_data: dict,
+    tenants_history: list[dict],
+    transactions_summary: dict,
+    interventions: list[dict],
+    issues: list[dict],
+    db: AsyncSession,
+    user_id: str,
+) -> dict:
+    """
+    Generate a complete history recap for a property (owner/agency view).
+    Covers all tenants, payments, interventions, incidents.
+    """
+    if not _check_rate_limit(user_id):
+        raise RuntimeError("Limite de débit IA atteinte — réessayez dans une minute.")
+
+    prompt = f"""Tu es un gestionnaire immobilier. Génère un récapitulatif complet de l'historique d'un bien.
+
+Bien :
+{json.dumps(property_data, ensure_ascii=False, indent=2)}
+
+Historique des locataires :
+{json.dumps(tenants_history, ensure_ascii=False, indent=2)}
+
+Résumé financier :
+{json.dumps(transactions_summary, ensure_ascii=False, indent=2)}
+
+Interventions :
+{json.dumps(interventions, ensure_ascii=False, indent=2)}
+
+Incidents / problèmes :
+{json.dumps(issues, ensure_ascii=False, indent=2)}
+
+Retourne UNIQUEMENT ce JSON :
+{{
+  "title": "Récap — [adresse]",
+  "period": "de [date] à aujourd'hui",
+  "financial_summary": {{
+    "total_revenue_chf": 0,
+    "total_charges_chf": 0,
+    "net_chf": 0,
+    "avg_monthly_chf": 0,
+    "unpaid_count": 0,
+    "unpaid_total_chf": 0
+  }},
+  "occupancy": {{
+    "rate_pct": 0,
+    "total_tenants": 0,
+    "avg_duration_months": 0
+  }},
+  "tenants": [
+    {{"name": "...", "period": "...", "rating": null, "notes": ""}}
+  ],
+  "interventions_summary": {{
+    "total_count": 0,
+    "total_cost_chf": 0,
+    "categories": {{}}
+  }},
+  "incidents": [
+    {{"date": "...", "type": "...", "resolved": true, "cost_chf": 0}}
+  ],
+  "score": 0,
+  "score_label": "Excellent|Bon|Moyen|À surveiller",
+  "recommendations": ["recommandation 1", "recommandation 2"]
+}}"""
+
+    client = _client()
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=2000,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    await _log_usage(db, user_id, "property_recap", message.usage)
+
+    raw = message.content[0].text.strip()  # type: ignore[union-attr]
+    if "```" in raw:
+        raw = raw.split("```")[1].lstrip("json").strip()
+
+    try:
+        return json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return {"raw": raw}
 
 
 # ── 6. Cathy home briefing ────────────────────────────────────────────────────

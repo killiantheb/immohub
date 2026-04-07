@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { baseURL } from "@/lib/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -174,7 +175,7 @@ export default function ContractsPage() {
                         )}
                         {/* PDF */}
                         <a
-                          href={`${process.env.NEXT_PUBLIC_API_URL}/contracts/${contract.id}/pdf`}
+                          href={`${baseURL}/contracts/${contract.id}/pdf`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-gray-400 hover:text-gray-700"

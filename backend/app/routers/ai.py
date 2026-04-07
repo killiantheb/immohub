@@ -18,8 +18,15 @@ from app.services.ai_service import (
     TenantScore,
     chat_stream,
     detect_payment_anomalies,
+    draft_company_quote,
+    draft_edl,
+    draft_lease,
+    draft_mission_report,
+    draft_notification,
+    explain_contract,
     generate_briefing,
     generate_listing_description,
+    generate_property_recap,
     recommend_best_quote,
     score_tenant_application,
 )
@@ -181,7 +188,8 @@ async def copilot(
     Non-streaming copilot — collects the full Claude response and returns it.
     Use /chat for SSE streaming.
     """
-    context = {**payload.context, "role": current_user.role}
+    user_name = current_user.first_name or (current_user.email or "").split("@")[0]
+    context = {**payload.context, "role": current_user.role, "user_name": user_name}
     parts: list[str] = []
     async for chunk in chat_stream(
         message=payload.message,
@@ -214,7 +222,8 @@ async def chat(
     Each event: data: {"text": "..."}\n\n
     Final event: data: [DONE]\n\n
     """
-    context = {**payload.context, "role": current_user.role}
+    user_name = current_user.first_name or (current_user.email or "").split("@")[0]
+    context = {**payload.context, "role": current_user.role, "user_name": user_name}
 
     async def _generate():
         async for chunk in chat_stream(
@@ -786,6 +795,404 @@ async def get_briefing(
         )
     except RuntimeError as exc:
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+
+# ── New role-specific agents ──────────────────────────────────────────────────
+
+
+class DraftLeaseRequest(BaseModel):
+    property_id: str
+    tenant_data: dict
+    params: dict  # {start_date, end_date?, monthly_rent, charges, deposit, type, commission_pct?}
+    requires_validation: bool = True
+
+
+@router.post("/draft-lease")
+async def draft_lease_endpoint(
+    payload: DraftLeaseRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(5, 60),
+):
+    """Generate a complete Swiss-law compliant lease. Owners and agencies only."""
+    import uuid as _uuid_mod
+    from app.models.property import Property
+    from sqlalchemy import select as sa_sel
+
+    if current_user.role not in ("owner", "agency", "super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux propriétaires et agences")
+
+    try:
+        pid = _uuid_mod.UUID(payload.property_id)
+    except ValueError:
+        raise HTTPException(422, "property_id invalide")
+
+    result = await db.execute(sa_sel(Property).where(Property.id == pid))
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(404, "Bien introuvable")
+
+    property_data = {
+        "type": prop.type,
+        "address": prop.address,
+        "city": prop.city,
+        "zip_code": prop.zip_code,
+        "surface": float(prop.surface) if prop.surface else None,
+        "rooms": float(prop.rooms) if prop.rooms else None,
+        "floor": prop.floor,
+        "is_furnished": prop.is_furnished,
+    }
+
+    try:
+        text = await draft_lease(property_data, payload.tenant_data, payload.params, db, str(current_user.id))
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    return {
+        "lease_text": text,
+        "requires_validation": payload.requires_validation,
+        "disclaimer": "Ce bail est fourni à titre indicatif. Faites-le valider par un juriste avant signature officielle.",
+    }
+
+
+class DraftEDLRequest(BaseModel):
+    property_id: str
+    edl_type: str = "entry"  # "entry" | "exit"
+    inspection_date: str
+    previous_edl: dict | None = None
+    requires_validation: bool = True
+
+
+@router.post("/draft-edl")
+async def draft_edl_endpoint(
+    payload: DraftEDLRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(5, 60),
+):
+    """Generate a structured entry/exit inspection form."""
+    import uuid as _uuid_mod
+    from app.models.property import Property
+    from sqlalchemy import select as sa_sel
+
+    if current_user.role not in ("owner", "agency", "opener", "super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès non autorisé")
+
+    if payload.edl_type not in ("entry", "exit"):
+        raise HTTPException(422, "edl_type doit être 'entry' ou 'exit'")
+
+    try:
+        pid = _uuid_mod.UUID(payload.property_id)
+    except ValueError:
+        raise HTTPException(422, "property_id invalide")
+
+    result = await db.execute(sa_sel(Property).where(Property.id == pid))
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(404, "Bien introuvable")
+
+    property_data = {
+        "type": prop.type,
+        "address": prop.address,
+        "city": prop.city,
+        "surface": float(prop.surface) if prop.surface else None,
+        "rooms": float(prop.rooms) if prop.rooms else None,
+        "floor": prop.floor,
+        "is_furnished": prop.is_furnished,
+        "description": prop.description,
+    }
+
+    try:
+        edl = await draft_edl(
+            property_data,
+            payload.edl_type,
+            payload.inspection_date,
+            payload.previous_edl,
+            db,
+            str(current_user.id),
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    return {**edl, "requires_validation": payload.requires_validation}
+
+
+class MissionReportRequest(BaseModel):
+    mission_id: str
+    observations: str
+
+
+@router.post("/mission-report")
+async def mission_report_endpoint(
+    payload: MissionReportRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(10, 60),
+):
+    """Generate a professional mission report for an opener."""
+    import uuid as _uuid_mod
+    from app.models.opener import Mission
+    from sqlalchemy import select as sa_sel
+
+    if current_user.role not in ("opener", "super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux ouvreurs")
+
+    try:
+        mid = _uuid_mod.UUID(payload.mission_id)
+    except ValueError:
+        raise HTTPException(422, "mission_id invalide")
+
+    result = await db.execute(sa_sel(Mission).where(Mission.id == mid))
+    mission = result.scalar_one_or_none()
+    if not mission:
+        raise HTTPException(404, "Mission introuvable")
+
+    mission_data = {
+        "type": mission.type,
+        "status": mission.status,
+        "scheduled_at": mission.scheduled_at.isoformat() if mission.scheduled_at else None,
+        "price": float(mission.price) if mission.price else None,
+    }
+
+    try:
+        report = await draft_mission_report(mission_data, payload.observations, db, str(current_user.id))
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    return {"report": report, "mission_id": payload.mission_id}
+
+
+class DraftQuoteRequest(BaseModel):
+    rfq_id: str
+    work_description: str = ""
+
+
+@router.post("/draft-quote")
+async def draft_quote_endpoint(
+    payload: DraftQuoteRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(10, 60),
+):
+    """AI-assisted quote draft for a company responding to an RFQ."""
+    import uuid as _uuid_mod
+    from app.models.rfq import RFQ
+    from app.models.company import Company
+    from sqlalchemy import select as sa_sel
+
+    if current_user.role not in ("company", "super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux entreprises")
+
+    try:
+        rid = _uuid_mod.UUID(payload.rfq_id)
+    except ValueError:
+        raise HTTPException(422, "rfq_id invalide")
+
+    rfq_res = await db.execute(sa_sel(RFQ).where(RFQ.id == rid))
+    rfq = rfq_res.scalar_one_or_none()
+    if not rfq:
+        raise HTTPException(404, "Appel d'offre introuvable")
+
+    company_res = await db.execute(sa_sel(Company).where(Company.user_id == current_user.id))
+    company = company_res.scalar_one_or_none()
+
+    rfq_data = {
+        "title": rfq.title,
+        "description": rfq.description,
+        "category": rfq.category,
+        "urgency": rfq.urgency,
+        "budget_min": float(rfq.budget_min) if rfq.budget_min else None,
+        "budget_max": float(rfq.budget_max) if rfq.budget_max else None,
+        "city": rfq.city,
+    }
+    company_data = {
+        "type": company.type if company else "other",
+        "name": company.name if company else "",
+        "rating": float(company.rating) if company and company.rating else None,
+    }
+
+    try:
+        quote = await draft_company_quote(rfq_data, company_data, payload.work_description, db, str(current_user.id))
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    return quote
+
+
+class ExplainContractRequest(BaseModel):
+    contract_id: str
+
+
+@router.post("/explain-contract")
+async def explain_contract_endpoint(
+    payload: ExplainContractRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(10, 60),
+):
+    """Explain a lease contract in plain language for a tenant."""
+    import uuid as _uuid_mod
+    from app.models.contract import Contract
+    from sqlalchemy import select as sa_sel
+
+    try:
+        cid = _uuid_mod.UUID(payload.contract_id)
+    except ValueError:
+        raise HTTPException(422, "contract_id invalide")
+
+    result = await db.execute(sa_sel(Contract).where(Contract.id == cid))
+    contract = result.scalar_one_or_none()
+    if not contract:
+        raise HTTPException(404, "Contrat introuvable")
+
+    # Tenants can only read their own contract
+    if current_user.role == "tenant" and contract.tenant_id != current_user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès non autorisé")
+
+    contract_data = {
+        "type": contract.type,
+        "status": contract.status,
+        "start_date": contract.start_date.isoformat() if contract.start_date else None,
+        "end_date": contract.end_date.isoformat() if contract.end_date else None,
+        "monthly_rent": float(contract.monthly_rent) if contract.monthly_rent else None,
+        "charges": float(contract.charges) if contract.charges else None,
+        "deposit": float(contract.deposit) if contract.deposit else None,
+        "notice_months": getattr(contract, "notice_months", 3),
+        "is_furnished": getattr(contract, "is_furnished", False),
+        "pets_allowed": getattr(contract, "pets_allowed", None),
+        "special_clauses": getattr(contract, "special_clauses", None),
+    }
+
+    try:
+        explanation = await explain_contract(contract_data, db, str(current_user.id))
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    return explanation
+
+
+class NotificationRequest(BaseModel):
+    channel: str = "email"  # "email" | "whatsapp"
+    recipient_role: str  # "tenant" | "owner" | "company" | "opener"
+    subject: str
+    context: dict = {}
+
+
+@router.post("/draft-notification")
+async def draft_notification_endpoint(
+    payload: NotificationRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(15, 60),
+):
+    """Draft a ready-to-send email or WhatsApp message."""
+    if payload.channel not in ("email", "whatsapp"):
+        raise HTTPException(422, "channel doit être 'email' ou 'whatsapp'")
+
+    try:
+        result = await draft_notification(
+            payload.channel,
+            payload.recipient_role,
+            payload.subject,
+            payload.context,
+            db,
+            str(current_user.id),
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    return result
+
+
+class PropertyRecapRequest(BaseModel):
+    property_id: str
+
+
+@router.post("/property-recap")
+async def property_recap_endpoint(
+    payload: PropertyRecapRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(5, 60),
+):
+    """Generate a complete property history recap (owner/agency only)."""
+    import uuid as _uuid_mod
+    from app.models.property import Property
+    from app.models.contract import Contract
+    from app.models.transaction import Transaction as Txn
+    from app.models.rfq import RFQ
+    from sqlalchemy import select as sa_sel, and_
+
+    if current_user.role not in ("owner", "agency", "super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux propriétaires et agences")
+
+    try:
+        pid = _uuid_mod.UUID(payload.property_id)
+    except ValueError:
+        raise HTTPException(422, "property_id invalide")
+
+    result = await db.execute(sa_sel(Property).where(Property.id == pid))
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(404, "Bien introuvable")
+
+    # Fetch history
+    contracts = (await db.execute(
+        sa_sel(Contract).where(Contract.property_id == pid).order_by(Contract.start_date.desc()).limit(20)
+    )).scalars().all()
+
+    transactions = (await db.execute(
+        sa_sel(Txn).where(and_(Txn.property_id == pid, Txn.is_active.is_(True))).limit(100)
+    )).scalars().all()
+
+    rfqs = (await db.execute(
+        sa_sel(RFQ).where(RFQ.property_id == pid).order_by(RFQ.created_at.desc()).limit(20)
+    )).scalars().all()
+
+    property_data = {"type": prop.type, "address": prop.address, "city": prop.city, "status": prop.status}
+
+    tenants_history = [
+        {
+            "id": str(c.id),
+            "type": c.type,
+            "status": c.status,
+            "start_date": c.start_date.isoformat() if c.start_date else None,
+            "end_date": c.end_date.isoformat() if c.end_date else None,
+            "monthly_rent": float(c.monthly_rent) if c.monthly_rent else 0,
+        }
+        for c in contracts
+    ]
+
+    total_revenue = sum(float(t.amount) for t in transactions if t.status == "paid")
+    unpaid = [t for t in transactions if t.status in ("pending", "late")]
+
+    transactions_summary = {
+        "total_revenue_chf": total_revenue,
+        "unpaid_count": len(unpaid),
+        "unpaid_total_chf": sum(float(t.amount) for t in unpaid),
+        "total_transactions": len(transactions),
+    }
+
+    interventions = [
+        {
+            "id": str(r.id),
+            "title": r.title,
+            "category": r.category,
+            "status": r.status,
+            "urgency": r.urgency,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        }
+        for r in rfqs
+    ]
+
+    try:
+        recap = await generate_property_recap(
+            property_data, tenants_history, transactions_summary, interventions, [], db, str(current_user.id)
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    return recap
 
 
 @router.get("/anomalies", response_model=list[AnomalyResponse])

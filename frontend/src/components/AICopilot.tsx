@@ -3,36 +3,91 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Bot, ChevronDown, Loader2, Send, Sparkles, X } from "lucide-react";
-import { api } from "@/lib/api";
+import { baseURL } from "@/lib/api";
 import { useUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Message {
   role: "user" | "assistant";
   content: string;
-  action?: { type: string; path: string; label: string };
+  action?: { type: string; path: string; label: string; requires_validation?: boolean };
 }
 
-// ── Contextual suggestions per page ──────────────────────────────────────────
+// ── Role-specific suggestions ─────────────────────────────────────────────────
 
-const PAGE_SUGGESTIONS: Record<string, string[]> = {
-  "/":              ["Quel est mon taux d'occupation ?", "Comment améliorer mes revenus ?", "Analyser mes impayés"],
-  "/app/properties":    ["Rédiger une annonce pour mon bien", "Quelles sont les charges déductibles ?"],
-  "/app/properties/new":["Quels documents fournir pour louer ?", "Comment fixer le loyer ?"],
-  "/app/contracts":     ["Expliquer le bail meublé vs vide", "Quand peut-on résilier un bail ?"],
-  "/app/transactions":  ["Comment relancer un locataire en retard ?", "Analyser mes anomalies de paiement"],
-  "/app/openers":       ["Comment fonctionne la marketplace ouvreur ?", "Quel type de mission choisir ?"],
-  "/app/companies":     ["Conseils pour choisir un prestataire", "Comparer des devis travaux"],
+type UserRole = "owner" | "agency" | "tenant" | "company" | "opener" | "super_admin";
+
+const ROLE_SUGGESTIONS: Record<UserRole, string[]> = {
+  owner: [
+    "Rédiger un bail pour mon appartement",
+    "Générer un état des lieux d'entrée",
+    "Analyser mes impayés de loyer",
+    "Créer un post pour les réseaux sociaux",
+    "Historique complet de mon bien",
+    "Relancer un locataire en retard",
+  ],
+  agency: [
+    "Adapter le bail au profil de l'agence",
+    "Exporter ma comptabilité pour le fiduciaire",
+    "Analyser les performances du portefeuille",
+    "Paramétrer mes commissions de gérance",
+    "EDL professionnel pour un bien",
+    "Récupérer les infos légales de l'agence",
+  ],
+  tenant: [
+    "Expliquer mon bail simplement",
+    "Quels sont mes droits locataires ?",
+    "Signaler un problème dans mon logement",
+    "Comprendre mon état des lieux de sortie",
+    "Comment contester une hausse de loyer ?",
+    "Voir mon historique de logements",
+  ],
+  company: [
+    "Rédiger un devis pour cet appel d'offre",
+    "Voir les nouvelles opportunités",
+    "Rédiger un rapport d'intervention",
+    "Comment améliorer ma note ?",
+    "Importer un devis existant",
+  ],
+  opener: [
+    "Trouver des missions près de moi",
+    "Rédiger mon rapport de visite",
+    "Comment optimiser ma zone ?",
+    "Aide pour un état des lieux",
+  ],
+  super_admin: [
+    "Statistiques de la plateforme",
+    "Analyser les transactions récentes",
+    "Quels utilisateurs sont actifs ?",
+  ],
 };
 
-function getSuggestions(pathname: string): string[] {
+const PAGE_SUGGESTIONS: Record<string, string[]> = {
+  "/app/properties":     ["Rédiger une annonce pour ce bien", "Générer un EDL d'entrée", "Historique complet du bien"],
+  "/app/properties/new": ["Quels documents fournir pour louer ?", "Comment fixer le loyer ?"],
+  "/app/contracts":      ["Rédiger un nouveau bail", "Explique ce bail", "Quand résilier ?"],
+  "/app/contracts/new":  ["Aide-moi à rédiger ce bail", "Quelles clauses inclure ?"],
+  "/app/transactions":   ["Analyser mes impayés", "Relancer un locataire", "Exporter la comptabilité"],
+  "/app/openers":        ["Trouver des ouvreurs proches", "Créer une mission", "Quel type choisir ?"],
+  "/app/rfqs":           ["Rédiger un appel d'offre", "Comparer les devis reçus", "Quelle urgence choisir ?"],
+  "/app/rfqs/new":       ["Aide-moi à décrire les travaux", "Quel budget prévoir ?"],
+  "/app/companies":      ["Conseils pour choisir un prestataire", "Comparer les notes"],
+  "/tenant":             ["Expliquer mon bail", "Mes droits locataires", "Signaler un problème"],
+  "/opener":             ["Mes prochaines missions", "Rédiger un rapport", "Optimiser ma zone"],
+};
+
+function getSuggestions(pathname: string, role?: UserRole): string[] {
+  // Page-specific first
   for (const [path, suggestions] of Object.entries(PAGE_SUGGESTIONS)) {
     if (pathname === path || (path !== "/" && pathname.startsWith(path))) {
       return suggestions;
     }
   }
-  return ["Comment puis-je vous aider ?", "Expliquer la réglementation locative"];
+  // Role-specific fallback
+  if (role && ROLE_SUGGESTIONS[role]) return ROLE_SUGGESTIONS[role].slice(0, 3);
+  return ["Comment puis-je vous aider ?", "Expliquer la réglementation locative suisse"];
 }
 
 // ── Typing indicator ──────────────────────────────────────────────────────────
@@ -53,14 +108,21 @@ function TypingDots() {
 
 // ── Message bubble ────────────────────────────────────────────────────────────
 
-function MessageBubble({ msg, onAction }: { msg: Message; onAction: (path: string) => void }) {
+function MessageBubble({
+  msg,
+  onAction,
+  onValidate,
+}: {
+  msg: Message;
+  onAction: (path: string) => void;
+  onValidate?: (action: NonNullable<Message["action"]>) => void;
+}) {
   const isUser = msg.role === "user";
-  // Convert \n escape sequences back to newlines for display
   const display = msg.content.replace(/\\n/g, "\n");
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-      <div className={`max-w-[85%] space-y-1`}>
+      <div className="max-w-[85%] space-y-1">
         {!isUser && (
           <div className="flex items-center gap-1 mb-0.5">
             <Bot className="h-3.5 w-3.5 text-primary-600" />
@@ -77,13 +139,34 @@ function MessageBubble({ msg, onAction }: { msg: Message; onAction: (path: strin
           {display}
         </div>
         {msg.action && (
-          <button
-            onClick={() => onAction(msg.action!.path)}
-            className="mt-1 flex items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-medium text-primary-700 hover:bg-primary-100 transition-colors"
-          >
-            <Sparkles className="h-3 w-3" />
-            {msg.action.label}
-          </button>
+          msg.action.requires_validation ? (
+            <div className="mt-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 space-y-1.5">
+              <p className="text-xs text-amber-700 font-medium">Validation requise</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onValidate?.(msg.action!)}
+                  className="flex items-center gap-1 rounded-md bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700 transition-colors"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  {msg.action.label}
+                </button>
+                <button
+                  onClick={() => onAction(msg.action!.path)}
+                  className="rounded-md border border-amber-300 px-2.5 py-1 text-xs text-amber-700 hover:bg-amber-100 transition-colors"
+                >
+                  Voir
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => onAction(msg.action!.path)}
+              className="mt-1 flex items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-medium text-primary-700 hover:bg-primary-100 transition-colors"
+            >
+              <Sparkles className="h-3 w-3" />
+              {msg.action.label}
+            </button>
+          )
         )}
       </div>
     </div>
@@ -109,7 +192,8 @@ export function AICopilot() {
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const suggestions = getSuggestions(pathname);
+  const role = profile?.role as UserRole | undefined;
+  const suggestions = getSuggestions(pathname, role);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -133,31 +217,29 @@ export function AICopilot() {
     abortRef.current = new AbortController();
 
     try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? "";
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/ai/chat`,
+        `${baseURL}/ai/chat`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: (api.defaults.headers.common["Authorization"] as string) ?? "",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             message: text,
             context: {
               page: pathname,
               role: profile?.role,
-              property_id: undefined,
+              user_name: profile?.first_name ?? undefined,
             },
           }),
           signal: abortRef.current.signal,
         },
       );
-
-      // Attach JWT lazily (interceptor runs async — re-fetch token)
-      const { createClient } = await import("@/lib/supabase");
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -233,20 +315,12 @@ export function AICopilot() {
     }
   }
 
-  // Re-send with correct auth header (fetch doesn't go through axios interceptors)
-  // Patch: re-attach token before send
-  async function sendWithAuth(text: string) {
-    const { createClient } = await import("@/lib/supabase");
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.access_token) {
-      api.defaults.headers.common["Authorization"] = `Bearer ${session.access_token}`;
-    }
-    await sendMessage(text);
-  }
-
   function handleAction(path: string) {
     window.location.href = path;
+  }
+
+  function handleValidate(action: NonNullable<Message["action"]>) {
+    window.location.href = action.path;
   }
 
   return (
@@ -280,7 +354,9 @@ export function AICopilot() {
               <Bot className="h-5 w-5 text-white" />
               <div>
                 <p className="text-sm font-semibold text-white">CathyAI</p>
-                <p className="text-xs text-primary-200">Copilote IA · CATHY</p>
+                <p className="text-xs text-primary-200 capitalize">
+                  {role ? `Copilote ${role}` : "Copilote IA"}
+                </p>
               </div>
             </div>
             <button onClick={() => setOpen(false)} className="rounded-lg p-1 hover:bg-primary-500">
@@ -299,7 +375,7 @@ export function AICopilot() {
                     </div>
                   </div>
                 ) : (
-                  <MessageBubble msg={msg} onAction={handleAction} />
+                  <MessageBubble msg={msg} onAction={handleAction} onValidate={handleValidate} />
                 )}
               </div>
             ))}
@@ -314,7 +390,7 @@ export function AICopilot() {
                 {suggestions.map((s) => (
                   <button
                     key={s}
-                    onClick={() => sendWithAuth(s)}
+                    onClick={() => sendMessage(s)}
                     disabled={streaming}
                     className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-700 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 transition-colors disabled:opacity-50"
                   >
@@ -328,7 +404,7 @@ export function AICopilot() {
           {/* Input */}
           <div className="border-t border-gray-200 p-3">
             <form
-              onSubmit={(e) => { e.preventDefault(); sendWithAuth(input); }}
+              onSubmit={(e) => { e.preventDefault(); sendMessage(input); }}
               className="flex items-center gap-2"
             >
               <input
