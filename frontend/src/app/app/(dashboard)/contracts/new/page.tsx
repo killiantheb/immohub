@@ -28,6 +28,25 @@ export default function NewContractPage() {
     monthly_rent: "",
     charges: "",
     deposit: "",
+    // Extended
+    is_furnished: false,
+    payment_day: "5",
+    notice_period_months: "3",
+    deposit_type: "gocaution",
+    canton: "VS",
+    signed_at_city: "",
+    bank_name: "",
+    bank_iban: "",
+    bank_bic: "",
+    occupants_count: "",
+    tenant_nationality: "",
+    tourist_tax_amount: "",
+    cleaning_fee_hourly: "42",
+    subletting_allowed: false,
+    animals_allowed: false,
+    smoking_allowed: false,
+    is_for_sale: false,
+    linen_fee_included: false,
   });
 
   const [nlpInput, setNlpInput] = useState("");
@@ -80,6 +99,25 @@ export default function NewContractPage() {
       monthly_rent: form.monthly_rent ? parseFloat(form.monthly_rent) : undefined,
       charges: form.charges ? parseFloat(form.charges) : undefined,
       deposit: form.deposit ? parseFloat(form.deposit) : undefined,
+      // Extended
+      is_furnished: form.is_furnished,
+      payment_day: form.payment_day ? parseInt(form.payment_day) : 5,
+      notice_period_months: form.notice_period_months ? parseInt(form.notice_period_months) : 3,
+      deposit_type: form.deposit_type,
+      canton: form.canton || "VS",
+      signed_at_city: form.signed_at_city || undefined,
+      bank_name: form.bank_name || undefined,
+      bank_iban: form.bank_iban || undefined,
+      bank_bic: form.bank_bic || undefined,
+      occupants_count: form.occupants_count ? parseInt(form.occupants_count) : undefined,
+      tenant_nationality: form.tenant_nationality || undefined,
+      tourist_tax_amount: form.tourist_tax_amount ? parseFloat(form.tourist_tax_amount) : undefined,
+      cleaning_fee_hourly: form.cleaning_fee_hourly ? parseFloat(form.cleaning_fee_hourly) : 42,
+      subletting_allowed: form.subletting_allowed,
+      animals_allowed: form.animals_allowed,
+      smoking_allowed: form.smoking_allowed,
+      is_for_sale: form.is_for_sale,
+      linen_fee_included: form.linen_fee_included,
     });
     router.push("/app/contracts");
   }
@@ -254,6 +292,108 @@ export default function NewContractPage() {
                 placeholder="0.00"
               />
             </div>
+          </div>
+        </div>
+
+        {/* Bail details */}
+        <div className="card space-y-4">
+          <h2 className="text-sm font-semibold text-gray-700">Paramètres du bail</h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div>
+              <label className="label">Jour de paiement</label>
+              <input type="number" min="1" max="28" value={form.payment_day} onChange={(e) => set("payment_day", e.target.value)} className="input" placeholder="5" />
+            </div>
+            <div>
+              <label className="label">Préavis (mois)</label>
+              <input type="number" min="0" max="12" value={form.notice_period_months} onChange={(e) => set("notice_period_months", e.target.value)} className="input" placeholder="3" />
+            </div>
+            <div>
+              <label className="label">Nb d'occupants</label>
+              <input type="number" min="1" value={form.occupants_count} onChange={(e) => set("occupants_count", e.target.value)} className="input" placeholder="1" />
+            </div>
+            <div>
+              <label className="label">Nationalité locataire</label>
+              <input type="text" value={form.tenant_nationality} onChange={(e) => set("tenant_nationality", e.target.value)} className="input" placeholder="Suisse" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <div>
+              <label className="label">Type de dépôt</label>
+              <select value={form.deposit_type} onChange={(e) => set("deposit_type", e.target.value)} className="input">
+                <option value="gocaution">Gocaution</option>
+                <option value="bank">Compte bancaire bloqué</option>
+                <option value="cash">Espèces</option>
+                <option value="insurance">Assurance caution</option>
+              </select>
+            </div>
+            <div>
+              <label className="label">Canton</label>
+              <select value={form.canton} onChange={(e) => set("canton", e.target.value)} className="input">
+                {["VS","VD","GE","BE","FR","NE","JU","TI","ZH","BS","BL","AG","SO","LU","ZG","SG","TG"].map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Lieu de signature</label>
+              <input type="text" value={form.signed_at_city} onChange={(e) => set("signed_at_city", e.target.value)} className="input" placeholder="Crans-Montana" />
+            </div>
+          </div>
+          {(form.type === "seasonal" || form.type === "short_term") && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label">Taxe de séjour (CHF/nuit)</label>
+                <input type="number" min="0" step="0.01" value={form.tourist_tax_amount} onChange={(e) => set("tourist_tax_amount", e.target.value)} className="input" placeholder="0.00" />
+              </div>
+              <div>
+                <label className="label">Nettoyage (CHF/h)</label>
+                <input type="number" min="0" step="0.50" value={form.cleaning_fee_hourly} onChange={(e) => set("cleaning_fee_hourly", e.target.value)} className="input" placeholder="42" />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bank account */}
+        <div className="card space-y-4">
+          <h2 className="text-sm font-semibold text-gray-700">Compte bancaire pour le loyer</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <label className="label">Banque</label>
+              <input type="text" value={form.bank_name} onChange={(e) => set("bank_name", e.target.value)} className="input" placeholder="Raiffeisen" />
+            </div>
+            <div>
+              <label className="label">IBAN</label>
+              <input type="text" value={form.bank_iban} onChange={(e) => set("bank_iban", e.target.value.toUpperCase())} className="input font-mono" placeholder="CH56 0483 5012 3456 7800 9" />
+            </div>
+            <div>
+              <label className="label">BIC/SWIFT</label>
+              <input type="text" value={form.bank_bic} onChange={(e) => set("bank_bic", e.target.value.toUpperCase())} className="input font-mono" placeholder="RAIFCH22" />
+            </div>
+          </div>
+        </div>
+
+        {/* Options */}
+        <div className="card space-y-3">
+          <h2 className="text-sm font-semibold text-gray-700">Clauses particulières</h2>
+          <div className="flex flex-wrap gap-4">
+            {[
+              { key: "is_furnished", label: "Meublé" },
+              { key: "linen_fee_included", label: "Linge de maison inclus" },
+              { key: "subletting_allowed", label: "Sous-location autorisée" },
+              { key: "animals_allowed", label: "Animaux acceptés" },
+              { key: "smoking_allowed", label: "Fumeurs acceptés" },
+              { key: "is_for_sale", label: "Avec clause de vente" },
+            ].map(({ key, label }) => (
+              <label key={key} className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={form[key as keyof typeof form] as boolean}
+                  onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.checked }))}
+                  className="h-4 w-4 rounded border-gray-300 text-primary-600 accent-primary-600"
+                />
+                <span className="text-sm text-gray-700">{label}</span>
+              </label>
+            ))}
           </div>
         </div>
 

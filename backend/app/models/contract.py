@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from app.models.base import BaseModel
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, Numeric, String
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Index, Integer, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -55,6 +55,36 @@ class Contract(BaseModel):
     signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     signed_ip: Mapped[str | None] = mapped_column(String(45))  # IPv6 max length
     terminated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    # Extended fields — document generation
+    is_furnished: Mapped[bool] = mapped_column(Boolean, default=False)
+    payment_day: Mapped[int] = mapped_column(Integer, default=5)
+    notice_period_months: Mapped[int] = mapped_column(Integer, default=3)
+    notice_deadline_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    partial_period_days: Mapped[int | None] = mapped_column(Integer)
+    partial_period_rent: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    tourist_tax_amount: Mapped[float | None] = mapped_column(Numeric(8, 2))
+    cleaning_fee_hourly: Mapped[float] = mapped_column(Numeric(8, 2), default=42)
+    linen_fee_included: Mapped[bool] = mapped_column(Boolean, default=False)
+    reminder_fee: Mapped[float] = mapped_column(Numeric(8, 2), default=35)
+    late_interest_rate: Mapped[float] = mapped_column(Numeric(5, 2), default=6)
+    mortgage_rate_ref: Mapped[float | None] = mapped_column(Numeric(5, 3))
+    cpi_index_ref: Mapped[float | None] = mapped_column(Numeric(8, 2))
+    deposit_type: Mapped[str] = mapped_column(String(20), default="gocaution")
+    deposit_payment_deadline_days: Mapped[int] = mapped_column(Integer, default=10)
+    early_termination_fee: Mapped[float] = mapped_column(Numeric(10, 2), default=270)
+    payment_communication: Mapped[str | None] = mapped_column(String(200))
+    subletting_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    animals_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    smoking_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_for_sale: Mapped[bool] = mapped_column(Boolean, default=False)
+    signed_at_city: Mapped[str | None] = mapped_column(String(100))
+    canton: Mapped[str] = mapped_column(String(2), default="VS")
+    bank_name: Mapped[str | None] = mapped_column(String(100))
+    bank_iban: Mapped[str | None] = mapped_column(String(34))
+    bank_bic: Mapped[str | None] = mapped_column(String(11))
+    occupants_count: Mapped[int | None] = mapped_column(Integer)
+    tenant_nationality: Mapped[str | None] = mapped_column(String(50))
 
     __table_args__ = (
         Index("ix_contracts_reference", "reference"),

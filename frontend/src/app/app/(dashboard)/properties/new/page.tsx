@@ -38,6 +38,23 @@ interface FormData {
   is_furnished: boolean;
   has_parking: boolean;
   pets_allowed: boolean;
+  // Extended
+  building_name: string;
+  unit_number: string;
+  bedrooms: string;
+  bathrooms: string;
+  canton: string;
+  keys_count: string;
+  tourist_tax_amount: string;
+  nearby_landmarks: string;
+  has_balcony: boolean;
+  has_terrace: boolean;
+  has_garden: boolean;
+  has_storage: boolean;
+  has_fireplace: boolean;
+  has_laundry: boolean;
+  linen_provided: boolean;
+  smoking_allowed: boolean;
 }
 
 const INITIAL: FormData = {
@@ -46,7 +63,7 @@ const INITIAL: FormData = {
   address: "",
   city: "",
   zip_code: "",
-  country: "FR",
+  country: "CH",
   surface: "",
   rooms: "",
   floor: "",
@@ -58,6 +75,23 @@ const INITIAL: FormData = {
   is_furnished: false,
   has_parking: false,
   pets_allowed: false,
+  // Extended
+  building_name: "",
+  unit_number: "",
+  bedrooms: "",
+  bathrooms: "",
+  canton: "VS",
+  keys_count: "3",
+  tourist_tax_amount: "",
+  nearby_landmarks: "",
+  has_balcony: false,
+  has_terrace: false,
+  has_garden: false,
+  has_storage: false,
+  has_fireplace: false,
+  has_laundry: false,
+  linen_provided: false,
+  smoking_allowed: false,
 };
 
 // ── Step indicators ───────────────────────────────────────────────────────────
@@ -175,11 +209,33 @@ function Step1({
         </div>
       </div>
 
+      {/* Building details */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700">Nom de la résidence</label>
+          <input type="text" value={data.building_name} onChange={(e) => onChange({ building_name: e.target.value })} placeholder="Les Acacias" className="input" />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700">N° d'appartement</label>
+          <input type="text" value={data.unit_number} onChange={(e) => onChange({ unit_number: e.target.value })} placeholder="3B" className="input" />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700">Canton</label>
+          <select value={data.canton} onChange={(e) => onChange({ canton: e.target.value })} className="input">
+            {["VS","VD","GE","BE","FR","NE","JU","TI","ZH","BS","BL","AG","SO","LU","ZG","SG","TG","SH","AR","AI","GL","GR","OW","NW","UR","SZ","ER"].map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Specs */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
         {[
           { key: "surface", label: "Surface (m²)", placeholder: "65" },
           { key: "rooms", label: "Pièces", placeholder: "3" },
+          { key: "bedrooms", label: "Chambres", placeholder: "2" },
+          { key: "bathrooms", label: "SDB", placeholder: "1" },
           { key: "floor", label: "Étage", placeholder: "2" },
         ].map(({ key, label, placeholder }) => (
           <div key={key}>
@@ -201,10 +257,10 @@ function Step1({
         <label className="mb-2 block text-sm font-medium text-gray-700">Situation financière</label>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { key: "monthly_rent", label: "Loyer mensuel (€)" },
-            { key: "charges", label: "Charges (€/mois)" },
-            { key: "deposit", label: "Dépôt de garantie (€)" },
-            { key: "price_sale", label: "Prix de vente (€)" },
+            { key: "monthly_rent", label: "Loyer mensuel (CHF)" },
+            { key: "charges", label: "Charges (CHF/mois)" },
+            { key: "deposit", label: "Dépôt de garantie (CHF)" },
+            { key: "price_sale", label: "Prix de vente (CHF)" },
           ].map(({ key, label }) => (
             <div key={key}>
               <label className="mb-1 block text-xs text-gray-500">{label}</label>
@@ -221,23 +277,52 @@ function Step1({
         </div>
       </div>
 
+      {/* Additional financial */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700">Taxe de séjour (CHF/nuit)</label>
+          <input type="number" value={data.tourist_tax_amount} onChange={(e) => onChange({ tourist_tax_amount: e.target.value })} placeholder="0.00" className="input" min={0} step="0.01" />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700">Nombre de clés</label>
+          <input type="number" value={data.keys_count} onChange={(e) => onChange({ keys_count: e.target.value })} placeholder="3" className="input" min={1} />
+        </div>
+      </div>
+
       {/* Options */}
-      <div className="flex flex-wrap gap-4">
-        {[
-          { key: "is_furnished", label: "Meublé" },
-          { key: "has_parking", label: "Parking inclus" },
-          { key: "pets_allowed", label: "Animaux acceptés" },
-        ].map(({ key, label }) => (
-          <label key={key} className="flex cursor-pointer items-center gap-2">
-            <input
-              type="checkbox"
-              checked={data[key as keyof FormData] as boolean}
-              onChange={(e) => onChange({ [key]: e.target.checked })}
-              className="h-4 w-4 rounded border-gray-300 text-primary-600 accent-primary-600"
-            />
-            <span className="text-sm text-gray-700">{label}</span>
-          </label>
-        ))}
+      <div>
+        <label className="mb-2 block text-sm font-medium text-gray-700">Caractéristiques</label>
+        <div className="flex flex-wrap gap-4">
+          {[
+            { key: "is_furnished", label: "Meublé" },
+            { key: "has_parking", label: "Parking" },
+            { key: "has_balcony", label: "Balcon" },
+            { key: "has_terrace", label: "Terrasse" },
+            { key: "has_garden", label: "Jardin" },
+            { key: "has_storage", label: "Cave/réduit" },
+            { key: "has_fireplace", label: "Cheminée" },
+            { key: "has_laundry", label: "Buanderie" },
+            { key: "linen_provided", label: "Linge fourni" },
+            { key: "pets_allowed", label: "Animaux acceptés" },
+            { key: "smoking_allowed", label: "Fumeurs acceptés" },
+          ].map(({ key, label }) => (
+            <label key={key} className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={data[key as keyof FormData] as boolean}
+                onChange={(e) => onChange({ [key]: e.target.checked })}
+                className="h-4 w-4 rounded border-gray-300 text-primary-600 accent-primary-600"
+              />
+              <span className="text-sm text-gray-700">{label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Nearby */}
+      <div>
+        <label className="mb-1.5 block text-sm font-medium text-gray-700">À proximité (commodités, transports…)</label>
+        <input type="text" value={data.nearby_landmarks} onChange={(e) => onChange({ nearby_landmarks: e.target.value })} placeholder="Ski, téléphérique, commerces, école…" className="input" />
       </div>
     </div>
   );
@@ -402,11 +487,13 @@ function Step4({
       <div className="rounded-xl border border-gray-200 divide-y">
         {[
           ["Type", PROPERTY_TYPE_LABELS[data.type]],
+          ["Canton", data.canton],
           ["Adresse", `${data.address}, ${data.zip_code} ${data.city}`],
+          ["Résidence / App.", [data.building_name, data.unit_number].filter(Boolean).join(" — ") || "—"],
           ["Surface", data.surface ? `${data.surface} m²` : "—"],
-          ["Pièces", data.rooms || "—"],
-          ["Loyer", data.monthly_rent ? `${data.monthly_rent} €/mois` : "—"],
-          ["Prix de vente", data.price_sale ? `${data.price_sale} €` : "—"],
+          ["Pièces / Chambres", [data.rooms, data.bedrooms].filter(Boolean).join(" pièces / ") + (data.bedrooms ? " ch." : "") || "—"],
+          ["Loyer", data.monthly_rent ? `${data.monthly_rent} CHF/mois` : "—"],
+          ["Prix de vente", data.price_sale ? `${data.price_sale} CHF` : "—"],
         ].map(([label, value]) => (
           <div key={label} className="flex justify-between px-4 py-3 text-sm">
             <span className="text-gray-500">{label}</span>
@@ -478,6 +565,23 @@ export default function NewPropertyPage() {
         is_furnished: formData.is_furnished,
         has_parking: formData.has_parking,
         pets_allowed: formData.pets_allowed,
+        // Extended
+        building_name: formData.building_name || null,
+        unit_number: formData.unit_number || null,
+        bedrooms: formData.bedrooms ? Number(formData.bedrooms) : null,
+        bathrooms: formData.bathrooms ? Number(formData.bathrooms) : null,
+        canton: formData.canton || "VS",
+        keys_count: formData.keys_count ? Number(formData.keys_count) : 3,
+        tourist_tax_amount: formData.tourist_tax_amount ? Number(formData.tourist_tax_amount) : null,
+        nearby_landmarks: formData.nearby_landmarks || null,
+        has_balcony: formData.has_balcony,
+        has_terrace: formData.has_terrace,
+        has_garden: formData.has_garden,
+        has_storage: formData.has_storage,
+        has_fireplace: formData.has_fireplace,
+        has_laundry: formData.has_laundry,
+        linen_provided: formData.linen_provided,
+        smoking_allowed: formData.smoking_allowed,
       } as Parameters<typeof createProperty.mutateAsync>[0]);
 
       const propertyId = property.id;
@@ -506,7 +610,7 @@ export default function NewPropertyPage() {
         );
       }
 
-      router.push(`/properties/${propertyId}`);
+      router.push(`/app/properties/${propertyId}`);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } }; message?: string })
         ?.response?.data?.detail ?? (err as { message?: string })?.message ?? "Erreur lors de la création";

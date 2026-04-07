@@ -140,6 +140,26 @@ class ContractService:
             monthly_rent=payload.monthly_rent,
             charges=payload.charges,
             deposit=payload.deposit,
+            # Extended fields
+            is_furnished=payload.is_furnished,
+            payment_day=payload.payment_day,
+            notice_period_months=payload.notice_period_months,
+            tourist_tax_amount=payload.tourist_tax_amount,
+            cleaning_fee_hourly=payload.cleaning_fee_hourly,
+            linen_fee_included=payload.linen_fee_included,
+            deposit_type=payload.deposit_type,
+            subletting_allowed=payload.subletting_allowed,
+            animals_allowed=payload.animals_allowed,
+            smoking_allowed=payload.smoking_allowed,
+            is_for_sale=payload.is_for_sale,
+            signed_at_city=payload.signed_at_city,
+            canton=payload.canton,
+            bank_name=payload.bank_name,
+            bank_iban=payload.bank_iban,
+            bank_bic=payload.bank_bic,
+            occupants_count=payload.occupants_count,
+            tenant_nationality=payload.tenant_nationality,
+            payment_communication=payload.payment_communication,
         )
         self.db.add(contract)
         await self.db.flush()
