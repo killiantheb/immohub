@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { useCreateContract } from "@/lib/hooks/useContracts";
 import type { ContractType } from "@/lib/types";
 
@@ -30,8 +30,43 @@ export default function NewContractPage() {
     deposit: "",
   });
 
+  const [nlpInput, setNlpInput] = useState("");
+  const [nlpLoading, setNlpLoading] = useState(false);
+  const [nlpResult, setNlpResult] = useState<{
+    ai_recommendations?: string[];
+    warnings?: string[];
+  } | null>(null);
+
   const set = (k: keyof typeof form, v: string) =>
     setForm((prev) => ({ ...prev, [k]: v }));
+
+  async function handleNlpParse() {
+    if (!nlpInput.trim() || nlpLoading) return;
+    setNlpLoading(true);
+    setNlpResult(null);
+    try {
+      const { api } = await import("@/lib/api");
+      const { data } = await api.post<{
+        type?: string;
+        deposit_months?: number;
+        commission_pct?: number;
+        notice_months?: number;
+        min_duration_months?: number;
+        included_charges?: boolean;
+        ai_recommendations?: string[];
+        warnings?: string[];
+      }>("/ai/parse-contract-params", { description: nlpInput });
+
+      if (data.type && TYPE_OPTIONS.find((t) => t.value === data.type)) {
+        set("type", data.type as ContractType);
+      }
+      setNlpResult({ ai_recommendations: data.ai_recommendations, warnings: data.warnings });
+    } catch {
+      setNlpResult({ warnings: ["Impossible d'analyser la description."] });
+    } finally {
+      setNlpLoading(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -59,6 +94,49 @@ export default function NewContractPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+
+        {/* AI NLP Parser */}
+        <div className="card space-y-3 border-amber-200 bg-amber-50">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-600" />
+            <h2 className="text-sm font-semibold text-amber-800">Générer avec l&apos;IA</h2>
+          </div>
+          <p className="text-xs text-amber-700">Décrivez votre contrat en langage naturel et l&apos;IA pré-remplira les paramètres.</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={nlpInput}
+              onChange={(e) => setNlpInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && e.preventDefault() || (e.key === "Enter" && handleNlpParse())}
+              placeholder="Ex : saisonnier 15% commission, dépôt 2 mois, préavis 1 mois…"
+              className="input flex-1 text-sm"
+            />
+            <button
+              type="button"
+              onClick={handleNlpParse}
+              disabled={!nlpInput.trim() || nlpLoading}
+              className="btn-primary flex items-center gap-1 text-sm whitespace-nowrap disabled:opacity-50"
+            >
+              {nlpLoading ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              Analyser
+            </button>
+          </div>
+          {nlpResult && (
+            <div className="space-y-1.5">
+              {nlpResult.warnings?.map((w, i) => (
+                <p key={i} className="text-xs text-red-600">⚠ {w}</p>
+              ))}
+              {nlpResult.ai_recommendations?.map((r, i) => (
+                <p key={i} className="text-xs text-amber-700">✓ {r}</p>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Parties */}
         <div className="card space-y-4">
           <h2 className="text-sm font-semibold text-gray-700">Parties</h2>

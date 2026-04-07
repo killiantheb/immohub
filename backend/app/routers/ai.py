@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Annotated
 
 import json as _json
+import re as _re
 import uuid as _uuid
 
 from app.core.database import get_db
@@ -430,11 +431,181 @@ async def import_property_file(
             continue
 
     await db.commit()
+
+    # ── Mise à jour du logo agence si détecté ─────────────────────────────────
+    agency_identity: dict = {}
+    if content_type.startswith("image/") or "pdf" in content_type or filename.endswith(".pdf"):
+        from app.services.import_service import extract_agency_identity
+        try:
+            agency_identity = await extract_agency_identity(file_bytes, content_type, file.filename or "")
+            logo_url = agency_identity.get("logo_url")
+            if logo_url and current_user.role in ("agency", "owner"):
+                # Vérifie que le logo est accessible
+                import httpx
+                async with httpx.AsyncClient(timeout=5) as hclient:
+                    resp = await hclient.head(logo_url)
+                    if resp.status_code == 200:
+                        from sqlalchemy import select as sa_select
+                        from app.models.user import User as UserModel
+                        result2 = await db.execute(sa_select(UserModel).where(UserModel.id == current_user.id))
+                        user_row = result2.scalar_one_or_none()
+                        if user_row and not user_row.avatar_url:
+                            user_row.avatar_url = logo_url
+                            await db.commit()
+                            agency_identity["logo_updated"] = True
+        except Exception:
+            pass
+
     return {
         "created": created,
         "count": len(created),
         "notes": result.get("notes", ""),
+        "agency_identity": agency_identity,
     }
+
+
+# ── Agency AI Advisor ──────────────────────────────────────────────────────────
+
+class AdvisorRequest(BaseModel):
+    question: str
+    context: dict = {}
+
+
+@router.post("/agency-advisor")
+async def agency_advisor(
+    payload: AdvisorRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(15, 60),
+):
+    """
+    Conseiller IA spécialisé pour agences et propriétaires.
+    Analyse baux, EDL, paiements et donne des conseils juridiques/financiers suisses.
+    """
+    from anthropic import AsyncAnthropic
+    from app.core.config import settings
+    from app.models.contract import Contract
+    from app.models.transaction import Transaction
+    from sqlalchemy import select as sa_select, and_
+
+    if current_user.role not in ("agency", "owner", "super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux agences et propriétaires")
+
+    client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+
+    # Récupère les données réelles de l'utilisateur pour contexte
+    contracts = (await db.execute(
+        sa_select(Contract).where(
+            and_(Contract.is_active.is_(True),
+                 (Contract.owner_id == current_user.id) | (Contract.agency_id == current_user.id))
+        ).limit(20)
+    )).scalars().all()
+
+    late_tx = (await db.execute(
+        sa_select(Transaction).where(
+            and_(Transaction.owner_id == current_user.id,
+                 Transaction.status == "late",
+                 Transaction.is_active.is_(True))
+        ).limit(10)
+    )).scalars().all()
+
+    context_data = {
+        "nb_contrats_actifs": len([c for c in contracts if c.status == "active"]),
+        "nb_contrats_brouillon": len([c for c in contracts if c.status == "draft"]),
+        "nb_loyers_en_retard": len(late_tx),
+        "types_contrats": list({c.type for c in contracts}),
+        **(payload.context or {}),
+    }
+
+    system = f"""Tu es AlthyLegal, conseiller IA expert en droit immobilier suisse (CO, LDTR, bail à loyer).
+Tu conseilles {current_user.first_name or 'l\'utilisateur'}, {'agence immobilière' if current_user.role == 'agency' else 'propriétaire'}.
+
+Données de son portefeuille :
+{_json.dumps(context_data, ensure_ascii=False)}
+
+Tu peux conseiller sur :
+- Conformité juridique des baux (durée, loyer initial, hausses de loyer, résiliation)
+- Qualité des états des lieux (EDL) et ce qui doit être documenté
+- Optimisation des paiements et gestion des retards
+- Commissions de gérance (taux légaux suisses)
+- Dépôts de garantie (max 3 mois selon CO art. 257e)
+- Baux saisonniers vs longue durée
+- Recommandations sur les paramètres contractuels
+
+Réponds en français, sois précis et cite les articles de loi suisses si pertinent.
+Sois direct et actionnable. Max 300 mots."""
+
+    response = await client.messages.create(
+        model="claude-sonnet-4-5",
+        max_tokens=600,
+        system=system,
+        messages=[{"role": "user", "content": payload.question}],
+    )
+
+    return {"advice": response.content[0].text.strip()}
+
+
+# ── Smart Contract Parameters from Natural Language ────────────────────────────
+
+class ContractParamsRequest(BaseModel):
+    description: str  # ex: "location saisonnière, commission 15%, dépôt 2 mois"
+
+
+@router.post("/parse-contract-params")
+async def parse_contract_params(
+    payload: ContractParamsRequest,
+    current_user: AuthUserDep,
+    _=rate_limit(20, 60),
+):
+    """
+    Parse une description en langage naturel et retourne des paramètres de contrat structurés.
+    Ex: "saisonnier 15% commission, dépôt 2 mois" → {type, commission_pct, deposit_months, ...}
+    """
+    from anthropic import AsyncAnthropic
+    from app.core.config import settings
+
+    if current_user.role not in ("agency", "owner", "super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux agences et propriétaires")
+
+    client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+
+    response = await client.messages.create(
+        model="claude-sonnet-4-5",
+        max_tokens=500,
+        messages=[{"role": "user", "content": f"""
+Tu es un expert en droit du bail suisse. Analyse cette description et extrait les paramètres du contrat.
+
+Description : "{payload.description}"
+
+Retourne UNIQUEMENT ce JSON :
+{{
+  "type": "long_term|seasonal|short_term|management",
+  "commission_pct": <pourcentage de commission ou null>,
+  "deposit_months": <nombre de mois de dépôt (max 3 selon CO) ou null>,
+  "notice_months": <préavis en mois ou null>,
+  "min_duration_months": <durée minimale en mois ou null>,
+  "rent_increase_pct": <hausse annuelle max en % ou null>,
+  "included_charges": true/false,
+  "management_fee_pct": <honoraires de gérance % ou null>,
+  "ai_recommendations": [
+    "recommandation juridique courte 1",
+    "recommandation juridique courte 2"
+  ],
+  "warnings": ["avertissement si paramètre hors norme suisse"]
+}}
+
+Droit suisse : dépôt max 3 mois, préavis standard 3 mois longue durée, bail saisonnier < 1 an.
+"""}]
+    )
+
+    raw = response.content[0].text.strip()
+    if "```" in raw:
+        raw = _re.sub(r"```(?:json)?", "", raw).strip()
+
+    try:
+        return _json.loads(raw)
+    except Exception:
+        return {"type": "long_term", "ai_recommendations": [], "warnings": ["Impossible de parser les paramètres"]}
 
 
 @router.get("/briefing")

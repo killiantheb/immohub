@@ -135,6 +135,69 @@ async def extract_from_csv_bytes(csv_bytes: bytes) -> dict:
     return await extract_from_text(text)
 
 
+async def extract_agency_identity(file_bytes: bytes, content_type: str, filename: str) -> dict:
+    """
+    Extrait l'identité de l'agence depuis un fichier (logo URL, nom, site web).
+    Utilise Clearbit Logo API pour récupérer le logo depuis le domaine.
+    """
+    is_image = content_type.startswith("image/")
+    is_pdf = "pdf" in content_type or filename.endswith(".pdf")
+
+    prompt = """Analyse ce document et extrait les informations de l'agence immobilière.
+Retourne UNIQUEMENT ce JSON :
+{
+  "agency_name": "nom exact de l'agence ou null",
+  "website": "domaine sans https (ex: sunimmo.ch) ou null",
+  "email": "email de contact ou null",
+  "phone": "téléphone ou null",
+  "address": "adresse physique ou null",
+  "logo_visible": true/false
+}"""
+
+    messages_content = []
+
+    if is_image:
+        b64 = base64.standard_b64encode(file_bytes).decode()
+        mt = content_type if content_type.startswith("image/") else "image/jpeg"
+        messages_content = [
+            {"type": "text", "text": prompt},
+            {"type": "image", "source": {"type": "base64", "media_type": mt, "data": b64}},
+        ]
+    elif is_pdf:
+        try:
+            import pdfplumber
+            with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+                text = "\n".join(page.extract_text() or "" for page in pdf.pages[:3])
+            messages_content = [{"type": "text", "text": f"{prompt}\n\nTexte du document :\n{text[:3000]}"}]
+        except Exception:
+            b64 = base64.standard_b64encode(file_bytes).decode()
+            messages_content = [
+                {"type": "text", "text": prompt},
+                {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": b64}},
+            ]
+    else:
+        return {}
+
+    try:
+        response = await CLIENT.messages.create(
+            model=MODEL,
+            max_tokens=400,
+            messages=[{"role": "user", "content": messages_content}],
+        )
+        raw = response.content[0].text.strip()
+        identity = _parse_response(raw)
+
+        # Tente de récupérer le logo via Clearbit si on a le domaine
+        domain = identity.get("website")
+        if domain:
+            domain = domain.replace("https://", "").replace("http://", "").split("/")[0]
+            identity["logo_url"] = f"https://logo.clearbit.com/{domain}"
+
+        return identity
+    except Exception:
+        return {}
+
+
 def _parse_response(raw: str) -> dict:
     """Parse la réponse Claude en dict."""
     if "```" in raw:

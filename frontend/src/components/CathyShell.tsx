@@ -21,6 +21,7 @@ const NAV_LINKS = [
   { href: '/openers',      label: 'Missions' },
   { href: '/rfqs',         label: 'Appels d\'offre' },
   { href: '/overview',     label: 'Vue d\'ensemble' },
+  { href: '/advisor',      label: 'Conseiller IA' },
   { href: '/profile',      label: 'Profil' },
 ]
 
@@ -30,7 +31,7 @@ const QUICK_LINKS = [
   { href: '/transactions', label: 'Transactions',    icon: '💶' },
   { href: '/openers',      label: 'Missions',        icon: '📍' },
   { href: '/rfqs',         label: 'Appels d\'offre', icon: '🔨' },
-  { href: '/overview',     label: 'Vue d\'ensemble', icon: '📊' },
+  { href: '/advisor',      label: 'Conseiller IA',   icon: '⚖️' },
 ]
 
 export function CathyShell({ children }: { children: React.ReactNode }) {
