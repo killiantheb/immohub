@@ -85,6 +85,12 @@ export default function RegisterPage() {
 
   const password = watch("password", "");
 
+  const ROLE_ROUTES: Record<string, string> = {
+    owner: "/dashboard", agency: "/dashboard",
+    opener: "/opener", tenant: "/tenant",
+    company: "/company",
+  };
+
   const onSubmit = async (data: FormValues) => {
     setServerError(null);
     try {
@@ -93,7 +99,7 @@ export default function RegisterPage() {
         last_name: data.last_name,
         role: data.role,
       });
-      router.push("/");
+      router.push(ROLE_ROUTES[data.role] ?? "/dashboard");
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message ?? "Erreur lors de l'inscription";
       setServerError(

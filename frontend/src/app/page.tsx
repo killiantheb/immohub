@@ -3,13 +3,13 @@ import { HeroSphere } from '@/components/HeroSphere'
 
 // ── Tokens ─────────────────────────────────────────────────────────────────────
 const O = '#D4601A'
-const O12 = 'rgba(212,96,26,0.12)'
-const O20 = 'rgba(212,96,26,0.20)'
-const T = 'rgba(255,220,180,0.92)'
-const T5 = 'rgba(255,220,180,0.5)'
-const T3 = 'rgba(255,220,180,0.3)'
-const BG = '#060402'
-const BG2 = '#0D0804'
+const O12 = 'rgba(212,96,26,0.10)'
+const O20 = 'rgba(212,96,26,0.22)'
+const T = '#1C0F06'
+const T5 = 'rgba(80,35,8,0.58)'
+const T3 = 'rgba(80,35,8,0.32)'
+const BG = '#FAF5EB'
+const BG2 = '#F5EDE0'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function Divider() {
@@ -89,7 +89,7 @@ export default function LandingPage() {
     <div style={{ background: BG, color: T, fontFamily: 'var(--font-sans)', minHeight: '100vh' }}>
 
       {/* ── Nav ───────────────────────────────────────────────────────────── */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(6,4,2,0.85)', backdropFilter: 'blur(12px)', borderBottom: `0.5px solid ${O20}`, height: 56, display: 'flex', alignItems: 'center', padding: '0 1.5rem' }}>
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(250,245,235,0.92)', backdropFilter: 'blur(12px)', borderBottom: `0.5px solid ${O20}`, height: 56, display: 'flex', alignItems: 'center', padding: '0 1.5rem' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 300, color: O, letterSpacing: '3px' }}>Cathy</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
+  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -89,6 +91,10 @@ export default function AdminTransactionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
+          <Link href="/admin" className="mb-2 flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+            <ArrowLeft className="h-4 w-4" />
+            Retour à l&apos;admin
+          </Link>
           <h1 className="text-xl font-bold text-gray-900">Toutes les transactions</h1>
           <p className="text-sm text-gray-500">
             {data ? `${data.total} transactions` : "Chargement…"}

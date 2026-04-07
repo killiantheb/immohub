@@ -28,7 +28,7 @@ export default function LoginPage() {
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") ?? "/";
+  const redirectTo = searchParams.get("redirectTo");
 
   const { signIn } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
@@ -40,11 +40,19 @@ function LoginContent() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
+  const ROLE_ROUTES: Record<string, string> = {
+    owner: "/dashboard", agency: "/dashboard",
+    opener: "/opener", tenant: "/tenant",
+    company: "/company", super_admin: "/dashboard",
+  };
+
   const onSubmit = async ({ email, password }: FormValues) => {
     setServerError(null);
     try {
-      await signIn(email, password);
-      router.push(redirectTo);
+      const data = await signIn(email, password);
+      const role = data.user?.user_metadata?.role as string | undefined;
+      const target = redirectTo ?? (role && ROLE_ROUTES[role]) ?? "/dashboard";
+      router.push(target);
     } catch (err: unknown) {
       const msg =
         (err as { message?: string })?.message ?? "Identifiants incorrects";
