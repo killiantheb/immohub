@@ -7,18 +7,17 @@ Celery tasks for the opener/mission lifecycle.
 
 import asyncio
 import logging
-from datetime import UTC, datetime, timedelta
-
-from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
 from app.models.opener import Mission, Opener
 from app.tasks.celery_app import celery_app
+from sqlalchemy import select
 
 log = logging.getLogger(__name__)
 
 
 # ── helpers ────────────────────────────────────────────────────────────────────
+
 
 async def _notify_openers_async(mission_id: str) -> None:
     """
@@ -27,9 +26,7 @@ async def _notify_openers_async(mission_id: str) -> None:
     """
     async with AsyncSessionLocal() as db:
         try:
-            result = await db.execute(
-                select(Mission).where(Mission.id == mission_id)
-            )
+            result = await db.execute(select(Mission).where(Mission.id == mission_id))
             mission = result.scalar_one_or_none()
             if not mission or mission.status != "pending":
                 return
@@ -53,14 +50,18 @@ async def _notify_openers_async(mission_id: str) -> None:
             notified = 0
             for opener in openers:
                 dist = haversine_km(
-                    mission.property_lat, mission.property_lng,
-                    opener.latitude, opener.longitude,  # type: ignore[arg-type]
+                    mission.property_lat,
+                    mission.property_lng,
+                    opener.latitude,
+                    opener.longitude,  # type: ignore[arg-type]
                 )
                 if opener.radius_km and dist <= opener.radius_km:
                     # TODO: send real notification (email / FCM)
                     log.info(
                         "Notifying opener %s (dist=%.1f km) for mission %s",
-                        opener.id, dist, mission_id,
+                        opener.id,
+                        dist,
+                        mission_id,
                     )
                     notified += 1
 
@@ -76,9 +77,7 @@ async def _auto_reassign_async(mission_id: str) -> None:
     """
     async with AsyncSessionLocal() as db:
         try:
-            result = await db.execute(
-                select(Mission).where(Mission.id == mission_id)
-            )
+            result = await db.execute(select(Mission).where(Mission.id == mission_id))
             mission = result.scalar_one_or_none()
 
             if not mission or mission.status != "pending":
@@ -101,18 +100,22 @@ async def _auto_reassign_async(mission_id: str) -> None:
                 return
 
             import uuid
+
             new_opener_id = uuid.UUID(candidates[0].id)
 
             # Skip if it's the same opener that already didn't accept
             if mission.opener_id == new_opener_id:
-                log.info("Same opener already assigned to mission %s — skipping reassign", mission_id)
+                log.info(
+                    "Same opener already assigned to mission %s — skipping reassign", mission_id
+                )
                 return
 
             mission.opener_id = new_opener_id
             await db.commit()
             log.info(
                 "Mission %s auto-reassigned to opener %s",
-                mission_id, new_opener_id,
+                mission_id,
+                new_opener_id,
             )
 
             # Re-notify the new opener
@@ -123,6 +126,7 @@ async def _auto_reassign_async(mission_id: str) -> None:
 
 
 # ── Celery tasks ───────────────────────────────────────────────────────────────
+
 
 @celery_app.task(name="tasks.notify_available_openers", bind=True, max_retries=3)
 def notify_available_openers(self, mission_id: str) -> None:

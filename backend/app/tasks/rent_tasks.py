@@ -13,14 +13,14 @@ import asyncio
 import uuid
 from datetime import UTC, date, datetime, timedelta
 
-from celery.utils.log import get_task_logger
-
 from app.tasks.celery_app import celery_app
+from celery.utils.log import get_task_logger
 
 logger = get_task_logger(__name__)
 
 
 # ── async DB helper ────────────────────────────────────────────────────────────
+
 
 def _run(coro):
     """Run an async coroutine from a sync Celery task."""
@@ -28,6 +28,7 @@ def _run(coro):
 
 
 # ── generate_monthly_rents ─────────────────────────────────────────────────────
+
 
 @celery_app.task(bind=True, name="tasks.generate_monthly_rents", max_retries=3)
 def generate_monthly_rents(self) -> dict:
@@ -43,12 +44,10 @@ def generate_monthly_rents(self) -> dict:
 
 
 async def _generate_monthly_rents_async() -> dict:
-    from sqlalchemy import extract, select
-
-    from app.core.config import settings
     from app.core.database import AsyncSessionLocal
     from app.models.contract import Contract
     from app.models.transaction import Transaction
+    from sqlalchemy import extract, select
 
     now = datetime.now(UTC)
     # Due date = 5th of current month
@@ -59,15 +58,19 @@ async def _generate_monthly_rents_async() -> dict:
 
     async with AsyncSessionLocal() as db:
         contracts = (
-            await db.execute(
-                select(Contract).where(
-                    Contract.type == "long_term",
-                    Contract.status == "active",
-                    Contract.is_active.is_(True),
-                    Contract.monthly_rent.isnot(None),
+            (
+                await db.execute(
+                    select(Contract).where(
+                        Contract.type == "long_term",
+                        Contract.status == "active",
+                        Contract.is_active.is_(True),
+                        Contract.monthly_rent.isnot(None),
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         for contract in contracts:
             # Check if already generated for this month
@@ -113,6 +116,7 @@ async def _generate_monthly_rents_async() -> dict:
 
 # ── send_rent_reminders ────────────────────────────────────────────────────────
 
+
 @celery_app.task(bind=True, name="tasks.send_rent_reminders", max_retries=3)
 def send_rent_reminders(self) -> dict:
     """
@@ -127,10 +131,9 @@ def send_rent_reminders(self) -> dict:
 
 
 async def _send_reminders_async() -> dict:
-    from sqlalchemy import select
-
     from app.core.database import AsyncSessionLocal
     from app.models.transaction import Transaction
+    from sqlalchemy import select
 
     today = date.today()
     reminders_sent = 0
@@ -148,15 +151,19 @@ async def _send_reminders_async() -> dict:
             target = today + timedelta(days=delta)
 
             rows = (
-                await db.execute(
-                    select(Transaction).where(
-                        Transaction.type == "rent",
-                        Transaction.status.in_(["pending", "late"]),
-                        Transaction.is_active.is_(True),
-                        Transaction.due_date.isnot(None),
+                (
+                    await db.execute(
+                        select(Transaction).where(
+                            Transaction.type == "rent",
+                            Transaction.status.in_(["pending", "late"]),
+                            Transaction.is_active.is_(True),
+                            Transaction.due_date.isnot(None),
+                        )
                     )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
 
             for tx in rows:
                 tx_due = tx.due_date.date() if tx.due_date else None
@@ -185,6 +192,7 @@ async def _send_reminders_async() -> dict:
 
 # ── calculate_commissions ──────────────────────────────────────────────────────
 
+
 @celery_app.task(bind=True, name="tasks.calculate_commissions", max_retries=3)
 def calculate_commissions(self) -> dict:
     """
@@ -199,25 +207,28 @@ def calculate_commissions(self) -> dict:
 
 
 async def _calculate_commissions_async() -> dict:
-    from sqlalchemy import select
-
     from app.core.database import AsyncSessionLocal
     from app.models.transaction import Transaction
+    from sqlalchemy import select
 
     COMMISSION_PCT = 3.0
     created = 0
 
     async with AsyncSessionLocal() as db:
         paid_rents = (
-            await db.execute(
-                select(Transaction).where(
-                    Transaction.type == "rent",
-                    Transaction.status == "paid",
-                    Transaction.commission_amount.is_(None),
-                    Transaction.is_active.is_(True),
+            (
+                await db.execute(
+                    select(Transaction).where(
+                        Transaction.type == "rent",
+                        Transaction.status == "paid",
+                        Transaction.commission_amount.is_(None),
+                        Transaction.is_active.is_(True),
+                    )
                 )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         for rent in paid_rents:
             commission_amount = float(rent.amount) * COMMISSION_PCT / 100

@@ -1,24 +1,41 @@
 import uuid
 
+from app.models.base import BaseModel
 from sqlalchemy import Boolean, Enum, Float, ForeignKey, Index, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import BaseModel
-
 PropertyType = Enum(
-    "apartment", "villa", "parking", "garage", "box",
-    "cave", "depot", "office", "commercial", "hotel",
+    "apartment",
+    "villa",
+    "parking",
+    "garage",
+    "box",
+    "cave",
+    "depot",
+    "office",
+    "commercial",
+    "hotel",
     name="property_type_enum",
 )
 
 PropertyStatus = Enum(
-    "available", "rented", "for_sale", "sold", "maintenance",
+    "available",
+    "rented",
+    "for_sale",
+    "sold",
+    "maintenance",
     name="property_status_enum",
 )
 
 PropertyDocumentType = Enum(
-    "lease", "inventory", "insurance", "notice", "deed", "diagnosis", "other",
+    "lease",
+    "inventory",
+    "insurance",
+    "notice",
+    "deed",
+    "diagnosis",
+    "other",
     name="property_document_type_enum",
 )
 
@@ -42,7 +59,9 @@ class Property(BaseModel):
     address: Mapped[str] = mapped_column(String(500), nullable=False)
     city: Mapped[str] = mapped_column(String(100), nullable=False)
     zip_code: Mapped[str] = mapped_column(String(10), nullable=False)
-    country: Mapped[str] = mapped_column(String(2), nullable=False, default="FR", server_default="FR")
+    country: Mapped[str] = mapped_column(
+        String(2), nullable=False, default="FR", server_default="FR"
+    )
 
     surface: Mapped[float | None] = mapped_column(Float)
     rooms: Mapped[int | None] = mapped_column(Integer)
@@ -54,9 +73,15 @@ class Property(BaseModel):
     deposit: Mapped[float | None] = mapped_column(Numeric(12, 2))
     price_sale: Mapped[float | None] = mapped_column(Numeric(14, 2))
 
-    is_furnished: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
-    has_parking: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
-    pets_allowed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    is_furnished: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    has_parking: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    pets_allowed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
 
     __table_args__ = (
         Index("ix_properties_owner_id", "owner_id"),
@@ -77,7 +102,9 @@ class PropertyImage(BaseModel):
     )
     url: Mapped[str] = mapped_column(Text, nullable=False)
     order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    is_cover: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    is_cover: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
 
     __table_args__ = (
         Index("ix_property_images_property_id", "property_id"),

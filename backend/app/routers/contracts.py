@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from typing import Annotated, Optional
-
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Annotated
 
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.schemas.contract import ContractCreate, ContractRead, ContractUpdate, PaginatedContracts
 from app.services.contract_service import ContractService
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -23,9 +22,9 @@ async def list_contracts(
     db: DbDep,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
-    status: Optional[str] = Query(None),
-    property_id: Optional[str] = Query(None),
-    tenant_id: Optional[str] = Query(None),
+    status: str | None = Query(None),
+    property_id: str | None = Query(None),
+    tenant_id: str | None = Query(None),
 ) -> PaginatedContracts:
     return await ContractService(db).list(
         current_user=current_user,

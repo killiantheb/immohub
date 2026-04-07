@@ -7,11 +7,6 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from fastapi import HTTPException, status
-from fastapi.responses import Response
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.models.contract import Contract
 from app.schemas.contract import (
     ContractCreate,
@@ -19,6 +14,10 @@ from app.schemas.contract import (
     ContractUpdate,
     PaginatedContracts,
 )
+from fastapi import HTTPException, status
+from fastapi.responses import Response
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
     from app.models.user import User
@@ -30,7 +29,7 @@ def _ref() -> str:
     return f"CTR-{ts}-{uid}"
 
 
-def _can_write(contract: Contract, user: "User") -> bool:
+def _can_write(contract: Contract, user: User) -> bool:
     if user.role == "super_admin":
         return True
     uid = user.id
@@ -45,7 +44,7 @@ class ContractService:
 
     async def list(
         self,
-        current_user: "User",
+        current_user: User,
         page: int = 1,
         size: int = 20,
         contract_status: str | None = None,
@@ -79,12 +78,14 @@ class ContractService:
         ).scalar_one()
 
         rows = (
-            await self.db.execute(
-                q.order_by(Contract.created_at.desc())
-                .offset((page - 1) * size)
-                .limit(size)
+            (
+                await self.db.execute(
+                    q.order_by(Contract.created_at.desc()).offset((page - 1) * size).limit(size)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         return PaginatedContracts(
             items=[ContractRead.model_validate(r) for r in rows],
@@ -96,7 +97,7 @@ class ContractService:
 
     # ── Get ───────────────────────────────────────────────────────────────────
 
-    async def get(self, contract_id: str, current_user: "User") -> Contract | None:
+    async def get(self, contract_id: str, current_user: User) -> Contract | None:
         try:
             cid = uuid.UUID(contract_id)
         except ValueError:
@@ -112,7 +113,7 @@ class ContractService:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
         return contract
 
-    async def _get_or_404(self, contract_id: str, current_user: "User") -> Contract:
+    async def _get_or_404(self, contract_id: str, current_user: User) -> Contract:
         contract = await self.get(contract_id, current_user)
         if contract is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Contrat introuvable")
@@ -120,7 +121,7 @@ class ContractService:
 
     # ── Create ────────────────────────────────────────────────────────────────
 
-    async def create(self, payload: ContractCreate, current_user: "User") -> Contract:
+    async def create(self, payload: ContractCreate, current_user: User) -> Contract:
         try:
             prop_id = uuid.UUID(payload.property_id)
         except ValueError:
@@ -148,7 +149,7 @@ class ContractService:
     # ── Update ────────────────────────────────────────────────────────────────
 
     async def update(
-        self, contract_id: str, payload: ContractUpdate, current_user: "User"
+        self, contract_id: str, payload: ContractUpdate, current_user: User
     ) -> Contract:
         contract = await self._get_or_404(contract_id, current_user)
         if not _can_write(contract, current_user):
@@ -172,7 +173,7 @@ class ContractService:
 
     # ── Delete (soft) ─────────────────────────────────────────────────────────
 
-    async def delete(self, contract_id: str, current_user: "User") -> bool:
+    async def delete(self, contract_id: str, current_user: User) -> bool:
         contract = await self._get_or_404(contract_id, current_user)
         if not _can_write(contract, current_user):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
@@ -184,7 +185,7 @@ class ContractService:
 
     # ── Sign ──────────────────────────────────────────────────────────────────
 
-    async def sign(self, contract_id: str, ip: str, current_user: "User") -> Contract:
+    async def sign(self, contract_id: str, ip: str, current_user: User) -> Contract:
         contract = await self._get_or_404(contract_id, current_user)
         if contract.signed_at:
             raise HTTPException(status.HTTP_409_CONFLICT, "Contrat déjà signé")
@@ -201,7 +202,7 @@ class ContractService:
 
     # ── PDF ───────────────────────────────────────────────────────────────────
 
-    async def generate_pdf(self, contract_id: str, current_user: "User") -> Response:
+    async def generate_pdf(self, contract_id: str, current_user: User) -> Response:
         contract = await self._get_or_404(contract_id, current_user)
         pdf_bytes = _build_pdf(contract)
         return Response(
@@ -237,12 +238,12 @@ def _build_pdf(contract: Contract) -> bytes:
         content = f"""CONTRAT {contract.reference}
 Type: {_CONTRACT_TYPE_FR.get(contract.type, contract.type)}
 Statut: {_CONTRACT_STATUS_FR.get(contract.status, contract.status)}
-Début: {contract.start_date.strftime('%d/%m/%Y') if contract.start_date else '—'}
-Fin: {contract.end_date.strftime('%d/%m/%Y') if contract.end_date else 'Indéterminée'}
-Loyer mensuel: {contract.monthly_rent or '—'} €
-Charges: {contract.charges or '—'} €
-Dépôt de garantie: {contract.deposit or '—'} €
-Signé le: {contract.signed_at.strftime('%d/%m/%Y %H:%M') if contract.signed_at else '—'}
+Début: {contract.start_date.strftime("%d/%m/%Y") if contract.start_date else "—"}
+Fin: {contract.end_date.strftime("%d/%m/%Y") if contract.end_date else "Indéterminée"}
+Loyer mensuel: {contract.monthly_rent or "—"} €
+Charges: {contract.charges or "—"} €
+Dépôt de garantie: {contract.deposit or "—"} €
+Signé le: {contract.signed_at.strftime("%d/%m/%Y %H:%M") if contract.signed_at else "—"}
 """
         # Wrap in minimal valid PDF bytes (not a real PDF, but won't crash)
         return content.encode()
@@ -273,7 +274,10 @@ Signé le: {contract.signed_at.strftime('%d/%m/%Y %H:%M') if contract.signed_at 
     row("Type", _CONTRACT_TYPE_FR.get(contract.type, contract.type))
     row("Statut", _CONTRACT_STATUS_FR.get(contract.status, contract.status))
     row("Date de début", contract.start_date.strftime("%d/%m/%Y") if contract.start_date else "—")
-    row("Date de fin", contract.end_date.strftime("%d/%m/%Y") if contract.end_date else "Indéterminée")
+    row(
+        "Date de fin",
+        contract.end_date.strftime("%d/%m/%Y") if contract.end_date else "Indéterminée",
+    )
     pdf.ln(4)
 
     section("Conditions financières")

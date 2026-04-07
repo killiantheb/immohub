@@ -5,8 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, computed_field
 
-
 # ── Requests ──────────────────────────────────────────────────────────────────
+
 
 class RegisterRequest(BaseModel):
     email: EmailStr
@@ -34,6 +34,7 @@ class UpdateProfileRequest(BaseModel):
 
 
 # ── Responses ─────────────────────────────────────────────────────────────────
+
 
 class UserProfileResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -64,9 +65,12 @@ class UserProfileResponse(BaseModel):
             "super_admin": ["*"],
             "agency": [
                 *base,
-                "properties:write", "properties:delete",
-                "contracts:write", "transactions:write",
-                "openers:manage", "companies:manage",
+                "properties:write",
+                "properties:delete",
+                "contracts:write",
+                "transactions:write",
+                "openers:manage",
+                "companies:manage",
             ],
             "owner": [
                 *base,

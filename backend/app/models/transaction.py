@@ -1,19 +1,25 @@
 import uuid
 from datetime import datetime
 
+from app.models.base import BaseModel
 from sqlalchemy import DateTime, Enum, ForeignKey, Index, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import BaseModel
-
 TransactionType = Enum(
-    "rent", "commission", "deposit", "service", "quote",
+    "rent",
+    "commission",
+    "deposit",
+    "service",
+    "quote",
     name="transaction_type_enum",
 )
 
 TransactionStatus = Enum(
-    "pending", "paid", "late", "cancelled",
+    "pending",
+    "paid",
+    "late",
+    "cancelled",
     name="transaction_status_enum",
 )
 

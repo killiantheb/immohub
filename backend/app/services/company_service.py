@@ -1,10 +1,9 @@
 import uuid
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.models.company import Company
 from app.schemas.company import CompanyCreate, CompanyUpdate
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class CompanyService:

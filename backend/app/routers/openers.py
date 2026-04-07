@@ -1,6 +1,3 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
@@ -13,11 +10,14 @@ from app.schemas.opener import (
     OpenerWithDistance,
 )
 from app.services.opener_service import OpenerService
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
 
 # ── Profile ───────────────────────────────────────────────────────────────────
+
 
 @router.get("/me", response_model=OpenerRead)
 async def get_my_profile(
@@ -27,7 +27,9 @@ async def get_my_profile(
     svc = OpenerService(db)
     profile = await svc._get_my_opener_optional(user)
     if not profile:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profil ouvreur non trouvé")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Profil ouvreur non trouvé"
+        )
     return profile
 
 
@@ -53,6 +55,7 @@ async def patch_profile(
 
 # ── Discovery ─────────────────────────────────────────────────────────────────
 
+
 @router.get("", response_model=list[OpenerWithDistance])
 async def list_openers(
     lat: float = Query(..., ge=-90, le=90, description="Latitude du bien"),
@@ -65,8 +68,11 @@ async def list_openers(
 ):
     svc = OpenerService(db)
     return await svc.list_openers(
-        lat=lat, lng=lng, radius_km=radius_km,
-        mission_type=mission_type, limit=limit,
+        lat=lat,
+        lng=lng,
+        radius_km=radius_km,
+        mission_type=mission_type,
+        limit=limit,
     )
 
 
@@ -77,6 +83,7 @@ async def price_estimate(
     user: User = Depends(get_current_user),
 ):
     from app.services.opener_service import calculate_mission_price
+
     return calculate_mission_price(mission_type, distance_km)
 
 

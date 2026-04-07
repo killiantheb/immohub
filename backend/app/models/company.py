@@ -1,19 +1,26 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, Index, Integer, Numeric, String, Text
+from app.models.base import BaseModel
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import BaseModel
-
 CompanyType = Enum(
-    "plumber", "electrician", "cleaner", "painter", "locksmith", "other",
+    "plumber",
+    "electrician",
+    "cleaner",
+    "painter",
+    "locksmith",
+    "other",
     name="company_type_enum",
 )
 
 QuoteStatus = Enum(
-    "pending", "accepted", "rejected", "completed",
+    "pending",
+    "accepted",
+    "rejected",
+    "completed",
     name="quote_status_enum",
 )
 

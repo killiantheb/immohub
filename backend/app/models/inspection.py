@@ -1,19 +1,21 @@
 import uuid
 from datetime import datetime
 
+from app.models.base import BaseModel
 from sqlalchemy import DateTime, Enum, ForeignKey, Index, Text
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import BaseModel
-
 InspectionType = Enum(
-    "entry", "exit",
+    "entry",
+    "exit",
     name="inspection_type_enum",
 )
 
 InspectionCondition = Enum(
-    "good", "fair", "poor",
+    "good",
+    "fair",
+    "poor",
     name="inspection_condition_enum",
 )
 

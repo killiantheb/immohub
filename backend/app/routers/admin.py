@@ -5,11 +5,6 @@ from __future__ import annotations
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel
-from sqlalchemy import func, select, text, update
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.database import get_db
 from app.core.security import require_roles
 from app.models.audit_log import AuditLog
@@ -17,6 +12,10 @@ from app.models.contract import Contract
 from app.models.property import Property
 from app.models.transaction import Transaction
 from app.models.user import User
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
+from sqlalchemy import func, select, text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -25,6 +24,7 @@ DbDep = Annotated[AsyncSession, Depends(get_db)]
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
+
 
 class PlatformStats(BaseModel):
     total_users: int
@@ -115,6 +115,7 @@ class PaginatedAuditLogs(BaseModel):
 
 # ── 1. Platform KPIs ─────────────────────────────────────────────────────────
 
+
 @router.get("/stats", response_model=PlatformStats)
 async def get_platform_stats(
     _: Annotated[User, SuperAdmin],
@@ -123,89 +124,123 @@ async def get_platform_stats(
     """Global platform KPIs — counts, revenue, commissions."""
 
     # User stats
-    total_users = (await db.execute(
-        select(func.count()).select_from(User).where(User.is_active.is_(True))
-    )).scalar_one()
+    total_users = (
+        await db.execute(select(func.count()).select_from(User).where(User.is_active.is_(True)))
+    ).scalar_one()
 
-    role_rows = (await db.execute(
-        select(User.role, func.count()).where(User.is_active.is_(True)).group_by(User.role)
-    )).all()
+    role_rows = (
+        await db.execute(
+            select(User.role, func.count()).where(User.is_active.is_(True)).group_by(User.role)
+        )
+    ).all()
     users_by_role = {row[0]: row[1] for row in role_rows}
 
-    new_users_this_month = (await db.execute(
-        select(func.count()).select_from(User).where(
-            User.is_active.is_(True),
-            func.date_trunc("month", User.created_at) == func.date_trunc("month", func.now()),
+    new_users_this_month = (
+        await db.execute(
+            select(func.count())
+            .select_from(User)
+            .where(
+                User.is_active.is_(True),
+                func.date_trunc("month", User.created_at) == func.date_trunc("month", func.now()),
+            )
         )
-    )).scalar_one()
+    ).scalar_one()
 
     # Property stats
-    total_properties = (await db.execute(
-        select(func.count()).select_from(Property).where(Property.is_active.is_(True))
-    )).scalar_one()
-
-    active_properties = (await db.execute(
-        select(func.count()).select_from(Property).where(
-            Property.is_active.is_(True),
-            Property.status.in_(["rented", "available"]),
+    total_properties = (
+        await db.execute(
+            select(func.count()).select_from(Property).where(Property.is_active.is_(True))
         )
-    )).scalar_one()
+    ).scalar_one()
+
+    active_properties = (
+        await db.execute(
+            select(func.count())
+            .select_from(Property)
+            .where(
+                Property.is_active.is_(True),
+                Property.status.in_(["rented", "available"]),
+            )
+        )
+    ).scalar_one()
 
     # Contract stats
-    active_contracts = (await db.execute(
-        select(func.count()).select_from(Contract).where(
-            Contract.is_active.is_(True),
-            Contract.status == "active",
+    active_contracts = (
+        await db.execute(
+            select(func.count())
+            .select_from(Contract)
+            .where(
+                Contract.is_active.is_(True),
+                Contract.status == "active",
+            )
         )
-    )).scalar_one()
+    ).scalar_one()
 
     # Revenue (paid transactions)
-    rev_total_row = (await db.execute(
-        select(func.coalesce(func.sum(Transaction.amount), 0)).where(
-            Transaction.is_active.is_(True),
-            Transaction.status == "paid",
+    rev_total_row = (
+        await db.execute(
+            select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+                Transaction.is_active.is_(True),
+                Transaction.status == "paid",
+            )
         )
-    )).scalar_one()
+    ).scalar_one()
 
-    rev_month_row = (await db.execute(
-        select(func.coalesce(func.sum(Transaction.amount), 0)).where(
-            Transaction.is_active.is_(True),
-            Transaction.status == "paid",
-            func.date_trunc("month", Transaction.paid_at) == func.date_trunc("month", func.now()),
+    rev_month_row = (
+        await db.execute(
+            select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+                Transaction.is_active.is_(True),
+                Transaction.status == "paid",
+                func.date_trunc("month", Transaction.paid_at)
+                == func.date_trunc("month", func.now()),
+            )
         )
-    )).scalar_one()
+    ).scalar_one()
 
     # Commissions
-    comm_total_row = (await db.execute(
-        select(func.coalesce(func.sum(Transaction.commission_amount), 0)).where(
-            Transaction.is_active.is_(True),
-            Transaction.status == "paid",
-            Transaction.commission_amount.isnot(None),
+    comm_total_row = (
+        await db.execute(
+            select(func.coalesce(func.sum(Transaction.commission_amount), 0)).where(
+                Transaction.is_active.is_(True),
+                Transaction.status == "paid",
+                Transaction.commission_amount.isnot(None),
+            )
         )
-    )).scalar_one()
+    ).scalar_one()
 
-    comm_month_row = (await db.execute(
-        select(func.coalesce(func.sum(Transaction.commission_amount), 0)).where(
-            Transaction.is_active.is_(True),
-            Transaction.status == "paid",
-            Transaction.commission_amount.isnot(None),
-            func.date_trunc("month", Transaction.paid_at) == func.date_trunc("month", func.now()),
+    comm_month_row = (
+        await db.execute(
+            select(func.coalesce(func.sum(Transaction.commission_amount), 0)).where(
+                Transaction.is_active.is_(True),
+                Transaction.status == "paid",
+                Transaction.commission_amount.isnot(None),
+                func.date_trunc("month", Transaction.paid_at)
+                == func.date_trunc("month", func.now()),
+            )
         )
-    )).scalar_one()
+    ).scalar_one()
 
-    pending = (await db.execute(
-        select(func.count()).select_from(Transaction).where(
-            Transaction.is_active.is_(True),
-            Transaction.status == "pending",
+    pending = (
+        await db.execute(
+            select(func.count())
+            .select_from(Transaction)
+            .where(
+                Transaction.is_active.is_(True),
+                Transaction.status == "pending",
+            )
         )
-    )).scalar_one()
+    ).scalar_one()
 
-    late = (await db.execute(
-        select(func.count()).select_from(Transaction).where(
-            Transaction.is_active.is_(True),
-            Transaction.status == "late",
+    late = (
+        await db.execute(
+            select(func.count())
+            .select_from(Transaction)
+            .where(
+                Transaction.is_active.is_(True),
+                Transaction.status == "late",
+            )
         )
-    )).scalar_one()
+    ).scalar_one()
 
     return PlatformStats(
         total_users=total_users,
@@ -224,6 +259,7 @@ async def get_platform_stats(
 
 
 # ── 2. Users list ─────────────────────────────────────────────────────────────
+
 
 @router.get("/users", response_model=PaginatedUsers)
 async def list_users(
@@ -248,9 +284,7 @@ async def list_users(
     if search:
         like = f"%{search}%"
         stmt = stmt.where(
-            User.email.ilike(like)
-            | User.first_name.ilike(like)
-            | User.last_name.ilike(like)
+            User.email.ilike(like) | User.first_name.ilike(like) | User.last_name.ilike(like)
         )
 
     count_stmt = select(func.count()).select_from(stmt.subquery())
@@ -282,6 +316,7 @@ async def list_users(
 
 
 # ── 3. Verify user ────────────────────────────────────────────────────────────
+
 
 @router.put("/users/{user_id}/verify", response_model=AdminUser)
 async def verify_user(
@@ -352,6 +387,7 @@ async def update_user(
 
 # ── 4. All transactions ───────────────────────────────────────────────────────
 
+
 @router.get("/transactions", response_model=PaginatedTransactions)
 async def list_transactions(
     _: Annotated[User, SuperAdmin],
@@ -401,6 +437,7 @@ async def list_transactions(
 
 # ── 5. Revenue by month ───────────────────────────────────────────────────────
 
+
 @router.get("/revenue", response_model=list[MonthlyRevenue])
 async def get_revenue(
     _: Annotated[User, SuperAdmin],
@@ -418,9 +455,8 @@ async def get_revenue(
         .where(
             Transaction.is_active.is_(True),
             Transaction.status == "paid",
-            Transaction.paid_at >= func.date_trunc(
-                "month", func.now() - text(f"interval '{months - 1} months'")
-            ),
+            Transaction.paid_at
+            >= func.date_trunc("month", func.now() - text(f"interval '{months - 1} months'")),
         )
         .group_by(func.date_trunc("month", Transaction.paid_at))
         .order_by(func.date_trunc("month", Transaction.paid_at))
@@ -439,6 +475,7 @@ async def get_revenue(
 
 
 # ── 6. Audit logs ─────────────────────────────────────────────────────────────
+
 
 @router.get("/audit-logs", response_model=PaginatedAuditLogs)
 async def list_audit_logs(

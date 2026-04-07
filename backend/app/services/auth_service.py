@@ -12,10 +12,6 @@ from __future__ import annotations
 import uuid
 
 import httpx
-from fastapi import HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.config import settings
 from app.models.user import User
 from app.schemas.auth import (
@@ -27,6 +23,9 @@ from app.schemas.auth import (
     UpdateProfileRequest,
     UserProfileResponse,
 )
+from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # ── Supabase HTTP helpers ─────────────────────────────────────────────────────
 
@@ -70,6 +69,7 @@ async def _supabase_post(
 
 
 # ── DB helpers ────────────────────────────────────────────────────────────────
+
 
 async def _get_or_create_db_user(
     db: AsyncSession,
@@ -121,6 +121,7 @@ def _build_token(data: dict) -> TokenResponse:
 
 
 # ── Public service methods ────────────────────────────────────────────────────
+
 
 class AuthService:
     def __init__(self, db: AsyncSession) -> None:

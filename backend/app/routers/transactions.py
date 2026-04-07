@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Optional
-
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Annotated
 
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -15,6 +12,8 @@ from app.schemas.transaction import (
     TransactionRead,
 )
 from app.services.transaction_service import TransactionService
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -28,12 +27,12 @@ async def list_transactions(
     db: DbDep,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
-    property_id: Optional[str] = Query(None),
-    contract_id: Optional[str] = Query(None),
-    owner_id: Optional[str] = Query(None),
-    month: Optional[str] = Query(None, description="Format YYYY-MM"),
-    status: Optional[str] = Query(None),
-    type: Optional[str] = Query(None),
+    property_id: str | None = Query(None),
+    contract_id: str | None = Query(None),
+    owner_id: str | None = Query(None),
+    month: str | None = Query(None, description="Format YYYY-MM"),
+    status: str | None = Query(None),
+    type: str | None = Query(None),
 ) -> PaginatedTransactions:
     return await TransactionService(db).list(
         current_user=current_user,
@@ -99,5 +98,6 @@ async def generate_monthly_rents(
     if current_user.role not in ("owner", "agency", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
     from app.tasks.rent_tasks import generate_monthly_rents as celery_task
+
     task = celery_task.delay()
     return {"task_id": task.id, "status": "queued"}

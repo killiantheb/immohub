@@ -10,8 +10,10 @@ MissionStatus = Literal["pending", "confirmed", "in_progress", "completed", "can
 
 # ── Opener ────────────────────────────────────────────────────────────────────
 
+
 class OpenerProfileCreate(BaseModel):
     """Create or fully-replace the caller's opener profile."""
+
     bio: str | None = None
     radius_km: float = Field(20.0, gt=0, le=200)
     hourly_rate: float | None = Field(None, ge=0)
@@ -50,10 +52,12 @@ class OpenerRead(BaseModel):
 
 class OpenerWithDistance(OpenerRead):
     """OpenerRead enriched with computed distance from a reference point."""
+
     distance_km: float
 
 
 # ── Mission ───────────────────────────────────────────────────────────────────
+
 
 class MissionCreate(BaseModel):
     property_id: str

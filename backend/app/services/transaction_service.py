@@ -7,10 +7,6 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from fastapi import HTTPException, status
-from sqlalchemy import and_, extract, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.models.transaction import Transaction
 from app.schemas.transaction import (
     AgencyDashboard,
@@ -21,6 +17,9 @@ from app.schemas.transaction import (
     TransactionCreate,
     TransactionRead,
 )
+from fastapi import HTTPException, status
+from sqlalchemy import and_, extract, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
     from app.models.user import User
@@ -32,7 +31,7 @@ def _ref() -> str:
     return f"TXN-{ts}-{uid}"
 
 
-def _can_write(tx: Transaction, user: "User") -> bool:
+def _can_write(tx: Transaction, user: User) -> bool:
     if user.role == "super_admin":
         return True
     return tx.owner_id == user.id
@@ -46,13 +45,13 @@ class TransactionService:
 
     async def list(
         self,
-        current_user: "User",
+        current_user: User,
         page: int = 1,
         size: int = 20,
         property_id: str | None = None,
         contract_id: str | None = None,
         owner_id: str | None = None,
-        month: str | None = None,   # "2025-01"
+        month: str | None = None,  # "2025-01"
         tx_status: str | None = None,
         tx_type: str | None = None,
     ) -> PaginatedTransactions:
@@ -100,12 +99,18 @@ class TransactionService:
         ).scalar_one()
 
         rows = (
-            await self.db.execute(
-                q.order_by(Transaction.due_date.desc().nulls_last(), Transaction.created_at.desc())
-                .offset((page - 1) * size)
-                .limit(size)
+            (
+                await self.db.execute(
+                    q.order_by(
+                        Transaction.due_date.desc().nulls_last(), Transaction.created_at.desc()
+                    )
+                    .offset((page - 1) * size)
+                    .limit(size)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         return PaginatedTransactions(
             items=[TransactionRead.model_validate(r) for r in rows],
@@ -117,7 +122,7 @@ class TransactionService:
 
     # ── Get ───────────────────────────────────────────────────────────────────
 
-    async def get(self, tx_id: str, current_user: "User") -> Transaction | None:
+    async def get(self, tx_id: str, current_user: User) -> Transaction | None:
         try:
             tid = uuid.UUID(tx_id)
         except ValueError:
@@ -134,7 +139,7 @@ class TransactionService:
 
     # ── Create ────────────────────────────────────────────────────────────────
 
-    async def create(self, payload: TransactionCreate, current_user: "User") -> Transaction:
+    async def create(self, payload: TransactionCreate, current_user: User) -> Transaction:
         tx = Transaction(
             reference=_ref(),
             owner_id=current_user.id,
@@ -153,7 +158,7 @@ class TransactionService:
 
     # ── Mark paid ─────────────────────────────────────────────────────────────
 
-    async def mark_paid(self, tx_id: str, current_user: "User") -> Transaction:
+    async def mark_paid(self, tx_id: str, current_user: User) -> Transaction:
         tx = await self.get(tx_id, current_user)
         if tx is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Transaction introuvable")
@@ -176,7 +181,7 @@ class TransactionService:
 
     # ── Revenue stats ─────────────────────────────────────────────────────────
 
-    async def get_stats(self, current_user: "User", months: int = 12) -> RevenueStats:
+    async def get_stats(self, current_user: User, months: int = 12) -> RevenueStats:
         base_q = select(Transaction).where(
             Transaction.is_active.is_(True),
             Transaction.type == "rent",
@@ -214,7 +219,7 @@ class TransactionService:
 
     # ── Dashboard KPIs ────────────────────────────────────────────────────────
 
-    async def owner_dashboard(self, current_user: "User") -> OwnerDashboard:
+    async def owner_dashboard(self, current_user: User) -> OwnerDashboard:
         from app.models.contract import Contract
         from app.models.property import Property
 
@@ -263,13 +268,17 @@ class TransactionService:
 
         # Recent transactions (last 5)
         recent_rows = (
-            await self.db.execute(
-                select(Transaction)
-                .where(Transaction.owner_id == current_user.id, Transaction.is_active.is_(True))
-                .order_by(Transaction.created_at.desc())
-                .limit(5)
+            (
+                await self.db.execute(
+                    select(Transaction)
+                    .where(Transaction.owner_id == current_user.id, Transaction.is_active.is_(True))
+                    .order_by(Transaction.created_at.desc())
+                    .limit(5)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         return OwnerDashboard(
             revenue_current_month=rev_cur,
@@ -282,7 +291,7 @@ class TransactionService:
             recent_transactions=[TransactionRead.model_validate(r) for r in recent_rows],
         )
 
-    async def agency_dashboard(self, current_user: "User") -> AgencyDashboard:
+    async def agency_dashboard(self, current_user: User) -> AgencyDashboard:
         from app.models.contract import Contract
         from app.models.property import Property
 
@@ -335,13 +344,17 @@ class TransactionService:
         occupancy = (active_contracts / portfolio_count * 100) if portfolio_count > 0 else 0.0
 
         recent_rows = (
-            await self.db.execute(
-                select(Transaction)
-                .where(Transaction.owner_id == current_user.id, Transaction.is_active.is_(True))
-                .order_by(Transaction.created_at.desc())
-                .limit(5)
+            (
+                await self.db.execute(
+                    select(Transaction)
+                    .where(Transaction.owner_id == current_user.id, Transaction.is_active.is_(True))
+                    .order_by(Transaction.created_at.desc())
+                    .limit(5)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         return AgencyDashboard(
             portfolio_count=portfolio_count,

@@ -1,12 +1,23 @@
 from contextlib import asynccontextmanager
 
+from app.core.config import settings
+from app.core.database import AsyncSessionLocal, engine
+from app.routers import (
+    admin,
+    ai,
+    auth,
+    companies,
+    contracts,
+    dashboard,
+    missions,
+    openers,
+    properties,
+    rfq,
+    transactions,
+)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
-
-from app.core.config import settings
-from app.core.database import engine, AsyncSessionLocal
-from app.routers import auth, properties, contracts, transactions, openers, missions, companies, dashboard, ai, rfq, admin
 
 # ── Sentry ────────────────────────────────────────────────────────────────────
 
@@ -25,6 +36,7 @@ if settings.SENTRY_DSN:
 
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -53,20 +65,21 @@ app.add_middleware(
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 
-app.include_router(auth.router,         prefix="/api/v1/auth",         tags=["auth"])
-app.include_router(properties.router,   prefix="/api/v1/properties",   tags=["properties"])
-app.include_router(contracts.router,    prefix="/api/v1/contracts",     tags=["contracts"])
-app.include_router(transactions.router, prefix="/api/v1/transactions",  tags=["transactions"])
-app.include_router(openers.router,      prefix="/api/v1/openers",       tags=["openers"])
-app.include_router(missions.router,     prefix="/api/v1/missions",      tags=["missions"])
-app.include_router(companies.router,    prefix="/api/v1/companies",     tags=["companies"])
-app.include_router(dashboard.router,    prefix="/api/v1/dashboard",     tags=["dashboard"])
-app.include_router(ai.router,           prefix="/api/v1/ai",            tags=["ai"])
-app.include_router(rfq.router,          prefix="/api/v1/rfqs",          tags=["rfqs"])
-app.include_router(admin.router,        prefix="/api/v1/admin",         tags=["admin"])
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(properties.router, prefix="/api/v1/properties", tags=["properties"])
+app.include_router(contracts.router, prefix="/api/v1/contracts", tags=["contracts"])
+app.include_router(transactions.router, prefix="/api/v1/transactions", tags=["transactions"])
+app.include_router(openers.router, prefix="/api/v1/openers", tags=["openers"])
+app.include_router(missions.router, prefix="/api/v1/missions", tags=["missions"])
+app.include_router(companies.router, prefix="/api/v1/companies", tags=["companies"])
+app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
+app.include_router(ai.router, prefix="/api/v1/ai", tags=["ai"])
+app.include_router(rfq.router, prefix="/api/v1/rfqs", tags=["rfqs"])
+app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 
 
 # ── Health check ──────────────────────────────────────────────────────────────
+
 
 @app.get("/api/health", tags=["health"])
 async def health_check():
@@ -84,6 +97,7 @@ async def health_check():
     # Redis probe
     try:
         import redis as redis_lib  # type: ignore[import]
+
         r = redis_lib.from_url(settings.REDIS_URL, socket_connect_timeout=1)
         r.ping()
     except Exception:

@@ -1,19 +1,24 @@
 import uuid
 from datetime import datetime
 
+from app.models.base import BaseModel
 from sqlalchemy import DateTime, Enum, ForeignKey, Index, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import BaseModel
-
 ContractType = Enum(
-    "long_term", "seasonal", "short_term", "sale",
+    "long_term",
+    "seasonal",
+    "short_term",
+    "sale",
     name="contract_type_enum",
 )
 
 ContractStatus = Enum(
-    "draft", "active", "terminated", "expired",
+    "draft",
+    "active",
+    "terminated",
+    "expired",
     name="contract_status_enum",
 )
 

@@ -1,6 +1,3 @@
-from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.schemas.rfq import (
@@ -15,11 +12,14 @@ from app.schemas.rfq import (
     RFQRead,
 )
 from app.services.rfq_service import RFQService, qualify_need
+from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
 
 # ── Marketplace companies ──────────────────────────────────────────────────────
+
 
 @router.get("/marketplace/companies", response_model=list[CompanyMarketplaceRead])
 async def list_marketplace_companies(
@@ -39,6 +39,7 @@ async def list_marketplace_companies(
 
 # ── AI qualification ───────────────────────────────────────────────────────────
 
+
 @router.post("/qualify", response_model=AIQualifyResponse)
 async def qualify_rfq(
     payload: AIQualifyRequest,
@@ -49,6 +50,7 @@ async def qualify_rfq(
 
 
 # ── RFQ CRUD ───────────────────────────────────────────────────────────────────
+
 
 @router.post("/", response_model=RFQRead, status_code=status.HTTP_201_CREATED)
 async def create_rfq(
@@ -103,6 +105,7 @@ async def get_rfq(
 
 
 # ── Quote lifecycle ────────────────────────────────────────────────────────────
+
 
 @router.post("/{rfq_id}/quotes", response_model=RFQQuoteRead, status_code=status.HTTP_201_CREATED)
 async def submit_quote(

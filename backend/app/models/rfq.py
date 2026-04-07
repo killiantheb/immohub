@@ -4,33 +4,51 @@ RFQ — Request For Quote (Appel d'offre)
 Lifecycle:
   draft → published → quotes_received → accepted → in_progress → completed → rated
 """
+
 from __future__ import annotations
 
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, Index, Integer, Numeric, String, Text
+from app.models.base import BaseModel
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import BaseModel
-
 RFQCategory = Enum(
-    "plumbing", "electricity", "cleaning", "painting", "locksmith",
-    "roofing", "gardening", "masonry", "hvac", "renovation", "other",
+    "plumbing",
+    "electricity",
+    "cleaning",
+    "painting",
+    "locksmith",
+    "roofing",
+    "gardening",
+    "masonry",
+    "hvac",
+    "renovation",
+    "other",
     name="rfq_category_enum",
 )
 
 RFQStatus = Enum(
-    "draft", "published", "quotes_received", "accepted",
-    "in_progress", "completed", "rated", "cancelled",
+    "draft",
+    "published",
+    "quotes_received",
+    "accepted",
+    "in_progress",
+    "completed",
+    "rated",
+    "cancelled",
     name="rfq_status_enum",
 )
 
 RFQUrgency = Enum("low", "medium", "high", "emergency", name="rfq_urgency_enum")
 
 RFQQuoteStatus = Enum(
-    "pending", "accepted", "rejected", "completed",
+    "pending",
+    "accepted",
+    "rejected",
+    "completed",
     name="rfq_quote_status_enum",
 )
 

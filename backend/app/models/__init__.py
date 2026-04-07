@@ -1,14 +1,14 @@
 # Import all models so Base.metadata is fully populated for Alembic
+from app.models.audit_log import AuditLog
 from app.models.base import Base, BaseModel
-from app.models.user import User
-from app.models.property import Property, PropertyImage, PropertyDocument
-from app.models.contract import Contract
-from app.models.transaction import Transaction
-from app.models.opener import Opener, Mission
 from app.models.company import Company, Quote
+from app.models.contract import Contract
 from app.models.inspection import Inspection
 from app.models.listing import Listing
-from app.models.audit_log import AuditLog
+from app.models.opener import Mission, Opener
+from app.models.property import Property, PropertyDocument, PropertyImage
+from app.models.transaction import Transaction
+from app.models.user import User
 
 __all__ = [
     "Base",

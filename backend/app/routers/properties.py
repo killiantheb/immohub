@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Optional
-
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Annotated
 
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -19,6 +16,8 @@ from app.schemas.property import (
     PropertyUpdate,
 )
 from app.services.property_service import PropertyService
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -28,17 +27,18 @@ AuthUserDep = Annotated[User, Depends(get_current_user)]
 
 # ── List & Create ──────────────────────────────────────────────────────────────
 
+
 @router.get("/", response_model=PaginatedProperties)
 async def list_properties(
     current_user: AuthUserDep,
     db: DbDep,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
-    type: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
-    city: Optional[str] = Query(None),
-    owner_id: Optional[str] = Query(None),
-    agency_id: Optional[str] = Query(None),
+    type: str | None = Query(None),
+    status: str | None = Query(None),
+    city: str | None = Query(None),
+    owner_id: str | None = Query(None),
+    agency_id: str | None = Query(None),
 ) -> PaginatedProperties:
     return await PropertyService(db).list(
         current_user=current_user,
@@ -59,12 +59,15 @@ async def create_property(
     db: DbDep,
 ) -> PropertyRead:
     if current_user.role not in ("owner", "agency", "super_admin"):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Seuls les propriétaires et agences peuvent créer un bien")
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Seuls les propriétaires et agences peuvent créer un bien"
+        )
     prop = await PropertyService(db).create(payload, current_user=current_user)
     return PropertyRead.model_validate(prop)
 
 
 # ── Single property ────────────────────────────────────────────────────────────
+
 
 @router.get("/{property_id}", response_model=PropertyDetail)
 async def get_property(
@@ -104,7 +107,12 @@ async def delete_property(
 
 # ── Images ─────────────────────────────────────────────────────────────────────
 
-@router.post("/{property_id}/images", response_model=PropertyImageResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/{property_id}/images",
+    response_model=PropertyImageResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def upload_image(
     property_id: str,
     db: DbDep,
@@ -117,21 +125,30 @@ async def upload_image(
     )
 
 
-@router.delete("/{property_id}/images/{image_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+@router.delete(
+    "/{property_id}/images/{image_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None
+)
 async def delete_image(
     property_id: str,
     image_id: str,
     current_user: AuthUserDep,
     db: DbDep,
 ):
-    deleted = await PropertyService(db).delete_image(property_id, image_id, current_user=current_user)
+    deleted = await PropertyService(db).delete_image(
+        property_id, image_id, current_user=current_user
+    )
     if not deleted:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Image introuvable")
 
 
 # ── Documents ──────────────────────────────────────────────────────────────────
 
-@router.post("/{property_id}/documents", response_model=PropertyDocumentResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/{property_id}/documents",
+    response_model=PropertyDocumentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def upload_document(
     property_id: str,
     db: DbDep,
@@ -146,6 +163,7 @@ async def upload_document(
 
 # ── History ────────────────────────────────────────────────────────────────────
 
+
 @router.get("/{property_id}/history", response_model=list[AuditLogResponse])
 async def get_history(
     property_id: str,
@@ -158,11 +176,14 @@ async def get_history(
 
 # ── AI description ─────────────────────────────────────────────────────────────
 
+
 @router.post("/{property_id}/generate-description")
 async def generate_description(
     property_id: str,
     current_user: AuthUserDep,
     db: DbDep,
 ) -> dict:
-    description = await PropertyService(db).generate_description(property_id, current_user=current_user)
+    description = await PropertyService(db).generate_description(
+        property_id, current_user=current_user
+    )
     return {"description": description}

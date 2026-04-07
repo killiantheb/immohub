@@ -18,10 +18,6 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from fastapi import HTTPException, status
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.models.company import Company
 from app.models.rfq import RFQ, RFQQuote
 from app.schemas.rfq import (
@@ -34,6 +30,9 @@ from app.schemas.rfq import (
     RFQRating,
     RFQRead,
 )
+from fastapi import HTTPException, status
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
     from app.models.user import User
@@ -42,32 +41,34 @@ COMMISSION_PCT = 0.10
 
 # Map RFQ category → Company type
 CATEGORY_TO_TYPE: dict[str, str] = {
-    "plumbing":    "plumber",
+    "plumbing": "plumber",
     "electricity": "electrician",
-    "cleaning":    "cleaner",
-    "painting":    "painter",
-    "locksmith":   "locksmith",
-    "roofing":     "other",
-    "gardening":   "other",
-    "masonry":     "other",
-    "hvac":        "other",
-    "renovation":  "other",
-    "other":       "other",
+    "cleaning": "cleaner",
+    "painting": "painter",
+    "locksmith": "locksmith",
+    "roofing": "other",
+    "gardening": "other",
+    "masonry": "other",
+    "hvac": "other",
+    "renovation": "other",
+    "other": "other",
 }
 
 
 # ── AI helpers ─────────────────────────────────────────────────────────────────
 
+
 async def qualify_need(description: str, user_id: str, db: AsyncSession) -> AIQualifyResponse:
     """Use Claude to classify the need, suggest a title and urgency."""
-    from app.core.config import settings
     import anthropic
+    from app.core.config import settings
 
     if not settings.ANTHROPIC_API_KEY:
         # Fallback: keyword matching
         return _keyword_qualify(description)
 
-    from app.services.ai_service import _check_rate_limit, _log_usage, MODEL
+    from app.services.ai_service import MODEL, _check_rate_limit, _log_usage
+
     if not _check_rate_limit(user_id):
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Limite IA atteinte")
 
@@ -120,19 +121,21 @@ def _keyword_qualify(description: str) -> AIQualifyResponse:
     else:
         cat, title = "renovation", "Travaux de rénovation"
 
-    urgency = "emergency" if "urgence" in desc_lower else (
-        "high" if "urgent" in desc_lower else "medium"
+    urgency = (
+        "emergency" if "urgence" in desc_lower else ("high" if "urgent" in desc_lower else "medium")
     )
     return AIQualifyResponse(category=cat, suggested_title=title, urgency=urgency, confidence=0.7)  # type: ignore[arg-type]
 
 
 # ── Commission ─────────────────────────────────────────────────────────────────
 
+
 def calculate_commission(quote_amount: float) -> float:
     return round(quote_amount * COMMISSION_PCT, 2)
 
 
 # ── Service ────────────────────────────────────────────────────────────────────
+
 
 class RFQService:
     def __init__(self, db: AsyncSession) -> None:
@@ -173,25 +176,30 @@ class RFQService:
         # If not enough specialists, fill with "other" type
         if len(rows) < 3:
             fallback = (
-                await self.db.execute(
-                    select(Company)
-                    .where(Company.is_active.is_(True), Company.type == "other")
-                    .order_by(Company.rating.desc().nullslast())
-                    .limit(5 - len(rows))
+                (
+                    await self.db.execute(
+                        select(Company)
+                        .where(Company.is_active.is_(True), Company.type == "other")
+                        .order_by(Company.rating.desc().nullslast())
+                        .limit(5 - len(rows))
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             rows = list(rows) + list(fallback)
         return list(rows)
 
     def _notify_companies(self, rfq_id: str, company_ids: list[str]) -> None:
         import logging
+
         log = logging.getLogger(__name__)
         for cid in company_ids:
             log.info("Notifying company %s for RFQ %s", cid, rfq_id)
 
     # ── RFQ CRUD ──────────────────────────────────────────────────────────────
 
-    async def create_rfq(self, payload: RFQCreate, current_user: "User") -> RFQ:
+    async def create_rfq(self, payload: RFQCreate, current_user: User) -> RFQ:
         prop_id = None
         if payload.property_id:
             try:
@@ -226,7 +234,7 @@ class RFQService:
 
     async def list_rfqs(
         self,
-        current_user: "User",
+        current_user: User,
         page: int = 1,
         size: int = 20,
         rfq_status: str | None = None,
@@ -238,15 +246,17 @@ class RFQService:
         if rfq_status:
             q = q.where(RFQ.status == rfq_status)
 
-        total = (
-            await self.db.execute(select(func.count()).select_from(q.subquery()))
-        ).scalar_one()
+        total = (await self.db.execute(select(func.count()).select_from(q.subquery()))).scalar_one()
 
         rows = (
-            await self.db.execute(
-                q.order_by(RFQ.created_at.desc()).offset((page - 1) * size).limit(size)
+            (
+                await self.db.execute(
+                    q.order_by(RFQ.created_at.desc()).offset((page - 1) * size).limit(size)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         items = []
         for rfq in rows:
@@ -255,11 +265,14 @@ class RFQService:
             items.append(data)
 
         return PaginatedRFQs(
-            items=items, total=total, page=page, size=size,
+            items=items,
+            total=total,
+            page=page,
+            size=size,
             pages=math.ceil(total / size) if total else 1,
         )
 
-    async def get_rfq(self, rfq_id: str, current_user: "User") -> RFQ:
+    async def get_rfq(self, rfq_id: str, current_user: User) -> RFQ:
         rfq = await self._get_or_404(rfq_id)
         if str(rfq.owner_id) != str(current_user.id) and current_user.role != "super_admin":
             raise HTTPException(403, "Accès refusé")
@@ -268,11 +281,13 @@ class RFQService:
     # ── Quote lifecycle ───────────────────────────────────────────────────────
 
     async def submit_quote(
-        self, rfq_id: str, payload: RFQQuoteCreate, current_user: "User"
+        self, rfq_id: str, payload: RFQQuoteCreate, current_user: User
     ) -> RFQQuote:
         rfq = await self._get_or_404(rfq_id)
         if rfq.status not in ("published", "quotes_received"):
-            raise HTTPException(409, f"Impossible de soumettre un devis sur un RFQ au statut '{rfq.status}'")
+            raise HTTPException(
+                409, f"Impossible de soumettre un devis sur un RFQ au statut '{rfq.status}'"
+            )
 
         # Find company profile for current user
         company = await self._get_company_for_user(current_user)
@@ -295,9 +310,7 @@ class RFQService:
         await self.db.refresh(quote)
         return quote
 
-    async def accept_quote(
-        self, rfq_id: str, quote_id: str, current_user: "User"
-    ) -> RFQ:
+    async def accept_quote(self, rfq_id: str, quote_id: str, current_user: User) -> RFQ:
         rfq = await self._get_or_404(rfq_id)
         if str(rfq.owner_id) != str(current_user.id):
             raise HTTPException(403, "Seul le propriétaire peut accepter un devis")
@@ -318,10 +331,10 @@ class RFQService:
 
         # Accept this quote, reject others
         all_quotes = (
-            await self.db.execute(
-                select(RFQQuote).where(RFQQuote.rfq_id == rfq.id)
-            )
-        ).scalars().all()
+            (await self.db.execute(select(RFQQuote).where(RFQQuote.rfq_id == rfq.id)))
+            .scalars()
+            .all()
+        )
         for q in all_quotes:
             q.status = "rejected" if q.id != qid else "accepted"
             if q.id == qid:
@@ -336,7 +349,7 @@ class RFQService:
         await self.db.refresh(rfq)
         return rfq
 
-    async def complete_rfq(self, rfq_id: str, current_user: "User") -> RFQ:
+    async def complete_rfq(self, rfq_id: str, current_user: User) -> RFQ:
         rfq = await self._get_or_404(rfq_id)
         if str(rfq.owner_id) != str(current_user.id):
             raise HTTPException(403, "Accès refusé")
@@ -366,9 +379,7 @@ class RFQService:
         await self.db.refresh(rfq)
         return rfq
 
-    async def rate_rfq(
-        self, rfq_id: str, payload: RFQRating, current_user: "User"
-    ) -> RFQ:
+    async def rate_rfq(self, rfq_id: str, payload: RFQRating, current_user: User) -> RFQ:
         rfq = await self._get_or_404(rfq_id)
         if str(rfq.owner_id) != str(current_user.id):
             raise HTTPException(403, "Accès refusé")
@@ -397,7 +408,7 @@ class RFQService:
     # ── Company dashboard ─────────────────────────────────────────────────────
 
     async def list_company_rfqs(
-        self, current_user: "User", page: int = 1, size: int = 20
+        self, current_user: User, page: int = 1, size: int = 20
     ) -> PaginatedRFQs:
         """RFQs where the company submitted a quote."""
         company = await self._get_company_for_user(current_user)
@@ -405,15 +416,17 @@ class RFQService:
         subq = select(RFQQuote.rfq_id).where(RFQQuote.company_id == company.id).subquery()
         q = select(RFQ).where(RFQ.id.in_(select(subq)), RFQ.is_active.is_(True))
 
-        total = (
-            await self.db.execute(select(func.count()).select_from(q.subquery()))
-        ).scalar_one()
+        total = (await self.db.execute(select(func.count()).select_from(q.subquery()))).scalar_one()
 
         rows = (
-            await self.db.execute(
-                q.order_by(RFQ.created_at.desc()).offset((page - 1) * size).limit(size)
+            (
+                await self.db.execute(
+                    q.order_by(RFQ.created_at.desc()).offset((page - 1) * size).limit(size)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         items = []
         for rfq in rows:
@@ -422,7 +435,10 @@ class RFQService:
             items.append(data)
 
         return PaginatedRFQs(
-            items=items, total=total, page=page, size=size,
+            items=items,
+            total=total,
+            page=page,
+            size=size,
             pages=math.ceil(total / size) if total else 1,
         )
 
@@ -433,15 +449,13 @@ class RFQService:
             rid = uuid.UUID(rfq_id)
         except ValueError:
             raise HTTPException(404, "Appel d'offre introuvable")
-        result = await self.db.execute(
-            select(RFQ).where(RFQ.id == rid, RFQ.is_active.is_(True))
-        )
+        result = await self.db.execute(select(RFQ).where(RFQ.id == rid, RFQ.is_active.is_(True)))
         rfq = result.scalar_one_or_none()
         if not rfq:
             raise HTTPException(404, "Appel d'offre introuvable")
         return rfq
 
-    async def _get_company_for_user(self, user: "User") -> Company:
+    async def _get_company_for_user(self, user: User) -> Company:
         result = await self.db.execute(
             select(Company).where(Company.user_id == user.id, Company.is_active.is_(True))
         )

@@ -1,13 +1,14 @@
-import uuid
-
-from sqlalchemy import Enum, ForeignKey, Index, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from app.models.base import BaseModel
+from sqlalchemy import Enum, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import BaseModel
-
 UserRole = Enum(
-    "super_admin", "agency", "owner", "tenant", "opener", "company",
+    "super_admin",
+    "agency",
+    "owner",
+    "tenant",
+    "opener",
+    "company",
     name="user_role_enum",
 )
 

@@ -1,22 +1,38 @@
 import uuid
 from datetime import datetime
 
+from app.models.base import BaseModel
 from sqlalchemy import (
-    Boolean, DateTime, Enum, Float, ForeignKey,
-    Index, Integer, Numeric, String, Text,
+    Boolean,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import BaseModel
-
 MissionType = Enum(
-    "visit", "check_in", "check_out", "inspection", "photography", "other",
+    "visit",
+    "check_in",
+    "check_out",
+    "inspection",
+    "photography",
+    "other",
     name="mission_type_enum",
 )
 
 MissionStatus = Enum(
-    "pending", "confirmed", "in_progress", "completed", "cancelled",
+    "pending",
+    "confirmed",
+    "in_progress",
+    "completed",
+    "cancelled",
     name="mission_status_enum",
 )
 
@@ -25,8 +41,10 @@ class Opener(BaseModel):
     __tablename__ = "openers"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False, unique=True,
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
     )
 
     bio: Mapped[str | None] = mapped_column(Text)

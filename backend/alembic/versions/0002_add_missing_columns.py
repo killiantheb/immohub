@@ -8,7 +8,8 @@ Create Date: 2026-04-05 00:00:00.000000
 
 from __future__ import annotations
 
-from typing import Sequence, Union
+from typing import Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
@@ -16,24 +17,29 @@ from sqlalchemy.dialects import postgresql
 from alembic import op
 
 revision: str = "0002"
-down_revision: Union[str, None] = "0001"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "0001"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
     # ── contracts ─────────────────────────────────────────────────────────────
     op.add_column("contracts", sa.Column("reference", sa.String(50), nullable=True))
-    op.add_column("contracts", sa.Column(
-        "owner_id",
-        postgresql.UUID(as_uuid=True),
-        sa.ForeignKey("users.id", ondelete="RESTRICT"),
-        nullable=True,
-    ))
+    op.add_column(
+        "contracts",
+        sa.Column(
+            "owner_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("users.id", ondelete="RESTRICT"),
+            nullable=True,
+        ),
+    )
     op.add_column("contracts", sa.Column("signed_ip", sa.String(45), nullable=True))
 
     # Backfill reference with a placeholder so we can set NOT NULL
-    op.execute("UPDATE contracts SET reference = 'REF-' || substring(id::text, 1, 8) WHERE reference IS NULL")
+    op.execute(
+        "UPDATE contracts SET reference = 'REF-' || substring(id::text, 1, 8) WHERE reference IS NULL"
+    )
     op.alter_column("contracts", "reference", nullable=False)
     op.create_unique_constraint("uq_contracts_reference", "contracts", ["reference"])
     op.create_index("ix_contracts_owner_id", "contracts", ["owner_id"])
@@ -42,7 +48,9 @@ def upgrade() -> None:
     op.add_column("transactions", sa.Column("reference", sa.String(50), nullable=True))
     op.add_column("transactions", sa.Column("notes", sa.Text(), nullable=True))
 
-    op.execute("UPDATE transactions SET reference = 'TXN-' || substring(id::text, 1, 8) WHERE reference IS NULL")
+    op.execute(
+        "UPDATE transactions SET reference = 'TXN-' || substring(id::text, 1, 8) WHERE reference IS NULL"
+    )
     op.alter_column("transactions", "reference", nullable=False)
     op.create_unique_constraint("uq_transactions_reference", "transactions", ["reference"])
 
@@ -56,12 +64,15 @@ def upgrade() -> None:
     op.alter_column("missions", "opener_id", nullable=True)
 
     # Add requester_id
-    op.add_column("missions", sa.Column(
-        "requester_id",
-        postgresql.UUID(as_uuid=True),
-        sa.ForeignKey("users.id", ondelete="RESTRICT"),
-        nullable=True,  # temporarily nullable for backfill
-    ))
+    op.add_column(
+        "missions",
+        sa.Column(
+            "requester_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("users.id", ondelete="RESTRICT"),
+            nullable=True,  # temporarily nullable for backfill
+        ),
+    )
     # Backfill: requester_id = first super_admin user, or NULL if none
     op.execute("""
         UPDATE missions
@@ -70,16 +81,16 @@ def upgrade() -> None:
     """)
 
     # Remaining new mission columns
-    op.add_column("missions", sa.Column("accepted_at",      sa.DateTime(timezone=True), nullable=True))
-    op.add_column("missions", sa.Column("completed_at",     sa.DateTime(timezone=True), nullable=True))
-    op.add_column("missions", sa.Column("cancelled_at",     sa.DateTime(timezone=True), nullable=True))
-    op.add_column("missions", sa.Column("cancelled_reason", sa.String(255),             nullable=True))
-    op.add_column("missions", sa.Column("property_lat",     sa.Float(),                 nullable=True))
-    op.add_column("missions", sa.Column("property_lng",     sa.Float(),                 nullable=True))
-    op.add_column("missions", sa.Column("notes",            sa.Text(),                  nullable=True))
-    op.add_column("missions", sa.Column("report_text",      sa.Text(),                  nullable=True))
-    op.add_column("missions", sa.Column("rating_comment",   sa.Text(),                  nullable=True))
-    op.add_column("missions", sa.Column("stripe_payment_intent_id", sa.String(255),     nullable=True))
+    op.add_column("missions", sa.Column("accepted_at", sa.DateTime(timezone=True), nullable=True))
+    op.add_column("missions", sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True))
+    op.add_column("missions", sa.Column("cancelled_at", sa.DateTime(timezone=True), nullable=True))
+    op.add_column("missions", sa.Column("cancelled_reason", sa.String(255), nullable=True))
+    op.add_column("missions", sa.Column("property_lat", sa.Float(), nullable=True))
+    op.add_column("missions", sa.Column("property_lng", sa.Float(), nullable=True))
+    op.add_column("missions", sa.Column("notes", sa.Text(), nullable=True))
+    op.add_column("missions", sa.Column("report_text", sa.Text(), nullable=True))
+    op.add_column("missions", sa.Column("rating_comment", sa.Text(), nullable=True))
+    op.add_column("missions", sa.Column("stripe_payment_intent_id", sa.String(255), nullable=True))
 
     op.create_index("ix_missions_requester_id", "missions", ["requester_id"])
 
@@ -88,9 +99,17 @@ def downgrade() -> None:
     # missions
     op.drop_index("ix_missions_requester_id", table_name="missions")
     for col in [
-        "stripe_payment_intent_id", "rating_comment", "report_text", "notes",
-        "property_lng", "property_lat", "cancelled_reason", "cancelled_at",
-        "completed_at", "accepted_at", "requester_id",
+        "stripe_payment_intent_id",
+        "rating_comment",
+        "report_text",
+        "notes",
+        "property_lng",
+        "property_lat",
+        "cancelled_reason",
+        "cancelled_at",
+        "completed_at",
+        "accepted_at",
+        "requester_id",
     ]:
         op.drop_column("missions", col)
 

@@ -24,16 +24,16 @@ import logging
 import time
 import uuid
 from collections import defaultdict
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, AsyncGenerator
+from typing import TYPE_CHECKING
 
 import anthropic
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.config import settings
 from app.models.ai_log import AIUsageLog
 from app.models.transaction import Transaction
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
     from app.models.property import Property
@@ -42,8 +42,8 @@ log = logging.getLogger(__name__)
 
 MODEL = "claude-sonnet-4-20250514"
 MAX_TOKENS = 1000
-RATE_LIMIT = 10          # calls per minute per user
-RATE_WINDOW = 60         # seconds
+RATE_LIMIT = 10  # calls per minute per user
+RATE_WINDOW = 60  # seconds
 
 # ── In-memory rate-limit fallback ─────────────────────────────────────────────
 
@@ -54,6 +54,7 @@ def _check_rate_limit(user_id: str) -> bool:
     """Return True if the user is within the rate limit, False if throttled."""
     try:
         import redis as redis_lib  # type: ignore[import]
+
         r = redis_lib.from_url(settings.REDIS_URL, socket_connect_timeout=1)
         key = f"ai:rate:{user_id}"
         pipe = r.pipeline()
@@ -75,6 +76,7 @@ def _check_rate_limit(user_id: str) -> bool:
 
 
 # ── Logging helper ────────────────────────────────────────────────────────────
+
 
 async def _log_usage(
     db: AsyncSession,
@@ -108,16 +110,18 @@ async def _log_usage(
 
 # ── Shared Claude client ───────────────────────────────────────────────────────
 
+
 def _client() -> anthropic.AsyncAnthropic:
     return anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
 
 
 # ── Data classes ──────────────────────────────────────────────────────────────
 
+
 @dataclass
 class TenantScore:
-    score: int                         # 0–100
-    recommendation: str                # "approve" | "review" | "reject"
+    score: int  # 0–100
+    recommendation: str  # "approve" | "review" | "reject"
     risk_flags: list[str] = field(default_factory=list)
     summary: str = ""
 
@@ -131,8 +135,8 @@ class QuoteRecommendation:
 
 @dataclass
 class PaymentAlert:
-    type: str                          # "recurring_late" | "missed_payment" | "increasing_delay"
-    severity: str                      # "low" | "medium" | "high"
+    type: str  # "recurring_late" | "missed_payment" | "increasing_delay"
+    severity: str  # "low" | "medium" | "high"
     description: str
     property_id: str | None = None
     tenant_id: str | None = None
@@ -140,8 +144,9 @@ class PaymentAlert:
 
 # ── 1. Listing description ────────────────────────────────────────────────────
 
+
 async def generate_listing_description(
-    property: "Property",
+    property: Property,
     db: AsyncSession,
     user_id: str,
 ) -> str:
@@ -192,6 +197,7 @@ Retourne uniquement l'annonce, sans commentaire."""
 
 
 # ── 2. Tenant scoring ─────────────────────────────────────────────────────────
+
 
 async def score_tenant_application(
     tenant_data: dict,
@@ -250,6 +256,7 @@ Facteurs : ratio revenus/loyer (idéal ≥3x), stabilité emploi, historique loc
 
 
 # ── 3. Quote recommendation ───────────────────────────────────────────────────
+
 
 async def recommend_best_quote(
     quotes: list[dict],
@@ -371,7 +378,7 @@ async def chat_stream(
 
     except anthropic.APIError as exc:
         log.error("Claude API error in chat_stream: %s", exc)
-        yield f'data: {json.dumps({"error": "Erreur IA temporaire."})}\n\n'
+        yield f"data: {json.dumps({'error': 'Erreur IA temporaire.'})}\n\n"
 
     finally:
         # Log usage with approximate token counts
@@ -380,13 +387,16 @@ async def chat_stream(
             output_tokens = total_output
 
         await _log_usage(
-            db, user_id, "chat",
+            db,
+            user_id,
+            "chat",
             _FakeUsage(),  # type: ignore[arg-type]
             context.get("property_id"),
         )
 
 
 # ── 5. Payment anomaly detection ──────────────────────────────────────────────
+
 
 async def detect_payment_anomalies(
     owner_id: str,
@@ -404,17 +414,21 @@ async def detect_payment_anomalies(
         return []
 
     rows = (
-        await db.execute(
-            select(Transaction)
-            .where(
-                Transaction.owner_id == oid,
-                Transaction.type == "rent",
-                Transaction.is_active.is_(True),
+        (
+            await db.execute(
+                select(Transaction)
+                .where(
+                    Transaction.owner_id == oid,
+                    Transaction.type == "rent",
+                    Transaction.is_active.is_(True),
+                )
+                .order_by(Transaction.due_date.desc())
+                .limit(100)
             )
-            .order_by(Transaction.due_date.desc())
-            .limit(100)
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     if not rows:
         return []
@@ -483,6 +497,7 @@ Détecte uniquement des patterns réels : impayés répétés, retards croissant
 
 
 # ── 6. Cathy home briefing ────────────────────────────────────────────────────
+
 
 async def generate_briefing(
     first_name: str,

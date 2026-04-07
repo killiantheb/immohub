@@ -50,7 +50,7 @@ class PaginatedTransactions(BaseModel):
 
 
 class MonthlyRevenue(BaseModel):
-    month: str     # "2025-01"
+    month: str  # "2025-01"
     amount: float
     count: int
 
@@ -65,10 +65,11 @@ class RevenueStats(BaseModel):
 
 # ── Dashboard schemas ──────────────────────────────────────────────────────────
 
+
 class OwnerDashboard(BaseModel):
     revenue_current_month: float
     revenue_prev_month: float
-    occupancy_rate: float          # 0–100 %
+    occupancy_rate: float  # 0–100 %
     active_contracts: int
     pending_rents: int
     late_rents: int

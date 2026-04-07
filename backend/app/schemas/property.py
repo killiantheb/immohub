@@ -8,14 +8,23 @@ from pydantic import BaseModel, ConfigDict, Field
 # ── Literal types (must match SQLAlchemy Enum values in models/property.py) ──
 
 PropertyType = Literal[
-    "apartment", "villa", "parking", "garage", "box",
-    "cave", "depot", "office", "commercial", "hotel",
+    "apartment",
+    "villa",
+    "parking",
+    "garage",
+    "box",
+    "cave",
+    "depot",
+    "office",
+    "commercial",
+    "hotel",
 ]
 PropertyStatus = Literal["available", "rented", "for_sale", "sold", "maintenance"]
 DocumentType = Literal["lease", "inventory", "insurance", "notice", "deed", "diagnosis", "other"]
 
 
 # ── Sub-resource responses ─────────────────────────────────────────────────────
+
 
 class PropertyImageResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -51,6 +60,7 @@ class AuditLogResponse(BaseModel):
 
 
 # ── Property request schemas ───────────────────────────────────────────────────
+
 
 class PropertyCreate(BaseModel):
     type: PropertyType
@@ -94,6 +104,7 @@ class PropertyUpdate(BaseModel):
 
 # ── Property response schemas ──────────────────────────────────────────────────
 
+
 class PropertyRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -131,6 +142,7 @@ class PropertyDetail(PropertyRead):
 
 
 # ── Pagination ─────────────────────────────────────────────────────────────────
+
 
 class PaginatedProperties(BaseModel):
     items: list[PropertyRead]

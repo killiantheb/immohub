@@ -8,7 +8,8 @@ Create Date: 2026-04-05 00:00:00.000000
 
 from __future__ import annotations
 
-from typing import Sequence, Union
+from typing import Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
@@ -16,86 +17,171 @@ from sqlalchemy.dialects import postgresql
 from alembic import op
 
 revision: str = "0001"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 # ── enum type definitions ─────────────────────────────────────────────────────
 # create_type=False: we handle creation ourselves via enum.create(checkfirst=True)
 # so that op.create_table never emits a duplicate CREATE TYPE.
 
 user_role_enum = postgresql.ENUM(
-    "super_admin", "agency", "owner", "tenant", "opener", "company",
-    name="user_role_enum", create_type=False,
+    "super_admin",
+    "agency",
+    "owner",
+    "tenant",
+    "opener",
+    "company",
+    name="user_role_enum",
+    create_type=False,
 )
 property_type_enum = postgresql.ENUM(
-    "apartment", "villa", "parking", "garage", "box",
-    "cave", "depot", "office", "commercial", "hotel",
-    name="property_type_enum", create_type=False,
+    "apartment",
+    "villa",
+    "parking",
+    "garage",
+    "box",
+    "cave",
+    "depot",
+    "office",
+    "commercial",
+    "hotel",
+    name="property_type_enum",
+    create_type=False,
 )
 property_status_enum = postgresql.ENUM(
-    "available", "rented", "for_sale", "sold", "maintenance",
-    name="property_status_enum", create_type=False,
+    "available",
+    "rented",
+    "for_sale",
+    "sold",
+    "maintenance",
+    name="property_status_enum",
+    create_type=False,
 )
 property_document_type_enum = postgresql.ENUM(
-    "lease", "inventory", "insurance", "notice", "deed", "diagnosis", "other",
-    name="property_document_type_enum", create_type=False,
+    "lease",
+    "inventory",
+    "insurance",
+    "notice",
+    "deed",
+    "diagnosis",
+    "other",
+    name="property_document_type_enum",
+    create_type=False,
 )
 contract_type_enum = postgresql.ENUM(
-    "long_term", "seasonal", "short_term", "sale",
-    name="contract_type_enum", create_type=False,
+    "long_term",
+    "seasonal",
+    "short_term",
+    "sale",
+    name="contract_type_enum",
+    create_type=False,
 )
 contract_status_enum = postgresql.ENUM(
-    "draft", "active", "terminated", "expired",
-    name="contract_status_enum", create_type=False,
+    "draft",
+    "active",
+    "terminated",
+    "expired",
+    name="contract_status_enum",
+    create_type=False,
 )
 transaction_type_enum = postgresql.ENUM(
-    "rent", "commission", "deposit", "service", "quote",
-    name="transaction_type_enum", create_type=False,
+    "rent",
+    "commission",
+    "deposit",
+    "service",
+    "quote",
+    name="transaction_type_enum",
+    create_type=False,
 )
 transaction_status_enum = postgresql.ENUM(
-    "pending", "paid", "late", "cancelled",
-    name="transaction_status_enum", create_type=False,
+    "pending",
+    "paid",
+    "late",
+    "cancelled",
+    name="transaction_status_enum",
+    create_type=False,
 )
 mission_type_enum = postgresql.ENUM(
-    "visit", "check_in", "check_out", "inspection", "photography", "other",
-    name="mission_type_enum", create_type=False,
+    "visit",
+    "check_in",
+    "check_out",
+    "inspection",
+    "photography",
+    "other",
+    name="mission_type_enum",
+    create_type=False,
 )
 mission_status_enum = postgresql.ENUM(
-    "pending", "confirmed", "in_progress", "completed", "cancelled",
-    name="mission_status_enum", create_type=False,
+    "pending",
+    "confirmed",
+    "in_progress",
+    "completed",
+    "cancelled",
+    name="mission_status_enum",
+    create_type=False,
 )
 company_type_enum = postgresql.ENUM(
-    "plumber", "electrician", "cleaner", "painter", "locksmith", "other",
-    name="company_type_enum", create_type=False,
+    "plumber",
+    "electrician",
+    "cleaner",
+    "painter",
+    "locksmith",
+    "other",
+    name="company_type_enum",
+    create_type=False,
 )
 quote_status_enum = postgresql.ENUM(
-    "pending", "accepted", "rejected", "completed",
-    name="quote_status_enum", create_type=False,
+    "pending",
+    "accepted",
+    "rejected",
+    "completed",
+    name="quote_status_enum",
+    create_type=False,
 )
 inspection_type_enum = postgresql.ENUM(
-    "entry", "exit",
-    name="inspection_type_enum", create_type=False,
+    "entry",
+    "exit",
+    name="inspection_type_enum",
+    create_type=False,
 )
 inspection_condition_enum = postgresql.ENUM(
-    "good", "fair", "poor",
-    name="inspection_condition_enum", create_type=False,
+    "good",
+    "fair",
+    "poor",
+    name="inspection_condition_enum",
+    create_type=False,
 )
 listing_status_enum = postgresql.ENUM(
-    "draft", "active", "paused", "archived",
-    name="listing_status_enum", create_type=False,
+    "draft",
+    "active",
+    "paused",
+    "archived",
+    name="listing_status_enum",
+    create_type=False,
 )
 
 _ALL_ENUMS = [
-    user_role_enum, property_type_enum, property_status_enum,
-    property_document_type_enum, contract_type_enum, contract_status_enum,
-    transaction_type_enum, transaction_status_enum, mission_type_enum,
-    mission_status_enum, company_type_enum, quote_status_enum,
-    inspection_type_enum, inspection_condition_enum, listing_status_enum,
+    user_role_enum,
+    property_type_enum,
+    property_status_enum,
+    property_document_type_enum,
+    contract_type_enum,
+    contract_status_enum,
+    transaction_type_enum,
+    transaction_status_enum,
+    mission_type_enum,
+    mission_status_enum,
+    company_type_enum,
+    quote_status_enum,
+    inspection_type_enum,
+    inspection_condition_enum,
+    listing_status_enum,
 ]
 
 
 # ── column helpers ────────────────────────────────────────────────────────────
+
 
 def _uuid_pk() -> sa.Column:
     return sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, nullable=False)
@@ -103,17 +189,30 @@ def _uuid_pk() -> sa.Column:
 
 def _timestamps() -> list[sa.Column]:
     return [
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.Column("is_active", sa.Boolean(), server_default=sa.text("true"), nullable=False),
     ]
 
 
 def _fk(col: str, ref: str, ondelete: str = "RESTRICT", nullable: bool = False) -> sa.Column:
-    return sa.Column(col, postgresql.UUID(as_uuid=True), sa.ForeignKey(ref, ondelete=ondelete), nullable=nullable)
+    return sa.Column(
+        col, postgresql.UUID(as_uuid=True), sa.ForeignKey(ref, ondelete=ondelete), nullable=nullable
+    )
 
 
 # ── upgrade ───────────────────────────────────────────────────────────────────
+
 
 def upgrade() -> None:
     bind = op.get_bind()
@@ -258,7 +357,13 @@ def upgrade() -> None:
     op.create_table(
         "openers",
         _uuid_pk(),
-        sa.Column("user_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True),
+        sa.Column(
+            "user_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+            unique=True,
+        ),
         sa.Column("bio", sa.Text(), nullable=True),
         sa.Column("radius_km", sa.Float(), nullable=True),
         sa.Column("hourly_rate", sa.Numeric(8, 2), nullable=True),
@@ -295,7 +400,13 @@ def upgrade() -> None:
     op.create_table(
         "companies",
         _uuid_pk(),
-        sa.Column("user_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True),
+        sa.Column(
+            "user_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+            unique=True,
+        ),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("type", company_type_enum, nullable=False),
         sa.Column("siret", sa.String(14), nullable=True, unique=True),
@@ -354,7 +465,13 @@ def upgrade() -> None:
     op.create_table(
         "listings",
         _uuid_pk(),
-        sa.Column("property_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("properties.id", ondelete="CASCADE"), nullable=False, unique=True),
+        sa.Column(
+            "property_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("properties.id", ondelete="CASCADE"),
+            nullable=False,
+            unique=True,
+        ),
         sa.Column("title", sa.Text(), nullable=True),
         sa.Column("description_ai", sa.Text(), nullable=True),
         sa.Column("price", sa.Numeric(12, 2), nullable=True),
@@ -382,27 +499,46 @@ def upgrade() -> None:
         sa.Column("old_values", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("new_values", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("ip_address", sa.String(45), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
     )
     op.create_index("ix_audit_logs_user_id", "audit_logs", ["user_id"])
     op.create_index("ix_audit_logs_action", "audit_logs", ["action"])
     op.create_index("ix_audit_logs_resource_type", "audit_logs", ["resource_type"])
     op.create_index("ix_audit_logs_resource_id", "audit_logs", ["resource_id"])
     op.create_index("ix_audit_logs_created_at", "audit_logs", ["created_at"])
-    op.create_index("ix_audit_logs_old_values", "audit_logs", ["old_values"], postgresql_using="gin")
-    op.create_index("ix_audit_logs_new_values", "audit_logs", ["new_values"], postgresql_using="gin")
+    op.create_index(
+        "ix_audit_logs_old_values", "audit_logs", ["old_values"], postgresql_using="gin"
+    )
+    op.create_index(
+        "ix_audit_logs_new_values", "audit_logs", ["new_values"], postgresql_using="gin"
+    )
 
 
 # ── downgrade ─────────────────────────────────────────────────────────────────
+
 
 def downgrade() -> None:
     bind = op.get_bind()
 
     for table in [
-        "audit_logs", "listings", "inspections", "quotes",
-        "companies", "missions", "openers", "transactions",
-        "contracts", "property_documents", "property_images",
-        "properties", "users",
+        "audit_logs",
+        "listings",
+        "inspections",
+        "quotes",
+        "companies",
+        "missions",
+        "openers",
+        "transactions",
+        "contracts",
+        "property_documents",
+        "property_images",
+        "properties",
+        "users",
     ]:
         op.drop_table(table)
 

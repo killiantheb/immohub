@@ -13,22 +13,20 @@ Dependency resolution order:
 from __future__ import annotations
 
 import uuid
-from collections.abc import Callable
-from functools import wraps
 from typing import Annotated
 
 import jwt
+from app.core.config import settings
+from app.core.database import get_db
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
-from app.core.database import get_db
-
 bearer_scheme = HTTPBearer(auto_error=True)
 
 # ── token decoding ────────────────────────────────────────────────────────────
+
 
 def _decode_token(token: str) -> dict:
     """Validate a Supabase JWT and return the payload."""
@@ -55,6 +53,7 @@ def _decode_token(token: str) -> dict:
 
 # ── primary dependency ────────────────────────────────────────────────────────
 
+
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(bearer_scheme)],
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -72,9 +71,7 @@ async def get_current_user(
     if not supabase_uid:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing subject claim")
 
-    result = await db.execute(
-        select(User).where(User.supabase_uid == supabase_uid)
-    )
+    result = await db.execute(select(User).where(User.supabase_uid == supabase_uid))
     user = result.scalar_one_or_none()
 
     if user is None:
@@ -85,8 +82,11 @@ async def get_current_user(
             id=uuid.uuid4(),
             supabase_uid=supabase_uid,
             email=email,
-            first_name=meta.get("first_name") or meta.get("full_name", "").split()[0] if meta.get("full_name") else None,
-            last_name=meta.get("last_name") or (" ".join(meta.get("full_name", "").split()[1:]) or None),
+            first_name=meta.get("first_name") or meta.get("full_name", "").split()[0]
+            if meta.get("full_name")
+            else None,
+            last_name=meta.get("last_name")
+            or (" ".join(meta.get("full_name", "").split()[1:]) or None),
             role=meta.get("role", "owner"),
             is_verified=bool(payload.get("email_confirmed_at")),
         )
@@ -108,12 +108,14 @@ async def get_current_user_id(user=Depends(get_current_user)) -> str:
 
 # ── permission factories ──────────────────────────────────────────────────────
 
+
 def require_roles(*roles: str):
     """
     Dependency factory — inject as a default value in route signatures:
 
         async def route(user = require_roles("super_admin", "agency")):
     """
+
     async def _check(user=Depends(get_current_user)):
         if user.role not in roles:
             raise HTTPException(
@@ -134,6 +136,7 @@ def require_property_access():
         @router.get("/{property_id}")
         async def route(property_id: uuid.UUID, user = require_property_access()):
     """
+
     async def _check(
         property_id: uuid.UUID,
         user=Depends(get_current_user),
@@ -167,6 +170,7 @@ def require_agency_access():
         @router.get("/{agency_id}/members")
         async def route(agency_id: uuid.UUID, user = require_agency_access()):
     """
+
     async def _check(
         agency_id: uuid.UUID,
         user=Depends(get_current_user),

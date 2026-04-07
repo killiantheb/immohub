@@ -6,17 +6,33 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 RFQCategory = Literal[
-    "plumbing", "electricity", "cleaning", "painting", "locksmith",
-    "roofing", "gardening", "masonry", "hvac", "renovation", "other",
+    "plumbing",
+    "electricity",
+    "cleaning",
+    "painting",
+    "locksmith",
+    "roofing",
+    "gardening",
+    "masonry",
+    "hvac",
+    "renovation",
+    "other",
 ]
 RFQStatus = Literal[
-    "draft", "published", "quotes_received", "accepted",
-    "in_progress", "completed", "rated", "cancelled",
+    "draft",
+    "published",
+    "quotes_received",
+    "accepted",
+    "in_progress",
+    "completed",
+    "rated",
+    "cancelled",
 ]
 RFQUrgency = Literal["low", "medium", "high", "emergency"]
 
 
 # ── RFQ ───────────────────────────────────────────────────────────────────────
+
 
 class RFQCreate(BaseModel):
     title: str = Field(..., min_length=5, max_length=255)
@@ -81,6 +97,7 @@ class AIQualifyResponse(BaseModel):
 
 # ── RFQ Quote ─────────────────────────────────────────────────────────────────
 
+
 class RFQQuoteCreate(BaseModel):
     amount: float = Field(..., gt=0)
     description: str = Field(..., min_length=20)
@@ -114,6 +131,7 @@ class RFQRating(BaseModel):
 
 
 # ── Company marketplace ────────────────────────────────────────────────────────
+
 
 class CompanyMarketplaceRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)

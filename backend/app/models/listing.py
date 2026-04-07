@@ -1,14 +1,16 @@
 import uuid
 from datetime import datetime
 
+from app.models.base import BaseModel
 from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, Numeric, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import BaseModel
-
 ListingStatus = Enum(
-    "draft", "active", "paused", "archived",
+    "draft",
+    "active",
+    "paused",
+    "archived",
     name="listing_status_enum",
 )
 
