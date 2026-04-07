@@ -47,6 +47,114 @@ function currentMonth() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
+// ── IFD / ICC estimator (Swiss property income tax) ───────────────────────────
+function IFDEstimator() {
+  const [loyers, setLoyers] = useState('')
+  const [charges, setCharges] = useState('')
+  const [interets, setInterets] = useState('')
+  const [entretien, setEntretien] = useState('')
+  const [open, setOpen] = useState(false)
+
+  const L = parseFloat(loyers) || 0
+  const C = parseFloat(charges) || 0
+  const I = parseFloat(interets) || 0
+  const E = parseFloat(entretien) || 0
+  const net = Math.max(0, L - C - I - E)
+  // IFD flat estimate: 11.5% (max federal rate on income)
+  const ifd = net * 0.115
+  // ICC estimate: ~20% additional cantonal (varies by canton; VS ~18%)
+  const icc = net * 0.20
+
+  return (
+    <div style={{ background: '#fff', borderRadius: 16, border, marginTop: 24 }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 18 }}>🇨🇭</span>
+          <div style={{ textAlign: 'left' }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: T, margin: 0 }}>Estimateur IFD / ICC — Revenus fonciers</p>
+            <p style={{ fontSize: 11, color: T3, margin: 0 }}>Impôt fédéral direct + cantonal (art. 21 LIFD)</p>
+          </div>
+        </div>
+        <span style={{ color: T3, fontSize: 16 }}>{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div style={{ padding: '0 20px 20px', borderTop: border }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginTop: 16 }}>
+            {[
+              { label: 'Loyers bruts encaissés (CHF)', val: loyers, set: setLoyers, help: 'Total loyers reçus sur l\'année' },
+              { label: 'Charges locatives (CHF)', val: charges, set: setCharges, help: 'Frais de gestion, assurances, etc.' },
+              { label: 'Intérêts hypothécaires (CHF)', val: interets, set: setInterets, help: 'Déductibles (art. 33 al. 1 let. a LIFD)' },
+              { label: 'Frais d\'entretien (CHF)', val: entretien, set: setEntretien, help: 'Réparations, rénovations déductibles' },
+            ].map(({ label, val, set, help }) => (
+              <div key={label}>
+                <label style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '1.5px', color: T3, display: 'block', marginBottom: 4 }}>{label}</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={val}
+                  onChange={e => set(e.target.value)}
+                  placeholder="0"
+                  style={{ width: '100%', border, borderRadius: 8, padding: '8px 12px', fontSize: 14, color: T, fontFamily: 'inherit', background: '#FAF5EB', outline: 'none', boxSizing: 'border-box' }}
+                />
+                <p style={{ fontSize: 10, color: T3, marginTop: 3 }}>{help}</p>
+              </div>
+            ))}
+          </div>
+
+          {L > 0 && (
+            <div style={{ marginTop: 20, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
+              {[
+                { label: 'Revenu net imposable', value: net, accent: false },
+                { label: 'IFD estimé (11.5%)', value: ifd, accent: false, info: 'Taux max fédéral' },
+                { label: 'ICC estimé (≈20%)', value: icc, accent: false, info: 'Variable selon canton' },
+                { label: 'Impôts totaux estimés', value: ifd + icc, accent: true },
+              ].map(kpi => (
+                <div key={kpi.label} style={{ background: kpi.accent ? O : 'rgba(212,96,26,0.04)', borderRadius: 12, padding: '14px 16px', border: kpi.accent ? 'none' : border }}>
+                  <p style={{ fontSize: 10, letterSpacing: '1.5px', textTransform: 'uppercase', color: kpi.accent ? 'rgba(255,255,255,0.75)' : T3, marginBottom: 6 }}>{kpi.label}</p>
+                  <p style={{ fontSize: 18, fontWeight: 700, color: kpi.accent ? '#fff' : T, margin: 0 }}>
+                    CHF {kpi.value.toLocaleString('fr-CH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </p>
+                  {'info' in kpi && kpi.info && (
+                    <p style={{ fontSize: 10, color: kpi.accent ? 'rgba(255,255,255,0.6)' : T3, marginTop: 3 }}>{kpi.info}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p style={{ fontSize: 10, color: T3, marginTop: 14, lineHeight: 1.6 }}>
+            ⚠️ Estimation indicative uniquement — basée sur le taux maximum IFD (art. 214 LIFD) et un ICC moyen.
+            Consultez votre fiduciaire ou le calculateur officiel de l'AFC (admin.ch) pour votre déclaration.
+          </p>
+          <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
+            <a
+              href="https://www.estv.admin.ch/estv/fr/home/direkte-bundessteuer/steuerrechner.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontSize: 11, color: O, textDecoration: 'underline' }}
+            >
+              Calculateur officiel AFC →
+            </a>
+            <span style={{ color: T3, fontSize: 11 }}>|</span>
+            <a
+              href="https://www.admin.ch/opc/fr/classified-compilation/19900329/index.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontSize: 11, color: O, textDecoration: 'underline' }}
+            >
+              LIFD art. 21
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function AccountingPage() {
   const [month, setMonth] = useState(currentMonth())
   const [data, setData] = useState<AccountingSummary | null>(null)
@@ -190,6 +298,8 @@ export default function AccountingPage() {
           )}
         </>
       )}
+
+      <IFDEstimator />
     </div>
   )
 }

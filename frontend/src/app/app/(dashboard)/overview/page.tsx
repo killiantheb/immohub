@@ -21,11 +21,7 @@ import { RevenueChart } from "@/components/RevenueChart";
 import { RentStatusBadge } from "@/components/RentStatusBadge";
 
 function fmt(amount: number) {
-  return amount.toLocaleString("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 0,
-  });
+  return `CHF ${amount.toLocaleString("fr-CH", { maximumFractionDigits: 0 })}`;
 }
 
 function DeltaBadge({ current, prev }: { current: number; prev: number }) {
@@ -228,7 +224,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <span className="text-sm font-bold text-gray-900">
-                      {tx.amount.toLocaleString("fr-FR")} €
+                      CHF {tx.amount.toLocaleString("fr-CH")}
                     </span>
                     <RentStatusBadge status={tx.status} />
                   </div>

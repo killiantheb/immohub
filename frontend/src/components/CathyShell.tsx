@@ -79,6 +79,7 @@ function getNavLinks(role?: string) {
     { href: '/app/accounting',   label: 'Comptabilité' },
     { href: '/app/openers',      label: 'Missions' },
     { href: '/app/rfqs',         label: 'Appels d\'offre' },
+    { href: '/app/rfqs/calendar', label: 'Calendrier' },
     { href: '/app/documents',    label: 'Documents' },
     { href: '/app/overview',     label: 'Vue d\'ensemble' },
     { href: '/app/advisor',      label: 'Conseiller IA' },

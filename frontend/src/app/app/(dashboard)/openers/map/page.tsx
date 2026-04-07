@@ -19,8 +19,8 @@ const TYPE_LABELS: Record<MissionType, string> = {
 };
 
 export default function OpenerMapPage() {
-  const [lat, setLat] = useState("48.8566");
-  const [lng, setLng] = useState("2.3522");
+  const [lat, setLat] = useState("46.8182");
+  const [lng, setLng] = useState("8.2275");
   const [radius, setRadius] = useState("30");
   const [missionType, setMissionType] = useState<MissionType>("visit");
 
