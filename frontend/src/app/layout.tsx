@@ -21,8 +21,8 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "CATHY",
-  description: "Plateforme de gestion immobilière",
+  title: "Althy",
+  description: "Plateforme de gestion immobilière — althy.ch",
 };
 
 export default function RootLayout({

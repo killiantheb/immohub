@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
-import { CathyLogo } from "@/components/CathyLogo";
+import { AlthyLogo } from "@/components/AlthyLogo";
 import { useAuth } from "@/lib/auth";
 
 const schema = z.object({
@@ -69,8 +69,8 @@ function LoginContent() {
       {/* ── Left branding panel ── */}
       <div className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center bg-primary-600 p-12 text-white">
         <div className="mb-8 flex items-center gap-4">
-          <CathyLogo size={52} />
-          <span className="text-4xl font-bold tracking-tight">CATHY</span>
+          <AlthyLogo size={52} />
+          <span className="text-4xl font-bold tracking-tight">ALTHY</span>
         </div>
         <p className="max-w-sm text-center text-lg text-primary-100">
           La plateforme tout-en-un pour gérer vos biens, contrats et transactions
@@ -96,8 +96,8 @@ function LoginContent() {
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="mb-8 flex items-center justify-center gap-2 lg:hidden">
-            <CathyLogo size={32} />
-            <span className="text-2xl font-bold text-gray-900">CATHY</span>
+            <AlthyLogo size={32} />
+            <span className="text-2xl font-bold text-gray-900">ALTHY</span>
           </div>
 
           <div className="mb-8">

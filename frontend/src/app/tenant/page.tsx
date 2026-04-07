@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { CathySphere } from '@/components/CathySphere'
+import { AlthySphere } from '@/components/AlthySphere'
 import { api } from '@/lib/api'
 import { useUser } from '@/lib/auth'
 
@@ -60,13 +60,13 @@ export default function TenantPage() {
 
       {/* Header */}
       <div style={{ width: '100%', maxWidth: 380, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 11, letterSpacing: '6px', color: 'rgba(180,80,20,0.45)', textTransform: 'uppercase', margin: 0 }}>Cathy</p>
+        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 11, letterSpacing: '6px', color: 'rgba(180,80,20,0.45)', textTransform: 'uppercase', margin: 0 }}>Althy</p>
         <span style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(80,35,8,0.45)', padding: '4px 10px', borderRadius: 20, border: '0.5px solid rgba(212,96,26,0.2)', background: 'rgba(212,96,26,0.05)' }}>Locataire</span>
       </div>
 
       {/* Sphere */}
       <div style={{ marginBottom: '1rem', filter: 'drop-shadow(0 12px 36px rgba(212,96,26,0.18))' }}>
-        <CathySphere size={200} />
+        <AlthySphere size={200} />
       </div>
 
       <p style={{ fontSize: 11, letterSpacing: '2.5px', textTransform: 'uppercase', color: 'rgba(80,35,8,0.5)', marginBottom: '2rem', textAlign: 'center' }}>

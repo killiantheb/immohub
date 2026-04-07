@@ -50,7 +50,7 @@ const CARD_BORDER = {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export default function CathyHome() {
+export default function AlthyHome() {
   const router = useRouter();
   const { data: profile, isLoading: profileLoading } = useUser();
 
@@ -139,7 +139,7 @@ export default function CathyHome() {
     if (!msg || isThinking) return;
     setChatInput("");
     setIsThinking(true);
-    setStatusText("Cathy réfléchit…");
+    setStatusText("Althy réfléchit…");
     try {
       const { data } = await api.post<{ response: string }>("/ai/chat", {
         message: msg,
@@ -165,7 +165,7 @@ export default function CathyHome() {
       <div style={{ background: "#F5EDE0", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #F5A050 0%, #D4601A 45%, #8A3008 100%)", margin: "0 auto 1rem", animation: "breathe 2s ease-in-out infinite", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontFamily: "serif", fontSize: 18, color: "#fff", letterSpacing: 4 }}>Cathy</span>
+            <span style={{ fontFamily: "serif", fontSize: 18, color: "#fff", letterSpacing: 4 }}>Althy</span>
           </div>
           <p style={{ fontSize: 11, letterSpacing: 2, color: "#A05C28", textTransform: "uppercase" }}>analyse en cours…</p>
         </div>
@@ -203,7 +203,7 @@ export default function CathyHome() {
         <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid #D4601A", animation: "ripple 3s ease-out infinite" }} />
         <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid #D4601A", animation: "ripple2 3s ease-out infinite 1.5s" }} />
         <div onClick={toggleTalk} style={{ width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #F5A050 0%, #D4601A 45%, #8A3008 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", animation: isTalking ? "speaking 0.4s ease-in-out infinite" : "breathe 3.5s ease-in-out infinite", cursor: "pointer", zIndex: 2, boxShadow: "0 8px 40px rgba(212,96,26,0.3)" }}>
-          <span style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 300, color: "#fff", letterSpacing: 4, textTransform: "uppercase" }}>Cathy</span>
+          <span style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 300, color: "#fff", letterSpacing: 4, textTransform: "uppercase" }}>Althy</span>
           <span style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", letterSpacing: 1.5, textTransform: "uppercase", marginTop: 2 }}>parler</span>
         </div>
       </div>
@@ -217,7 +217,7 @@ export default function CathyHome() {
       <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 10, marginBottom: "1.2rem" }}>
         {briefing?.cards.length === 0 && (
           <div style={{ textAlign: "center", padding: "2rem 0", color: "#A05C28", fontSize: 13, opacity: 0.6 }}>
-            Tout est en ordre — posez une question à Cathy ci-dessous
+            Tout est en ordre — posez une question à Althy ci-dessous
           </div>
         )}
         {briefing?.cards.map((card, idx) => (
@@ -269,7 +269,7 @@ export default function CathyHome() {
           value={chatInput}
           onChange={e => setChatInput(e.target.value)}
           onKeyDown={e => e.key === "Enter" && sendMessage()}
-          placeholder={isThinking ? "Cathy réfléchit…" : "Demandez quelque chose à Cathy…"}
+          placeholder={isThinking ? "Althy réfléchit…" : "Demandez quelque chose à Althy…"}
           disabled={isThinking}
           style={{ flex: 1, border: "none", outline: "none", fontFamily: "inherit", fontSize: 13, color: "#1a1a1a", background: "transparent" }}
         />
@@ -279,7 +279,7 @@ export default function CathyHome() {
       </div>
 
       <p style={{ marginTop: 12, fontSize: 10, color: "#C9A882", letterSpacing: 1, textAlign: "center" }}>
-        Cathy analyse vos données en temps réel
+        Althy analyse vos données en temps réel
       </p>
 
       {/* Animations */}

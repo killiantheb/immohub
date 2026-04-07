@@ -13,7 +13,7 @@ import {
   AlertCircle,
   CheckCircle2,
 } from "lucide-react";
-import { CathyLogo } from "@/components/CathyLogo";
+import { AlthyLogo } from "@/components/AlthyLogo";
 import { useAuth } from "@/lib/auth";
 
 const schema = z
@@ -115,12 +115,12 @@ export default function RegisterPage() {
       {/* ── Left branding panel ── */}
       <div className="hidden lg:flex lg:w-5/12 flex-col items-center justify-center bg-primary-600 p-12 text-white">
         <div className="mb-6 flex items-center gap-4">
-          <CathyLogo size={52} />
-          <span className="text-4xl font-bold tracking-tight">CATHY</span>
+          <AlthyLogo size={52} />
+          <span className="text-4xl font-bold tracking-tight">ALTHY</span>
         </div>
         <p className="max-w-xs text-center text-primary-100">
           Rejoignez des centaines de professionnels qui gèrent leur activité
-          immobilière avec CATHY.
+          immobilière avec ALTHY.
         </p>
       </div>
 
@@ -129,8 +129,8 @@ export default function RegisterPage() {
         <div className="w-full max-w-lg">
           {/* Mobile logo */}
           <div className="mb-8 flex items-center justify-center gap-2 lg:hidden">
-            <CathyLogo size={32} />
-            <span className="text-2xl font-bold text-gray-900">CATHY</span>
+            <AlthyLogo size={32} />
+            <span className="text-2xl font-bold text-gray-900">ALTHY</span>
           </div>
 
           <div className="mb-8">

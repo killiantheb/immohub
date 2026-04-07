@@ -16,7 +16,7 @@ export const useAuthStore = create<AuthState>()(
       clearUser: () => set({ user: null }),
     }),
     {
-      name: "cathy-auth",
+      name: "althy-auth",
       partialize: (state) => ({ user: state.user }),
     },
   ),

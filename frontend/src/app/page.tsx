@@ -33,9 +33,9 @@ const STATS = [
 ]
 
 const STEPS = [
-  { n: '01', title: 'Vous parlez', desc: 'Dites à Cathy ce que vous voulez faire. Voix ou texte, en français, naturellement.' },
-  { n: '02', title: 'Cathy analyse', desc: 'Elle lit vos données en temps réel — loyers, contrats, missions, devis — et propose une action.' },
-  { n: '03', title: 'Vous validez', desc: 'Un tap suffit. Vous restez décisionnaire ; Cathy exécute sans friction.' },
+  { n: '01', title: 'Vous parlez', desc: 'Dites à Althy ce que vous voulez faire. Voix ou texte, en français, naturellement.' },
+  { n: '02', title: 'Althy analyse', desc: 'Elle lit vos données en temps réel — loyers, contrats, missions, devis — et propose une action.' },
+  { n: '03', title: 'Vous validez', desc: 'Un tap suffit. Vous restez décisionnaire ; Althy exécute sans friction.' },
   { n: '04', title: 'Les revenus arrivent', desc: 'Relances automatiques, documents générés, intervenants coordonnés. Zéro oubli.' },
 ]
 
@@ -66,7 +66,7 @@ const PLANS = [
   {
     name: 'Starter', price: 49, currency: 'CHF', period: 'mois',
     desc: 'Pour les propriétaires indépendants',
-    features: ['Jusqu\'à 3 biens', 'Assistant Cathy inclus', 'Relances automatiques', 'Documents PDF', 'Support par e-mail'],
+    features: ['Jusqu\'à 3 biens', 'Assistant Althy inclus', 'Relances automatiques', 'Documents PDF', 'Support par e-mail'],
     cta: 'Commencer gratuitement', featured: false,
   },
   {
@@ -91,7 +91,7 @@ export default function LandingPage() {
       {/* ── Nav ───────────────────────────────────────────────────────────── */}
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(250,245,235,0.92)', backdropFilter: 'blur(12px)', borderBottom: `0.5px solid ${O20}`, height: 56, display: 'flex', alignItems: 'center', padding: '0 1.5rem' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 300, color: O, letterSpacing: '3px' }}>Cathy</span>
+          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 300, color: O, letterSpacing: '3px' }}>Althy</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
             <div style={{ display: 'flex', gap: '1.5rem', fontSize: 13, color: T5 }}>
               {['Comment ça marche', 'Pour qui', 'Tarifs'].map((lbl, i) => (
@@ -110,12 +110,12 @@ export default function LandingPage() {
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <Section style={{ paddingTop: '8rem', textAlign: 'center' }}>
         <p style={{ fontFamily: 'var(--font-serif)', fontSize: 11, letterSpacing: '8px', color: `rgba(200,95,25,0.38)`, textTransform: 'uppercase', marginBottom: '2.5rem' }}>
-          Cathy · Assistant immobilier
+          Althy · Assistant immobilier
         </p>
         <HeroSphere />
         <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.4rem, 6vw, 4.2rem)', fontWeight: 300, lineHeight: 1.12, letterSpacing: '-0.5px', color: T, marginBottom: '1.2rem', maxWidth: 720, margin: '0 auto 1.2rem' }}>
           Parlez.<br />
-          <span style={{ color: O }}>Cathy fait le reste.</span>
+          <span style={{ color: O }}>Althy fait le reste.</span>
         </h1>
         <p style={{ fontSize: 'clamp(14px, 2vw, 17px)', color: T5, maxWidth: 460, margin: '0 auto 2.5rem', lineHeight: 1.6, letterSpacing: '0.3px' }}>
           Votre assistant immobilier — toujours disponible, toujours à jour, jamais dans vos jambes.
@@ -259,11 +259,11 @@ export default function LandingPage() {
       {/* ── Final CTA ─────────────────────────────────────────────────────── */}
       <Section style={{ textAlign: 'center', padding: '6rem 1.5rem' }}>
         <p style={{ fontFamily: 'var(--font-serif)', fontSize: 11, letterSpacing: '8px', color: `rgba(200,95,25,0.38)`, textTransform: 'uppercase', marginBottom: '1.5rem' }}>
-          Rejoignez Cathy
+          Rejoignez Althy
         </p>
         <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2rem, 5vw, 3.6rem)', fontWeight: 300, color: T, marginBottom: '1rem', letterSpacing: '-0.5px', lineHeight: 1.15 }}>
           Prêt à laisser<br />
-          <span style={{ color: O }}>Cathy gérer ?</span>
+          <span style={{ color: O }}>Althy gérer ?</span>
         </h2>
         <p style={{ fontSize: 15, color: T5, maxWidth: 420, margin: '0 auto 2.5rem', lineHeight: 1.6 }}>
           Rejoignez des centaines de professionnels qui ont repris le contrôle de leur temps.
@@ -282,7 +282,7 @@ export default function LandingPage() {
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}
       <footer style={{ maxWidth: 1080, margin: '0 auto', padding: '2.5rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <span style={{ fontFamily: 'var(--font-serif)', fontSize: 18, fontWeight: 300, color: O, letterSpacing: '3px' }}>Cathy</span>
+        <span style={{ fontFamily: 'var(--font-serif)', fontSize: 18, fontWeight: 300, color: O, letterSpacing: '3px' }}>Althy</span>
         <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
           {[['Mentions légales', '/legal'], ['Confidentialité', '/privacy'], ['CGU', '/terms'], ['Contact', '/contact']].map(([lbl, href]) => (
             <Link key={href} href={href} style={{ fontSize: 11, color: T3, textDecoration: 'none', letterSpacing: '0.5px' }}>
@@ -291,7 +291,7 @@ export default function LandingPage() {
           ))}
         </div>
         <span style={{ fontSize: 11, color: T3, letterSpacing: '0.5px' }}>
-          © {new Date().getFullYear()} Cathy · Tous droits réservés
+          © {new Date().getFullYear()} Althy · Tous droits réservés
         </span>
       </footer>
 

@@ -1,9 +1,10 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { CathySphere } from '@/components/CathySphere'
 import { createClient } from '@/lib/supabase'
+import { useAuth } from '@/lib/auth'
 
 const BG = '#FAF5EB'
 const O  = '#D4601A'
@@ -12,13 +13,13 @@ const T5 = 'rgba(80,35,8,0.55)'
 const T3 = 'rgba(80,35,8,0.30)'
 
 const NAV_LINKS = [
-  { href: '/dashboard',   label: 'Accueil' },
-  { href: '/properties',  label: 'Biens' },
-  { href: '/contracts',   label: 'Contrats' },
-  { href: '/transactions',label: 'Transactions' },
-  { href: '/openers',     label: 'Missions' },
-  { href: '/rfqs',        label: 'Appels d\'offre' },
-  { href: '/overview',    label: 'Vue d\'ensemble' },
+  { href: '/dashboard',    label: 'Accueil' },
+  { href: '/properties',   label: 'Biens' },
+  { href: '/contracts',    label: 'Contrats' },
+  { href: '/transactions', label: 'Transactions' },
+  { href: '/openers',      label: 'Missions' },
+  { href: '/rfqs',         label: 'Appels d\'offre' },
+  { href: '/overview',     label: 'Vue d\'ensemble' },
 ]
 
 const QUICK_LINKS = [
@@ -36,13 +37,20 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState('à votre écoute')
   const [input, setInput] = useState('')
   const pathname = usePathname()
+  const router = useRouter()
+  const { signOut } = useAuth()
+
+  async function handleLogout() {
+    await signOut()
+    router.push('/login')
+  }
 
   async function handleSend() {
     if (!input.trim()) return
     const msg = input.trim()
     setInput('')
     setSpeaking(true)
-    setStatus('Cathy analyse…')
+    setStatus('Althy analyse…')
     try {
       const supabase = createClient()
       const { data: { session } } = await supabase.auth.getSession()
@@ -97,12 +105,12 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
         </button>
 
         {/* Title */}
-        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 11, fontWeight: 300, letterSpacing: '8px', color: 'rgba(180,80,20,0.45)', textTransform: 'uppercase', marginBottom: '2rem' }}>Cathy</p>
+        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 11, fontWeight: 300, letterSpacing: '8px', color: 'rgba(180,80,20,0.45)', textTransform: 'uppercase', marginBottom: '2rem' }}>Althy</p>
 
         {/* Sphere */}
-        <div style={{ marginBottom: '1.8rem', filter: 'drop-shadow(0 16px 48px rgba(212,96,26,0.22))', animation: 'cathyFloat 5.5s ease-in-out infinite' }}>
-          <style>{`@keyframes cathyFloat{0%,100%{transform:translateY(0)}40%{transform:translateY(-10px)}70%{transform:translateY(-5px)}}`}</style>
-          <CathySphere size={220} speaking={speaking} />
+        <div style={{ marginBottom: '1.8rem', animation: 'althyFloat 5.5s ease-in-out infinite' }}>
+          <style>{`@keyframes althyFloat{0%,100%{transform:translateY(0)}40%{transform:translateY(-10px)}70%{transform:translateY(-5px)}}`}</style>
+          <CathySphere size={200} speaking={speaking} />
         </div>
 
         {/* Status */}
@@ -149,7 +157,7 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={link.href}
                 href={link.href}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '12px 8px', borderRadius: 14, background: '#fff', border: `0.5px solid rgba(212,96,26,0.15)`, textDecoration: 'none', transition: 'background 0.15s' }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '12px 8px', borderRadius: 14, background: '#fff', border: `0.5px solid rgba(212,96,26,0.15)`, textDecoration: 'none' }}
               >
                 <span style={{ fontSize: 20 }}>{link.icon}</span>
                 <span style={{ fontSize: 11, color: T5, letterSpacing: '0.3px' }}>{link.label}</span>
@@ -157,6 +165,14 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
             ))}
           </div>
         </div>
+
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          style={{ marginTop: '2rem', fontSize: 10, letterSpacing: '2px', textTransform: 'uppercase', color: T3, cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'inherit' }}
+        >
+          Déconnexion
+        </button>
       </div>
     )
   }
@@ -166,13 +182,21 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
     <div style={{ minHeight: '100vh', background: BG }}>
       {/* Header */}
       <header style={{ background: '#fff', borderBottom: `0.5px solid rgba(160,92,40,0.12)`, padding: '0 1.5rem', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
-        <span style={{ fontFamily: 'var(--font-serif)', fontSize: 20, fontWeight: 300, color: O, letterSpacing: '3px' }}>Cathy</span>
-        <button
-          onClick={() => setShowDashboard(false)}
-          style={{ padding: '6px 14px', borderRadius: 20, border: `0.5px solid rgba(160,92,40,0.2)`, background: 'transparent', cursor: 'pointer', fontSize: 12, color: T5, fontFamily: 'inherit' }}
-        >
-          ← Retour à Cathy
-        </button>
+        <span style={{ fontFamily: 'var(--font-serif)', fontSize: 20, fontWeight: 300, color: O, letterSpacing: '3px' }}>Althy</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            onClick={() => setShowDashboard(false)}
+            style={{ padding: '6px 14px', borderRadius: 20, border: `0.5px solid rgba(160,92,40,0.2)`, background: 'transparent', cursor: 'pointer', fontSize: 12, color: T5, fontFamily: 'inherit' }}
+          >
+            ← Althy
+          </button>
+          <button
+            onClick={handleLogout}
+            style={{ padding: '6px 14px', borderRadius: 20, border: `0.5px solid rgba(160,92,40,0.2)`, background: 'transparent', cursor: 'pointer', fontSize: 12, color: T5, fontFamily: 'inherit' }}
+          >
+            Déconnexion
+          </button>
+        </div>
       </header>
 
       {/* Nav */}
