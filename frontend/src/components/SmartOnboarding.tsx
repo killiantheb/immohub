@@ -95,7 +95,8 @@ export function SmartOnboarding({ onComplete }: Props) {
     setProgress(5)
 
     try {
-      const res = await fetch(`/api/v1/smart-onboarding/${endpoint}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? ''
+      const res = await fetch(`${apiUrl}/smart-onboarding/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
