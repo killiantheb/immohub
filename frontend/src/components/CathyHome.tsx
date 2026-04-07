@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/lib/auth";
+import { useAuthStore } from "@/lib/store/authStore";
 import { api } from "@/lib/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -54,6 +55,7 @@ export default function AlthyHome() {
   const router = useRouter();
   const { data: profile, isLoading: profileLoading } = useUser();
 
+  const { user: supabaseUser } = useAuthStore();
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [loadingBriefing, setLoadingBriefing] = useState(false);
   const [isTalking, setIsTalking] = useState(false);
@@ -79,10 +81,10 @@ export default function AlthyHome() {
   }, []);
 
   useEffect(() => {
-    if (!profileLoading) {
+    if (!profileLoading && !!supabaseUser) {
       fetchBriefing();
     }
-  }, [profileLoading, fetchBriefing]);
+  }, [profileLoading, supabaseUser, fetchBriefing]);
 
   // Talking animation
   const talkPhrases = [
