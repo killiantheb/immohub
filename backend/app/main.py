@@ -15,6 +15,7 @@ from app.routers import (
     rfq,
     transactions,
 )
+from app.routers.smart_onboarding import router as smart_onboarding_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
@@ -76,6 +77,7 @@ app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboar
 app.include_router(ai.router, prefix="/api/v1/ai", tags=["ai"])
 app.include_router(rfq.router, prefix="/api/v1/rfqs", tags=["rfqs"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
+app.include_router(smart_onboarding_router, prefix="/api/v1")
 
 
 # ── Health check ──────────────────────────────────────────────────────────────
