@@ -118,8 +118,7 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
         <p style={{ fontFamily: 'var(--font-serif)', fontSize: 11, fontWeight: 300, letterSpacing: '8px', color: 'rgba(180,80,20,0.45)', textTransform: 'uppercase', marginBottom: '2rem' }}>Althy</p>
 
         {/* Sphere */}
-        <div style={{ marginBottom: '1.8rem', animation: 'althyFloat 5.5s ease-in-out infinite' }}>
-          <style>{`@keyframes althyFloat{0%,100%{transform:translateY(0)}40%{transform:translateY(-10px)}70%{transform:translateY(-5px)}}`}</style>
+        <div style={{ marginBottom: '1.8rem', animation: 'althyFloat 5.5s ease-in-out infinite' }} suppressHydrationWarning>
           <CathySphere size={200} speaking={speaking} />
         </div>
 
@@ -162,8 +161,7 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
         {/* Quick access shortcuts */}
         <div style={{ width: '100%', maxWidth: 360 }}>
           <p style={{ fontSize: 10, letterSpacing: '2px', textTransform: 'uppercase', color: T3, marginBottom: '0.8rem', textAlign: 'center' }}>Accès rapide</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-            <style>{`@media(max-width:360px){.ql-grid{grid-template-columns:repeat(2,1fr)!important}}`}</style>
+          <div className="ql-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
             {QUICK_LINKS.map(link => (
               <Link
                 key={link.href}

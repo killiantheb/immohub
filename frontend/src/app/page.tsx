@@ -280,25 +280,6 @@ export default function LandingPage() {
 
       <Divider />
 
-      {/* ── Responsive styles ─────────────────────────────────────────────── */}
-      <style>{`
-        .nav-links { display: flex; gap: 1.5rem; }
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
-        .steps-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-        .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
-        .quick-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-        @media (max-width: 768px) {
-          .nav-links { display: none; }
-          .stats-grid { grid-template-columns: repeat(2, 1fr); }
-          .stats-grid > *:nth-child(2) { border-right: none !important; }
-          .steps-grid { grid-template-columns: 1fr; }
-          .pricing-grid { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 480px) {
-          .stats-grid { grid-template-columns: 1fr 1fr; }
-        }
-      `}</style>
-
       {/* ── Footer ────────────────────────────────────────────────────────── */}
       <footer style={{ maxWidth: 1080, margin: '0 auto', padding: '2.5rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <span style={{ fontFamily: 'var(--font-serif)', fontSize: 18, fontWeight: 300, color: O, letterSpacing: '3px' }}>Althy</span>
@@ -309,7 +290,7 @@ export default function LandingPage() {
             </Link>
           ))}
         </div>
-        <span style={{ fontSize: 11, color: T3, letterSpacing: '0.5px' }}>
+        <span style={{ fontSize: 11, color: T3, letterSpacing: '0.5px' }} suppressHydrationWarning>
           © {new Date().getFullYear()} Althy · Tous droits réservés
         </span>
       </footer>
