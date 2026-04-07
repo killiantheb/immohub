@@ -5,7 +5,8 @@ import json
 from typing import List, Optional
 
 from app.services.smart_onboarding_service import deep_search, detect_profile_from_speech
-from fastapi import APIRouter
+from app.core.limiter import limiter
+from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -80,7 +81,8 @@ async def _stream_search(role: str, name: str, **kwargs):
 
 
 @router.post("/from-speech")
-async def onboard_from_speech(data: SpeechInput) -> StreamingResponse:
+@limiter.limit("5/minute")
+async def onboard_from_speech(request: Request, data: SpeechInput) -> StreamingResponse:
     """Mode vocal — détecte le profil depuis la parole puis cherche."""
 
     async def generate():
@@ -112,7 +114,8 @@ async def onboard_from_speech(data: SpeechInput) -> StreamingResponse:
 
 
 @router.post("/from-manual")
-async def onboard_from_manual(data: ManualInput) -> StreamingResponse:
+@limiter.limit("5/minute")
+async def onboard_from_manual(request: Request, data: ManualInput) -> StreamingResponse:
     """Mode boutons — l'utilisateur a choisi son rôle et rempli le minimum."""
 
     async def generate():
