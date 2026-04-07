@@ -145,7 +145,7 @@ async def update_notes(
     return {"ok": True}
 
 
-@router.delete("/{favorite_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{favorite_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def remove_favorite(
     favorite_id: str,
     db: DbDep,

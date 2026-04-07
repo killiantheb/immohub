@@ -145,7 +145,7 @@ async def get_ratings(
     )
 
 
-@router.delete("/{rating_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{rating_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def delete_rating(
     rating_id: str,
     db: DbDep,
