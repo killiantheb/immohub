@@ -35,7 +35,11 @@
       "Bash(grep -E \"\\\\.\\(py|ts|tsx\\)$\")",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(grep -r \"^@router\\\\.\" /c/Users/Killan/immohub/backend/app/routers/*.py)",
+      "Bash(curl:*)",
+      "Bash(npx --version)",
+      "Bash(node -e ':*)"
     ]
   }
 }
