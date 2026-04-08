@@ -1612,8 +1612,9 @@ async def generer_document(
             "Inclure : désignation du bien, montant loyer + charges, période, signature propriétaire."
         ),
         "edl": (
-            f"Génère un état des lieux {'d\\'entrée' if payload.params.get('type') == 'entree' else 'de sortie'} "
-            f"pour : {bien_info}, date : {today_str}. "
+            "Génère un état des lieux "
+            + ("d'entrée" if payload.params.get("type") == "entree" else "de sortie")
+            + f" pour : {bien_info}, date : {today_str}. "
             f"Params : {params_str}. "
             "Structure : pièces (entrée, séjour, cuisine, salle de bain, chambres, WC, extérieur), "
             "état de chaque élément, compteurs, clés remises. Format structuré et professionnel."
