@@ -113,6 +113,47 @@ export interface Intervention {
   created_at: string;
 }
 
+export interface Devis {
+  id: string;
+  intervention_id: string;
+  artisan_id?: string | null;
+  montant_ht?: number | null;
+  montant_ttc?: number | null;
+  statut: "brouillon" | "envoye" | "accepte" | "refuse";
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface MissionOuvreur {
+  id: string;
+  bien_id: string;
+  ouvreur_id?: string | null;
+  type: string;
+  type_mission: string;
+  date_mission?: string | null;
+  creneau_debut?: string | null;
+  creneau_fin?: string | null;
+  heure_debut?: string | null;
+  heure_fin?: string | null;
+  adresse?: string | null;
+  nb_candidats: number;
+  remuneration?: number | null;
+  statut: "proposee" | "acceptee" | "effectuee" | "annulee";
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface ProfileOuvreur {
+  id: string;
+  user_id: string;
+  zone_intervention?: string | null;
+  rayon_km?: number | null;
+  jours_dispo?: number[] | null;
+  nb_missions_total?: number | null;
+  note_moyenne?: number | null;
+  created_at: string;
+}
+
 export interface ScoringLocataire {
   id: string;
   locataire_id: string;
