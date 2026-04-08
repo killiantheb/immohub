@@ -4,10 +4,10 @@ import Link from "next/link"
 
 const C = {
   bg: "#FAF8F4",
-  border: "rgba(26,18,8,0.06)",
+  border: "rgba(40,18,8,0.06)",
   text: "#1A1208",
   textMuted: "rgba(26,18,8,0.40)",
-  gold: "#E8602C",
+  orange: "#E8602C",
 } as const
 
 export function Footer() {
@@ -19,12 +19,7 @@ export function Footer() {
         padding: "3rem 1.5rem 2.5rem",
       }}
     >
-      <div
-        style={{
-          maxWidth: 1280,
-          margin: "0 auto",
-        }}
-      >
+      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
         {/* Top row */}
         <div
           style={{
@@ -44,8 +39,8 @@ export function Footer() {
                   fontFamily: "var(--font-serif)",
                   color: C.orange,
                   fontSize: "1.625rem",
-                  fontWeight: 300,
-                  letterSpacing: "0.25em",
+                  fontWeight: 500,
+                  letterSpacing: "0.16em",
                   display: "block",
                   marginBottom: "0.5rem",
                 }}
@@ -128,9 +123,9 @@ export function Footer() {
           <p style={{ color: C.textMuted, fontSize: "0.75rem", margin: 0 }}>
             © 2026 Althy · Tous droits réservés
           </p>
-          <p style={{ color: "rgba(255,255,255,0.22)", fontSize: "0.75rem", margin: 0 }}>
+          <p style={{ color: C.textMuted, fontSize: "0.75rem", margin: 0 }}>
             Fabriqué en Suisse Romande ·{" "}
-            <a href="https://althy.ch" style={{ color: "rgba(255,255,255,0.22)", textDecoration: "none" }}>
+            <a href="https://althy.ch" style={{ color: C.textMuted, textDecoration: "none" }}>
               althy.ch
             </a>
           </p>

@@ -4,21 +4,20 @@ import { motion } from "framer-motion"
 import { TESTIMONIALS } from "@/lib/data/landing"
 
 const C = {
-  bg: "#1A1208",
-  surface: "#1A1208",
+  bg: "#FAF8F4",
+  surface: "#FFFFFF",
   surface2: "#F2EDE5",
-  border: "rgba(26,18,8,0.08)",
+  border: "rgba(40,18,8,0.08)",
   text: "#1A1208",
   textMid: "rgba(26,18,8,0.75)",
   textMuted: "rgba(26,18,8,0.45)",
-  gold: "#E8602C",
+  orange: "#E8602C",
+  orangeBorder: "rgba(232,96,44,0.20)",
 } as const
 
 export function Testimonials() {
   return (
-    <section
-      style={{ background: C.bg, padding: "7rem 0" }}
-    >
+    <section style={{ background: C.bg, padding: "7rem 0" }}>
       {/* Header */}
       <div style={{ padding: "0 1.5rem", maxWidth: 1280, margin: "0 auto", marginBottom: "3rem" }}>
         <motion.div
@@ -82,7 +81,7 @@ export function Testimonials() {
           <div
             key={t.name}
             style={{
-              background: "#F2EDE5",
+              background: C.surface,
               border: `1px solid ${C.border}`,
               borderRadius: "1rem",
               padding: "1.75rem 1.5rem",
@@ -93,22 +92,23 @@ export function Testimonials() {
               flexDirection: "column",
               gap: "1.25rem",
               transition: "border-color 0.25s",
+              boxShadow: "0 2px 12px rgba(40,18,8,0.06)",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "rgba(232,96,44,0.18)"
+              e.currentTarget.style.borderColor = C.orangeBorder
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = C.border
             }}
           >
-            {/* Gold quote mark */}
+            {/* Quote mark */}
             <div
               style={{
                 color: C.orange,
                 fontSize: "3rem",
                 lineHeight: 0.8,
                 fontFamily: "Georgia, serif",
-                opacity: 0.6,
+                opacity: 0.5,
               }}
             >
               &ldquo;
@@ -135,8 +135,8 @@ export function Testimonials() {
                   width: 36,
                   height: 36,
                   borderRadius: "50%",
-                  background: "rgba(201,169,110,0.12)",
-                  border: "1px solid rgba(232,96,44,0.18)",
+                  background: "rgba(232,96,44,0.10)",
+                  border: `1px solid ${C.orangeBorder}`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",

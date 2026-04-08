@@ -5,11 +5,13 @@ import Link from "next/link"
 
 const C = {
   bg: "#FAF8F4",
-  border: "rgba(232,96,44,0.18)",
+  border: "rgba(40,18,8,0.08)",
+  borderOrange: "rgba(232,96,44,0.18)",
   text: "#1A1208",
   textMid: "rgba(26,18,8,0.65)",
-  gold: "#E8602C",
-  goldBorder: "rgba(232,96,44,0.22)",
+  textMuted: "rgba(26,18,8,0.45)",
+  orange: "#E8602C",
+  orangeBorder: "rgba(232,96,44,0.22)",
 } as const
 
 export function CTAFinal() {
@@ -27,7 +29,7 @@ export function CTAFinal() {
         style={{
           position: "absolute",
           inset: "2rem",
-          border: `1px solid ${C.border}`,
+          border: `1px solid ${C.borderOrange}`,
           borderRadius: "1.5rem",
           pointerEvents: "none",
         }}
@@ -42,7 +44,7 @@ export function CTAFinal() {
           transform: "translate(-50%, -50%)",
           width: "600px",
           height: "400px",
-          background: "radial-gradient(ellipse, rgba(201,169,110,0.08) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse, rgba(232,96,44,0.06) 0%, transparent 70%)",
           pointerEvents: "none",
         }}
       />
@@ -102,10 +104,8 @@ export function CTAFinal() {
             color: C.textMid,
             fontSize: "1.0625rem",
             lineHeight: 1.65,
-            margin: "0 0 3rem 0",
+            margin: "0 auto 3rem auto",
             maxWidth: 520,
-            marginLeft: "auto",
-            marginRight: "auto",
           }}
         >
           Rejoignez des centaines de professionnels qui ont repris le contrôle de leur temps.
@@ -126,8 +126,8 @@ export function CTAFinal() {
           <Link
             href="/app"
             style={{
-              background: C.gold,
-              color: "#000000",
+              background: C.orange,
+              color: "#FFFFFF",
               textDecoration: "none",
               fontSize: "1rem",
               fontWeight: 700,
@@ -156,12 +156,12 @@ export function CTAFinal() {
               fontWeight: 500,
               padding: "0.9rem 2.25rem",
               borderRadius: "100px",
-              border: "1px solid rgba(26,18,8,0.18)",
+              border: `1px solid ${C.border}`,
               display: "inline-block",
               transition: "border-color 0.2s",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)")}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(26,18,8,0.18)")}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.orangeBorder)}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = C.border)}
           >
             Nous contacter
           </Link>
@@ -174,7 +174,7 @@ export function CTAFinal() {
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.5 }}
           style={{
-            color: "rgba(255,255,255,0.30)",
+            color: C.textMuted,
             fontSize: "0.8125rem",
             marginTop: "2rem",
           }}

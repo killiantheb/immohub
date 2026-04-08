@@ -5,22 +5,22 @@ import { OUVREUR_FEATURES, ARTISAN_FEATURES } from "@/lib/data/landing"
 
 const C = {
   bg: "#FAF8F4",
-  surface: "#1A1208",
+  surface: "#FFFFFF",
   surface2: "#F2EDE5",
-  border: "rgba(26,18,8,0.08)",
+  border: "rgba(40,18,8,0.08)",
   text: "#1A1208",
   textMid: "rgba(26,18,8,0.65)",
   textMuted: "rgba(26,18,8,0.38)",
-  gold: "#E8602C",
-  goldBg: "rgba(232,96,44,0.08)",
-  goldBorder: "rgba(232,96,44,0.20)",
+  orange: "#E8602C",
+  orangeBg: "rgba(232,96,44,0.08)",
+  orangeBorder: "rgba(232,96,44,0.22)",
 } as const
 
 function CheckIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-      <circle cx="8" cy="8" r="7.5" stroke={C.gold} strokeOpacity="0.3" />
-      <path d="M5 8l2.5 2.5L11 5.5" stroke={C.gold} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="8" cy="8" r="7.5" stroke={C.orange} strokeOpacity="0.35" />
+      <path d="M5 8l2.5 2.5L11 5.5" stroke={C.orange} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -46,6 +46,7 @@ function FeatureColumn({ icon, title, subtitle, features, delay = 0 }: FeatureCo
         borderRadius: "1.25rem",
         padding: "2.25rem",
         flex: 1,
+        boxShadow: "0 2px 12px rgba(40,18,8,0.06)",
       }}
     >
       <div
@@ -89,7 +90,7 @@ function FeatureColumn({ icon, title, subtitle, features, delay = 0 }: FeatureCo
         {features.map((feat) => (
           <div key={feat} style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem" }}>
             <CheckIcon />
-            <span style={{ color: "rgba(255,255,255,0.70)", fontSize: "0.9rem", lineHeight: 1.5 }}>
+            <span style={{ color: C.textMid, fontSize: "0.9rem", lineHeight: 1.5 }}>
               {feat}
             </span>
           </div>
@@ -101,9 +102,7 @@ function FeatureColumn({ icon, title, subtitle, features, delay = 0 }: FeatureCo
 
 export function FeatureReseau() {
   return (
-    <section
-      style={{ background: C.bg, padding: "7rem 1.5rem" }}
-    >
+    <section style={{ background: C.bg, padding: "7rem 1.5rem" }}>
       <div style={{ maxWidth: 1280, margin: "0 auto" }}>
         {/* Header */}
         <motion.div
@@ -190,12 +189,11 @@ export function FeatureReseau() {
               overflow: "hidden",
             }}
           >
-            {/* Background glow */}
             <div
               style={{
                 position: "absolute",
                 inset: 0,
-                background: "radial-gradient(ellipse at center, rgba(201,169,110,0.04) 0%, transparent 70%)",
+                background: "radial-gradient(ellipse at center, rgba(232,96,44,0.04) 0%, transparent 70%)",
                 pointerEvents: "none",
               }}
             />
@@ -224,9 +222,9 @@ export function FeatureReseau() {
                       width: 8,
                       height: 8,
                       borderRadius: "50%",
-                      background: C.gold,
+                      background: C.orange,
                       opacity: 0.7 - i * 0.08,
-                      boxShadow: `0 0 8px ${C.gold}`,
+                      boxShadow: `0 0 8px ${C.orange}`,
                     }}
                   />
                   <span style={{ color: C.textMid, fontSize: "0.875rem" }}>{canton}</span>

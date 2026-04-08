@@ -4,13 +4,15 @@ import { motion } from "framer-motion"
 import { POUR_QUI } from "@/lib/data/landing"
 
 const C = {
-  surface: "#1A1208",
-  border: "rgba(26,18,8,0.08)",
+  bg: "#FAF8F4",
+  surface: "#FFFFFF",
+  border: "rgba(40,18,8,0.08)",
   text: "#1A1208",
   textMid: "rgba(26,18,8,0.60)",
   textMuted: "rgba(26,18,8,0.38)",
-  gold: "#E8602C",
-  goldBg: "rgba(232,96,44,0.08)",
+  orange: "#E8602C",
+  orangeBg: "rgba(232,96,44,0.08)",
+  orangeBorder: "rgba(232,96,44,0.22)",
 } as const
 
 const containerVariants = {
@@ -27,10 +29,10 @@ export function PourQui() {
   return (
     <section
       id="pour-qui"
-      style={{ background: "#FAF8F4", padding: "7rem 1.5rem" }}
+      style={{ background: C.bg, padding: "7rem 1.5rem" }}
     >
       <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-        {/* Labels */}
+        {/* Label */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -93,9 +95,10 @@ export function PourQui() {
                 position: "relative",
                 cursor: "default",
                 transition: "border-color 0.25s",
+                boxShadow: "0 2px 12px rgba(40,18,8,0.05)",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "rgba(232,96,44,0.20)"
+                e.currentTarget.style.borderColor = C.orangeBorder
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = C.border

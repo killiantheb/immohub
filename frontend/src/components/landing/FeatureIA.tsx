@@ -5,15 +5,16 @@ import { IA_QUESTIONS } from "@/lib/data/landing"
 import Link from "next/link"
 
 const C = {
-  bg: "#1A1208",
-  surface2: "#1A1A1A",
-  border: "rgba(26,18,8,0.08)",
+  bg: "#FAF8F4",
+  surface: "#FFFFFF",
+  surface2: "#F2EDE5",
+  border: "rgba(40,18,8,0.08)",
   text: "#1A1208",
   textMid: "rgba(26,18,8,0.65)",
   textMuted: "rgba(26,18,8,0.38)",
-  gold: "#E8602C",
-  goldBg: "rgba(232,96,44,0.08)",
-  goldBorder: "rgba(232,96,44,0.20)",
+  orange: "#E8602C",
+  orangeBg: "rgba(232,96,44,0.08)",
+  orangeBorder: "rgba(232,96,44,0.22)",
 } as const
 
 const containerVariants = {
@@ -28,9 +29,7 @@ const bubbleVariants = {
 
 export function FeatureIA() {
   return (
-    <section
-      style={{ background: C.bg, padding: "7rem 1.5rem" }}
-    >
+    <section style={{ background: C.surface2, padding: "7rem 1.5rem" }}>
       <div style={{ maxWidth: 860, margin: "0 auto", textAlign: "center" }}>
         {/* Label */}
         <motion.div
@@ -108,7 +107,7 @@ export function FeatureIA() {
               key={q}
               variants={bubbleVariants}
               style={{
-                background: C.surface2,
+                background: C.surface,
                 border: `1px solid ${C.border}`,
                 borderRadius: "100px",
                 padding: "0.625rem 1.25rem",
@@ -117,16 +116,16 @@ export function FeatureIA() {
                 gap: "0.5rem",
                 cursor: "default",
                 transition: "border-color 0.2s, background 0.2s",
+                boxShadow: "0 1px 4px rgba(40,18,8,0.06)",
               }}
               whileHover={{
                 borderColor: "rgba(232,96,44,0.28)",
-                backgroundColor: "rgba(201,169,110,0.06)",
               }}
             >
               <span style={{ color: C.orange, fontSize: "0.7rem", flexShrink: 0 }}>✦</span>
               <span
                 style={{
-                  color: "rgba(255,255,255,0.70)",
+                  color: C.textMid,
                   fontSize: "0.875rem",
                   whiteSpace: "nowrap",
                 }}

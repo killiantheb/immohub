@@ -4,15 +4,16 @@ import { motion } from "framer-motion"
 import { FEATURES_BIENS } from "@/lib/data/landing"
 
 const C = {
-  bg: "#FAF8F4",
-  surface: "#1A1208",
-  surface2: "#F2EDE5",
-  border: "rgba(26,18,8,0.08)",
+  bg: "#F2EDE5",
+  surface: "#FFFFFF",
+  surface2: "#FAF8F4",
+  border: "rgba(40,18,8,0.08)",
   text: "#1A1208",
   textMid: "rgba(26,18,8,0.65)",
   textMuted: "rgba(26,18,8,0.38)",
-  gold: "#E8602C",
-  goldBorder: "rgba(232,96,44,0.20)",
+  orange: "#E8602C",
+  orangeBg: "rgba(232,96,44,0.08)",
+  orangeBorder: "rgba(232,96,44,0.22)",
 } as const
 
 const MOCK_BIENS = [
@@ -26,7 +27,7 @@ export function FeatureBiens() {
   return (
     <section
       id="features"
-      style={{ background: C.surface, padding: "7rem 1.5rem" }}
+      style={{ background: C.bg, padding: "7rem 1.5rem" }}
     >
       <div
         style={{
@@ -48,7 +49,7 @@ export function FeatureBiens() {
         >
           <span
             style={{
-              color: C.gold,
+              color: C.orange,
               fontSize: "0.75rem",
               fontWeight: 500,
               letterSpacing: "0.22em",
@@ -71,7 +72,7 @@ export function FeatureBiens() {
             }}
           >
             Tous vos biens.{" "}
-            <span style={{ color: C.gold }}>Un seul endroit.</span>
+            <span style={{ color: C.orange }}>Un seul endroit.</span>
           </h2>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
@@ -83,14 +84,14 @@ export function FeatureBiens() {
                     width: 32,
                     height: 32,
                     borderRadius: "50%",
-                    background: "rgba(232,96,44,0.08)",
-                    border: `1px solid ${C.goldBorder}`,
+                    background: C.orangeBg,
+                    border: `1px solid ${C.orangeBorder}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     fontSize: "0.65rem",
                     fontWeight: 700,
-                    color: C.gold,
+                    color: C.orange,
                     letterSpacing: "0.05em",
                     marginTop: "0.1rem",
                   }}
@@ -132,11 +133,11 @@ export function FeatureBiens() {
         >
           <div
             style={{
-              background: C.surface2,
+              background: C.surface,
               border: `1px solid ${C.border}`,
               borderRadius: "1.25rem",
               overflow: "hidden",
-              boxShadow: "0 30px 80px rgba(0,0,0,0.6)",
+              boxShadow: "0 20px 60px rgba(40,18,8,0.10), 0 2px 8px rgba(40,18,8,0.06)",
             }}
           >
             {/* Header */}
@@ -147,6 +148,7 @@ export function FeatureBiens() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
+                background: C.surface2,
               }}
             >
               <span style={{ color: C.textMuted, fontSize: "0.75rem", fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase" }}>
@@ -154,13 +156,13 @@ export function FeatureBiens() {
               </span>
               <span
                 style={{
-                  background: "rgba(201,169,110,0.12)",
-                  color: C.gold,
+                  background: C.orangeBg,
+                  color: C.orange,
                   fontSize: "0.65rem",
                   fontWeight: 600,
                   padding: "0.25rem 0.625rem",
                   borderRadius: "100px",
-                  border: `1px solid ${C.goldBorder}`,
+                  border: `1px solid ${C.orangeBorder}`,
                 }}
               >
                 4 biens
@@ -190,7 +192,7 @@ export function FeatureBiens() {
                   <div style={{ color: C.textMuted, fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.25rem" }}>
                     {s.label}
                   </div>
-                  <div style={{ color: C.gold, fontSize: "0.9rem", fontWeight: 700 }}>{s.val}</div>
+                  <div style={{ color: C.orange, fontSize: "0.9rem", fontWeight: 700 }}>{s.val}</div>
                 </div>
               ))}
             </div>
@@ -207,8 +209,8 @@ export function FeatureBiens() {
                     padding: "0.75rem 0.875rem",
                     borderRadius: "0.625rem",
                     marginBottom: "0.375rem",
-                    background: "rgba(26,18,8,0.025)",
-                    border: "1px solid rgba(255,255,255,0.035)",
+                    background: C.surface2,
+                    border: `1px solid ${C.border}`,
                     gap: "0.75rem",
                   }}
                 >
@@ -232,7 +234,7 @@ export function FeatureBiens() {
                   >
                     {bien.statut}
                   </span>
-                  <span style={{ color: C.gold, fontSize: "0.75rem", fontWeight: 700, flexShrink: 0 }}>
+                  <span style={{ color: C.orange, fontSize: "0.75rem", fontWeight: 700, flexShrink: 0 }}>
                     CHF {bien.loyer}
                   </span>
                 </div>
@@ -244,15 +246,15 @@ export function FeatureBiens() {
               style={{
                 margin: "0 0.75rem 0.75rem",
                 padding: "0.75rem 1rem",
-                background: "rgba(201,169,110,0.06)",
+                background: C.orangeBg,
                 borderRadius: "0.75rem",
-                border: `1px solid ${C.goldBorder}`,
+                border: `1px solid ${C.orangeBorder}`,
                 display: "flex",
                 alignItems: "center",
                 gap: "0.5rem",
               }}
             >
-              <span style={{ color: C.gold, fontSize: "0.8rem" }}>✦</span>
+              <span style={{ color: C.orange, fontSize: "0.8rem" }}>✦</span>
               <span style={{ color: C.textMuted, fontSize: "0.7rem" }}>
                 &ldquo;Relance automatique envoyée pour Chemin des Fleurs 4 — 3 jours de retard&rdquo;
               </span>

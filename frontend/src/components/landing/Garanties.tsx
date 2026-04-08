@@ -2,23 +2,25 @@ import { GARANTIES } from "@/lib/data/landing"
 import { Shield, FileText, CalendarCheck, Headphones } from "lucide-react"
 
 const C = {
-  border: "rgba(26,18,8,0.06)",
+  bg: "#F2EDE5",
+  border: "rgba(40,18,8,0.06)",
   text: "#1A1208",
-  gold: "#E8602C",
+  textMid: "rgba(26,18,8,0.65)",
+  orange: "#E8602C",
 } as const
 
 const ICONS: Record<string, React.ReactNode> = {
-  shield: <Shield size={20} color={C.gold} strokeWidth={1.5} />,
-  file: <FileText size={20} color={C.gold} strokeWidth={1.5} />,
-  calendar: <CalendarCheck size={20} color={C.gold} strokeWidth={1.5} />,
-  headphones: <Headphones size={20} color={C.gold} strokeWidth={1.5} />,
+  shield: <Shield size={20} color={C.orange} strokeWidth={1.5} />,
+  file: <FileText size={20} color={C.orange} strokeWidth={1.5} />,
+  calendar: <CalendarCheck size={20} color={C.orange} strokeWidth={1.5} />,
+  headphones: <Headphones size={20} color={C.orange} strokeWidth={1.5} />,
 }
 
 export function Garanties() {
   return (
     <div
       style={{
-        background: "#1A1208",
+        background: C.bg,
         borderTop: `1px solid ${C.border}`,
         borderBottom: `1px solid ${C.border}`,
         padding: "2.5rem 1.5rem",
