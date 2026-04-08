@@ -3,6 +3,28 @@ import { useState, useEffect, useRef } from 'react'
 import { CathySphere } from '@/components/CathySphere'
 import { baseURL } from '@/lib/api'
 
+const S = {
+  bg: "var(--althy-bg)",
+  surface: "var(--althy-surface)",
+  surface2: "var(--althy-surface-2)",
+  border: "var(--althy-border)",
+  text: "var(--althy-text)",
+  text2: "var(--althy-text-2)",
+  text3: "var(--althy-text-3)",
+  orange: "var(--althy-orange)",
+  orangeBg: "var(--althy-orange-bg)",
+  green: "var(--althy-green)",
+  greenBg: "var(--althy-green-bg)",
+  red: "var(--althy-red)",
+  redBg: "var(--althy-red-bg)",
+  amber: "var(--althy-amber)",
+  amberBg: "var(--althy-amber-bg)",
+  blue: "var(--althy-blue)",
+  blueBg: "var(--althy-blue-bg)",
+  shadow: "var(--althy-shadow)",
+  shadowMd: "var(--althy-shadow-md)",
+} as const;
+
 // SpeechRecognition n'est pas exposé comme type global dans tous les lib.dom — on le déclare ici
 interface ISpeechRecognition extends EventTarget {
   lang: string
@@ -29,12 +51,12 @@ interface Props {
   onComplete: (role: string, data: Record<string, unknown>) => void
 }
 
-const ROLES: { id: Role; emoji: string; label: string; desc: string }[] = [
-  { id: 'owner',   emoji: '🏠', label: 'Propriétaire',        desc: 'Je possède des biens' },
-  { id: 'agency',  emoji: '🏢', label: 'Agence immobilière',  desc: 'Je gère des portefeuilles' },
-  { id: 'company', emoji: '🔧', label: 'Artisan / Entreprise', desc: 'Je fais des travaux' },
-  { id: 'opener',  emoji: '🗝️', label: 'Ouvreur de porte',    desc: 'Je fais des visites' },
-  { id: 'tenant',  emoji: '🧑‍💼', label: 'Locataire',           desc: 'Je loue un logement' },
+const ROLES: { id: Role; label: string; desc: string }[] = [
+  { id: 'owner',   label: 'Propriétaire',        desc: 'Je possède des biens' },
+  { id: 'agency',  label: 'Agence immobilière',   desc: 'Je gère des portefeuilles' },
+  { id: 'company', label: 'Artisan / Entreprise',  desc: 'Je fais des travaux' },
+  { id: 'opener',  label: 'Ouvreur de porte',     desc: 'Je fais des visites' },
+  { id: 'tenant',  label: 'Locataire',            desc: 'Je loue un logement' },
 ]
 
 export function SmartOnboarding({ onComplete }: Props) {
@@ -158,7 +180,7 @@ export function SmartOnboarding({ onComplete }: Props) {
 
   return (
     <div style={overlay}>
-      <div style={card}>
+      <div style={{ background: S.bg, borderRadius: '20px', padding: '1.8rem', width: '100%', maxWidth: '420px', fontFamily: 'var(--font-sans)', maxHeight: '92vh', overflowY: 'auto' }}>
 
         {/* Bulle Althy */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1.4rem' }}>
@@ -169,36 +191,34 @@ export function SmartOnboarding({ onComplete }: Props) {
             `}</style>
             <CathySphere size={100} speaking={speaking} />
           </div>
-          <span style={{ fontFamily: 'var(--font-serif)', fontSize: '10px', letterSpacing: '6px', color: '#A05C28', textTransform: 'uppercase', marginTop: '0.6rem' }}>Althy</span>
+          <span style={{ fontFamily: 'var(--font-serif)', fontSize: '10px', letterSpacing: '6px', color: S.orange, textTransform: 'uppercase', marginTop: '0.6rem' }}>Althy</span>
         </div>
 
         {/* Bulle de status */}
-        <div style={{ background: '#fff', borderRadius: '12px', padding: '12px 16px', border: '0.5px solid rgba(160,92,40,0.12)', marginBottom: '1.4rem', textAlign: 'center' }}>
-          <p style={{ fontSize: '13px', color: '#1a1a1a', lineHeight: 1.5, margin: 0 }}>{status}</p>
+        <div style={{ background: S.surface, borderRadius: '12px', padding: '12px 16px', border: `0.5px solid ${S.border}`, marginBottom: '1.4rem', textAlign: 'center' }}>
+          <p style={{ fontSize: '13px', color: S.text, lineHeight: 1.5, margin: 0 }}>{status}</p>
         </div>
 
         {/* Barre de progression */}
         {mode === 'searching' && (
           <div style={{ marginBottom: '1rem' }}>
-            <div style={{ height: '3px', background: 'rgba(212,96,26,0.12)', borderRadius: '2px' }}>
-              <div style={{ height: '3px', background: '#D4601A', borderRadius: '2px', width: `${progress}%`, transition: 'width 0.6s ease' }} />
+            <div style={{ height: '3px', background: S.surface2, borderRadius: '2px' }}>
+              <div style={{ height: '3px', background: S.orange, borderRadius: '2px', width: `${progress}%`, transition: 'width 0.6s ease' }} />
             </div>
-            <p style={{ fontSize: '10px', color: 'rgba(160,92,40,0.4)', marginTop: '5px', textAlign: 'center', margin: '5px 0 0' }}>{progress}%</p>
+            <p style={{ fontSize: '10px', color: S.text3, marginTop: '5px', textAlign: 'center', margin: '5px 0 0' }}>{progress}%</p>
           </div>
         )}
 
         {/* ── MODE CHOICE ── */}
         {mode === 'choice' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <button onClick={() => { setMode('buttons'); setStatus('Qui êtes-vous ?') }} style={optionBtn}>
-              <span style={{ fontSize: '24px', display: 'block', marginBottom: '6px' }}>☰</span>
-              <strong style={{ fontSize: '13px', color: '#1a1a1a', display: 'block' }}>Boutons</strong>
-              <span style={{ fontSize: '11px', color: 'rgba(160,92,40,0.6)' }}>Je préfère cliquer</span>
+            <button onClick={() => { setMode('buttons'); setStatus('Qui êtes-vous ?') }} style={{ padding: '16px 12px', borderRadius: '12px', border: `0.5px solid ${S.border}`, background: S.surface, cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s' }}>
+              <strong style={{ fontSize: '13px', color: S.text, display: 'block', marginBottom: '4px' }}>Boutons</strong>
+              <span style={{ fontSize: '11px', color: S.text3 }}>Je préfère cliquer</span>
             </button>
-            <button onClick={() => { setMode('voice'); setStatus('Dites-moi qui vous êtes') }} style={optionBtn}>
-              <span style={{ fontSize: '24px', display: 'block', marginBottom: '6px' }}>🎤</span>
-              <strong style={{ fontSize: '13px', color: '#1a1a1a', display: 'block' }}>Oral</strong>
-              <span style={{ fontSize: '11px', color: 'rgba(160,92,40,0.6)' }}>Je préfère parler</span>
+            <button onClick={() => { setMode('voice'); setStatus('Dites-moi qui vous êtes') }} style={{ padding: '16px 12px', borderRadius: '12px', border: `0.5px solid ${S.border}`, background: S.surface, cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s' }}>
+              <strong style={{ fontSize: '13px', color: S.text, display: 'block', marginBottom: '4px' }}>Oral</strong>
+              <span style={{ fontSize: '11px', color: S.text3 }}>Je préfère parler</span>
             </button>
           </div>
         )}
@@ -210,56 +230,59 @@ export function SmartOnboarding({ onComplete }: Props) {
               <button
                 key={r.id}
                 onClick={() => { setRole(r.id); setMode('form'); setStatus(`Parfait — dites-moi en plus sur votre ${r.label.toLowerCase()}`) }}
-                style={roleBtn}
+                style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '12px 14px', borderRadius: '10px', border: `0.5px solid ${S.border}`, background: S.surface, cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', width: '100%' }}
               >
-                <span style={{ fontSize: '20px' }}>{r.emoji}</span>
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 500, color: '#1a1a1a' }}>{r.label}</div>
-                  <div style={{ fontSize: '11px', color: 'rgba(160,92,40,0.5)' }}>{r.desc}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 500, color: S.text }}>{r.label}</div>
+                  <div style={{ fontSize: '11px', color: S.text3 }}>{r.desc}</div>
                 </div>
               </button>
             ))}
-            <button onClick={() => setMode('choice')} style={backBtn}>← Retour</button>
+            <button onClick={() => setMode('choice')} style={{ padding: '10px 16px', borderRadius: '24px', border: `0.5px solid ${S.border}`, background: 'transparent', color: S.text2, fontFamily: 'inherit', fontSize: '12px', cursor: 'pointer' }}>← Retour</button>
           </div>
         )}
 
         {/* ── MODE FORM ── */}
         {mode === 'form' && role && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ padding: '8px 12px', background: 'rgba(212,96,26,0.06)', borderRadius: '8px', border: '0.5px solid rgba(212,96,26,0.15)', fontSize: '12px', color: '#D4601A' }}>
-              {ROLES.find(r => r.id === role)?.emoji} {ROLES.find(r => r.id === role)?.label}
+            <div style={{ padding: '8px 12px', background: S.orangeBg, borderRadius: '8px', border: `0.5px solid ${S.orange}`, fontSize: '12px', color: S.orange }}>
+              {ROLES.find(r => r.id === role)?.label}
             </div>
 
             <input
               placeholder={role === 'agency' ? "Nom de l'agence *" : role === 'company' ? "Nom de l'entreprise *" : 'Votre nom complet *'}
               value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              style={inp}
+              style={{ width: '100%', padding: '11px 14px', border: `0.5px solid ${S.border}`, borderRadius: '8px', background: S.surface, fontFamily: 'inherit', fontSize: '13px', color: S.text, outline: 'none', boxSizing: 'border-box' }}
             />
 
             {(role === 'agency' || role === 'company') && (
               <>
-                <input placeholder='Site web — ex: www.votreagence.ch' value={form.website} onChange={e => setForm(f => ({ ...f, website: e.target.value }))} style={inp} />
-                <input placeholder='Numéro UID / TVA (optionnel) — CHE-xxx.xxx.xxx' value={form.uid} onChange={e => setForm(f => ({ ...f, uid: e.target.value }))} style={inp} />
+                <input placeholder='Site web — ex: www.votreagence.ch' value={form.website} onChange={e => setForm(f => ({ ...f, website: e.target.value }))} style={{ width: '100%', padding: '11px 14px', border: `0.5px solid ${S.border}`, borderRadius: '8px', background: S.surface, fontFamily: 'inherit', fontSize: '13px', color: S.text, outline: 'none', boxSizing: 'border-box' }} />
+                <input placeholder='Numéro UID / TVA (optionnel) — CHE-xxx.xxx.xxx' value={form.uid} onChange={e => setForm(f => ({ ...f, uid: e.target.value }))} style={{ width: '100%', padding: '11px 14px', border: `0.5px solid ${S.border}`, borderRadius: '8px', background: S.surface, fontFamily: 'inherit', fontSize: '13px', color: S.text, outline: 'none', boxSizing: 'border-box' }} />
               </>
             )}
 
-            <input placeholder='Ville / Canton — ex: Genève, Lausanne, Zurich' value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} style={inp} />
+            <input placeholder='Ville / Canton — ex: Genève, Lausanne, Zurich' value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} style={{ width: '100%', padding: '11px 14px', border: `0.5px solid ${S.border}`, borderRadius: '8px', background: S.surface, fontFamily: 'inherit', fontSize: '13px', color: S.text, outline: 'none', boxSizing: 'border-box' }} />
 
             {role === 'owner' && (
-              <input placeholder='Email (optionnel)' value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} style={inp} />
+              <input placeholder='Email (optionnel)' value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} style={{ width: '100%', padding: '11px 14px', border: `0.5px solid ${S.border}`, borderRadius: '8px', background: S.surface, fontFamily: 'inherit', fontSize: '13px', color: S.text, outline: 'none', boxSizing: 'border-box' }} />
             )}
             {role === 'opener' && (
-              <input placeholder='Téléphone (optionnel)' value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} style={inp} />
+              <input placeholder='Téléphone (optionnel)' value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} style={{ width: '100%', padding: '11px 14px', border: `0.5px solid ${S.border}`, borderRadius: '8px', background: S.surface, fontFamily: 'inherit', fontSize: '13px', color: S.text, outline: 'none', boxSizing: 'border-box' }} />
             )}
 
-            <p style={{ fontSize: '10px', color: 'rgba(160,92,40,0.4)', textAlign: 'center', margin: 0 }}>
+            <p style={{ fontSize: '10px', color: S.text3, textAlign: 'center', margin: 0 }}>
               Althy cherche le reste automatiquement sur le web
             </p>
 
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => { setRole(null); setMode('buttons') }} style={backBtn}>← Retour</button>
-              <button onClick={submitForm} disabled={!form.name.trim()} style={primaryBtn(!form.name.trim())}>
+              <button onClick={() => { setRole(null); setMode('buttons') }} style={{ padding: '10px 16px', borderRadius: '24px', border: `0.5px solid ${S.border}`, background: 'transparent', color: S.text2, fontFamily: 'inherit', fontSize: '12px', cursor: 'pointer' }}>← Retour</button>
+              <button
+                onClick={submitForm}
+                disabled={!form.name.trim()}
+                style={{ flex: 1, padding: '12px', borderRadius: '24px', background: !form.name.trim() ? S.text3 : S.orange, border: 'none', color: '#fff', fontFamily: 'inherit', fontSize: '12px', letterSpacing: '1px', textTransform: 'uppercase', cursor: !form.name.trim() ? 'not-allowed' : 'pointer' }}
+              >
                 Althy cherche tout →
               </button>
             </div>
@@ -273,14 +296,14 @@ export function SmartOnboarding({ onComplete }: Props) {
               onClick={micActive ? stopMic : startMic}
               style={{
                 width: '64px', height: '64px', borderRadius: '50%',
-                border: `2px solid ${micActive ? '#D4601A' : 'rgba(212,96,26,0.25)'}`,
-                background: micActive ? 'rgba(212,96,26,0.1)' : 'transparent',
+                border: `2px solid ${micActive ? S.orange : S.border}`,
+                background: micActive ? S.orangeBg : 'transparent',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', transition: 'all 0.25s',
-                boxShadow: micActive ? '0 0 0 10px rgba(212,96,26,0.07)' : 'none',
+                boxShadow: micActive ? `0 0 0 10px ${S.orangeBg}` : 'none',
               }}
             >
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={micActive ? '#D4601A' : 'rgba(160,92,40,0.6)'} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={micActive ? S.orange : S.text3} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="9" y="2" width="6" height="12" rx="3"/>
                 <path d="M5 10a7 7 0 0014 0"/>
                 <line x1="12" y1="19" x2="12" y2="22"/>
@@ -288,18 +311,18 @@ export function SmartOnboarding({ onComplete }: Props) {
               </svg>
             </button>
 
-            <p style={{ fontSize: '11px', color: 'rgba(160,92,40,0.4)', letterSpacing: '0.5px', margin: 0 }}>
+            <p style={{ fontSize: '11px', color: S.text3, letterSpacing: '0.5px', margin: 0 }}>
               {micActive ? 'Je vous écoute — cliquez pour arrêter' : 'Appuyez pour parler'}
             </p>
 
-            <p style={{ fontSize: '11px', color: 'rgba(160,92,40,0.4)', textAlign: 'center', fontStyle: 'italic', margin: 0 }}>
+            <p style={{ fontSize: '11px', color: S.text3, textAlign: 'center', fontStyle: 'italic', margin: 0 }}>
               Ex: &quot;Je suis Marc, directeur de l&apos;agence Immo Léman à Genève&quot;
             </p>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
-              <div style={{ flex: 1, height: '0.5px', background: 'rgba(160,92,40,0.15)' }} />
-              <span style={{ fontSize: '10px', color: 'rgba(160,92,40,0.35)', letterSpacing: '1px' }}>ou tapez</span>
-              <div style={{ flex: 1, height: '0.5px', background: 'rgba(160,92,40,0.15)' }} />
+              <div style={{ flex: 1, height: '0.5px', background: S.border }} />
+              <span style={{ fontSize: '10px', color: S.text3, letterSpacing: '1px' }}>ou tapez</span>
+              <div style={{ flex: 1, height: '0.5px', background: S.border }} />
             </div>
 
             <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
@@ -308,11 +331,11 @@ export function SmartOnboarding({ onComplete }: Props) {
                 onChange={e => setVoiceInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && submitVoice()}
                 placeholder="Décrivez-vous en quelques mots…"
-                style={{ ...inp, flex: 1 }}
+                style={{ flex: 1, padding: '11px 14px', border: `0.5px solid ${S.border}`, borderRadius: '8px', background: S.surface, fontFamily: 'inherit', fontSize: '13px', color: S.text, outline: 'none', boxSizing: 'border-box' }}
               />
               <button
                 onClick={submitVoice}
-                style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#D4601A', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+                style={{ width: '44px', height: '44px', borderRadius: '50%', background: S.orange, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round">
                   <line x1="22" y1="2" x2="11" y2="13"/>
@@ -321,7 +344,7 @@ export function SmartOnboarding({ onComplete }: Props) {
               </button>
             </div>
 
-            <button onClick={() => setMode('choice')} style={backBtn}>← Retour</button>
+            <button onClick={() => setMode('choice')} style={{ padding: '10px 16px', borderRadius: '24px', border: `0.5px solid ${S.border}`, background: 'transparent', color: S.text2, fontFamily: 'inherit', fontSize: '12px', cursor: 'pointer' }}>← Retour</button>
           </div>
         )}
 
@@ -329,12 +352,12 @@ export function SmartOnboarding({ onComplete }: Props) {
         {mode === 'review' && result && (
           <div>
             {role && (
-              <div style={{ display: 'inline-block', padding: '4px 12px', borderRadius: '20px', background: 'rgba(212,96,26,0.08)', border: '0.5px solid rgba(212,96,26,0.2)', fontSize: '11px', color: '#D4601A', marginBottom: '1rem' }}>
-                {ROLES.find(r => r.id === role)?.emoji} {ROLES.find(r => r.id === role)?.label}
+              <div style={{ display: 'inline-block', padding: '4px 12px', borderRadius: '20px', background: S.orangeBg, border: `0.5px solid ${S.orange}`, fontSize: '11px', color: S.orange, marginBottom: '1rem' }}>
+                {ROLES.find(r => r.id === role)?.label}
               </div>
             )}
 
-            <div style={{ background: '#fff', borderRadius: '10px', padding: '10px', border: '0.5px solid rgba(160,92,40,0.1)', maxHeight: '220px', overflowY: 'auto', marginBottom: '1rem' }}>
+            <div style={{ background: S.surface, borderRadius: '10px', padding: '10px', border: `0.5px solid ${S.border}`, maxHeight: '220px', overflowY: 'auto', marginBottom: '1rem' }}>
               {Object.entries(result)
                 .filter(([k, v]) =>
                   !['notes', 'confidence_score', 'sources_found'].includes(k) &&
@@ -342,11 +365,11 @@ export function SmartOnboarding({ onComplete }: Props) {
                   !(Array.isArray(v) && v.length === 0)
                 )
                 .map(([key, val]) => (
-                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '0.5px solid rgba(160,92,40,0.06)', gap: '8px' }}>
-                    <span style={{ fontSize: '10px', color: 'rgba(160,92,40,0.45)', textTransform: 'uppercase', letterSpacing: '0.3px', flexShrink: 0 }}>
+                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: `0.5px solid ${S.border}`, gap: '8px' }}>
+                    <span style={{ fontSize: '10px', color: S.text3, textTransform: 'uppercase', letterSpacing: '0.3px', flexShrink: 0 }}>
                       {key.replace(/_/g, ' ')}
                     </span>
-                    <span style={{ fontSize: '12px', color: '#1a1a1a', fontWeight: 500, textAlign: 'right', wordBreak: 'break-word' }}>
+                    <span style={{ fontSize: '12px', color: S.text, fontWeight: 500, textAlign: 'right', wordBreak: 'break-word' }}>
                       {Array.isArray(val) ? (val as unknown[]).map(String).join(', ') : String(val)}
                     </span>
                   </div>
@@ -355,7 +378,7 @@ export function SmartOnboarding({ onComplete }: Props) {
             </div>
 
             {Boolean(result.notes) && (
-              <p style={{ fontSize: '10px', color: 'rgba(160,92,40,0.4)', marginBottom: '1rem', fontStyle: 'italic' }}>
+              <p style={{ fontSize: '10px', color: S.text3, marginBottom: '1rem', fontStyle: 'italic' }}>
                 {String(result.notes)}
               </p>
             )}
@@ -363,11 +386,16 @@ export function SmartOnboarding({ onComplete }: Props) {
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
                 onClick={() => { setMode('choice'); setResult(null); setRole(null); setStatus('Comment voulez-vous commencer ?') }}
-                style={backBtn}
+                style={{ padding: '10px 16px', borderRadius: '24px', border: `0.5px solid ${S.border}`, background: 'transparent', color: S.text2, fontFamily: 'inherit', fontSize: '12px', cursor: 'pointer' }}
               >
                 Recommencer
               </button>
-              <button onClick={() => onComplete(role!, result)} style={primaryBtn(false)}>Valider →</button>
+              <button
+                onClick={() => onComplete(role!, result)}
+                style={{ flex: 1, padding: '12px', borderRadius: '24px', background: S.orange, border: 'none', color: '#fff', fontFamily: 'inherit', fontSize: '12px', letterSpacing: '1px', textTransform: 'uppercase', cursor: 'pointer' }}
+              >
+                Valider →
+              </button>
             </div>
           </div>
         )}
@@ -383,38 +411,4 @@ const overlay: React.CSSProperties = {
   position: 'fixed', inset: 0, background: 'rgba(28,15,6,0.7)',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   zIndex: 1000, padding: '1rem',
-}
-const card: React.CSSProperties = {
-  background: '#F5EDE0', borderRadius: '20px', padding: '1.8rem',
-  width: '100%', maxWidth: '420px', fontFamily: 'var(--font-sans)',
-  maxHeight: '92vh', overflowY: 'auto',
-}
-const optionBtn: React.CSSProperties = {
-  padding: '16px 12px', borderRadius: '12px',
-  border: '0.5px solid rgba(160,92,40,0.2)', background: '#fff',
-  cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s',
-}
-const roleBtn: React.CSSProperties = {
-  display: 'flex', gap: '12px', alignItems: 'center',
-  padding: '12px 14px', borderRadius: '10px',
-  border: '0.5px solid rgba(160,92,40,0.15)', background: '#fff',
-  cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', width: '100%',
-}
-const inp: React.CSSProperties = {
-  width: '100%', padding: '11px 14px',
-  border: '0.5px solid rgba(160,92,40,0.2)', borderRadius: '8px',
-  background: '#fff', fontFamily: 'inherit', fontSize: '13px',
-  color: '#1a1a1a', outline: 'none', boxSizing: 'border-box',
-}
-const primaryBtn = (disabled: boolean): React.CSSProperties => ({
-  flex: 1, padding: '12px', borderRadius: '24px',
-  background: disabled ? '#ccc' : '#D4601A', border: 'none',
-  color: '#fff', fontFamily: 'inherit', fontSize: '12px',
-  letterSpacing: '1px', textTransform: 'uppercase',
-  cursor: disabled ? 'not-allowed' : 'pointer',
-})
-const backBtn: React.CSSProperties = {
-  padding: '10px 16px', borderRadius: '24px',
-  border: '0.5px solid rgba(160,92,40,0.2)', background: 'transparent',
-  color: '#A05C28', fontFamily: 'inherit', fontSize: '12px', cursor: 'pointer',
 }

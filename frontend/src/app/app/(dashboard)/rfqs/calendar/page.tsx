@@ -6,6 +6,28 @@ import { ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import { useRFQs } from "@/lib/hooks/useRFQ";
 import type { RFQ } from "@/lib/types";
 
+const S = {
+  bg: "var(--althy-bg)",
+  surface: "var(--althy-surface)",
+  surface2: "var(--althy-surface-2)",
+  border: "var(--althy-border)",
+  text: "var(--althy-text)",
+  text2: "var(--althy-text-2)",
+  text3: "var(--althy-text-3)",
+  orange: "var(--althy-orange)",
+  orangeBg: "var(--althy-orange-bg)",
+  green: "var(--althy-green)",
+  greenBg: "var(--althy-green-bg)",
+  red: "var(--althy-red)",
+  redBg: "var(--althy-red-bg)",
+  amber: "var(--althy-amber)",
+  amberBg: "var(--althy-amber-bg)",
+  blue: "var(--althy-blue)",
+  blueBg: "var(--althy-blue-bg)",
+  shadow: "var(--althy-shadow)",
+  shadowMd: "var(--althy-shadow-md)",
+} as const;
+
 const CATEGORY_LABELS: Record<string, string> = {
   plumbing: "Plomberie", electricity: "Électricité", cleaning: "Nettoyage",
   painting: "Peinture", locksmith: "Serrurerie", roofing: "Toiture",
@@ -13,17 +35,19 @@ const CATEGORY_LABELS: Record<string, string> = {
   renovation: "Rénovation", other: "Autre",
 };
 
-const URGENCY_DOT: Record<string, string> = {
-  low: "bg-green-400", medium: "bg-blue-400",
-  high: "bg-orange-400", emergency: "bg-red-500",
+const URGENCY_DOT_COLOR: Record<string, string> = {
+  low: S.green,
+  medium: S.blue,
+  high: S.orange,
+  emergency: S.red,
 };
 
-const STATUS_BG: Record<string, string> = {
-  draft: "bg-gray-100 text-gray-600",
-  published: "bg-blue-50 text-blue-700",
-  in_progress: "bg-yellow-50 text-yellow-700",
-  completed: "bg-green-50 text-green-700",
-  accepted: "bg-purple-50 text-purple-700",
+const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
+  draft:       { bg: S.surface2, color: S.text3 },
+  published:   { bg: S.blueBg,   color: S.blue },
+  in_progress: { bg: S.amberBg,  color: S.amber },
+  completed:   { bg: S.greenBg,  color: S.green },
+  accepted:    { bg: S.orangeBg, color: S.orange },
 };
 
 const DAYS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -88,12 +112,14 @@ export default function CalendarPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/app/rfqs" className="text-gray-400 hover:text-gray-600">
+        <Link href="/app/rfqs" style={{ color: S.text3 }}>
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Calendrier des interventions</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontWeight: 400, fontSize: 28, color: S.text }}>
+            Calendrier des interventions
+          </h1>
+          <p style={{ fontSize: 14, color: S.text3, marginTop: 2 }}>
             {Object.values(byDay).flat().length} intervention{Object.values(byDay).flat().length !== 1 ? "s" : ""} planifiée{Object.values(byDay).flat().length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -101,24 +127,38 @@ export default function CalendarPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Calendar */}
-        <div className="lg:col-span-2 rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+        <div
+          className="lg:col-span-2 rounded-2xl overflow-hidden"
+          style={{ border: `1px solid ${S.border}`, background: S.surface, boxShadow: S.shadow }}
+        >
           {/* Month nav */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <button onClick={prev} className="rounded-lg p-1.5 hover:bg-gray-100 transition-colors">
-              <ChevronLeft className="h-5 w-5 text-gray-500" />
+          <div
+            className="flex items-center justify-between px-6 py-4"
+            style={{ borderBottom: `1px solid ${S.border}` }}
+          >
+            <button
+              onClick={prev}
+              className="rounded-lg p-1.5 transition-colors"
+              style={{ color: S.text3 }}
+            >
+              <ChevronLeft className="h-5 w-5" />
             </button>
-            <h2 className="text-base font-semibold text-gray-900">
+            <h2 className="text-base font-semibold" style={{ color: S.text }}>
               {MONTHS_FR[month]} {year}
             </h2>
-            <button onClick={next} className="rounded-lg p-1.5 hover:bg-gray-100 transition-colors">
-              <ChevronRight className="h-5 w-5 text-gray-500" />
+            <button
+              onClick={next}
+              className="rounded-lg p-1.5 transition-colors"
+              style={{ color: S.text3 }}
+            >
+              <ChevronRight className="h-5 w-5" />
             </button>
           </div>
 
           {/* Days header */}
-          <div className="grid grid-cols-7 border-b border-gray-100">
+          <div className="grid grid-cols-7" style={{ borderBottom: `1px solid ${S.border}` }}>
             {DAYS_FR.map(d => (
-              <div key={d} className="py-2 text-center text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <div key={d} className="py-2 text-center text-xs font-semibold uppercase tracking-wide" style={{ color: S.text3 }}>
                 {d}
               </div>
             ))}
@@ -128,7 +168,13 @@ export default function CalendarPage() {
           <div className="grid grid-cols-7">
             {cells.map((day, i) => {
               if (!day) {
-                return <div key={`empty-${i}`} className="border-r border-b border-gray-50 h-20 bg-gray-50/30" />;
+                return (
+                  <div
+                    key={`empty-${i}`}
+                    className="h-20"
+                    style={{ borderRight: `1px solid ${S.border}`, borderBottom: `1px solid ${S.border}`, background: S.bg, opacity: 0.5 }}
+                  />
+                );
               }
               const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
               const rfqs = byDay[key] ?? [];
@@ -139,25 +185,38 @@ export default function CalendarPage() {
                 <button
                   key={key}
                   onClick={() => setSelected(isSelected ? null : key)}
-                  className={`relative border-r border-b border-gray-100 h-20 p-1.5 text-left transition-colors
-                    ${isSelected ? "bg-orange-50 ring-1 ring-inset ring-orange-300" : "hover:bg-gray-50"}
-                    ${i % 7 === 6 ? "border-r-0" : ""}`}
+                  className="relative h-20 p-1.5 text-left transition-colors"
+                  style={{
+                    borderRight: i % 7 !== 6 ? `1px solid ${S.border}` : undefined,
+                    borderBottom: `1px solid ${S.border}`,
+                    background: isSelected ? S.orangeBg : S.surface,
+                    boxShadow: isSelected ? `inset 0 0 0 1px ${S.orange}` : undefined,
+                  }}
                 >
-                  <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium
-                    ${isToday ? "bg-orange-500 text-white" : "text-gray-700"}`}>
+                  <span
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium"
+                    style={
+                      isToday
+                        ? { background: S.orange, color: "#fff" }
+                        : { color: S.text2 }
+                    }
+                  >
                     {day}
                   </span>
                   <div className="mt-0.5 flex flex-col gap-0.5 overflow-hidden">
                     {rfqs.slice(0, 2).map(rfq => (
                       <div key={rfq.id} className="flex items-center gap-1 truncate">
-                        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${URGENCY_DOT[rfq.urgency] ?? "bg-gray-300"}`} />
-                        <span className="text-[10px] text-gray-600 truncate leading-tight">
+                        <span
+                          className="h-1.5 w-1.5 shrink-0 rounded-full"
+                          style={{ background: URGENCY_DOT_COLOR[rfq.urgency] ?? S.text3 }}
+                        />
+                        <span className="text-[10px] truncate leading-tight" style={{ color: S.text2 }}>
                           {CATEGORY_LABELS[rfq.category] ?? rfq.category}
                         </span>
                       </div>
                     ))}
                     {rfqs.length > 2 && (
-                      <span className="text-[9px] text-orange-500 font-medium">+{rfqs.length - 2}</span>
+                      <span className="text-[9px] font-medium" style={{ color: S.orange }}>+{rfqs.length - 2}</span>
                     )}
                   </div>
                 </button>
@@ -167,49 +226,61 @@ export default function CalendarPage() {
         </div>
 
         {/* Detail panel */}
-        <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
+        <div
+          className="rounded-2xl p-5"
+          style={{ border: `1px solid ${S.border}`, background: S.surface, boxShadow: S.shadow }}
+        >
           {!selected ? (
             <div className="flex flex-col items-center justify-center h-full py-16 text-center">
-              <p className="text-3xl mb-3">🗓️</p>
-              <p className="text-sm text-gray-400">Cliquez sur un jour pour voir les interventions planifiées</p>
+              <p className="text-sm" style={{ color: S.text3 }}>Cliquez sur un jour pour voir les interventions planifiées</p>
             </div>
           ) : (
             <>
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">
+              <h3 className="text-sm font-semibold mb-4" style={{ color: S.text }}>
                 {new Date(selected + "T12:00:00").toLocaleDateString("fr-CH", {
                   weekday: "long", day: "numeric", month: "long",
                 })}
               </h3>
               {selectedRFQs.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-8">Aucune intervention ce jour</p>
+                <p className="text-sm text-center py-8" style={{ color: S.text3 }}>Aucune intervention ce jour</p>
               ) : (
                 <div className="space-y-3">
-                  {selectedRFQs.map(rfq => (
-                    <Link
-                      key={rfq.id}
-                      href={`/app/rfqs/${rfq.id}`}
-                      className="block rounded-xl border border-gray-100 p-3 hover:border-orange-200 hover:bg-orange-50/30 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <span className="text-xs font-semibold text-gray-800 leading-tight line-clamp-2">
-                          {rfq.title}
-                        </span>
-                        <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium ${STATUS_BG[rfq.status] ?? "bg-gray-100 text-gray-600"}`}>
-                          {rfq.status === "in_progress" ? "En cours" : rfq.status === "completed" ? "Terminé" : rfq.status === "accepted" ? "Accepté" : rfq.status}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                        <span className={`h-2 w-2 rounded-full ${URGENCY_DOT[rfq.urgency]}`} />
-                        {CATEGORY_LABELS[rfq.category] ?? rfq.category}
-                        {rfq.city && <span>· {rfq.city}</span>}
-                      </div>
-                      {rfq.budget_max && (
-                        <p className="mt-1 text-[11px] text-orange-600 font-medium">
-                          Budget: CHF {rfq.budget_max.toLocaleString("fr-CH")}
-                        </p>
-                      )}
-                    </Link>
-                  ))}
+                  {selectedRFQs.map(rfq => {
+                    const ss = STATUS_STYLE[rfq.status] ?? STATUS_STYLE.draft;
+                    return (
+                      <Link
+                        key={rfq.id}
+                        href={`/app/rfqs/${rfq.id}`}
+                        className="block rounded-xl p-3 transition-colors"
+                        style={{ border: `1px solid ${S.border}`, background: S.surface }}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <span className="text-xs font-semibold leading-tight line-clamp-2" style={{ color: S.text }}>
+                            {rfq.title}
+                          </span>
+                          <span
+                            className="shrink-0 text-[10px] px-2 py-0.5 rounded-full font-medium"
+                            style={{ background: ss.bg, color: ss.color }}
+                          >
+                            {rfq.status === "in_progress" ? "En cours" : rfq.status === "completed" ? "Terminé" : rfq.status === "accepted" ? "Accepté" : rfq.status}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px]" style={{ color: S.text3 }}>
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ background: URGENCY_DOT_COLOR[rfq.urgency] ?? S.text3 }}
+                          />
+                          {CATEGORY_LABELS[rfq.category] ?? rfq.category}
+                          {rfq.city && <span>· {rfq.city}</span>}
+                        </div>
+                        {rfq.budget_max && (
+                          <p className="mt-1 text-[11px] font-medium" style={{ color: S.orange }}>
+                            Budget: CHF {rfq.budget_max.toLocaleString("fr-CH")}
+                          </p>
+                        )}
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
             </>
@@ -219,8 +290,11 @@ export default function CalendarPage() {
 
       {/* Upcoming list */}
       {Object.keys(byDay).length > 0 && (
-        <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-6">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Prochaines interventions</h2>
+        <div
+          className="rounded-2xl p-6"
+          style={{ border: `1px solid ${S.border}`, background: S.surface, boxShadow: S.shadow }}
+        >
+          <h2 className="text-sm font-semibold mb-4" style={{ color: S.text2 }}>Prochaines interventions</h2>
           <div className="space-y-2">
             {Object.entries(byDay)
               .filter(([k]) => k >= isoDay(today))
@@ -228,7 +302,7 @@ export default function CalendarPage() {
               .slice(0, 8)
               .map(([day, rfqs]) => (
                 <div key={day} className="flex items-start gap-4">
-                  <div className="w-24 shrink-0 text-xs text-gray-500 pt-0.5">
+                  <div className="w-24 shrink-0 text-xs pt-0.5" style={{ color: S.text3 }}>
                     {new Date(day + "T12:00:00").toLocaleDateString("fr-CH", { day: "numeric", month: "short" })}
                   </div>
                   <div className="flex-1 flex flex-wrap gap-2">
@@ -236,9 +310,13 @@ export default function CalendarPage() {
                       <Link
                         key={rfq.id}
                         href={`/app/rfqs/${rfq.id}`}
-                        className="flex items-center gap-1.5 rounded-lg bg-gray-50 border border-gray-100 px-2.5 py-1 text-xs text-gray-700 hover:border-orange-200 hover:bg-orange-50 transition-colors"
+                        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs transition-colors"
+                        style={{ background: S.surface2, border: `1px solid ${S.border}`, color: S.text2 }}
                       >
-                        <span className={`h-2 w-2 rounded-full ${URGENCY_DOT[rfq.urgency]}`} />
+                        <span
+                          className="h-2 w-2 rounded-full"
+                          style={{ background: URGENCY_DOT_COLOR[rfq.urgency] ?? S.text3 }}
+                        />
                         {rfq.title.length > 30 ? rfq.title.slice(0, 30) + "…" : rfq.title}
                       </Link>
                     ))}

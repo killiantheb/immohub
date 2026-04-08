@@ -17,6 +17,28 @@ import {
 } from "@/lib/hooks/useOpeners";
 import type { MissionStatus, MissionType } from "@/lib/types";
 
+const S = {
+  bg: "var(--althy-bg)",
+  surface: "var(--althy-surface)",
+  surface2: "var(--althy-surface-2)",
+  border: "var(--althy-border)",
+  text: "var(--althy-text)",
+  text2: "var(--althy-text-2)",
+  text3: "var(--althy-text-3)",
+  orange: "var(--althy-orange)",
+  orangeBg: "var(--althy-orange-bg)",
+  green: "var(--althy-green)",
+  greenBg: "var(--althy-green-bg)",
+  red: "var(--althy-red)",
+  redBg: "var(--althy-red-bg)",
+  amber: "var(--althy-amber)",
+  amberBg: "var(--althy-amber-bg)",
+  blue: "var(--althy-blue)",
+  blueBg: "var(--althy-blue-bg)",
+  shadow: "var(--althy-shadow)",
+  shadowMd: "var(--althy-shadow-md)",
+} as const;
+
 // ── Labels ─────────────────────────────────────────────────────────────────────
 
 const TYPE_LABELS: Record<MissionType, string> = {
@@ -28,18 +50,26 @@ const TYPE_LABELS: Record<MissionType, string> = {
   other: "Autre",
 };
 
-const STATUS_CONFIG: Record<MissionStatus, { label: string; className: string }> = {
-  pending:     { label: "En attente",   className: "bg-amber-100 text-amber-700" },
-  confirmed:   { label: "Confirmée",    className: "bg-blue-100 text-blue-700" },
-  in_progress: { label: "En cours",     className: "bg-indigo-100 text-indigo-700" },
-  completed:   { label: "Terminée",     className: "bg-green-100 text-green-700" },
-  cancelled:   { label: "Annulée",      className: "bg-gray-100 text-gray-500" },
+const STATUS_CONFIG: Record<MissionStatus, { label: string; bg: string; color: string }> = {
+  pending:     { label: "En attente",   bg: S.amberBg, color: S.amber },
+  confirmed:   { label: "Confirmée",    bg: S.blueBg,  color: S.blue },
+  in_progress: { label: "En cours",     bg: S.orangeBg, color: S.orange },
+  completed:   { label: "Terminée",     bg: S.greenBg, color: S.green },
+  cancelled:   { label: "Annulée",      bg: S.surface2, color: S.text3 },
 };
 
 function MissionStatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status as MissionStatus] ?? { label: status, className: "bg-gray-100 text-gray-600" };
+  const cfg = STATUS_CONFIG[status as MissionStatus] ?? { label: status, bg: S.surface2, color: S.text3 };
   return (
-    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${cfg.className}`}>
+    <span style={{
+      display: "inline-block",
+      borderRadius: 999,
+      padding: "2px 10px",
+      fontSize: 12,
+      fontWeight: 500,
+      background: cfg.bg,
+      color: cfg.color,
+    }}>
       {cfg.label}
     </span>
   );
@@ -71,17 +101,42 @@ export default function OpenersPage() {
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Missions ouvreurs</h1>
-          <p className="mt-0.5 text-sm text-gray-500">
+          <h1 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontWeight: 400, fontSize: 28, color: S.text, margin: 0 }}>
+            Missions ouvreurs
+          </h1>
+          <p style={{ marginTop: 4, fontSize: 13, color: S.text3 }}>
             {data ? `${data.total} mission${data.total !== 1 ? "s" : ""}` : "Marketplace ouvreurs de porte"}
           </p>
         </div>
         <div className="flex gap-2">
-          <Link href="/app/openers/map" className="btn-secondary flex items-center gap-2 text-sm">
+          <Link
+            href="/app/openers/map"
+            className="flex items-center gap-2 text-sm"
+            style={{
+              padding: "8px 16px",
+              borderRadius: 10,
+              border: `1px solid ${S.border}`,
+              background: S.surface,
+              color: S.text2,
+              textDecoration: "none",
+              fontWeight: 500,
+            }}
+          >
             <Map className="h-4 w-4" />
             Carte
           </Link>
-          <Link href="/app/openers/new" className="btn-primary flex items-center gap-2 text-sm">
+          <Link
+            href="/app/openers/new"
+            className="flex items-center gap-2 text-sm"
+            style={{
+              padding: "8px 16px",
+              borderRadius: 10,
+              background: S.orange,
+              color: "#fff",
+              textDecoration: "none",
+              fontWeight: 500,
+            }}
+          >
             <Plus className="h-4 w-4" />
             Nouvelle mission
           </Link>
@@ -89,16 +144,23 @@ export default function OpenersPage() {
       </div>
 
       {/* Tabs */}
-      <div className="mb-4 flex gap-1 border-b border-gray-200">
+      <div className="mb-4 flex gap-1" style={{ borderBottom: `1px solid ${S.border}` }}>
         {([["requested", "Mes demandes"], ["my", "Mes missions"]] as const).map(([value, label]) => (
           <button
             key={value}
             onClick={() => { setTab(value); setPage(1); }}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              tab === value
-                ? "border-primary-600 text-primary-700"
-                : "border-transparent text-gray-500 hover:text-gray-800"
-            }`}
+            className="px-4 py-2 text-sm font-medium -mb-px transition-colors"
+            style={{
+              borderBottom: tab === value ? `2px solid ${S.orange}` : "2px solid transparent",
+              color: tab === value ? S.orange : S.text3,
+              background: "transparent",
+              border: "none",
+              borderBottom: tab === value ? `2px solid ${S.orange}` : "2px solid transparent",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              padding: "8px 16px",
+              marginBottom: -1,
+            }}
           >
             {label}
           </button>
@@ -110,7 +172,16 @@ export default function OpenersPage() {
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-          className="input w-auto"
+          style={{
+            padding: "8px 12px",
+            borderRadius: 10,
+            border: `1px solid ${S.border}`,
+            background: S.surface,
+            color: S.text,
+            fontSize: 14,
+            fontFamily: "inherit",
+            outline: "none",
+          }}
         >
           <option value="">Tous les statuts</option>
           {(Object.entries(STATUS_CONFIG) as [MissionStatus, { label: string }][]).map(([v, c]) => (
@@ -118,7 +189,11 @@ export default function OpenersPage() {
           ))}
         </select>
         {statusFilter && (
-          <button onClick={() => setStatusFilter("")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800">
+          <button
+            onClick={() => setStatusFilter("")}
+            className="flex items-center gap-1 text-sm"
+            style={{ color: S.text3, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+          >
             <X className="h-4 w-4" /> Effacer
           </button>
         )}
@@ -127,48 +202,62 @@ export default function OpenersPage() {
       {/* Content */}
       {isLoading ? (
         <div className="flex justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" style={{ borderColor: S.orange, borderTopColor: "transparent" }} />
         </div>
       ) : isError ? (
-        <div className="card py-16 text-center text-gray-500">Erreur lors du chargement</div>
+        <div className="py-16 text-center" style={{ background: S.surface, borderRadius: 14, border: `1px solid ${S.border}`, color: S.text3 }}>
+          Erreur lors du chargement
+        </div>
       ) : !data?.items.length ? (
-        <div className="card flex flex-col items-center py-16 text-center">
-          <p className="text-gray-500">Aucune mission</p>
-          <Link href="/app/openers/new" className="btn-primary mt-4 text-sm">
+        <div className="flex flex-col items-center py-16 text-center" style={{ background: S.surface, borderRadius: 14, border: `1px solid ${S.border}`, boxShadow: S.shadow }}>
+          <p style={{ color: S.text3, fontSize: 14 }}>Aucune mission</p>
+          <Link
+            href="/app/openers/new"
+            style={{
+              marginTop: 16,
+              padding: "8px 20px",
+              borderRadius: 10,
+              background: S.orange,
+              color: "#fff",
+              textDecoration: "none",
+              fontSize: 14,
+              fontWeight: 500,
+            }}
+          >
             Créer une mission
           </Link>
         </div>
       ) : (
         <>
-          <div className="card overflow-hidden p-0">
+          <div style={{ background: S.surface, borderRadius: 14, border: `1px solid ${S.border}`, boxShadow: S.shadow, overflow: "hidden" }}>
             <table className="w-full text-sm">
-              <thead className="border-b border-gray-200 bg-gray-50">
+              <thead style={{ borderBottom: `1px solid ${S.border}`, background: S.surface2 }}>
                 <tr>
                   {["Type", "Planifiée", "Prix", "Statut", "Note", "Actions"].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                    <th key={h} className="px-4 py-3 text-left" style={{ fontSize: 11, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em", color: S.text3 }}>
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody>
                 {data.items.map((m) => (
-                  <tr key={m.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-800">
-                      <Link href={`/openers/${m.id}`} className="hover:text-primary-600 hover:underline">
+                  <tr key={m.id} style={{ borderBottom: `1px solid ${S.border}` }}>
+                    <td className="px-4 py-3" style={{ fontWeight: 500, color: S.text }}>
+                      <Link href={`/openers/${m.id}`} style={{ color: S.orange, textDecoration: "none" }}>
                         {TYPE_LABELS[m.type] ?? m.type}
                       </Link>
                       {m.notes && (
-                        <p className="mt-0.5 truncate max-w-40 text-xs text-gray-400">{m.notes}</p>
+                        <p className="mt-0.5 truncate max-w-40" style={{ fontSize: 11, color: S.text3 }}>{m.notes}</p>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">
+                    <td className="px-4 py-3" style={{ color: S.text2 }}>
                       {new Date(m.scheduled_at).toLocaleString("fr-FR", {
                         day: "2-digit", month: "2-digit", year: "numeric",
                         hour: "2-digit", minute: "2-digit",
                       })}
                     </td>
-                    <td className="px-4 py-3 font-medium text-gray-900">
+                    <td className="px-4 py-3" style={{ fontWeight: 500, color: S.text }}>
                       {m.price != null ? `${m.price.toLocaleString("fr-FR")} €` : "—"}
                     </td>
                     <td className="px-4 py-3">
@@ -176,9 +265,9 @@ export default function OpenersPage() {
                     </td>
                     <td className="px-4 py-3">
                       {m.rating_given != null ? (
-                        <span className="flex items-center gap-0.5 text-amber-500">
+                        <span className="flex items-center gap-0.5" style={{ color: S.amber }}>
                           <Star className="h-3.5 w-3.5 fill-current" />
-                          <span className="text-xs font-medium text-gray-700">{m.rating_given}</span>
+                          <span style={{ fontSize: 12, fontWeight: 500, color: S.text2 }}>{m.rating_given}</span>
                         </span>
                       ) : "—"}
                     </td>
@@ -187,7 +276,17 @@ export default function OpenersPage() {
                         <button
                           onClick={() => cancel.mutate({ id: m.id })}
                           disabled={cancel.isPending}
-                          className="rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
+                          style={{
+                            borderRadius: 8,
+                            padding: "4px 10px",
+                            fontSize: 12,
+                            color: S.red,
+                            background: "transparent",
+                            border: `1px solid ${S.border}`,
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                            opacity: cancel.isPending ? 0.5 : 1,
+                          }}
                         >
                           Annuler
                         </button>
@@ -202,11 +301,41 @@ export default function OpenersPage() {
           {/* Pagination */}
           {data.pages > 1 && (
             <div className="mt-6 flex items-center justify-center gap-2">
-              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="btn-secondary flex items-center gap-1 disabled:opacity-40">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="flex items-center gap-1"
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: 10,
+                  border: `1px solid ${S.border}`,
+                  background: S.surface,
+                  color: S.text2,
+                  fontSize: 14,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  opacity: page === 1 ? 0.4 : 1,
+                }}
+              >
                 <ChevronLeft className="h-4 w-4" /> Précédent
               </button>
-              <span className="text-sm text-gray-600">Page {page} / {data.pages}</span>
-              <button onClick={() => setPage((p) => Math.min(data.pages, p + 1))} disabled={page === data.pages} className="btn-secondary flex items-center gap-1 disabled:opacity-40">
+              <span style={{ fontSize: 13, color: S.text2 }}>Page {page} / {data.pages}</span>
+              <button
+                onClick={() => setPage((p) => Math.min(data.pages, p + 1))}
+                disabled={page === data.pages}
+                className="flex items-center gap-1"
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: 10,
+                  border: `1px solid ${S.border}`,
+                  background: S.surface,
+                  color: S.text2,
+                  fontSize: 14,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  opacity: page === data.pages ? 0.4 : 1,
+                }}
+              >
                 Suivant <ChevronRight className="h-4 w-4" />
               </button>
             </div>

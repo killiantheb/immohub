@@ -11,6 +11,28 @@ import {
 } from "recharts";
 import type { MonthlyRevenue } from "@/lib/types";
 
+const S = {
+  bg: "var(--althy-bg)",
+  surface: "var(--althy-surface)",
+  surface2: "var(--althy-surface-2)",
+  border: "var(--althy-border)",
+  text: "var(--althy-text)",
+  text2: "var(--althy-text-2)",
+  text3: "var(--althy-text-3)",
+  orange: "var(--althy-orange)",
+  orangeBg: "var(--althy-orange-bg)",
+  green: "var(--althy-green)",
+  greenBg: "var(--althy-green-bg)",
+  red: "var(--althy-red)",
+  redBg: "var(--althy-red-bg)",
+  amber: "var(--althy-amber)",
+  amberBg: "var(--althy-amber-bg)",
+  blue: "var(--althy-blue)",
+  blueBg: "var(--althy-blue-bg)",
+  shadow: "var(--althy-shadow)",
+  shadowMd: "var(--althy-shadow-md)",
+} as const;
+
 const MONTH_FR = [
   "", "Jan", "Fév", "Mar", "Avr", "Mai", "Jui",
   "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc",
@@ -33,7 +55,10 @@ interface Props {
 export function RevenueChart({ data, height = 220 }: Props) {
   if (!data.length) {
     return (
-      <div className="flex items-center justify-center py-12 text-sm text-gray-400">
+      <div
+        className="flex items-center justify-center py-12"
+        style={{ fontSize: 14, color: S.text3 }}
+      >
         Aucune donnée disponible
       </div>
     );
@@ -49,41 +74,42 @@ export function RevenueChart({ data, height = 220 }: Props) {
       <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.18} />
-            <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
+            <stop offset="5%" stopColor="var(--althy-orange)" stopOpacity={0.18} />
+            <stop offset="95%" stopColor="var(--althy-orange)" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--althy-border)" vertical={false} />
         <XAxis
           dataKey="label"
-          tick={{ fontSize: 11, fill: "#9ca3af" }}
+          tick={{ fontSize: 11, fill: "var(--althy-text-3)" }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
           tickFormatter={(v) => `${(v / 1000).toFixed(0)}k€`}
-          tick={{ fontSize: 11, fill: "#9ca3af" }}
+          tick={{ fontSize: 11, fill: "var(--althy-text-3)" }}
           axisLine={false}
           tickLine={false}
           width={42}
         />
         <Tooltip
           formatter={(value) => [formatEuro(Number(value)), "Revenus"]}
-          labelStyle={{ fontWeight: 600, color: "#374151" }}
+          labelStyle={{ fontWeight: 600, color: "var(--althy-text)" }}
           contentStyle={{
             borderRadius: "8px",
-            border: "1px solid #e5e7eb",
+            border: "1px solid var(--althy-border)",
+            backgroundColor: "var(--althy-surface)",
             fontSize: 12,
           }}
         />
         <Area
           type="monotone"
           dataKey="amount"
-          stroke="#4f46e5"
+          stroke="var(--althy-orange)"
           strokeWidth={2}
           fill="url(#revenueGradient)"
           dot={false}
-          activeDot={{ r: 4, fill: "#4f46e5" }}
+          activeDot={{ r: 4, fill: "var(--althy-orange)" }}
         />
       </AreaChart>
     </ResponsiveContainer>

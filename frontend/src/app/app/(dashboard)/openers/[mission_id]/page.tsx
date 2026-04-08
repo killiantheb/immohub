@@ -22,6 +22,28 @@ import {
 } from "@/lib/hooks/useOpeners";
 import type { MissionStatus, MissionType } from "@/lib/types";
 
+const S = {
+  bg: "var(--althy-bg)",
+  surface: "var(--althy-surface)",
+  surface2: "var(--althy-surface-2)",
+  border: "var(--althy-border)",
+  text: "var(--althy-text)",
+  text2: "var(--althy-text-2)",
+  text3: "var(--althy-text-3)",
+  orange: "var(--althy-orange)",
+  orangeBg: "var(--althy-orange-bg)",
+  green: "var(--althy-green)",
+  greenBg: "var(--althy-green-bg)",
+  red: "var(--althy-red)",
+  redBg: "var(--althy-red-bg)",
+  amber: "var(--althy-amber)",
+  amberBg: "var(--althy-amber-bg)",
+  blue: "var(--althy-blue)",
+  blueBg: "var(--althy-blue-bg)",
+  shadow: "var(--althy-shadow)",
+  shadowMd: "var(--althy-shadow-md)",
+} as const;
+
 const TYPE_LABELS: Record<MissionType, string> = {
   visit: "Visite",
   check_in: "Remise de clés",
@@ -31,12 +53,33 @@ const TYPE_LABELS: Record<MissionType, string> = {
   other: "Autre",
 };
 
-const STATUS_CONFIG: Record<MissionStatus, { label: string; color: string }> = {
-  pending:     { label: "En attente",   color: "text-amber-600 bg-amber-50 border-amber-200" },
-  confirmed:   { label: "Confirmée",    color: "text-blue-700 bg-blue-50 border-blue-200" },
-  in_progress: { label: "En cours",     color: "text-indigo-700 bg-indigo-50 border-indigo-200" },
-  completed:   { label: "Terminée",     color: "text-green-700 bg-green-50 border-green-200" },
-  cancelled:   { label: "Annulée",      color: "text-gray-600 bg-gray-50 border-gray-200" },
+const STATUS_CONFIG: Record<MissionStatus, { label: string; bg: string; color: string; border: string }> = {
+  pending:     { label: "En attente",   bg: "var(--althy-amber-bg)",  color: "var(--althy-amber)",  border: "var(--althy-amber)" },
+  confirmed:   { label: "Confirmée",    bg: "var(--althy-blue-bg)",   color: "var(--althy-blue)",   border: "var(--althy-blue)" },
+  in_progress: { label: "En cours",     bg: "var(--althy-orange-bg)", color: "var(--althy-orange)", border: "var(--althy-orange)" },
+  completed:   { label: "Terminée",     bg: "var(--althy-green-bg)",  color: "var(--althy-green)",  border: "var(--althy-green)" },
+  cancelled:   { label: "Annulée",      bg: "var(--althy-surface-2)", color: "var(--althy-text-3)", border: "var(--althy-border)" },
+};
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "10px 14px",
+  border: `1px solid var(--althy-border)`,
+  borderRadius: 10,
+  fontSize: 14,
+  color: "var(--althy-text)",
+  background: "var(--althy-surface)",
+  outline: "none",
+  fontFamily: "inherit",
+  boxSizing: "border-box",
+};
+
+const cardStyle: React.CSSProperties = {
+  background: "var(--althy-surface)",
+  border: `1px solid var(--althy-border)`,
+  borderRadius: 14,
+  boxShadow: "var(--althy-shadow)",
+  padding: 20,
 };
 
 function fmt(date: string | null) {
@@ -59,31 +102,37 @@ interface TimelineStep {
 
 function MissionTimeline({ steps }: { steps: TimelineStep[] }) {
   return (
-    <ol className="relative ml-3 border-l border-gray-200">
-      {steps.map((step, i) => (
-        <li key={step.key} className="mb-6 ml-6 last:mb-0">
+    <ol style={{ position: "relative", marginLeft: 12, borderLeft: `1px solid ${S.border}`, listStyle: "none", padding: 0, margin: 0, paddingLeft: 24 }}>
+      {steps.map((step) => (
+        <li key={step.key} style={{ marginBottom: 24, position: "relative" }}>
           <span
-            className={`absolute -left-3 flex h-6 w-6 items-center justify-center rounded-full border-2 ${
-              step.cancelled
-                ? "border-red-300 bg-red-50"
-                : step.done
-                ? "border-green-400 bg-green-50"
-                : "border-gray-300 bg-white"
-            }`}
+            style={{
+              position: "absolute",
+              left: -36,
+              top: 0,
+              display: "flex",
+              height: 24,
+              width: 24,
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "50%",
+              border: `2px solid ${step.cancelled ? S.red : step.done ? S.green : S.border}`,
+              background: step.cancelled ? S.redBg : step.done ? S.greenBg : S.surface,
+            }}
           >
             {step.cancelled ? (
-              <XCircle className="h-3.5 w-3.5 text-red-500" />
+              <XCircle className="h-3.5 w-3.5" style={{ color: S.red }} />
             ) : step.done ? (
-              <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+              <CheckCircle className="h-3.5 w-3.5" style={{ color: S.green }} />
             ) : (
-              <Clock className="h-3.5 w-3.5 text-gray-400" />
+              <Clock className="h-3.5 w-3.5" style={{ color: S.text3 }} />
             )}
           </span>
-          <p className={`text-sm font-medium ${step.done || step.cancelled ? "text-gray-800" : "text-gray-400"}`}>
+          <p style={{ fontSize: 14, fontWeight: 500, color: step.done || step.cancelled ? S.text : S.text3 }}>
             {step.label}
           </p>
           {step.date && (
-            <p className="text-xs text-gray-400 mt-0.5">{fmt(step.date)}</p>
+            <p style={{ fontSize: 11, color: S.text3, marginTop: 2 }}>{fmt(step.date)}</p>
           )}
         </li>
       ))}
@@ -112,21 +161,36 @@ function RateForm({ missionId }: { missionId: string }) {
             key={v}
             type="button"
             onClick={() => setRating(v)}
-            className={`text-xl ${v <= rating ? "text-amber-400" : "text-gray-300"}`}
+            style={{ fontSize: 20, background: "none", border: "none", cursor: "pointer", color: v <= rating ? S.amber : S.surface2, padding: 0 }}
           >
             ★
           </button>
         ))}
-        <span className="ml-2 text-sm text-gray-500">{rating}/5</span>
+        <span style={{ marginLeft: 8, fontSize: 13, color: S.text3 }}>{rating}/5</span>
       </div>
       <textarea
         rows={2}
         value={comment}
         onChange={(e) => setComment(e.target.value)}
-        className="input resize-none"
+        style={{ ...inputStyle, resize: "none" }}
         placeholder="Commentaire (optionnel)"
       />
-      <button type="submit" disabled={rate.isPending} className="btn-primary text-sm">
+      <button
+        type="submit"
+        disabled={rate.isPending}
+        style={{
+          padding: "8px 18px",
+          borderRadius: 10,
+          background: S.orange,
+          color: "#fff",
+          border: "none",
+          fontSize: 13,
+          fontWeight: 500,
+          cursor: rate.isPending ? "not-allowed" : "pointer",
+          fontFamily: "inherit",
+          opacity: rate.isPending ? 0.7 : 1,
+        }}
+      >
         {rate.isPending ? "Envoi…" : "Soumettre la note"}
       </button>
     </form>
@@ -151,10 +215,25 @@ function CompleteForm({ missionId }: { missionId: string }) {
         rows={4}
         value={reportText}
         onChange={(e) => setReportText(e.target.value)}
-        className="input resize-none"
+        style={{ ...inputStyle, resize: "none" }}
         placeholder="Rapport de mission (observations, remarques…)"
       />
-      <button type="submit" disabled={complete.isPending} className="btn-primary text-sm">
+      <button
+        type="submit"
+        disabled={complete.isPending}
+        style={{
+          padding: "8px 18px",
+          borderRadius: 10,
+          background: S.orange,
+          color: "#fff",
+          border: "none",
+          fontSize: 13,
+          fontWeight: 500,
+          cursor: complete.isPending ? "not-allowed" : "pointer",
+          fontFamily: "inherit",
+          opacity: complete.isPending ? 0.7 : 1,
+        }}
+      >
         {complete.isPending ? "Enregistrement…" : "Marquer comme terminée"}
       </button>
     </form>
@@ -173,21 +252,21 @@ export default function MissionDetailPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" style={{ borderColor: S.orange, borderTopColor: "transparent" }} />
       </div>
     );
   }
 
   if (isError || !mission) {
     return (
-      <div className="card py-20 text-center text-gray-500">
+      <div className="py-20 text-center" style={{ background: S.surface, borderRadius: 14, border: `1px solid ${S.border}`, color: S.text3 }}>
         Mission introuvable.{" "}
-        <Link href="/app/openers" className="text-primary-600 hover:underline">Retour</Link>
+        <Link href="/app/openers" style={{ color: S.orange }}>Retour</Link>
       </div>
     );
   }
 
-  const statusCfg = STATUS_CONFIG[mission.status as MissionStatus] ?? { label: mission.status, color: "text-gray-600 bg-gray-50 border-gray-200" };
+  const statusCfg = STATUS_CONFIG[mission.status as MissionStatus] ?? { label: mission.status, bg: S.surface2, color: S.text3, border: S.border };
 
   const timelineSteps: TimelineStep[] = [
     { key: "created",   label: "Mission créée",    date: mission.created_at,   done: true },
@@ -210,16 +289,24 @@ export default function MissionDetailPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/app/openers" className="text-gray-400 hover:text-gray-700">
+        <Link href="/app/openers" style={{ color: S.text3, display: "flex" }}>
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">
+        <div style={{ flex: 1 }}>
+          <h1 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontWeight: 400, fontSize: 28, color: S.text, margin: 0 }}>
             {TYPE_LABELS[mission.type as MissionType] ?? mission.type}
           </h1>
-          <p className="text-sm text-gray-500">Planifiée le {fmt(mission.scheduled_at)}</p>
+          <p style={{ fontSize: 13, color: S.text3, marginTop: 2 }}>Planifiée le {fmt(mission.scheduled_at)}</p>
         </div>
-        <span className={`rounded-full border px-3 py-1 text-xs font-medium ${statusCfg.color}`}>
+        <span style={{
+          borderRadius: 999,
+          border: `1px solid ${statusCfg.border}`,
+          padding: "4px 12px",
+          fontSize: 12,
+          fontWeight: 500,
+          background: statusCfg.bg,
+          color: statusCfg.color,
+        }}>
           {statusCfg.label}
         </span>
       </div>
@@ -228,30 +315,30 @@ export default function MissionDetailPage() {
         {/* Left column */}
         <div className="md:col-span-2 space-y-6">
           {/* Info */}
-          <div className="card space-y-3">
-            <h2 className="text-sm font-semibold text-gray-700">Informations</h2>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <dt className="text-gray-500">Bien</dt>
-              <dd className="font-mono text-xs text-primary-600">{mission.property_id.slice(0, 8)}…</dd>
-              <dt className="text-gray-500">Demandeur</dt>
-              <dd className="font-mono text-xs">{mission.requester_id.slice(0, 8)}…</dd>
+          <div style={cardStyle} className="space-y-3">
+            <h2 style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: S.text3, margin: 0 }}>Informations</h2>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2" style={{ fontSize: 14 }}>
+              <dt style={{ color: S.text3 }}>Bien</dt>
+              <dd style={{ fontFamily: "monospace", fontSize: 12, color: S.orange }}>{mission.property_id.slice(0, 8)}…</dd>
+              <dt style={{ color: S.text3 }}>Demandeur</dt>
+              <dd style={{ fontFamily: "monospace", fontSize: 12, color: S.text2 }}>{mission.requester_id.slice(0, 8)}…</dd>
               {mission.opener_id && (
                 <>
-                  <dt className="text-gray-500">Ouvreur</dt>
-                  <dd className="font-mono text-xs">{mission.opener_id.slice(0, 8)}…</dd>
+                  <dt style={{ color: S.text3 }}>Ouvreur</dt>
+                  <dd style={{ fontFamily: "monospace", fontSize: 12, color: S.text2 }}>{mission.opener_id.slice(0, 8)}…</dd>
                 </>
               )}
-              <dt className="text-gray-500">Prix</dt>
-              <dd className="font-semibold">{mission.price != null ? `${mission.price} €` : "—"}</dd>
+              <dt style={{ color: S.text3 }}>Prix</dt>
+              <dd style={{ fontWeight: 600, color: S.text }}>{mission.price != null ? `${mission.price} €` : "—"}</dd>
             </dl>
             {mission.notes && (
-              <div className="rounded-lg bg-gray-50 p-3">
-                <p className="text-xs font-medium text-gray-500 mb-1">Notes</p>
-                <p className="text-sm text-gray-700">{mission.notes}</p>
+              <div style={{ borderRadius: 10, background: S.surface2, padding: "10px 14px" }}>
+                <p style={{ fontSize: 11, fontWeight: 500, color: S.text3, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>Notes</p>
+                <p style={{ fontSize: 14, color: S.text2 }}>{mission.notes}</p>
               </div>
             )}
             {mission.property_lat != null && mission.property_lng != null && (
-              <div className="flex items-center gap-1 text-xs text-gray-400">
+              <div className="flex items-center gap-1" style={{ fontSize: 11, color: S.text3 }}>
                 <MapPin className="h-3.5 w-3.5" />
                 {mission.property_lat.toFixed(5)}, {mission.property_lng.toFixed(5)}
               </div>
@@ -260,13 +347,13 @@ export default function MissionDetailPage() {
 
           {/* Report */}
           {mission.report_text && (
-            <div className="card space-y-2">
-              <h2 className="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+            <div style={cardStyle} className="space-y-2">
+              <h2 className="flex items-center gap-1.5" style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: S.text3, margin: 0 }}>
                 <FileText className="h-4 w-4" /> Rapport
               </h2>
-              <p className="text-sm text-gray-700 whitespace-pre-line">{mission.report_text}</p>
+              <p style={{ fontSize: 14, color: S.text2, whiteSpace: "pre-line" }}>{mission.report_text}</p>
               {mission.report_url && (
-                <a href={mission.report_url} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline">
+                <a href={mission.report_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: S.orange, textDecoration: "none" }}>
                   Télécharger le rapport
                 </a>
               )}
@@ -275,8 +362,8 @@ export default function MissionDetailPage() {
 
           {/* Photos */}
           {mission.photos_urls && mission.photos_urls.length > 0 && (
-            <div className="card space-y-3">
-              <h2 className="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+            <div style={cardStyle} className="space-y-3">
+              <h2 className="flex items-center gap-1.5" style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: S.text3, margin: 0 }}>
                 <Camera className="h-4 w-4" /> Photos ({mission.photos_urls.length})
               </h2>
               <div className="grid grid-cols-3 gap-2">
@@ -286,7 +373,8 @@ export default function MissionDetailPage() {
                     <img
                       src={url}
                       alt={`Photo ${i + 1}`}
-                      className="aspect-square w-full rounded-lg object-cover hover:opacity-90 transition-opacity"
+                      className="aspect-square w-full object-cover transition-opacity"
+                      style={{ borderRadius: 10, opacity: 1 }}
                     />
                   </a>
                 ))}
@@ -296,32 +384,44 @@ export default function MissionDetailPage() {
 
           {/* Rating given */}
           {mission.rating_given != null && (
-            <div className="card space-y-1">
-              <h2 className="flex items-center gap-1.5 text-sm font-semibold text-gray-700">
-                <Star className="h-4 w-4 fill-amber-400 text-amber-400" /> Note
+            <div style={cardStyle} className="space-y-1">
+              <h2 className="flex items-center gap-1.5" style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: S.text3, margin: 0 }}>
+                <Star className="h-4 w-4" style={{ fill: S.amber, color: S.amber }} /> Note
               </h2>
               <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((v) => (
-                  <span key={v} className={`text-lg ${v <= mission.rating_given! ? "text-amber-400" : "text-gray-200"}`}>★</span>
+                  <span key={v} style={{ fontSize: 18, color: v <= mission.rating_given! ? S.amber : S.surface2 }}>★</span>
                 ))}
-                <span className="ml-1 text-sm font-medium text-gray-700">{mission.rating_given}/5</span>
+                <span style={{ marginLeft: 4, fontSize: 14, fontWeight: 500, color: S.text2 }}>{mission.rating_given}/5</span>
               </div>
               {mission.rating_comment && (
-                <p className="text-sm text-gray-600 italic">"{mission.rating_comment}"</p>
+                <p style={{ fontSize: 14, color: S.text2, fontStyle: "italic" }}>"{mission.rating_comment}"</p>
               )}
             </div>
           )}
 
           {/* Actions */}
-          <div className="card space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700">Actions</h2>
+          <div style={cardStyle} className="space-y-4">
+            <h2 style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: S.text3, margin: 0 }}>Actions</h2>
 
             {/* Accept (opener) */}
             {mission.status === "pending" && mission.opener_id && (
               <button
                 onClick={() => accept.mutate(mission.id)}
                 disabled={accept.isPending}
-                className="btn-primary flex items-center gap-2"
+                className="flex items-center gap-2"
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: 10,
+                  background: S.orange,
+                  color: "#fff",
+                  border: "none",
+                  fontSize: 14,
+                  fontWeight: 500,
+                  cursor: accept.isPending ? "not-allowed" : "pointer",
+                  fontFamily: "inherit",
+                  opacity: accept.isPending ? 0.7 : 1,
+                }}
               >
                 <CheckCircle className="h-4 w-4" />
                 {accept.isPending ? "Acceptation…" : "Accepter la mission"}
@@ -331,7 +431,7 @@ export default function MissionDetailPage() {
             {/* Complete (opener) */}
             {(mission.status === "confirmed" || mission.status === "in_progress") && (
               <div className="space-y-2">
-                <p className="text-sm text-gray-600 font-medium">Terminer la mission</p>
+                <p style={{ fontSize: 14, color: S.text2, fontWeight: 500 }}>Terminer la mission</p>
                 <CompleteForm missionId={mission.id} />
               </div>
             )}
@@ -339,7 +439,7 @@ export default function MissionDetailPage() {
             {/* Rate (requester) */}
             {mission.status === "completed" && mission.rating_given == null && (
               <div className="space-y-2">
-                <p className="text-sm text-gray-600 font-medium">Évaluer l&apos;ouvreur</p>
+                <p style={{ fontSize: 14, color: S.text2, fontWeight: 500 }}>Évaluer l&apos;ouvreur</p>
                 <RateForm missionId={mission.id} />
               </div>
             )}
@@ -349,7 +449,18 @@ export default function MissionDetailPage() {
               <button
                 onClick={() => cancel.mutate({ id: mission.id }, { onSuccess: () => router.push("/app/openers") })}
                 disabled={cancel.isPending}
-                className="flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                className="flex items-center gap-2"
+                style={{
+                  borderRadius: 10,
+                  border: `1px solid ${S.red}`,
+                  padding: "8px 16px",
+                  fontSize: 14,
+                  color: S.red,
+                  background: "transparent",
+                  cursor: cancel.isPending ? "not-allowed" : "pointer",
+                  fontFamily: "inherit",
+                  opacity: cancel.isPending ? 0.5 : 1,
+                }}
               >
                 <XCircle className="h-4 w-4" />
                 {cancel.isPending ? "Annulation…" : "Annuler la mission"}
@@ -360,8 +471,8 @@ export default function MissionDetailPage() {
 
         {/* Right column — Timeline */}
         <div>
-          <div className="card">
-            <h2 className="mb-4 text-sm font-semibold text-gray-700">Chronologie</h2>
+          <div style={cardStyle}>
+            <h2 style={{ marginBottom: 16, fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: S.text3 }}>Chronologie</h2>
             <MissionTimeline steps={timelineSteps} />
           </div>
         </div>

@@ -24,6 +24,28 @@ import {
 import type { RFQ, RFQQuote } from "@/lib/types";
 import { RatingWidget } from "@/components/RatingWidget";
 
+const S = {
+  bg: "var(--althy-bg)",
+  surface: "var(--althy-surface)",
+  surface2: "var(--althy-surface-2)",
+  border: "var(--althy-border)",
+  text: "var(--althy-text)",
+  text2: "var(--althy-text-2)",
+  text3: "var(--althy-text-3)",
+  orange: "var(--althy-orange)",
+  orangeBg: "var(--althy-orange-bg)",
+  green: "var(--althy-green)",
+  greenBg: "var(--althy-green-bg)",
+  red: "var(--althy-red)",
+  redBg: "var(--althy-red-bg)",
+  amber: "var(--althy-amber)",
+  amberBg: "var(--althy-amber-bg)",
+  blue: "var(--althy-blue)",
+  blueBg: "var(--althy-blue-bg)",
+  shadow: "var(--althy-shadow)",
+  shadowMd: "var(--althy-shadow-md)",
+} as const;
+
 const CATEGORY_LABELS: Record<string, string> = {
   plumbing: "Plomberie", electricity: "Électricité", cleaning: "Nettoyage",
   painting: "Peinture", locksmith: "Serrurerie", roofing: "Toiture",
@@ -40,15 +62,23 @@ const STATUS_STEPS = [
   { key: "rated",           label: "Noté" },
 ];
 
+const cardStyle = {
+  background: S.surface,
+  border: `1px solid ${S.border}`,
+  borderRadius: 14,
+  boxShadow: S.shadow,
+  padding: "1.25rem",
+} as const;
+
 function Timeline({ rfq }: { rfq: RFQ }) {
   const stepIndex = STATUS_STEPS.findIndex((s) => s.key === rfq.status);
   const currentIdx = stepIndex === -1 ? 0 : stepIndex;
 
   return (
-    <div className="card">
-      <h2 className="mb-4 text-base font-semibold text-gray-800">Avancement</h2>
+    <div style={cardStyle}>
+      <h2 className="mb-4 text-base font-semibold" style={{ color: S.text2 }}>Avancement</h2>
       <div className="relative">
-        <div className="absolute left-4 top-0 h-full w-0.5 bg-gray-100" />
+        <div className="absolute left-4 top-0 h-full w-0.5" style={{ background: S.border }} />
         <ul className="space-y-4">
           {STATUS_STEPS.map((step, i) => {
             const done = i <= currentIdx;
@@ -56,22 +86,21 @@ function Timeline({ rfq }: { rfq: RFQ }) {
             return (
               <li key={step.key} className="relative flex items-center gap-4 pl-10">
                 <span
-                  className={`absolute left-2 flex h-5 w-5 items-center justify-center rounded-full border-2 ${
-                    done
-                      ? "border-orange-500 bg-orange-500"
-                      : "border-gray-200 bg-white"
-                  } ${current ? "ring-2 ring-orange-200" : ""}`}
+                  className="absolute left-2 flex h-5 w-5 items-center justify-center rounded-full border-2"
+                  style={{
+                    borderColor: done ? S.orange : S.border,
+                    background: done ? S.orange : S.surface,
+                    boxShadow: current ? `0 0 0 3px ${S.orangeBg}` : undefined,
+                  }}
                 >
-                  {done && <CheckCircle2 className="h-3 w-3 text-white" />}
+                  {done && <CheckCircle2 className="h-3 w-3" style={{ color: "#fff" }} />}
                 </span>
                 <span
-                  className={`text-sm ${
-                    current
-                      ? "font-semibold text-orange-700"
-                      : done
-                      ? "text-gray-700"
-                      : "text-gray-400"
-                  }`}
+                  className="text-sm"
+                  style={{
+                    fontWeight: current ? 600 : 400,
+                    color: current ? S.orange : done ? S.text2 : S.text3,
+                  }}
                 >
                   {step.label}
                 </span>
@@ -97,35 +126,44 @@ function QuoteCard({
   onAccept: (id: string) => void;
   isAccepting: boolean;
 }) {
-  const statusColors: Record<string, string> = {
-    pending:   "bg-blue-100 text-blue-700",
-    accepted:  "bg-green-100 text-green-700",
-    rejected:  "bg-red-100 text-red-700",
-    completed: "bg-teal-100 text-teal-700",
+  const statusStyles: Record<string, { bg: string; color: string }> = {
+    pending:   { bg: S.blueBg,  color: S.blue },
+    accepted:  { bg: S.greenBg, color: S.green },
+    rejected:  { bg: S.redBg,   color: S.red },
+    completed: { bg: S.greenBg, color: S.green },
   };
+
+  const ss = statusStyles[quote.status] ?? { bg: S.surface2, color: S.text3 };
 
   return (
     <div
-      className={`rounded-xl border p-4 transition-colors ${
+      className="rounded-xl p-4 transition-colors"
+      style={
         isSelected
-          ? "border-orange-400 bg-orange-50"
-          : "border-gray-200 bg-white"
-      }`}
+          ? { border: `1px solid ${S.orange}`, background: S.orangeBg }
+          : { border: `1px solid ${S.border}`, background: S.surface }
+      }
     >
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <p className="text-lg font-bold text-gray-900">
+            <p className="text-lg font-bold" style={{ color: S.text }}>
               {quote.amount.toLocaleString("fr-FR")} €
             </p>
             {isSelected && (
-              <span className="flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
+              <span
+                className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+                style={{ background: S.orangeBg, color: S.orange }}
+              >
                 <Award className="h-3 w-3" />
                 Retenu
               </span>
             )}
           </div>
-          <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[quote.status] ?? ""}`}>
+          <span
+            className="mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium"
+            style={{ background: ss.bg, color: ss.color }}
+          >
             {quote.status === "pending" ? "En attente" :
              quote.status === "accepted" ? "Accepté" :
              quote.status === "rejected" ? "Refusé" : "Terminé"}
@@ -135,16 +173,17 @@ function QuoteCard({
           <button
             onClick={() => onAccept(quote.id)}
             disabled={isAccepting}
-            className="shrink-0 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-600 disabled:opacity-60"
+            className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium disabled:opacity-60"
+            style={{ background: S.orange, color: "#fff" }}
           >
             {isAccepting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Accepter"}
           </button>
         )}
       </div>
 
-      <p className="mt-3 text-sm text-gray-600">{quote.description}</p>
+      <p className="mt-3 text-sm" style={{ color: S.text2 }}>{quote.description}</p>
 
-      <div className="mt-3 flex flex-wrap gap-3 text-xs text-gray-500">
+      <div className="mt-3 flex flex-wrap gap-3 text-xs" style={{ color: S.text3 }}>
         {quote.delay_days && (
           <span className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
@@ -160,7 +199,7 @@ function QuoteCard({
       </div>
 
       {quote.notes && (
-        <p className="mt-2 text-xs text-gray-400 italic">{quote.notes}</p>
+        <p className="mt-2 text-xs italic" style={{ color: S.text3 }}>{quote.notes}</p>
       )}
     </div>
   );
@@ -177,8 +216,8 @@ function RatingModal({
   const [comment, setComment] = useState("");
 
   return (
-    <div className="card space-y-4">
-      <h2 className="text-base font-semibold text-gray-800">Noter l'intervention</h2>
+    <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <h2 className="text-base font-semibold" style={{ color: S.text2 }}>Noter l'intervention</h2>
       <div className="flex gap-2">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
@@ -188,9 +227,12 @@ function RatingModal({
             className="transition-transform hover:scale-110"
           >
             <Star
-              className={`h-8 w-8 ${
-                star <= rating ? "fill-orange-400 text-orange-400" : "text-gray-300"
-              }`}
+              className="h-8 w-8"
+              style={
+                star <= rating
+                  ? { fill: S.orange, color: S.orange }
+                  : { color: S.border }
+              }
             />
           </button>
         ))}
@@ -206,6 +248,7 @@ function RatingModal({
         onClick={() => rating > 0 && onSubmit(rating, comment || undefined)}
         disabled={rating === 0 || isLoading}
         className="btn-primary flex items-center gap-2 px-5 py-2 disabled:opacity-60"
+        style={{ background: S.orange, color: "#fff" }}
       >
         {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4" />}
         Envoyer la note
@@ -225,7 +268,7 @@ export default function RFQDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: S.orange }} />
       </div>
     );
   }
@@ -233,7 +276,10 @@ export default function RFQDetailPage() {
   if (error || !rfq) {
     return (
       <div className="px-4 py-8">
-        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        <div
+          className="flex items-center gap-2 rounded-lg p-4 text-sm"
+          style={{ border: `1px solid ${S.red}`, background: S.redBg, color: S.red }}
+        >
           <AlertCircle className="h-4 w-4" />
           Appel d'offre introuvable.
         </div>
@@ -246,7 +292,6 @@ export default function RFQDetailPage() {
   const canRate = rfq.status === "completed";
 
   const sortedQuotes = [...rfq.quotes].sort((a, b) => a.amount - b.amount);
-  const cheapestId = sortedQuotes[0]?.id;
 
   return (
     <div className="px-4 py-8 sm:px-6 lg:px-8">
@@ -254,15 +299,18 @@ export default function RFQDetailPage() {
       <div className="mb-6">
         <button
           onClick={() => router.back()}
-          className="mb-4 flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+          className="mb-4 flex items-center gap-1 text-sm"
+          style={{ color: S.text3 }}
         >
           <ArrowLeft className="h-4 w-4" />
           Retour
         </button>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{rfq.title}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500">
+            <h1 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontWeight: 400, fontSize: 28, color: S.text }}>
+              {rfq.title}
+            </h1>
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style={{ color: S.text3 }}>
               <span>{CATEGORY_LABELS[rfq.category] ?? rfq.category}</span>
               {rfq.city && (
                 <span className="flex items-center gap-1">
@@ -288,7 +336,8 @@ export default function RFQDetailPage() {
             <button
               onClick={() => completeRFQ.mutate()}
               disabled={completeRFQ.isPending}
-              className="shrink-0 rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600 disabled:opacity-60"
+              className="shrink-0 rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-60"
+              style={{ background: S.green, color: "#fff" }}
             >
               {completeRFQ.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -304,29 +353,29 @@ export default function RFQDetailPage() {
         {/* Left — quotes comparator */}
         <div className="lg:col-span-2 space-y-4">
           {/* Description */}
-          <div className="card">
-            <h2 className="mb-2 text-base font-semibold text-gray-800">Description</h2>
-            <p className="text-sm text-gray-600 leading-relaxed">{rfq.description}</p>
+          <div style={cardStyle}>
+            <h2 className="mb-2 text-base font-semibold" style={{ color: S.text2 }}>Description</h2>
+            <p className="text-sm leading-relaxed" style={{ color: S.text2 }}>{rfq.description}</p>
           </div>
 
           {/* Quotes */}
-          <div className="card">
+          <div style={cardStyle}>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-base font-semibold text-gray-800">
+              <h2 className="text-base font-semibold" style={{ color: S.text2 }}>
                 Devis reçus{" "}
-                <span className="text-sm font-normal text-gray-400">
+                <span className="text-sm font-normal" style={{ color: S.text3 }}>
                   ({rfq.quotes.length})
                 </span>
               </h2>
               {sortedQuotes.length > 1 && (
-                <span className="text-xs text-gray-400">Triés par montant</span>
+                <span className="text-xs" style={{ color: S.text3 }}>Triés par montant</span>
               )}
             </div>
 
             {rfq.quotes.length === 0 ? (
               <div className="flex flex-col items-center py-8 text-center">
-                <Clock className="mb-2 h-8 w-8 text-gray-300" />
-                <p className="text-sm text-gray-500">
+                <Clock className="mb-2 h-8 w-8" style={{ color: S.border }} />
+                <p className="text-sm" style={{ color: S.text3 }}>
                   En attente de devis des prestataires…
                 </p>
               </div>
@@ -347,7 +396,10 @@ export default function RFQDetailPage() {
 
             {/* Summary when multiple quotes */}
             {sortedQuotes.length >= 2 && (
-              <div className="mt-4 rounded-lg bg-gray-50 p-3 text-xs text-gray-600">
+              <div
+                className="mt-4 rounded-lg p-3 text-xs"
+                style={{ background: S.surface2, color: S.text2 }}
+              >
                 <p>
                   Fourchette : <strong>{sortedQuotes[0]?.amount.toLocaleString("fr-FR")} €</strong>
                   {" — "}
@@ -355,7 +407,7 @@ export default function RFQDetailPage() {
                 </p>
                 <p className="mt-1">
                   Meilleur prix : devis à{" "}
-                  <strong className="text-orange-700">
+                  <strong style={{ color: S.orange }}>
                     {sortedQuotes[0]?.amount.toLocaleString("fr-FR")} €
                   </strong>
                 </p>
@@ -372,23 +424,24 @@ export default function RFQDetailPage() {
           )}
 
           {rfq.rating_given != null && (
-            <div className="card">
-              <h2 className="mb-3 text-base font-semibold text-gray-800">Votre évaluation</h2>
+            <div style={cardStyle}>
+              <h2 className="mb-3 text-base font-semibold" style={{ color: S.text2 }}>Votre évaluation</h2>
               <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    className={`h-5 w-5 ${
+                    className="h-5 w-5"
+                    style={
                       star <= rfq.rating_given!
-                        ? "fill-orange-400 text-orange-400"
-                        : "text-gray-200"
-                    }`}
+                        ? { fill: S.orange, color: S.orange }
+                        : { color: S.border }
+                    }
                   />
                 ))}
-                <span className="ml-2 text-sm text-gray-500">{rfq.rating_given}/5</span>
+                <span className="ml-2 text-sm" style={{ color: S.text3 }}>{rfq.rating_given}/5</span>
               </div>
               {rfq.rating_comment && (
-                <p className="mt-2 text-sm text-gray-600 italic">{rfq.rating_comment}</p>
+                <p className="mt-2 text-sm italic" style={{ color: S.text2 }}>{rfq.rating_comment}</p>
               )}
             </div>
           )}
@@ -408,12 +461,12 @@ export default function RFQDetailPage() {
           <Timeline rfq={rfq} />
 
           {rfq.commission_amount != null && (
-            <div className="card">
-              <h2 className="mb-2 text-sm font-semibold text-gray-600">Commission CATHY</h2>
-              <p className="text-xl font-bold text-orange-600">
+            <div style={cardStyle}>
+              <h2 className="mb-2 text-sm font-semibold" style={{ color: S.text3 }}>Commission CATHY</h2>
+              <p className="text-xl font-bold" style={{ color: S.orange }}>
                 {rfq.commission_amount.toLocaleString("fr-FR")} €
               </p>
-              <p className="text-xs text-gray-400">10% du montant retenu</p>
+              <p className="text-xs" style={{ color: S.text3 }}>10% du montant retenu</p>
             </div>
           )}
         </div>

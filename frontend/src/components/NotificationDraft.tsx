@@ -2,11 +2,27 @@
 import { useState } from 'react'
 import { api } from '@/lib/api'
 
-const O = '#D4601A'
-const T = '#1C0F06'
-const T5 = 'rgba(80,35,8,0.55)'
-const T3 = 'rgba(80,35,8,0.30)'
-const border = '0.5px solid rgba(160,92,40,0.2)'
+const S = {
+  bg: "var(--althy-bg)",
+  surface: "var(--althy-surface)",
+  surface2: "var(--althy-surface-2)",
+  border: "var(--althy-border)",
+  text: "var(--althy-text)",
+  text2: "var(--althy-text-2)",
+  text3: "var(--althy-text-3)",
+  orange: "var(--althy-orange)",
+  orangeBg: "var(--althy-orange-bg)",
+  green: "var(--althy-green)",
+  greenBg: "var(--althy-green-bg)",
+  red: "var(--althy-red)",
+  redBg: "var(--althy-red-bg)",
+  amber: "var(--althy-amber)",
+  amberBg: "var(--althy-amber-bg)",
+  blue: "var(--althy-blue)",
+  blueBg: "var(--althy-blue-bg)",
+  shadow: "var(--althy-shadow)",
+  shadowMd: "var(--althy-shadow-md)",
+} as const;
 
 interface Props {
   recipientName: string
@@ -61,12 +77,12 @@ export function NotificationDraft({ recipientName, recipientPhone, recipientEmai
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(28,15,6,0.5)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-      <div style={{ background: '#FAF5EB', borderRadius: 20, padding: '28px', maxWidth: 520, width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+      <div style={{ background: S.bg, borderRadius: 20, padding: '28px', maxWidth: 520, width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 18, fontWeight: 300, color: O, margin: 0 }}>
+          <h2 style={{ fontFamily: 'var(--font-serif),\'Cormorant Garamond\',serif', fontSize: 18, fontWeight: 400, color: S.orange, margin: 0 }}>
             Notification — {recipientName}
           </h2>
-          <button onClick={onClose} style={{ border: 'none', background: 'transparent', fontSize: 20, cursor: 'pointer', color: T5 }}>×</button>
+          <button onClick={onClose} style={{ border: 'none', background: 'transparent', fontSize: 20, cursor: 'pointer', color: S.text2 }}>×</button>
         </div>
 
         {/* Channel selector */}
@@ -76,14 +92,14 @@ export function NotificationDraft({ recipientName, recipientPhone, recipientEmai
               key={ch}
               onClick={() => setChannel(ch)}
               style={{
-                padding: '7px 16px', borderRadius: 10, border,
-                background: channel === ch ? O : 'transparent',
-                color: channel === ch ? '#fff' : T5,
+                padding: '7px 16px', borderRadius: 10, border: `0.5px solid ${S.border}`,
+                background: channel === ch ? S.orange : 'transparent',
+                color: channel === ch ? '#fff' : S.text2,
                 fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
                 textTransform: 'capitalize',
               }}
             >
-              {ch === 'email' ? '✉️ Email' : '💬 WhatsApp'}
+              {ch === 'email' ? 'Email' : 'WhatsApp'}
             </button>
           ))}
         </div>
@@ -91,15 +107,15 @@ export function NotificationDraft({ recipientName, recipientPhone, recipientEmai
         {!draft ? (
           <>
             {context && (
-              <div style={{ background: 'rgba(212,96,26,0.05)', border: '0.5px solid rgba(212,96,26,0.15)', borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
-                <p style={{ fontSize: 11, color: T3, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 4 }}>Contexte</p>
-                <p style={{ fontSize: 13, color: T5 }}>{context}</p>
+              <div style={{ background: S.orangeBg, border: `0.5px solid ${S.orange}`, borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
+                <p style={{ fontSize: 11, color: S.text3, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 4 }}>Contexte</p>
+                <p style={{ fontSize: 13, color: S.text2, margin: 0 }}>{context}</p>
               </div>
             )}
             <button
               onClick={generateDraft}
               disabled={loading}
-              style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', background: loading ? 'rgba(212,96,26,0.5)' : O, color: '#fff', fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}
+              style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', background: loading ? S.text3 : S.orange, color: '#fff', fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}
             >
               {loading ? 'Rédaction IA en cours…' : 'Générer le message'}
             </button>
@@ -108,29 +124,29 @@ export function NotificationDraft({ recipientName, recipientPhone, recipientEmai
           <>
             {channel === 'email' && draft.subject && (
               <div style={{ marginBottom: 10 }}>
-                <p style={{ fontSize: 11, color: T3, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 6 }}>Objet</p>
-                <p style={{ fontSize: 13, color: T, padding: '8px 12px', background: '#fff', borderRadius: 8, border }}>{draft.subject}</p>
+                <p style={{ fontSize: 11, color: S.text3, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 6 }}>Objet</p>
+                <p style={{ fontSize: 13, color: S.text, padding: '8px 12px', background: S.surface, borderRadius: 8, border: `0.5px solid ${S.border}`, margin: 0 }}>{draft.subject}</p>
               </div>
             )}
             <div style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 11, color: T3, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 6 }}>Message</p>
+              <p style={{ fontSize: 11, color: S.text3, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 6 }}>Message</p>
               <textarea
                 value={message}
                 readOnly
                 rows={10}
-                style={{ width: '100%', padding: '12px 14px', border, borderRadius: 12, fontSize: 13, color: T, background: '#fff', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '12px 14px', border: `0.5px solid ${S.border}`, borderRadius: 12, fontSize: 13, color: S.text, background: S.surface, outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' }}
               />
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 onClick={copy}
-                style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: copied ? '#16a34a' : O, color: '#fff', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
+                style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: copied ? S.green : S.orange, color: '#fff', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
               >
-                {copied ? 'Copié ✓' : 'Copier le message'}
+                {copied ? 'Copié' : 'Copier le message'}
               </button>
               <button
                 onClick={() => setDraft(null)}
-                style={{ padding: '10px 14px', borderRadius: 10, border, background: 'transparent', color: T5, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
+                style={{ padding: '10px 14px', borderRadius: 10, border: `0.5px solid ${S.border}`, background: 'transparent', color: S.text2, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
               >
                 Regénérer
               </button>
@@ -148,7 +164,7 @@ export function NotificationDraft({ recipientName, recipientPhone, recipientEmai
             {recipientEmail && channel === 'email' && (
               <a
                 href={`mailto:${recipientEmail}?subject=${encodeURIComponent(draft.subject ?? '')}&body=${encodeURIComponent(draft.email ?? '')}`}
-                style={{ display: 'block', textAlign: 'center', marginTop: 10, padding: '10px', borderRadius: 10, background: '#4B5563', color: '#fff', fontSize: 13, textDecoration: 'none' }}
+                style={{ display: 'block', textAlign: 'center', marginTop: 10, padding: '10px', borderRadius: 10, background: S.text2, color: '#fff', fontSize: 13, textDecoration: 'none' }}
               >
                 Ouvrir dans le client mail
               </a>

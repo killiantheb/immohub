@@ -28,6 +28,30 @@ import {
 import { useAdminRevenue, usePlatformStats } from "@/lib/hooks/useAdmin";
 import { useAuthStore } from "@/lib/store/authStore";
 
+// ── Design tokens ─────────────────────────────────────────────────────────────
+
+const S = {
+  bg: "var(--althy-bg)",
+  surface: "var(--althy-surface)",
+  surface2: "var(--althy-surface-2)",
+  border: "var(--althy-border)",
+  text: "var(--althy-text)",
+  text2: "var(--althy-text-2)",
+  text3: "var(--althy-text-3)",
+  orange: "var(--althy-orange)",
+  orangeBg: "var(--althy-orange-bg)",
+  green: "var(--althy-green)",
+  greenBg: "var(--althy-green-bg)",
+  red: "var(--althy-red)",
+  redBg: "var(--althy-red-bg)",
+  amber: "var(--althy-amber)",
+  amberBg: "var(--althy-amber-bg)",
+  blue: "var(--althy-blue)",
+  blueBg: "var(--althy-blue-bg)",
+  shadow: "var(--althy-shadow)",
+  shadowMd: "var(--althy-shadow-md)",
+} as const;
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(n: number) {
@@ -52,11 +76,11 @@ function formatMonth(m: string) {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  owner: "#E8601C",
-  agency: "#4f46e5",
+  owner: "#E8602C",
+  agency: "#E8602C",
   tenant: "#10b981",
   company: "#f59e0b",
-  opener: "#8b5cf6",
+  opener: "#E8602C",
   super_admin: "#ef4444",
 };
 
@@ -76,28 +100,41 @@ function KpiCard({
   value,
   sub,
   icon: Icon,
-  color,
+  iconBg,
+  iconColor,
   href,
 }: {
   label: string;
   value: string;
   sub?: string;
   icon: React.ElementType;
-  color: string;
+  iconBg: string;
+  iconColor: string;
   href?: string;
 }) {
   const card = (
-    <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+    <div
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: 20,
+        border: `1px solid ${S.border}`,
+        background: S.surface,
+        padding: "20px",
+        boxShadow: S.shadow,
+        transition: "box-shadow 0.2s",
+      }}
+    >
       <div className="flex items-start justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{label}</p>
-        <div className={`rounded-xl p-2.5 ${color}`}>
-          <Icon className="h-4 w-4" />
+        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: S.text3 }}>{label}</p>
+        <div style={{ borderRadius: 12, padding: "10px", background: iconBg }}>
+          <Icon style={{ width: 16, height: 16, color: iconColor }} />
         </div>
       </div>
-      <p className="mt-3 text-3xl font-bold tracking-tight text-gray-900">{value}</p>
-      {sub && <p className="mt-1 text-xs text-gray-400">{sub}</p>}
+      <p style={{ marginTop: 12, fontSize: 30, fontWeight: 700, letterSpacing: "-0.02em", color: S.text }}>{value}</p>
+      {sub && <p style={{ marginTop: 4, fontSize: 12, color: S.text3 }}>{sub}</p>}
       {href && (
-        <ArrowUpRight className="absolute bottom-4 right-4 h-4 w-4 text-gray-300" />
+        <ArrowUpRight style={{ position: "absolute", bottom: 16, right: 16, width: 16, height: 16, color: S.text3 }} />
       )}
     </div>
   );
@@ -106,10 +143,19 @@ function KpiCard({
 
 function SkeletonCard() {
   return (
-    <div className="animate-pulse rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <div className="h-3 w-24 rounded bg-gray-100" />
-      <div className="mt-4 h-7 w-32 rounded bg-gray-100" />
-      <div className="mt-2 h-3 w-20 rounded bg-gray-100" />
+    <div
+      className="animate-pulse"
+      style={{
+        borderRadius: 20,
+        border: `1px solid ${S.border}`,
+        background: S.surface,
+        padding: "20px",
+        boxShadow: S.shadow,
+      }}
+    >
+      <div style={{ height: 12, width: 96, borderRadius: 6, background: S.surface2 }} />
+      <div style={{ marginTop: 16, height: 28, width: 128, borderRadius: 6, background: S.surface2 }} />
+      <div style={{ marginTop: 8, height: 12, width: 80, borderRadius: 6, background: S.surface2 }} />
     </div>
   );
 }
@@ -123,13 +169,35 @@ export default function AdminPage() {
 
   if (user && user.user_metadata?.role !== "super_admin") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="rounded-2xl border border-red-100 bg-white p-8 text-center shadow-sm max-w-sm">
-          <ShieldCheck className="mx-auto mb-4 h-10 w-10 text-red-300" />
-          <h2 className="text-lg font-semibold text-gray-900">Accès réservé</h2>
-          <p className="mt-2 text-sm text-gray-500">
+      <div className="flex min-h-screen items-center justify-center" style={{ background: S.bg }}>
+        <div
+          style={{
+            borderRadius: 20,
+            border: `1px solid ${S.border}`,
+            background: S.surface,
+            padding: "32px",
+            textAlign: "center",
+            boxShadow: S.shadow,
+            maxWidth: 384,
+          }}
+        >
+          <ShieldCheck style={{ margin: "0 auto 16px", width: 40, height: 40, color: S.red }} />
+          <h2
+            style={{
+              fontFamily: "var(--font-serif),'Cormorant Garamond',serif",
+              fontWeight: 400,
+              fontSize: 20,
+              color: S.text,
+            }}
+          >
+            Accès réservé
+          </h2>
+          <p style={{ marginTop: 8, fontSize: 14, color: S.text2 }}>
             Cette page est réservée aux administrateurs Althy.<br />
-            Rôle requis : <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">super_admin</code>
+            Rôle requis :{" "}
+            <code style={{ fontSize: 11, background: S.surface2, padding: "2px 4px", borderRadius: 4 }}>
+              super_admin
+            </code>
           </p>
         </div>
       </div>
@@ -157,7 +225,8 @@ export default function AdminPage() {
           value: stats.total_users.toLocaleString("fr-FR"),
           sub: `+${stats.new_users_this_month} ce mois`,
           icon: Users,
-          color: "bg-indigo-50 text-indigo-600",
+          iconBg: S.orangeBg,
+          iconColor: S.orange,
           href: "/app/admin/users",
         },
         {
@@ -165,37 +234,39 @@ export default function AdminPage() {
           value: fmtShort(stats.revenue_this_month),
           sub: `Total : ${fmtShort(stats.revenue_total)}`,
           icon: Wallet,
-          color: "bg-orange-50 text-orange-600",
+          iconBg: S.orangeBg,
+          iconColor: S.orange,
         },
         {
           label: "Commissions du mois",
           value: fmtShort(stats.commissions_this_month),
           sub: `Total : ${fmtShort(stats.commissions_total)}`,
           icon: TrendingUp,
-          color: "bg-emerald-50 text-emerald-600",
+          iconBg: S.greenBg,
+          iconColor: S.green,
         },
         {
           label: "Biens gérés",
           value: stats.active_properties.toLocaleString("fr-FR"),
           sub: `${stats.total_properties} au total`,
           icon: Building2,
-          color: "bg-blue-50 text-blue-600",
+          iconBg: S.blueBg,
+          iconColor: S.blue,
         },
         {
           label: "Contrats actifs",
           value: stats.active_contracts.toLocaleString("fr-FR"),
           icon: FileText,
-          color: "bg-purple-50 text-purple-600",
+          iconBg: S.orangeBg,
+          iconColor: S.orange,
         },
         {
           label: "Transactions en attente",
           value: stats.pending_transactions.toLocaleString("fr-FR"),
           sub: stats.late_transactions > 0 ? `${stats.late_transactions} en retard` : undefined,
           icon: stats.late_transactions > 0 ? AlertTriangle : Activity,
-          color:
-            stats.late_transactions > 0
-              ? "bg-red-50 text-red-500"
-              : "bg-gray-50 text-gray-500",
+          iconBg: stats.late_transactions > 0 ? S.redBg : S.surface2,
+          iconColor: stats.late_transactions > 0 ? S.red : S.text3,
           href: "/app/admin/transactions",
         },
       ]
@@ -204,32 +275,78 @@ export default function AdminPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1C1917] to-[#2d1f3d] px-8 py-7 text-white shadow-lg">
-        <div className="relative z-10 flex items-center justify-between">
+      <div
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          borderRadius: 20,
+          background: "linear-gradient(135deg, #1C1917 0%, #2d1f1a 100%)",
+          padding: "28px 32px",
+          color: "#fff",
+          boxShadow: S.shadowMd,
+        }}
+      >
+        <div style={{ position: "relative", zIndex: 10 }} className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-purple-400" />
-              <span className="text-sm font-medium text-purple-300">Super Admin</span>
+              <ShieldCheck style={{ width: 20, height: 20, color: S.orange }} />
+              <span style={{ fontSize: 14, fontWeight: 500, color: S.orange }}>Super Admin</span>
             </div>
-            <h1 className="mt-1 text-2xl font-bold">Back-office plateforme</h1>
-            <p className="mt-1 text-sm text-white/50">Vue globale de CATHY</p>
+            <h1
+              style={{
+                marginTop: 4,
+                fontFamily: "var(--font-serif),'Cormorant Garamond',serif",
+                fontWeight: 400,
+                fontSize: 26,
+                color: "#fff",
+              }}
+            >
+              Back-office plateforme
+            </h1>
+            <p style={{ marginTop: 4, fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Vue globale de CATHY</p>
           </div>
           <div className="flex gap-3">
             <Link
               href="/app/admin/users"
-              className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium hover:bg-white/20 transition-colors"
+              style={{
+                borderRadius: 12,
+                background: "rgba(255,255,255,0.1)",
+                padding: "8px 16px",
+                fontSize: 14,
+                fontWeight: 500,
+                color: "#fff",
+                transition: "background 0.2s",
+              }}
             >
               Gérer les users
             </Link>
             <Link
               href="/app/admin/transactions"
-              className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium hover:bg-white/20 transition-colors"
+              style={{
+                borderRadius: 12,
+                background: "rgba(255,255,255,0.1)",
+                padding: "8px 16px",
+                fontSize: 14,
+                fontWeight: 500,
+                color: "#fff",
+                transition: "background 0.2s",
+              }}
             >
               Transactions
             </Link>
           </div>
         </div>
-        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-purple-500/10" />
+        <div
+          style={{
+            position: "absolute",
+            right: -40,
+            top: -40,
+            width: 160,
+            height: 160,
+            borderRadius: "50%",
+            background: "rgba(232,96,44,0.08)",
+          }}
+        />
       </div>
 
       {/* KPI grid */}
@@ -242,27 +359,44 @@ export default function AdminPage() {
       {/* Charts row */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Revenue + commissions chart */}
-        <div className="col-span-2 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-          <h2 className="mb-5 text-base font-semibold text-gray-900">
-            Revenus & commissions (12 mois)
+        <div
+          className="col-span-2"
+          style={{
+            borderRadius: 20,
+            border: `1px solid ${S.border}`,
+            background: S.surface,
+            padding: "24px",
+            boxShadow: S.shadow,
+          }}
+        >
+          <h2
+            style={{
+              marginBottom: 20,
+              fontFamily: "var(--font-serif),'Cormorant Garamond',serif",
+              fontWeight: 400,
+              fontSize: 18,
+              color: S.text,
+            }}
+          >
+            Revenus &amp; commissions (12 mois)
           </h2>
           {revenueChartData.length === 0 ? (
-            <div className="flex items-center justify-center py-16 text-sm text-gray-400">
+            <div className="flex items-center justify-center py-16" style={{ fontSize: 14, color: S.text3 }}>
               Aucune donnée
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={revenueChartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={S.border} vertical={false} />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 11, fill: "#9ca3af" }}
+                  tick={{ fontSize: 11, fill: "var(--althy-text-3)" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   tickFormatter={(v) => `${(v / 1000).toFixed(0)}k€`}
-                  tick={{ fontSize: 11, fill: "#9ca3af" }}
+                  tick={{ fontSize: 11, fill: "var(--althy-text-3)" }}
                   axisLine={false}
                   tickLine={false}
                   width={42}
@@ -272,21 +406,39 @@ export default function AdminPage() {
                     Number(v).toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }),
                     name,
                   ]}
-                  contentStyle={{ borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12 }}
+                  contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, background: S.surface, color: S.text }}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Revenus" fill="#4f46e5" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Commissions" fill="#E8601C" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Revenus" fill={S.orange} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Commissions" fill={S.green} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
         </div>
 
         {/* Users by role pie */}
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-          <h2 className="mb-5 text-base font-semibold text-gray-900">Répartition des rôles</h2>
+        <div
+          style={{
+            borderRadius: 20,
+            border: `1px solid ${S.border}`,
+            background: S.surface,
+            padding: "24px",
+            boxShadow: S.shadow,
+          }}
+        >
+          <h2
+            style={{
+              marginBottom: 20,
+              fontFamily: "var(--font-serif),'Cormorant Garamond',serif",
+              fontWeight: 400,
+              fontSize: 18,
+              color: S.text,
+            }}
+          >
+            Répartition des rôles
+          </h2>
           {rolesData.length === 0 ? (
-            <div className="flex items-center justify-center py-16 text-sm text-gray-400">
+            <div className="flex items-center justify-center py-16" style={{ fontSize: 14, color: S.text3 }}>
               Aucune donnée
             </div>
           ) : (
@@ -308,21 +460,20 @@ export default function AdminPage() {
                   </Pie>
                   <Tooltip
                     formatter={(v, name) => [v, name]}
-                    contentStyle={{ borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12 }}
+                    contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, background: S.surface, color: S.text }}
                   />
                 </PieChart>
               </ResponsiveContainer>
-              <ul className="mt-3 space-y-1.5">
+              <ul style={{ marginTop: 12 }} className="space-y-1.5">
                 {rolesData.map((r) => (
-                  <li key={r.name} className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-2 text-gray-600">
+                  <li key={r.name} className="flex items-center justify-between" style={{ fontSize: 12 }}>
+                    <span className="flex items-center gap-2" style={{ color: S.text2 }}>
                       <span
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: r.color }}
+                        style={{ width: 10, height: 10, borderRadius: "50%", background: r.color, display: "inline-block" }}
                       />
                       {r.name}
                     </span>
-                    <span className="font-semibold text-gray-800">{r.value}</span>
+                    <span style={{ fontWeight: 600, color: S.text }}>{r.value}</span>
                   </li>
                 ))}
               </ul>
@@ -334,18 +485,28 @@ export default function AdminPage() {
       {/* Quick links */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { href: "/app/admin/users", label: "Gérer les utilisateurs", icon: Users, color: "text-indigo-600", bg: "bg-indigo-50 hover:bg-indigo-100" },
-          { href: "/app/admin/transactions", label: "Toutes les transactions", icon: Wallet, color: "text-orange-600", bg: "bg-orange-50 hover:bg-orange-100" },
-          { href: "/app/admin/users?is_verified=false", label: "Comptes à vérifier", icon: ShieldCheck, color: "text-emerald-600", bg: "bg-emerald-50 hover:bg-emerald-100" },
-          { href: "/api/docs", label: "API Swagger", icon: Activity, color: "text-purple-600", bg: "bg-purple-50 hover:bg-purple-100" },
-        ].map(({ href, label, icon: Icon, color, bg }) => (
+          { href: "/app/admin/users", label: "Gérer les utilisateurs", icon: Users, iconColor: S.orange, bg: S.orangeBg },
+          { href: "/app/admin/transactions", label: "Toutes les transactions", icon: Wallet, iconColor: S.orange, bg: S.orangeBg },
+          { href: "/app/admin/users?is_verified=false", label: "Comptes à vérifier", icon: ShieldCheck, iconColor: S.green, bg: S.greenBg },
+          { href: "/api/docs", label: "API Swagger", icon: Activity, iconColor: S.orange, bg: S.orangeBg },
+        ].map(({ href, label, icon: Icon, iconColor, bg }) => (
           <Link
             key={href}
             href={href}
-            className={`flex items-center gap-3 rounded-xl border border-transparent ${bg} px-4 py-3.5 transition-all hover:shadow-sm`}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              borderRadius: 12,
+              border: `1px solid ${S.border}`,
+              background: bg,
+              padding: "14px 16px",
+              transition: "box-shadow 0.2s, opacity 0.2s",
+              textDecoration: "none",
+            }}
           >
-            <Icon className={`h-4 w-4 shrink-0 ${color}`} />
-            <span className="text-sm font-medium text-gray-700">{label}</span>
+            <Icon style={{ width: 16, height: 16, flexShrink: 0, color: iconColor }} />
+            <span style={{ fontSize: 14, fontWeight: 500, color: S.text }}>{label}</span>
           </Link>
         ))}
       </div>

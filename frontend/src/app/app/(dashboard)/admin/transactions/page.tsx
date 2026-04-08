@@ -11,6 +11,30 @@ import {
 import { useAdminTransactions, type AdminTransaction } from "@/lib/hooks/useAdmin";
 import { RentStatusBadge } from "@/components/RentStatusBadge";
 
+// ── Design tokens ─────────────────────────────────────────────────────────────
+
+const S = {
+  bg: "var(--althy-bg)",
+  surface: "var(--althy-surface)",
+  surface2: "var(--althy-surface-2)",
+  border: "var(--althy-border)",
+  text: "var(--althy-text)",
+  text2: "var(--althy-text-2)",
+  text3: "var(--althy-text-3)",
+  orange: "var(--althy-orange)",
+  orangeBg: "var(--althy-orange-bg)",
+  green: "var(--althy-green)",
+  greenBg: "var(--althy-green-bg)",
+  red: "var(--althy-red)",
+  redBg: "var(--althy-red-bg)",
+  amber: "var(--althy-amber)",
+  amberBg: "var(--althy-amber-bg)",
+  blue: "var(--althy-blue)",
+  blueBg: "var(--althy-blue-bg)",
+  shadow: "var(--althy-shadow)",
+  shadowMd: "var(--althy-shadow-md)",
+} as const;
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const TYPE_LABELS: Record<string, string> = {
@@ -21,17 +45,30 @@ const TYPE_LABELS: Record<string, string> = {
   quote: "Devis",
 };
 
-const TYPE_COLORS: Record<string, string> = {
-  rent: "bg-blue-100 text-blue-700",
-  commission: "bg-orange-100 text-orange-700",
-  deposit: "bg-purple-100 text-purple-700",
-  service: "bg-gray-100 text-gray-700",
-  quote: "bg-amber-100 text-amber-700",
+type TypeKey = "rent" | "commission" | "deposit" | "service" | "quote";
+
+const TYPE_BADGE_STYLES: Record<TypeKey, { bg: string; color: string }> = {
+  rent: { bg: S.blueBg, color: S.blue },
+  commission: { bg: S.orangeBg, color: S.orange },
+  deposit: { bg: S.orangeBg, color: S.orange },
+  service: { bg: S.surface2, color: S.text2 },
+  quote: { bg: S.amberBg, color: S.amber },
 };
 
 function TypeBadge({ type }: { type: string }) {
+  const style = TYPE_BADGE_STYLES[type as TypeKey] ?? { bg: S.surface2, color: S.text2 };
   return (
-    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TYPE_COLORS[type] ?? "bg-gray-100 text-gray-600"}`}>
+    <span
+      style={{
+        borderRadius: 999,
+        padding: "2px 8px",
+        fontSize: 12,
+        fontWeight: 500,
+        background: style.bg,
+        color: style.color,
+        display: "inline-block",
+      }}
+    >
       {TYPE_LABELS[type] ?? type}
     </span>
   );
@@ -86,26 +123,64 @@ export default function AdminTransactionsPage() {
   const types = ["rent", "commission", "deposit", "service", "quote"];
   const statuses = ["pending", "paid", "late", "cancelled"];
 
+  const inputStyle = {
+    borderRadius: 12,
+    border: `1px solid ${S.border}`,
+    background: S.surface,
+    padding: "8px 12px",
+    fontSize: 14,
+    color: S.text,
+    outline: "none",
+  };
+
+  const TABLE_HEADERS = ["Référence", "Type", "Statut", "Montant", "Commission", "Échéance", "Payé le", "Créé le"];
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <Link href="/app/admin" className="mb-2 flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
-            <ArrowLeft className="h-4 w-4" />
+          <Link
+            href="/app/admin"
+            style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 4, fontSize: 14, color: S.text2, textDecoration: "none" }}
+          >
+            <ArrowLeft style={{ width: 16, height: 16 }} />
             Retour à l&apos;admin
           </Link>
-          <h1 className="text-xl font-bold text-gray-900">Toutes les transactions</h1>
-          <p className="text-sm text-gray-500">
+          <h1
+            style={{
+              fontFamily: "var(--font-serif),'Cormorant Garamond',serif",
+              fontWeight: 400,
+              fontSize: 24,
+              color: S.text,
+            }}
+          >
+            Toutes les transactions
+          </h1>
+          <p style={{ fontSize: 14, color: S.text2 }}>
             {data ? `${data.total} transactions` : "Chargement…"}
           </p>
         </div>
         {data && data.items.length > 0 && (
           <button
             onClick={() => exportCsv(data.items)}
-            className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              borderRadius: 12,
+              border: `1px solid ${S.border}`,
+              background: S.surface,
+              padding: "8px 16px",
+              fontSize: 14,
+              fontWeight: 500,
+              color: S.text,
+              cursor: "pointer",
+              boxShadow: S.shadow,
+              transition: "background 0.15s",
+            }}
           >
-            <Download className="h-4 w-4" />
+            <Download style={{ width: 16, height: 16 }} />
             Exporter CSV
           </button>
         )}
@@ -116,7 +191,7 @@ export default function AdminTransactionsPage() {
         <select
           value={typeFilter ?? ""}
           onChange={(e) => { setTypeFilter(e.target.value || undefined); setPage(1); }}
-          className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-400"
+          style={inputStyle}
         >
           <option value="">Tous les types</option>
           {types.map((t) => (
@@ -127,7 +202,7 @@ export default function AdminTransactionsPage() {
         <select
           value={statusFilter ?? ""}
           onChange={(e) => { setStatusFilter(e.target.value || undefined); setPage(1); }}
-          className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-400"
+          style={inputStyle}
         >
           <option value="">Tous les statuts</option>
           {statuses.map((s) => (
@@ -137,15 +212,32 @@ export default function AdminTransactionsPage() {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      <div
+        style={{
+          overflow: "hidden",
+          borderRadius: 20,
+          border: `1px solid ${S.border}`,
+          background: S.surface,
+          boxShadow: S.shadow,
+        }}
+      >
+        <div style={{ overflowX: "auto" }}>
+          <table className="w-full" style={{ fontSize: 14 }}>
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                {["Référence", "Type", "Statut", "Montant", "Commission", "Échéance", "Payé le", "Créé le"].map((h) => (
+              <tr style={{ borderBottom: `1px solid ${S.border}`, background: S.surface2 }}>
+                {TABLE_HEADERS.map((h) => (
                   <th
                     key={h}
-                    className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400"
+                    style={{
+                      padding: "14px 20px",
+                      textAlign: "left",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      color: S.text3,
+                      whiteSpace: "nowrap",
+                    }}
                   >
                     {h}
                   </th>
@@ -155,10 +247,13 @@ export default function AdminTransactionsPage() {
             <tbody>
               {isLoading
                 ? Array.from({ length: 10 }).map((_, i) => (
-                    <tr key={i} className="border-b border-gray-50">
+                    <tr key={i} style={{ borderBottom: `1px solid ${S.border}` }}>
                       {Array.from({ length: 8 }).map((_, j) => (
-                        <td key={j} className="px-5 py-3.5">
-                          <div className="h-3.5 w-20 animate-pulse rounded bg-gray-100" />
+                        <td key={j} style={{ padding: "14px 20px" }}>
+                          <div
+                            className="animate-pulse"
+                            style={{ height: 14, width: 80, borderRadius: 6, background: S.surface2 }}
+                          />
                         </td>
                       ))}
                     </tr>
@@ -166,34 +261,34 @@ export default function AdminTransactionsPage() {
                 : data?.items.map((tx) => (
                     <tr
                       key={tx.id}
-                      className="border-b border-gray-50 transition-colors hover:bg-gray-50/50"
+                      style={{ borderBottom: `1px solid ${S.border}` }}
                     >
-                      <td className="px-5 py-3.5 font-mono text-xs font-semibold text-gray-700">
+                      <td style={{ padding: "14px 20px", fontFamily: "monospace", fontSize: 12, fontWeight: 600, color: S.text }}>
                         {tx.reference}
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td style={{ padding: "14px 20px" }}>
                         <TypeBadge type={tx.type} />
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td style={{ padding: "14px 20px" }}>
                         <RentStatusBadge status={tx.status} />
                       </td>
-                      <td className="px-5 py-3.5 font-semibold text-gray-900">
+                      <td style={{ padding: "14px 20px", fontWeight: 600, color: S.text }}>
                         {fmt(tx.amount)}
                       </td>
-                      <td className="px-5 py-3.5 text-gray-500">
+                      <td style={{ padding: "14px 20px", color: S.text2 }}>
                         {tx.commission_amount != null ? fmt(tx.commission_amount) : "—"}
                       </td>
-                      <td className="px-5 py-3.5 text-xs text-gray-400">
+                      <td style={{ padding: "14px 20px", fontSize: 12, color: S.text3 }}>
                         {tx.due_date
                           ? new Date(tx.due_date).toLocaleDateString("fr-FR")
                           : "—"}
                       </td>
-                      <td className="px-5 py-3.5 text-xs text-gray-400">
+                      <td style={{ padding: "14px 20px", fontSize: 12, color: S.text3 }}>
                         {tx.paid_at
                           ? new Date(tx.paid_at).toLocaleDateString("fr-FR")
                           : "—"}
                       </td>
-                      <td className="px-5 py-3.5 text-xs text-gray-400">
+                      <td style={{ padding: "14px 20px", fontSize: 12, color: S.text3 }}>
                         {new Date(tx.created_at).toLocaleDateString("fr-FR")}
                       </td>
                     </tr>
@@ -204,24 +299,43 @@ export default function AdminTransactionsPage() {
 
         {/* Pagination */}
         {data && data.pages > 1 && (
-          <div className="flex items-center justify-between border-t border-gray-100 px-5 py-3">
-            <p className="text-xs text-gray-400">
+          <div
+            className="flex items-center justify-between"
+            style={{ borderTop: `1px solid ${S.border}`, padding: "12px 20px" }}
+          >
+            <p style={{ fontSize: 12, color: S.text3 }}>
               Page {data.page} / {data.pages} — {data.total} résultats
             </p>
             <div className="flex gap-2">
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="rounded-lg border border-gray-200 p-1.5 hover:bg-gray-50 disabled:opacity-40"
+                style={{
+                  borderRadius: 8,
+                  border: `1px solid ${S.border}`,
+                  padding: 6,
+                  background: S.surface,
+                  cursor: page <= 1 ? "not-allowed" : "pointer",
+                  opacity: page <= 1 ? 0.4 : 1,
+                  color: S.text,
+                }}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft style={{ width: 16, height: 16 }} />
               </button>
               <button
                 disabled={page >= data.pages}
                 onClick={() => setPage((p) => p + 1)}
-                className="rounded-lg border border-gray-200 p-1.5 hover:bg-gray-50 disabled:opacity-40"
+                style={{
+                  borderRadius: 8,
+                  border: `1px solid ${S.border}`,
+                  padding: 6,
+                  background: S.surface,
+                  cursor: page >= data.pages ? "not-allowed" : "pointer",
+                  opacity: page >= data.pages ? 0.4 : 1,
+                  color: S.text,
+                }}
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight style={{ width: 16, height: 16 }} />
               </button>
             </div>
           </div>

@@ -18,6 +18,28 @@ import { useCreateProperty, useUploadDocument, useUploadImage } from "@/lib/hook
 import { PROPERTY_TYPE_LABELS } from "@/lib/constants/properties";
 import type { PropertyType } from "@/lib/types";
 
+const S = {
+  bg: "var(--althy-bg)",
+  surface: "var(--althy-surface)",
+  surface2: "var(--althy-surface-2)",
+  border: "var(--althy-border)",
+  text: "var(--althy-text)",
+  text2: "var(--althy-text-2)",
+  text3: "var(--althy-text-3)",
+  orange: "var(--althy-orange)",
+  orangeBg: "var(--althy-orange-bg)",
+  green: "var(--althy-green)",
+  greenBg: "var(--althy-green-bg)",
+  red: "var(--althy-red)",
+  redBg: "var(--althy-red-bg)",
+  amber: "var(--althy-amber)",
+  amberBg: "var(--althy-amber-bg)",
+  blue: "var(--althy-blue)",
+  blueBg: "var(--althy-blue-bg)",
+  shadow: "var(--althy-shadow)",
+  shadowMd: "var(--althy-shadow-md)",
+} as const;
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface FormData {
@@ -110,22 +132,29 @@ function StepBar({ current }: { current: number }) {
         <div key={step.id} className="flex flex-1 items-center">
           <div className="flex flex-col items-center gap-1">
             <div
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
+              className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-colors"
+              style={
                 step.id < current
-                  ? "bg-primary-600 text-white"
+                  ? { background: S.orange, color: "#fff" }
                   : step.id === current
-                  ? "border-2 border-primary-600 bg-white text-primary-600"
-                  : "border-2 border-gray-200 bg-white text-gray-400"
-              }`}
+                  ? { border: `2px solid ${S.orange}`, background: S.surface, color: S.orange }
+                  : { border: `2px solid ${S.border}`, background: S.surface, color: S.text3 }
+              }
             >
               {step.id < current ? <Check className="h-4 w-4" /> : step.id}
             </div>
-            <span className={`text-xs font-medium ${step.id === current ? "text-primary-600" : "text-gray-400"}`}>
+            <span
+              className="text-xs font-medium"
+              style={{ color: step.id === current ? S.orange : S.text3 }}
+            >
               {step.label}
             </span>
           </div>
           {i < STEPS.length - 1 && (
-            <div className={`mb-4 flex-1 border-t-2 ${step.id < current ? "border-primary-600" : "border-gray-200"}`} />
+            <div
+              className="mb-4 flex-1 border-t-2"
+              style={{ borderColor: step.id < current ? S.orange : S.border }}
+            />
           )}
         </div>
       ))}
@@ -150,12 +179,17 @@ function Step1({
     <div className="space-y-6">
       {/* Type */}
       <div>
-        <label className="mb-2 block text-sm font-medium text-gray-700">Type de bien</label>
+        <label className="mb-2 block text-sm font-medium" style={{ color: S.text2 }}>Type de bien</label>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
           {TYPES.map(([val, label]) => (
             <label
               key={val}
-              className="relative flex cursor-pointer flex-col items-center gap-1 rounded-lg border p-3 text-center hover:border-primary-400 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50"
+              className="relative flex cursor-pointer flex-col items-center gap-1 rounded-lg p-3 text-center transition-colors"
+              style={
+                data.type === val
+                  ? { border: `1px solid ${S.orange}`, background: S.orangeBg }
+                  : { border: `1px solid ${S.border}`, background: S.surface }
+              }
             >
               <input
                 type="radio"
@@ -165,8 +199,8 @@ function Step1({
                 onChange={() => onChange({ type: val })}
                 className="sr-only"
               />
-              <Home className="h-5 w-5 text-gray-500" />
-              <span className="text-xs font-medium">{label}</span>
+              <Home className="h-5 w-5" style={{ color: data.type === val ? S.orange : S.text3 }} />
+              <span className="text-xs font-medium" style={{ color: data.type === val ? S.orange : S.text2 }}>{label}</span>
             </label>
           ))}
         </div>
@@ -175,7 +209,7 @@ function Step1({
       {/* Location */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Adresse *</label>
+          <label className="mb-1.5 block text-sm font-medium" style={{ color: S.text2 }}>Adresse *</label>
           <input
             type="text"
             value={data.address}
@@ -183,10 +217,10 @@ function Step1({
             placeholder="12 rue de la Paix"
             className={`input ${errors.address ? "border-red-400" : ""}`}
           />
-          {errors.address && <p className="mt-1 text-xs text-red-500">{errors.address}</p>}
+          {errors.address && <p className="mt-1 text-xs" style={{ color: S.red }}>{errors.address}</p>}
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Ville *</label>
+          <label className="mb-1.5 block text-sm font-medium" style={{ color: S.text2 }}>Ville *</label>
           <input
             type="text"
             value={data.city}
@@ -194,10 +228,10 @@ function Step1({
             placeholder="Paris"
             className={`input ${errors.city ? "border-red-400" : ""}`}
           />
-          {errors.city && <p className="mt-1 text-xs text-red-500">{errors.city}</p>}
+          {errors.city && <p className="mt-1 text-xs" style={{ color: S.red }}>{errors.city}</p>}
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Code postal *</label>
+          <label className="mb-1.5 block text-sm font-medium" style={{ color: S.text2 }}>Code postal *</label>
           <input
             type="text"
             value={data.zip_code}
@@ -205,22 +239,22 @@ function Step1({
             placeholder="75001"
             className={`input ${errors.zip_code ? "border-red-400" : ""}`}
           />
-          {errors.zip_code && <p className="mt-1 text-xs text-red-500">{errors.zip_code}</p>}
+          {errors.zip_code && <p className="mt-1 text-xs" style={{ color: S.red }}>{errors.zip_code}</p>}
         </div>
       </div>
 
       {/* Building details */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Nom de la résidence</label>
+          <label className="mb-1.5 block text-sm font-medium" style={{ color: S.text2 }}>Nom de la résidence</label>
           <input type="text" value={data.building_name} onChange={(e) => onChange({ building_name: e.target.value })} placeholder="Les Acacias" className="input" />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">N° d'appartement</label>
+          <label className="mb-1.5 block text-sm font-medium" style={{ color: S.text2 }}>N° d'appartement</label>
           <input type="text" value={data.unit_number} onChange={(e) => onChange({ unit_number: e.target.value })} placeholder="3B" className="input" />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Canton</label>
+          <label className="mb-1.5 block text-sm font-medium" style={{ color: S.text2 }}>Canton</label>
           <select value={data.canton} onChange={(e) => onChange({ canton: e.target.value })} className="input">
             {["VS","VD","GE","BE","FR","NE","JU","TI","ZH","BS","BL","AG","SO","LU","ZG","SG","TG","SH","AR","AI","GL","GR","OW","NW","UR","SZ","ER"].map(c => (
               <option key={c} value={c}>{c}</option>
@@ -239,7 +273,7 @@ function Step1({
           { key: "floor", label: "Étage", placeholder: "2" },
         ].map(({ key, label, placeholder }) => (
           <div key={key}>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">{label}</label>
+            <label className="mb-1.5 block text-sm font-medium" style={{ color: S.text2 }}>{label}</label>
             <input
               type="number"
               value={data[key as keyof FormData] as string}
@@ -254,7 +288,7 @@ function Step1({
 
       {/* Financial */}
       <div>
-        <label className="mb-2 block text-sm font-medium text-gray-700">Situation financière</label>
+        <label className="mb-2 block text-sm font-medium" style={{ color: S.text2 }}>Situation financière</label>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
             { key: "monthly_rent", label: "Loyer mensuel (CHF)" },
@@ -263,7 +297,7 @@ function Step1({
             { key: "price_sale", label: "Prix de vente (CHF)" },
           ].map(({ key, label }) => (
             <div key={key}>
-              <label className="mb-1 block text-xs text-gray-500">{label}</label>
+              <label className="mb-1 block text-xs" style={{ color: S.text3 }}>{label}</label>
               <input
                 type="number"
                 value={data[key as keyof FormData] as string}
@@ -280,18 +314,18 @@ function Step1({
       {/* Additional financial */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Taxe de séjour (CHF/nuit)</label>
+          <label className="mb-1.5 block text-sm font-medium" style={{ color: S.text2 }}>Taxe de séjour (CHF/nuit)</label>
           <input type="number" value={data.tourist_tax_amount} onChange={(e) => onChange({ tourist_tax_amount: e.target.value })} placeholder="0.00" className="input" min={0} step="0.01" />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700">Nombre de clés</label>
+          <label className="mb-1.5 block text-sm font-medium" style={{ color: S.text2 }}>Nombre de clés</label>
           <input type="number" value={data.keys_count} onChange={(e) => onChange({ keys_count: e.target.value })} placeholder="3" className="input" min={1} />
         </div>
       </div>
 
       {/* Options */}
       <div>
-        <label className="mb-2 block text-sm font-medium text-gray-700">Caractéristiques</label>
+        <label className="mb-2 block text-sm font-medium" style={{ color: S.text2 }}>Caractéristiques</label>
         <div className="flex flex-wrap gap-4">
           {[
             { key: "is_furnished", label: "Meublé" },
@@ -311,9 +345,9 @@ function Step1({
                 type="checkbox"
                 checked={data[key as keyof FormData] as boolean}
                 onChange={(e) => onChange({ [key]: e.target.checked })}
-                className="h-4 w-4 rounded border-gray-300 text-primary-600 accent-primary-600"
+                className="h-4 w-4 rounded border-gray-300 accent-orange-600"
               />
-              <span className="text-sm text-gray-700">{label}</span>
+              <span className="text-sm" style={{ color: S.text2 }}>{label}</span>
             </label>
           ))}
         </div>
@@ -321,7 +355,7 @@ function Step1({
 
       {/* Nearby */}
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-gray-700">À proximité (commodités, transports…)</label>
+        <label className="mb-1.5 block text-sm font-medium" style={{ color: S.text2 }}>A proximité (commodités, transports…)</label>
         <input type="text" value={data.nearby_landmarks} onChange={(e) => onChange({ nearby_landmarks: e.target.value })} placeholder="Ski, téléphérique, commerces, école…" className="input" />
       </div>
     </div>
@@ -348,32 +382,37 @@ function Step2({
   return (
     <div className="space-y-4">
       <div
-        className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 py-12 hover:border-primary-300 hover:bg-primary-50/30"
+        className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed py-12"
+        style={{ borderColor: S.border }}
         onClick={() => inputRef.current?.click()}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => { e.preventDefault(); addFiles(e.dataTransfer.files); }}
       >
-        <ImagePlus className="mb-3 h-10 w-10 text-gray-300" />
-        <p className="text-sm font-medium text-gray-600">Glissez vos photos ici</p>
-        <p className="text-xs text-gray-400">ou cliquez pour parcourir (JPG, PNG, WebP)</p>
+        <ImagePlus className="mb-3 h-10 w-10" style={{ color: S.text3 }} />
+        <p className="text-sm font-medium" style={{ color: S.text2 }}>Glissez vos photos ici</p>
+        <p className="text-xs" style={{ color: S.text3 }}>ou cliquez pour parcourir (JPG, PNG, WebP)</p>
         <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => addFiles(e.target.files)} />
       </div>
 
       {files.length > 0 && (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
           {files.map((file, i) => (
-            <div key={i} className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+            <div key={i} className="group relative aspect-square overflow-hidden rounded-lg" style={{ background: S.surface2 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={URL.createObjectURL(file)} alt="" className="h-full w-full object-cover" />
               {i === 0 && (
-                <span className="absolute bottom-0 left-0 right-0 bg-amber-400/90 py-0.5 text-center text-xs text-white">
+                <span
+                  className="absolute bottom-0 left-0 right-0 py-0.5 text-center text-xs text-white"
+                  style={{ background: `${S.amber}e6` }}
+                >
                   Couverture
                 </span>
               )}
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onChange(files.filter((_, j) => j !== i)); }}
-                className="absolute right-1 top-1 hidden rounded-full bg-white/80 p-0.5 text-red-500 group-hover:block"
+                className="absolute right-1 top-1 hidden rounded-full p-0.5 group-hover:block"
+                style={{ background: "rgba(255,255,255,0.8)", color: S.red }}
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -441,25 +480,29 @@ function Step3({
       </div>
 
       {docs.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-gray-200 py-12 text-center">
-          <FileText className="mx-auto mb-2 h-8 w-8 text-gray-300" />
-          <p className="text-sm text-gray-400">Aucun document (optionnel)</p>
+        <div
+          className="rounded-xl border-2 border-dashed py-12 text-center"
+          style={{ borderColor: S.border }}
+        >
+          <FileText className="mx-auto mb-2 h-8 w-8" style={{ color: S.text3 }} />
+          <p className="text-sm" style={{ color: S.text3 }}>Aucun document (optionnel)</p>
         </div>
       ) : (
-        <ul className="divide-y rounded-xl border border-gray-200">
+        <ul className="divide-y rounded-xl" style={{ border: `1px solid ${S.border}` }}>
           {docs.map((d, i) => (
             <li key={i} className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-gray-400" />
+                <FileText className="h-4 w-4" style={{ color: S.text3 }} />
                 <div>
-                  <p className="text-sm font-medium text-gray-800">{d.file.name}</p>
-                  <p className="text-xs text-gray-400">{DOC_TYPES.find((t) => t.value === d.type)?.label}</p>
+                  <p className="text-sm font-medium" style={{ color: S.text }}>{d.file.name}</p>
+                  <p className="text-xs" style={{ color: S.text3 }}>{DOC_TYPES.find((t) => t.value === d.type)?.label}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => onChange(docs.filter((_, j) => j !== i))}
-                className="text-gray-400 hover:text-red-500"
+                style={{ color: S.text3 }}
+                className="hover:text-red-500"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -484,7 +527,7 @@ function Step4({
 }) {
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-gray-200 divide-y">
+      <div className="rounded-xl divide-y" style={{ border: `1px solid ${S.border}` }}>
         {[
           ["Type", PROPERTY_TYPE_LABELS[data.type]],
           ["Canton", data.canton],
@@ -496,12 +539,12 @@ function Step4({
           ["Prix de vente", data.price_sale ? `${data.price_sale} CHF` : "—"],
         ].map(([label, value]) => (
           <div key={label} className="flex justify-between px-4 py-3 text-sm">
-            <span className="text-gray-500">{label}</span>
-            <span className="font-medium text-gray-900">{value}</span>
+            <span style={{ color: S.text3 }}>{label}</span>
+            <span className="font-medium" style={{ color: S.text }}>{value}</span>
           </div>
         ))}
       </div>
-      <div className="flex gap-4 text-sm text-gray-600">
+      <div className="flex gap-4 text-sm" style={{ color: S.text2 }}>
         <span className="flex items-center gap-1">
           <ImagePlus className="h-4 w-4" /> {images.length} photo{images.length !== 1 ? "s" : ""}
         </span>
@@ -624,19 +667,29 @@ export default function NewPropertyPage() {
     <div className="mx-auto max-w-2xl">
       {/* Header */}
       <div className="mb-6 flex items-center gap-3">
-        <button onClick={() => router.back()} className="text-gray-400 hover:text-gray-700">
+        <button onClick={() => router.back()} style={{ color: S.text3 }}>
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Ajouter un bien</h1>
-          <p className="text-sm text-gray-500">Étape {step} sur 4</p>
+          <h1 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontWeight: 400, fontSize: 24, color: S.text }}>
+            Ajouter un bien
+          </h1>
+          <p className="text-sm" style={{ color: S.text3 }}>Étape {step} sur 4</p>
         </div>
       </div>
 
       <StepBar current={step} />
 
       {/* Step content */}
-      <div className="card p-6">
+      <div
+        className="p-6"
+        style={{
+          background: S.surface,
+          border: `1px solid ${S.border}`,
+          borderRadius: 14,
+          boxShadow: S.shadow,
+        }}
+      >
         {step === 1 && (
           <Step1
             data={formData}
@@ -650,7 +703,10 @@ export default function NewPropertyPage() {
 
         {/* Server error */}
         {serverError && (
-          <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div
+            className="mt-4 flex items-start gap-2 rounded-lg px-4 py-3 text-sm"
+            style={{ border: `1px solid ${S.red}`, background: S.redBg, color: S.red }}
+          >
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             {serverError}
           </div>
@@ -659,7 +715,10 @@ export default function NewPropertyPage() {
         {/* Navigation */}
         <div className="mt-6 flex items-center justify-between">
           {step > 1 ? (
-            <button onClick={back} className="btn-secondary flex items-center gap-1">
+            <button
+              onClick={back}
+              className="btn-secondary flex items-center gap-1"
+            >
               <ArrowLeft className="h-4 w-4" />
               Précédent
             </button>
@@ -668,7 +727,11 @@ export default function NewPropertyPage() {
           )}
 
           {step < 4 ? (
-            <button onClick={next} className="btn-primary flex items-center gap-1">
+            <button
+              onClick={next}
+              className="btn-primary flex items-center gap-1"
+              style={{ background: S.orange, color: "#fff" }}
+            >
               Suivant
               <ArrowRight className="h-4 w-4" />
             </button>
@@ -677,6 +740,7 @@ export default function NewPropertyPage() {
               onClick={publish}
               disabled={isPublishing}
               className="btn-primary flex items-center gap-2 disabled:opacity-60"
+              style={{ background: S.orange, color: "#fff" }}
             >
               {isPublishing ? (
                 <>

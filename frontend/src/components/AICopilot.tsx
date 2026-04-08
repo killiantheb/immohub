@@ -7,6 +7,28 @@ import { baseURL } from "@/lib/api";
 import { useUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase";
 
+const S = {
+  bg: "var(--althy-bg)",
+  surface: "var(--althy-surface)",
+  surface2: "var(--althy-surface-2)",
+  border: "var(--althy-border)",
+  text: "var(--althy-text)",
+  text2: "var(--althy-text-2)",
+  text3: "var(--althy-text-3)",
+  orange: "var(--althy-orange)",
+  orangeBg: "var(--althy-orange-bg)",
+  green: "var(--althy-green)",
+  greenBg: "var(--althy-green-bg)",
+  red: "var(--althy-red)",
+  redBg: "var(--althy-red-bg)",
+  amber: "var(--althy-amber)",
+  amberBg: "var(--althy-amber-bg)",
+  blue: "var(--althy-blue)",
+  blueBg: "var(--althy-blue-bg)",
+  shadow: "var(--althy-shadow)",
+  shadowMd: "var(--althy-shadow-md)",
+} as const;
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Message {
@@ -92,8 +114,8 @@ function TypingDots() {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="h-1.5 w-1.5 rounded-full bg-gray-400 animate-bounce"
-          style={{ animationDelay: `${i * 150}ms` }}
+          className="h-1.5 w-1.5 rounded-full animate-bounce"
+          style={{ backgroundColor: S.text3, animationDelay: `${i * 150}ms` }}
         />
       ))}
     </span>
@@ -119,34 +141,41 @@ function MessageBubble({
       <div className="max-w-[85%] space-y-1">
         {!isUser && (
           <div className="flex items-center gap-1 mb-0.5">
-            <Bot className="h-3.5 w-3.5 text-primary-600" />
-            <span className="text-xs font-medium text-primary-700">Althy IA</span>
+            <Bot className="h-3.5 w-3.5" style={{ color: S.orange }} />
+            <span className="text-xs font-medium" style={{ color: S.orange }}>Althy IA</span>
           </div>
         )}
         <div
-          className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
-            isUser
-              ? "bg-primary-600 text-white rounded-tr-sm"
-              : "bg-gray-100 text-gray-800 rounded-tl-sm"
-          }`}
+          className="rounded-2xl px-3.5 py-2.5 leading-relaxed whitespace-pre-wrap"
+          style={{
+            fontSize: 14,
+            backgroundColor: isUser ? S.orange : S.surface2,
+            color: isUser ? "#fff" : S.text,
+            borderRadius: isUser ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+          }}
         >
           {display}
         </div>
         {msg.action && (
           msg.action.requires_validation ? (
-            <div className="mt-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 space-y-1.5">
-              <p className="text-xs text-amber-700 font-medium">Validation requise</p>
+            <div
+              className="mt-1 rounded-lg px-3 py-2 space-y-1.5"
+              style={{ border: `1px solid ${S.amber}`, backgroundColor: S.amberBg }}
+            >
+              <p className="text-xs font-medium" style={{ color: S.amber }}>Validation requise</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => onValidate?.(msg.action!)}
-                  className="flex items-center gap-1 rounded-md bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700 transition-colors"
+                  className="flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+                  style={{ backgroundColor: S.amber, color: "#fff" }}
                 >
                   <Sparkles className="h-3 w-3" />
                   {msg.action.label}
                 </button>
                 <button
                   onClick={() => onAction(msg.action!.path)}
-                  className="rounded-md border border-amber-300 px-2.5 py-1 text-xs text-amber-700 hover:bg-amber-100 transition-colors"
+                  className="rounded-md px-2.5 py-1 text-xs transition-colors"
+                  style={{ border: `1px solid ${S.amber}`, color: S.amber, backgroundColor: "transparent" }}
                 >
                   Voir
                 </button>
@@ -155,7 +184,8 @@ function MessageBubble({
           ) : (
             <button
               onClick={() => onAction(msg.action!.path)}
-              className="mt-1 flex items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-medium text-primary-700 hover:bg-primary-100 transition-colors"
+              className="mt-1 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+              style={{ border: `1px solid ${S.orange}`, backgroundColor: S.orangeBg, color: S.orange }}
             >
               <Sparkles className="h-3 w-3" />
               {msg.action.label}
@@ -298,18 +328,23 @@ export function AICopilot() {
       {/* Floating button */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all ${
-          open ? "bg-gray-700 hover:bg-gray-800" : "bg-primary-600 hover:bg-primary-700"
-        }`}
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full transition-all"
+        style={{
+          backgroundColor: open ? S.text2 : S.orange,
+          boxShadow: S.shadowMd,
+        }}
         aria-label="Ouvrir Althy IA"
       >
         {open ? (
-          <ChevronDown className="h-6 w-6 text-white" />
+          <ChevronDown className="h-6 w-6" style={{ color: "#fff" }} />
         ) : (
-          <Bot className="h-6 w-6 text-white" />
+          <Bot className="h-6 w-6" style={{ color: "#fff" }} />
         )}
         {!open && (
-          <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-green-500 text-[9px] font-bold text-white">
+          <span
+            className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"
+            style={{ backgroundColor: S.green, color: "#fff" }}
+          >
             AI
           </span>
         )}
@@ -317,20 +352,32 @@ export function AICopilot() {
 
       {/* Chat panel */}
       {open && (
-        <div className="fixed bottom-24 right-6 z-50 flex w-[360px] flex-col rounded-2xl border border-gray-200 bg-white shadow-2xl">
+        <div
+          className="fixed bottom-24 right-6 z-50 flex w-[360px] flex-col rounded-2xl"
+          style={{ border: `1px solid ${S.border}`, backgroundColor: S.surface, boxShadow: S.shadowMd }}
+        >
           {/* Header */}
-          <div className="flex items-center justify-between rounded-t-2xl bg-primary-600 px-4 py-3">
+          <div
+            className="flex items-center justify-between rounded-t-2xl px-4 py-3"
+            style={{ backgroundColor: S.orange }}
+          >
             <div className="flex items-center gap-2">
-              <Bot className="h-5 w-5 text-white" />
+              <Bot className="h-5 w-5" style={{ color: "#fff" }} />
               <div>
-                <p className="text-sm font-semibold text-white">Althy IA</p>
-                <p className="text-xs text-primary-200 capitalize">
+                <p className="text-sm font-semibold" style={{ color: "#fff" }}>Althy IA</p>
+                <p className="text-xs capitalize" style={{ color: "rgba(255,255,255,0.7)" }}>
                   {role ? `Copilote ${role}` : "Copilote immobilier"}
                 </p>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="rounded-lg p-1 hover:bg-primary-500">
-              <X className="h-4 w-4 text-white" />
+            <button
+              onClick={() => setOpen(false)}
+              className="rounded-lg p-1 transition-colors"
+              style={{ backgroundColor: "transparent" }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+            >
+              <X className="h-4 w-4" style={{ color: "#fff" }} />
             </button>
           </div>
 
@@ -340,7 +387,10 @@ export function AICopilot() {
               <div key={i}>
                 {msg.content === "" && msg.role === "assistant" && streaming ? (
                   <div className="flex justify-start">
-                    <div className="rounded-2xl rounded-tl-sm bg-gray-100 px-3.5 py-2.5">
+                    <div
+                      className="rounded-2xl px-3.5 py-2.5"
+                      style={{ backgroundColor: S.surface2, borderRadius: "16px 16px 16px 4px" }}
+                    >
                       <TypingDots />
                     </div>
                   </div>
@@ -358,15 +408,26 @@ export function AICopilot() {
 
           {/* Suggestions */}
           {messages.length <= 1 && (
-            <div className="border-t border-gray-100 px-3 py-2">
-              <p className="mb-1.5 text-xs text-gray-400">Suggestions</p>
+            <div className="px-3 py-2" style={{ borderTop: `1px solid ${S.border}` }}>
+              <p className="mb-1.5 text-xs" style={{ color: S.text3 }}>Suggestions</p>
               <div className="flex flex-wrap gap-1.5">
                 {suggestions.map((s) => (
                   <button
                     key={s}
                     onClick={() => sendMessage(s)}
                     disabled={streaming}
-                    className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-700 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 transition-colors disabled:opacity-50"
+                    className="rounded-full px-2.5 py-1 text-xs transition-colors disabled:opacity-50"
+                    style={{ border: `1px solid ${S.border}`, backgroundColor: S.bg, color: S.text2 }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = S.orange;
+                      e.currentTarget.style.backgroundColor = S.orangeBg;
+                      e.currentTarget.style.color = S.orange;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = S.border;
+                      e.currentTarget.style.backgroundColor = S.bg;
+                      e.currentTarget.style.color = S.text2;
+                    }}
                   >
                     {s}
                   </button>
@@ -376,7 +437,7 @@ export function AICopilot() {
           )}
 
           {/* Input */}
-          <div className="border-t border-gray-200 p-3">
+          <div className="p-3" style={{ borderTop: `1px solid ${S.border}` }}>
             <form
               onSubmit={(e) => { e.preventDefault(); sendMessage(input); }}
               className="flex items-center gap-2"
@@ -388,12 +449,19 @@ export function AICopilot() {
                 onChange={(e) => setInput(e.target.value)}
                 disabled={streaming}
                 placeholder="Posez votre question…"
-                className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-primary-400 focus:bg-white disabled:opacity-60"
+                className="flex-1 rounded-xl px-3 py-2 outline-none disabled:opacity-60"
+                style={{
+                  fontSize: 14,
+                  border: `1px solid ${S.border}`,
+                  backgroundColor: S.bg,
+                  color: S.text,
+                }}
               />
               <button
                 type="submit"
                 disabled={!input.trim() || streaming}
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-40 transition-colors"
+                className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors disabled:opacity-40"
+                style={{ backgroundColor: S.orange, color: "#fff" }}
               >
                 {streaming ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

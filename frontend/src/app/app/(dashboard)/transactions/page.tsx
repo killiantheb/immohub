@@ -18,6 +18,29 @@ import { RentStatusBadge } from "@/components/RentStatusBadge";
 import { RevenueChart } from "@/components/RevenueChart";
 import type { TransactionStatus, TransactionType } from "@/lib/types";
 
+// ── Althy tokens ──────────────────────────────────────────────────────────────
+const S = {
+  bg: "var(--althy-bg)",
+  surface: "var(--althy-surface)",
+  surface2: "var(--althy-surface-2)",
+  border: "var(--althy-border)",
+  text: "var(--althy-text)",
+  text2: "var(--althy-text-2)",
+  text3: "var(--althy-text-3)",
+  orange: "var(--althy-orange)",
+  orangeBg: "var(--althy-orange-bg)",
+  green: "var(--althy-green)",
+  greenBg: "var(--althy-green-bg)",
+  red: "var(--althy-red)",
+  redBg: "var(--althy-red-bg)",
+  amber: "var(--althy-amber)",
+  amberBg: "var(--althy-amber-bg)",
+  blue: "var(--althy-blue)",
+  blueBg: "var(--althy-blue-bg)",
+  shadow: "var(--althy-shadow)",
+  shadowMd: "var(--althy-shadow-md)",
+} as const;
+
 // ── Labels ────────────────────────────────────────────────────────────────────
 
 const TYPE_LABELS: Record<TransactionType, string> = {
@@ -26,6 +49,34 @@ const TYPE_LABELS: Record<TransactionType, string> = {
   deposit: "Dépôt",
   service: "Service",
   quote: "Devis",
+};
+
+// ── Shared input / button styles ──────────────────────────────────────────────
+
+const inputStyle: React.CSSProperties = {
+  padding: "8px 12px",
+  borderRadius: 10,
+  border: `1px solid ${S.border}`,
+  background: S.surface,
+  fontSize: 14,
+  color: S.text,
+  fontFamily: "inherit",
+  outline: "none",
+};
+
+const btnSecondaryStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  padding: "7px 14px",
+  borderRadius: 10,
+  border: `1px solid ${S.border}`,
+  background: S.surface,
+  color: S.text2,
+  fontSize: 13,
+  cursor: "pointer",
+  fontFamily: "inherit",
+  boxShadow: S.shadow,
 };
 
 // ── CSV export ────────────────────────────────────────────────────────────────
@@ -93,37 +144,37 @@ function TransactionsContent() {
   const hasFilters = statusFilter || typeFilter || monthFilter || search;
 
   return (
-    <div>
+    <div style={{ fontFamily: "var(--font-sans)" }}>
       {/* Header */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div style={{ marginBottom: 24, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
-          <p className="mt-0.5 text-sm text-gray-500">
+          <h1 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontSize: 26, fontWeight: 400, color: S.text, margin: 0 }}>Transactions</h1>
+          <p style={{ marginTop: 4, fontSize: 13, color: S.text3 }}>
             {data ? `${data.total} transaction${data.total !== 1 ? "s" : ""}` : "Historique financier"}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button
             onClick={() => setShowChart((v) => !v)}
-            className="btn-secondary flex items-center gap-2 text-sm"
+            style={btnSecondaryStyle}
           >
             {showChart ? "Masquer graphique" : "Voir graphique"}
           </button>
           <button
             onClick={() => generateRents.mutate()}
             disabled={generateRents.isPending}
-            className="btn-secondary flex items-center gap-2 text-sm"
+            style={{ ...btnSecondaryStyle, opacity: generateRents.isPending ? 0.6 : 1 }}
             title="Générer les loyers du mois"
           >
-            <RefreshCw className={`h-4 w-4 ${generateRents.isPending ? "animate-spin" : ""}`} />
+            <RefreshCw style={{ width: 16, height: 16, animation: generateRents.isPending ? "spin 1s linear infinite" : undefined }} />
             Générer loyers
           </button>
           {filtered.length > 0 && (
             <button
               onClick={() => exportCSV(filtered)}
-              className="btn-secondary flex items-center gap-2 text-sm"
+              style={btnSecondaryStyle}
             >
-              <Download className="h-4 w-4" />
+              <Download style={{ width: 16, height: 16 }} />
               Export CSV
             </button>
           )}
@@ -132,10 +183,10 @@ function TransactionsContent() {
               const year = new Date().getFullYear();
               window.open(`${baseURL}/transactions/export-csv?year=${year}`, '_blank');
             }}
-            className="btn-secondary flex items-center gap-2 text-sm"
+            style={btnSecondaryStyle}
             title="Export comptable avec catégories fiscales suisses"
           >
-            <Download className="h-4 w-4" />
+            <Download style={{ width: 16, height: 16 }} />
             Fiscal CH {new Date().getFullYear()}
           </button>
         </div>
@@ -143,19 +194,18 @@ function TransactionsContent() {
 
       {/* Revenue chart (collapsible) */}
       {showChart && stats && (
-        <div className="card mb-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">Revenus loyers — 12 mois</h2>
+        <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: "20px", marginBottom: 24, boxShadow: S.shadow }}>
+          <h2 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600, color: S.text2 }}>Revenus loyers — 12 mois</h2>
           <RevenueChart data={stats.by_month} height={180} />
-          {/* Mini stats */}
-          <div className="mt-3 flex flex-wrap gap-4 border-t pt-3 text-sm">
+          <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 16, borderTop: `1px solid ${S.border}`, paddingTop: 12, fontSize: 14 }}>
             {[
-              { label: "Total encaissé", value: `CHF ${stats.total.toLocaleString("fr-CH")}`, color: "text-green-700" },
-              { label: "En attente", value: stats.pending_count, color: "text-amber-700" },
-              { label: "Impayés", value: stats.late_count, color: "text-red-600" },
+              { label: "Total encaissé", value: `CHF ${stats.total.toLocaleString("fr-CH")}`, color: S.green },
+              { label: "En attente", value: stats.pending_count, color: S.amber },
+              { label: "Impayés", value: stats.late_count, color: S.red },
             ].map(({ label, value, color }) => (
               <div key={label}>
-                <p className="text-gray-400">{label}</p>
-                <p className={`font-semibold ${color}`}>{value}</p>
+                <p style={{ color: S.text3, margin: 0, fontSize: 13 }}>{label}</p>
+                <p style={{ fontWeight: 600, color, margin: 0, fontSize: 14 }}>{value}</p>
               </div>
             ))}
           </div>
@@ -163,26 +213,26 @@ function TransactionsContent() {
       )}
 
       {/* Filters */}
-      <div className="mb-5 card p-4">
-        <div className="flex flex-wrap gap-3">
-          <div className="relative flex-1 min-w-40">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+      <div style={{ marginBottom: 20, background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: 16, boxShadow: S.shadow }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+          <div style={{ position: "relative", flex: 1, minWidth: 160 }}>
+            <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: S.text3 }} />
             <input
               type="search"
               placeholder="Référence, notes…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="input pl-9"
+              style={{ ...inputStyle, paddingLeft: 36, width: "100%", boxSizing: "border-box" }}
             />
           </div>
-          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className="input w-auto">
+          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} style={inputStyle}>
             <option value="">Tous les statuts</option>
             <option value="pending">En attente</option>
             <option value="paid">Payé</option>
             <option value="late">Impayé</option>
             <option value="cancelled">Annulé</option>
           </select>
-          <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }} className="input w-auto">
+          <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }} style={inputStyle}>
             <option value="">Tous les types</option>
             {(Object.entries(TYPE_LABELS) as [TransactionType, string][]).map(([v, l]) => (
               <option key={v} value={v}>{l}</option>
@@ -192,11 +242,11 @@ function TransactionsContent() {
             type="month"
             value={monthFilter}
             onChange={(e) => { setMonthFilter(e.target.value); setPage(1); }}
-            className="input w-auto"
+            style={inputStyle}
           />
           {hasFilters && (
-            <button onClick={clearFilters} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800">
-              <X className="h-4 w-4" /> Effacer
+            <button onClick={clearFilters} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, color: S.text2, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+              <X style={{ width: 16, height: 16 }} /> Effacer
             </button>
           )}
         </div>
@@ -204,92 +254,92 @@ function TransactionsContent() {
 
       {/* Table */}
       {isLoading ? (
-        <div className="flex justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
+        <div style={{ display: "flex", justifyContent: "center", padding: "4rem 0" }}>
+          <div style={{ width: 32, height: 32, borderRadius: "50%", border: `4px solid ${S.orange}`, borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
         </div>
       ) : isError ? (
-        <div className="card py-16 text-center text-gray-500">Erreur lors du chargement</div>
+        <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: "4rem", textAlign: "center", color: S.text2, boxShadow: S.shadow }}>Erreur lors du chargement</div>
       ) : !filtered.length ? (
-        <div className="card flex flex-col items-center py-16 text-center">
-          <p className="text-gray-500">Aucune transaction</p>
+        <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: "4rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", boxShadow: S.shadow }}>
+          <p style={{ color: S.text2, margin: 0 }}>Aucune transaction</p>
           {hasFilters && (
-            <button onClick={clearFilters} className="btn-secondary mt-3 text-sm">
+            <button onClick={clearFilters} style={{ ...btnSecondaryStyle, marginTop: 12, fontSize: 13 }}>
               Réinitialiser les filtres
             </button>
           )}
         </div>
       ) : (
         <>
-          <div className="card overflow-hidden p-0">
-            <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b border-gray-200 bg-gray-50">
-                <tr>
-                  {["Date", "Référence", "Type", "Montant", "Échéance", "Statut", "Actions"].map((h) => (
-                    <th key={h} className={`px-4 py-3 text-xs font-medium uppercase tracking-wide text-gray-500 ${h === "Montant" ? "text-right" : "text-left"}`}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filtered.map((tx) => (
-                  <tr
-                    key={tx.id}
-                    className={`hover:bg-gray-50 transition-colors ${tx.status === "late" ? "bg-red-50/40" : ""}`}
-                  >
-                    <td className="px-4 py-3 text-gray-500">
-                      {new Date(tx.created_at).toLocaleDateString("fr-FR")}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-primary-600">{tx.reference}</td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {TYPE_LABELS[tx.type as TransactionType] ?? tx.type}
-                      {tx.notes && (
-                        <p className="mt-0.5 truncate max-w-40 text-xs text-gray-400">{tx.notes}</p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                      CHF {tx.amount.toLocaleString("fr-CH")}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {tx.due_date ? new Date(tx.due_date).toLocaleDateString("fr-FR") : "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <RentStatusBadge status={tx.status as TransactionStatus} />
-                    </td>
-                    <td className="px-4 py-3">
-                      {tx.status === "pending" || tx.status === "late" ? (
-                        <button
-                          onClick={() => markPaid.mutate(tx.id)}
-                          disabled={markPaid.isPending}
-                          title="Marquer comme payé"
-                          className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-50 disabled:opacity-50"
-                        >
-                          <CheckCircle className="h-3.5 w-3.5" />
-                          Payé
-                        </button>
-                      ) : tx.status === "paid" && tx.paid_at ? (
-                        <span className="text-xs text-gray-400">
-                          {new Date(tx.paid_at).toLocaleDateString("fr-FR")}
-                        </span>
-                      ) : null}
-                    </td>
+          <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, overflow: "hidden", boxShadow: S.shadow }}>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+                <thead style={{ borderBottom: `1px solid ${S.border}`, background: S.bg }}>
+                  <tr>
+                    {["Date", "Référence", "Type", "Montant", "Échéance", "Statut", "Actions"].map((h) => (
+                      <th key={h} style={{ padding: "12px 16px", fontSize: 10, fontWeight: 500, textTransform: "uppercase", letterSpacing: "1.5px", color: S.text3, textAlign: h === "Montant" ? "right" : "left", whiteSpace: "nowrap" }}>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filtered.map((tx, idx) => (
+                    <tr
+                      key={tx.id}
+                      style={{ borderBottom: `1px solid ${S.border}`, background: tx.status === "late" ? S.redBg : "transparent" }}
+                    >
+                      <td style={{ padding: "12px 16px", color: S.text2 }}>
+                        {new Date(tx.created_at).toLocaleDateString("fr-FR")}
+                      </td>
+                      <td style={{ padding: "12px 16px", fontFamily: "monospace", fontSize: 12, color: S.orange }}>{tx.reference}</td>
+                      <td style={{ padding: "12px 16px", color: S.text }}>
+                        {TYPE_LABELS[tx.type as TransactionType] ?? tx.type}
+                        {tx.notes && (
+                          <p style={{ marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160, fontSize: 12, color: S.text3 }}>{tx.notes}</p>
+                        )}
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: 600, color: S.text }}>
+                        CHF {tx.amount.toLocaleString("fr-CH")}
+                      </td>
+                      <td style={{ padding: "12px 16px", color: S.text2 }}>
+                        {tx.due_date ? new Date(tx.due_date).toLocaleDateString("fr-FR") : "—"}
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <RentStatusBadge status={tx.status as TransactionStatus} />
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>
+                        {tx.status === "pending" || tx.status === "late" ? (
+                          <button
+                            onClick={() => markPaid.mutate(tx.id)}
+                            disabled={markPaid.isPending}
+                            title="Marquer comme payé"
+                            style={{ display: "inline-flex", alignItems: "center", gap: 4, borderRadius: 8, padding: "4px 8px", fontSize: 12, fontWeight: 500, color: S.green, background: S.greenBg, border: "none", cursor: "pointer", fontFamily: "inherit", opacity: markPaid.isPending ? 0.5 : 1 }}
+                          >
+                            <CheckCircle style={{ width: 14, height: 14 }} />
+                            Payé
+                          </button>
+                        ) : tx.status === "paid" && tx.paid_at ? (
+                          <span style={{ fontSize: 12, color: S.text3 }}>
+                            {new Date(tx.paid_at).toLocaleDateString("fr-FR")}
+                          </span>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
           {/* Pagination */}
           {data && data.pages > 1 && (
-            <div className="mt-6 flex items-center justify-center gap-2">
-              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="btn-secondary flex items-center gap-1 disabled:opacity-40">
-                <ChevronLeft className="h-4 w-4" /> Précédent
+            <div style={{ marginTop: 24, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} style={{ ...btnSecondaryStyle, opacity: page === 1 ? 0.4 : 1 }}>
+                <ChevronLeft style={{ width: 16, height: 16 }} /> Précédent
               </button>
-              <span className="text-sm text-gray-600">Page {page} / {data.pages}</span>
-              <button onClick={() => setPage((p) => Math.min(data.pages, p + 1))} disabled={page === data.pages} className="btn-secondary flex items-center gap-1 disabled:opacity-40">
-                Suivant <ChevronRight className="h-4 w-4" />
+              <span style={{ fontSize: 13, color: S.text2 }}>Page {page} / {data.pages}</span>
+              <button onClick={() => setPage((p) => Math.min(data.pages, p + 1))} disabled={page === data.pages} style={{ ...btnSecondaryStyle, opacity: page === data.pages ? 0.4 : 1 }}>
+                Suivant <ChevronRight style={{ width: 16, height: 16 }} />
               </button>
             </div>
           )}

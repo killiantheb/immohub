@@ -7,12 +7,73 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { useCreateContract } from "@/lib/hooks/useContracts";
 import type { ContractType } from "@/lib/types";
 
+const S = {
+  bg: "var(--althy-bg)",
+  surface: "var(--althy-surface)",
+  surface2: "var(--althy-surface-2)",
+  border: "var(--althy-border)",
+  text: "var(--althy-text)",
+  text2: "var(--althy-text-2)",
+  text3: "var(--althy-text-3)",
+  orange: "var(--althy-orange)",
+  orangeBg: "var(--althy-orange-bg)",
+  green: "var(--althy-green)",
+  greenBg: "var(--althy-green-bg)",
+  red: "var(--althy-red)",
+  redBg: "var(--althy-red-bg)",
+  amber: "var(--althy-amber)",
+  amberBg: "var(--althy-amber-bg)",
+  blue: "var(--althy-blue)",
+  blueBg: "var(--althy-blue-bg)",
+  shadow: "var(--althy-shadow)",
+  shadowMd: "var(--althy-shadow-md)",
+} as const;
+
 const TYPE_OPTIONS: { value: ContractType; label: string }[] = [
   { value: "long_term",  label: "Longue durée" },
   { value: "seasonal",   label: "Saisonnier" },
   { value: "short_term", label: "Courte durée" },
   { value: "sale",       label: "Vente" },
 ];
+
+const cardStyle: React.CSSProperties = {
+  background: S.surface,
+  border: `1px solid ${S.border}`,
+  borderRadius: 14,
+  boxShadow: S.shadow,
+  padding: "1.25rem",
+};
+
+const inputStyle: React.CSSProperties = {
+  display: "block",
+  width: "100%",
+  padding: "9px 14px",
+  borderRadius: 10,
+  border: `1px solid ${S.border}`,
+  background: S.surface,
+  color: S.text,
+  fontSize: 13,
+  outline: "none",
+  fontFamily: "inherit",
+  boxSizing: "border-box",
+};
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  fontSize: 11,
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  color: S.text3,
+  marginBottom: 5,
+};
+
+const sectionTitleStyle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 600,
+  color: S.text2,
+  marginBottom: "0.75rem",
+};
 
 export default function NewContractPage() {
   const router = useRouter();
@@ -124,22 +185,25 @@ export default function NewContractPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
+      {/* Header */}
       <div className="mb-6 flex items-center gap-3">
-        <Link href="/app/contracts" className="text-gray-400 hover:text-gray-700">
+        <Link href="/app/contracts" style={{ color: S.text3, display: "flex", alignItems: "center" }}>
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Nouveau contrat</h1>
+        <h1 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontWeight: 400, fontSize: 28, color: S.text }}>
+          Nouveau contrat
+        </h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
         {/* AI NLP Parser */}
-        <div className="card space-y-3 border-amber-200 bg-amber-50">
+        <div style={{ ...cardStyle, background: S.amberBg, border: `1px solid ${S.amber}` }} className="space-y-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-amber-600" />
-            <h2 className="text-sm font-semibold text-amber-800">Générer avec l&apos;IA</h2>
+            <Sparkles className="h-4 w-4" style={{ color: S.amber }} />
+            <h2 style={{ fontSize: 13, fontWeight: 700, color: S.amber }}>Générer avec l&apos;IA</h2>
           </div>
-          <p className="text-xs text-amber-700">Décrivez votre contrat en langage naturel et l&apos;IA pré-remplira les paramètres.</p>
+          <p style={{ fontSize: 12, color: S.text2 }}>Décrivez votre contrat en langage naturel et l&apos;IA pré-remplira les paramètres.</p>
           <div className="flex gap-2">
             <input
               type="text"
@@ -147,13 +211,13 @@ export default function NewContractPage() {
               onChange={(e) => setNlpInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && e.preventDefault() || (e.key === "Enter" && handleNlpParse())}
               placeholder="Ex : saisonnier 15% commission, dépôt 2 mois, préavis 1 mois…"
-              className="input flex-1 text-sm"
+              style={{ ...inputStyle, flex: 1, fontSize: 12 }}
             />
             <button
               type="button"
               onClick={handleNlpParse}
               disabled={!nlpInput.trim() || nlpLoading}
-              className="btn-primary flex items-center gap-1 text-sm whitespace-nowrap disabled:opacity-50"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, background: S.orange, color: "#fff", borderRadius: 10, padding: "10px 16px", fontSize: 12, fontWeight: 700, border: "none", cursor: !nlpInput.trim() || nlpLoading ? "not-allowed" : "pointer", opacity: !nlpInput.trim() || nlpLoading ? 0.5 : 1, whiteSpace: "nowrap" }}
             >
               {nlpLoading ? (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -166,47 +230,47 @@ export default function NewContractPage() {
           {nlpResult && (
             <div className="space-y-1.5">
               {nlpResult.warnings?.map((w, i) => (
-                <p key={i} className="text-xs text-red-600">⚠ {w}</p>
+                <p key={i} style={{ fontSize: 12, color: S.red }}>! {w}</p>
               ))}
               {nlpResult.ai_recommendations?.map((r, i) => (
-                <p key={i} className="text-xs text-amber-700">✓ {r}</p>
+                <p key={i} style={{ fontSize: 12, color: S.text2 }}>+ {r}</p>
               ))}
             </div>
           )}
         </div>
 
         {/* Parties */}
-        <div className="card space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700">Parties</h2>
+        <div style={cardStyle} className="space-y-4">
+          <h2 style={sectionTitleStyle}>Parties</h2>
           <div>
-            <label className="label">ID du bien *</label>
+            <label style={labelStyle}>ID du bien *</label>
             <input
               required
               type="text"
               value={form.property_id}
               onChange={(e) => set("property_id", e.target.value)}
-              className="input"
+              style={inputStyle}
               placeholder="UUID du bien"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">ID du locataire</label>
+              <label style={labelStyle}>ID du locataire</label>
               <input
                 type="text"
                 value={form.tenant_id}
                 onChange={(e) => set("tenant_id", e.target.value)}
-                className="input"
+                style={inputStyle}
                 placeholder="UUID (optionnel)"
               />
             </div>
             <div>
-              <label className="label">ID de l&apos;agence</label>
+              <label style={labelStyle}>ID de l&apos;agence</label>
               <input
                 type="text"
                 value={form.agency_id}
                 onChange={(e) => set("agency_id", e.target.value)}
-                className="input"
+                style={inputStyle}
                 placeholder="UUID (optionnel)"
               />
             </div>
@@ -214,15 +278,15 @@ export default function NewContractPage() {
         </div>
 
         {/* Contract terms */}
-        <div className="card space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700">Conditions</h2>
+        <div style={cardStyle} className="space-y-4">
+          <h2 style={sectionTitleStyle}>Conditions</h2>
           <div>
-            <label className="label">Type de contrat *</label>
+            <label style={labelStyle}>Type de contrat *</label>
             <select
               required
               value={form.type}
               onChange={(e) => set("type", e.target.value as ContractType)}
-              className="input"
+              style={inputStyle}
             >
               {TYPE_OPTIONS.map(({ value, label }) => (
                 <option key={value} value={value}>{label}</option>
@@ -231,64 +295,64 @@ export default function NewContractPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Date de début *</label>
+              <label style={labelStyle}>Date de début *</label>
               <input
                 required
                 type="date"
                 value={form.start_date}
                 onChange={(e) => set("start_date", e.target.value)}
-                className="input"
+                style={inputStyle}
               />
             </div>
             <div>
-              <label className="label">Date de fin</label>
+              <label style={labelStyle}>Date de fin</label>
               <input
                 type="date"
                 value={form.end_date}
                 onChange={(e) => set("end_date", e.target.value)}
-                className="input"
+                style={inputStyle}
               />
             </div>
           </div>
         </div>
 
         {/* Financials */}
-        <div className="card space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700">Finances</h2>
+        <div style={cardStyle} className="space-y-4">
+          <h2 style={sectionTitleStyle}>Finances</h2>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="label">Loyer mensuel (€)</label>
+              <label style={labelStyle}>Loyer mensuel (€)</label>
               <input
                 type="number"
                 min="0"
                 step="0.01"
                 value={form.monthly_rent}
                 onChange={(e) => set("monthly_rent", e.target.value)}
-                className="input"
+                style={inputStyle}
                 placeholder="0.00"
               />
             </div>
             <div>
-              <label className="label">Charges (€)</label>
+              <label style={labelStyle}>Charges (€)</label>
               <input
                 type="number"
                 min="0"
                 step="0.01"
                 value={form.charges}
                 onChange={(e) => set("charges", e.target.value)}
-                className="input"
+                style={inputStyle}
                 placeholder="0.00"
               />
             </div>
             <div>
-              <label className="label">Dépôt de garantie (€)</label>
+              <label style={labelStyle}>Dépôt de garantie (€)</label>
               <input
                 type="number"
                 min="0"
                 step="0.01"
                 value={form.deposit}
                 onChange={(e) => set("deposit", e.target.value)}
-                className="input"
+                style={inputStyle}
                 placeholder="0.00"
               />
             </div>
@@ -296,30 +360,30 @@ export default function NewContractPage() {
         </div>
 
         {/* Bail details */}
-        <div className="card space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700">Paramètres du bail</h2>
+        <div style={cardStyle} className="space-y-4">
+          <h2 style={sectionTitleStyle}>Paramètres du bail</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div>
-              <label className="label">Jour de paiement</label>
-              <input type="number" min="1" max="28" value={form.payment_day} onChange={(e) => set("payment_day", e.target.value)} className="input" placeholder="5" />
+              <label style={labelStyle}>Jour de paiement</label>
+              <input type="number" min="1" max="28" value={form.payment_day} onChange={(e) => set("payment_day", e.target.value)} style={inputStyle} placeholder="5" />
             </div>
             <div>
-              <label className="label">Préavis (mois)</label>
-              <input type="number" min="0" max="12" value={form.notice_period_months} onChange={(e) => set("notice_period_months", e.target.value)} className="input" placeholder="3" />
+              <label style={labelStyle}>Préavis (mois)</label>
+              <input type="number" min="0" max="12" value={form.notice_period_months} onChange={(e) => set("notice_period_months", e.target.value)} style={inputStyle} placeholder="3" />
             </div>
             <div>
-              <label className="label">Nb d'occupants</label>
-              <input type="number" min="1" value={form.occupants_count} onChange={(e) => set("occupants_count", e.target.value)} className="input" placeholder="1" />
+              <label style={labelStyle}>Nb d'occupants</label>
+              <input type="number" min="1" value={form.occupants_count} onChange={(e) => set("occupants_count", e.target.value)} style={inputStyle} placeholder="1" />
             </div>
             <div>
-              <label className="label">Nationalité locataire</label>
-              <input type="text" value={form.tenant_nationality} onChange={(e) => set("tenant_nationality", e.target.value)} className="input" placeholder="Suisse" />
+              <label style={labelStyle}>Nationalité locataire</label>
+              <input type="text" value={form.tenant_nationality} onChange={(e) => set("tenant_nationality", e.target.value)} style={inputStyle} placeholder="Suisse" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <div>
-              <label className="label">Type de dépôt</label>
-              <select value={form.deposit_type} onChange={(e) => set("deposit_type", e.target.value)} className="input">
+              <label style={labelStyle}>Type de dépôt</label>
+              <select value={form.deposit_type} onChange={(e) => set("deposit_type", e.target.value)} style={inputStyle}>
                 <option value="gocaution">Gocaution</option>
                 <option value="bank">Compte bancaire bloqué</option>
                 <option value="cash">Espèces</option>
@@ -327,54 +391,54 @@ export default function NewContractPage() {
               </select>
             </div>
             <div>
-              <label className="label">Canton</label>
-              <select value={form.canton} onChange={(e) => set("canton", e.target.value)} className="input">
+              <label style={labelStyle}>Canton</label>
+              <select value={form.canton} onChange={(e) => set("canton", e.target.value)} style={inputStyle}>
                 {["VS","VD","GE","BE","FR","NE","JU","TI","ZH","BS","BL","AG","SO","LU","ZG","SG","TG"].map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="label">Lieu de signature</label>
-              <input type="text" value={form.signed_at_city} onChange={(e) => set("signed_at_city", e.target.value)} className="input" placeholder="Crans-Montana" />
+              <label style={labelStyle}>Lieu de signature</label>
+              <input type="text" value={form.signed_at_city} onChange={(e) => set("signed_at_city", e.target.value)} style={inputStyle} placeholder="Crans-Montana" />
             </div>
           </div>
           {(form.type === "seasonal" || form.type === "short_term") && (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="label">Taxe de séjour (CHF/nuit)</label>
-                <input type="number" min="0" step="0.01" value={form.tourist_tax_amount} onChange={(e) => set("tourist_tax_amount", e.target.value)} className="input" placeholder="0.00" />
+                <label style={labelStyle}>Taxe de séjour (CHF/nuit)</label>
+                <input type="number" min="0" step="0.01" value={form.tourist_tax_amount} onChange={(e) => set("tourist_tax_amount", e.target.value)} style={inputStyle} placeholder="0.00" />
               </div>
               <div>
-                <label className="label">Nettoyage (CHF/h)</label>
-                <input type="number" min="0" step="0.50" value={form.cleaning_fee_hourly} onChange={(e) => set("cleaning_fee_hourly", e.target.value)} className="input" placeholder="42" />
+                <label style={labelStyle}>Nettoyage (CHF/h)</label>
+                <input type="number" min="0" step="0.50" value={form.cleaning_fee_hourly} onChange={(e) => set("cleaning_fee_hourly", e.target.value)} style={inputStyle} placeholder="42" />
               </div>
             </div>
           )}
         </div>
 
         {/* Bank account */}
-        <div className="card space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700">Compte bancaire pour le loyer</h2>
+        <div style={cardStyle} className="space-y-4">
+          <h2 style={sectionTitleStyle}>Compte bancaire pour le loyer</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <label className="label">Banque</label>
-              <input type="text" value={form.bank_name} onChange={(e) => set("bank_name", e.target.value)} className="input" placeholder="Raiffeisen" />
+              <label style={labelStyle}>Banque</label>
+              <input type="text" value={form.bank_name} onChange={(e) => set("bank_name", e.target.value)} style={inputStyle} placeholder="Raiffeisen" />
             </div>
             <div>
-              <label className="label">IBAN</label>
-              <input type="text" value={form.bank_iban} onChange={(e) => set("bank_iban", e.target.value.toUpperCase())} className="input font-mono" placeholder="CH56 0483 5012 3456 7800 9" />
+              <label style={labelStyle}>IBAN</label>
+              <input type="text" value={form.bank_iban} onChange={(e) => set("bank_iban", e.target.value.toUpperCase())} style={{ ...inputStyle, fontFamily: "monospace" }} placeholder="CH56 0483 5012 3456 7800 9" />
             </div>
             <div>
-              <label className="label">BIC/SWIFT</label>
-              <input type="text" value={form.bank_bic} onChange={(e) => set("bank_bic", e.target.value.toUpperCase())} className="input font-mono" placeholder="RAIFCH22" />
+              <label style={labelStyle}>BIC/SWIFT</label>
+              <input type="text" value={form.bank_bic} onChange={(e) => set("bank_bic", e.target.value.toUpperCase())} style={{ ...inputStyle, fontFamily: "monospace" }} placeholder="RAIFCH22" />
             </div>
           </div>
         </div>
 
         {/* Options */}
-        <div className="card space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">Clauses particulières</h2>
+        <div style={cardStyle} className="space-y-3">
+          <h2 style={sectionTitleStyle}>Clauses particulières</h2>
           <div className="flex flex-wrap gap-4">
             {[
               { key: "is_furnished", label: "Meublé" },
@@ -389,9 +453,9 @@ export default function NewContractPage() {
                   type="checkbox"
                   checked={form[key as keyof typeof form] as boolean}
                   onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.checked }))}
-                  className="h-4 w-4 rounded border-gray-300 text-primary-600 accent-primary-600"
+                  style={{ width: 16, height: 16, accentColor: S.orange }}
                 />
-                <span className="text-sm text-gray-700">{label}</span>
+                <span style={{ fontSize: 13, color: S.text }}>{label}</span>
               </label>
             ))}
           </div>
@@ -399,14 +463,23 @@ export default function NewContractPage() {
 
         {/* Actions */}
         <div className="flex justify-end gap-3">
-          <Link href="/app/contracts" className="btn-secondary">Annuler</Link>
-          <button type="submit" disabled={create.isPending} className="btn-primary">
+          <Link
+            href="/app/contracts"
+            style={{ display: "inline-flex", alignItems: "center", padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: S.surface, color: S.text2, fontSize: 13, fontWeight: 600, textDecoration: "none" }}
+          >
+            Annuler
+          </Link>
+          <button
+            type="submit"
+            disabled={create.isPending}
+            style={{ display: "inline-flex", alignItems: "center", background: S.orange, color: "#fff", borderRadius: 10, padding: "10px 20px", fontSize: 13, fontWeight: 700, border: "none", cursor: create.isPending ? "not-allowed" : "pointer", opacity: create.isPending ? 0.7 : 1 }}
+          >
             {create.isPending ? "Création…" : "Créer le contrat"}
           </button>
         </div>
 
         {create.isError && (
-          <p className="text-sm text-red-600">Une erreur est survenue. Vérifiez les informations.</p>
+          <p style={{ fontSize: 13, color: S.red }}>Une erreur est survenue. Vérifiez les informations.</p>
         )}
       </form>
     </div>

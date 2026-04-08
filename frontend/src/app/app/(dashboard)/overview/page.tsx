@@ -20,6 +20,28 @@ import { useUser } from "@/lib/auth";
 import { RevenueChart } from "@/components/RevenueChart";
 import { RentStatusBadge } from "@/components/RentStatusBadge";
 
+const S = {
+  bg: "var(--althy-bg)",
+  surface: "var(--althy-surface)",
+  surface2: "var(--althy-surface-2)",
+  border: "var(--althy-border)",
+  text: "var(--althy-text)",
+  text2: "var(--althy-text-2)",
+  text3: "var(--althy-text-3)",
+  orange: "var(--althy-orange)",
+  orangeBg: "var(--althy-orange-bg)",
+  green: "var(--althy-green)",
+  greenBg: "var(--althy-green-bg)",
+  red: "var(--althy-red)",
+  redBg: "var(--althy-red-bg)",
+  amber: "var(--althy-amber)",
+  amberBg: "var(--althy-amber-bg)",
+  blue: "var(--althy-blue)",
+  blueBg: "var(--althy-blue-bg)",
+  shadow: "var(--althy-shadow)",
+  shadowMd: "var(--althy-shadow-md)",
+} as const;
+
 function fmt(amount: number) {
   return `CHF ${amount.toLocaleString("fr-CH", { maximumFractionDigits: 0 })}`;
 }
@@ -29,10 +51,13 @@ function DeltaBadge({ current, prev }: { current: number; prev: number }) {
   const pct = ((current - prev) / prev) * 100;
   const up = pct >= 0;
   return (
-    <span className={`flex items-center gap-0.5 text-xs font-medium ${up ? "text-emerald-600" : "text-red-500"}`}>
+    <span
+      className="flex items-center gap-0.5 text-xs font-medium"
+      style={{ color: up ? S.green : S.red }}
+    >
       {up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
       {Math.abs(pct).toFixed(1)}%{" "}
-      <span className="font-normal text-gray-400">vs mois dernier</span>
+      <span className="font-normal" style={{ color: S.text3 }}>vs mois dernier</span>
     </span>
   );
 }
@@ -43,52 +68,57 @@ const KPI_CARDS = (kpis: NonNullable<ReturnType<typeof useOwnerDashboard>["data"
     value: fmt(kpis.revenue_current_month),
     sub: <DeltaBadge current={kpis.revenue_current_month} prev={kpis.revenue_prev_month} />,
     icon: Wallet,
-    color: "from-orange-400 to-orange-600",
-    bg: "bg-orange-50",
-    iconColor: "text-orange-600",
+    iconBg: S.orangeBg,
+    iconColor: S.orange,
+    accentColor: S.orange,
+    alert: false,
   },
   {
     label: "Taux d'occupation",
     value: `${kpis.occupancy_rate}%`,
-    sub: <span className="text-xs text-gray-400">{kpis.active_contracts} contrat{kpis.active_contracts !== 1 ? "s" : ""} actif{kpis.active_contracts !== 1 ? "s" : ""}</span>,
+    sub: <span className="text-xs" style={{ color: S.text3 }}>{kpis.active_contracts} contrat{kpis.active_contracts !== 1 ? "s" : ""} actif{kpis.active_contracts !== 1 ? "s" : ""}</span>,
     icon: Home,
-    color: "from-emerald-400 to-emerald-600",
-    bg: "bg-emerald-50",
-    iconColor: "text-emerald-600",
+    iconBg: S.greenBg,
+    iconColor: S.green,
+    accentColor: S.green,
+    alert: false,
   },
   {
     label: "Loyers en attente",
     value: String(kpis.pending_rents),
-    sub: <span className="text-xs text-gray-400">{kpis.total_properties} bien{kpis.total_properties !== 1 ? "s" : ""} au total</span>,
+    sub: <span className="text-xs" style={{ color: S.text3 }}>{kpis.total_properties} bien{kpis.total_properties !== 1 ? "s" : ""} au total</span>,
     icon: Clock,
-    color: "from-amber-400 to-amber-600",
-    bg: kpis.pending_rents > 0 ? "bg-amber-50" : "bg-gray-50",
-    iconColor: kpis.pending_rents > 0 ? "text-amber-600" : "text-gray-400",
+    iconBg: kpis.pending_rents > 0 ? S.amberBg : S.surface2,
+    iconColor: kpis.pending_rents > 0 ? S.amber : S.text3,
+    accentColor: kpis.pending_rents > 0 ? S.amber : S.text3,
     alert: kpis.pending_rents > 0,
   },
   {
     label: "Impayés",
     value: String(kpis.late_rents),
     sub: kpis.late_rents > 0
-      ? <span className="text-xs font-medium text-red-500">Action requise</span>
-      : <span className="text-xs text-gray-400">Aucun impayé</span>,
+      ? <span className="text-xs font-medium" style={{ color: S.red }}>Action requise</span>
+      : <span className="text-xs" style={{ color: S.text3 }}>Aucun impayé</span>,
     icon: AlertTriangle,
-    color: "from-red-400 to-red-600",
-    bg: kpis.late_rents > 0 ? "bg-red-50" : "bg-gray-50",
-    iconColor: kpis.late_rents > 0 ? "text-red-500" : "text-gray-400",
+    iconBg: kpis.late_rents > 0 ? S.redBg : S.surface2,
+    iconColor: kpis.late_rents > 0 ? S.red : S.text3,
+    accentColor: kpis.late_rents > 0 ? S.red : S.text3,
     alert: kpis.late_rents > 0,
   },
 ];
 
 function SkeletonCard() {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm animate-pulse">
+    <div
+      className="rounded-2xl p-5 animate-pulse"
+      style={{ border: `1px solid ${S.border}`, background: S.surface, boxShadow: S.shadow }}
+    >
       <div className="flex items-center justify-between">
-        <div className="h-3 w-24 rounded bg-gray-100" />
-        <div className="h-9 w-9 rounded-xl bg-gray-100" />
+        <div className="h-3 w-24 rounded" style={{ background: S.surface2 }} />
+        <div className="h-9 w-9 rounded-xl" style={{ background: S.surface2 }} />
       </div>
-      <div className="mt-4 h-7 w-32 rounded bg-gray-100" />
-      <div className="mt-2 h-3 w-20 rounded bg-gray-100" />
+      <div className="mt-4 h-7 w-32 rounded" style={{ background: S.surface2 }} />
+      <div className="mt-2 h-3 w-20 rounded" style={{ background: S.surface2 }} />
     </div>
   );
 }
@@ -105,31 +135,37 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
 
-      {/* ── Hero ── */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1C1917] to-[#3a2a1e] px-8 py-7 text-white shadow-lg">
+      {/* Hero */}
+      <div className="relative overflow-hidden rounded-2xl px-8 py-7 text-white shadow-lg" style={{ background: "linear-gradient(135deg, #1C1917 0%, #3a2a1e 100%)" }}>
         <div className="relative z-10">
-          <p className="text-sm font-medium text-orange-300">
-            {greeting}{firstName ? `, ${firstName}` : ""} 👋
+          <p className="text-sm font-medium" style={{ color: S.orange }}>
+            {greeting}{firstName ? `, ${firstName}` : ""}
           </p>
-          <h1 className="mt-1 text-2xl font-bold">Votre activité en un coup d'œil</h1>
-          <p className="mt-1 text-sm text-white/50">
+          <h1 style={{ marginTop: 4, fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontWeight: 400, fontSize: 28, color: "#fff" }}>
+            Votre activité en un coup d'oeil
+          </h1>
+          <p className="mt-1 text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
             {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
           </p>
         </div>
         {/* Decorative circles */}
-        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-orange-500/10" />
-        <div className="absolute -bottom-6 right-20 h-24 w-24 rounded-full bg-orange-500/10" />
+        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full" style={{ background: "rgba(232,96,44,0.10)" }} />
+        <div className="absolute -bottom-6 right-20 h-24 w-24 rounded-full" style={{ background: "rgba(232,96,44,0.10)" }} />
       </div>
 
-      {/* ── KPI cards ── */}
+      {/* KPI cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {isLoading
           ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
           : isError
           ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                <p className="text-xs text-gray-400">Données indisponibles</p>
-                <p className="mt-2 text-2xl font-bold text-gray-300">—</p>
+              <div
+                key={i}
+                className="rounded-2xl p-5"
+                style={{ border: `1px solid ${S.border}`, background: S.surface, boxShadow: S.shadow }}
+              >
+                <p className="text-xs" style={{ color: S.text3 }}>Données indisponibles</p>
+                <p className="mt-2 text-2xl font-bold" style={{ color: S.border }}>—</p>
               </div>
             ))
           : kpis
@@ -138,57 +174,70 @@ export default function DashboardPage() {
               return (
                 <div
                   key={card.label}
-                  className={`relative overflow-hidden rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md ${
-                    card.alert ? "border-current/20" : "border-gray-100"
-                  }`}
+                  className="relative overflow-hidden rounded-2xl p-5 transition-shadow hover:shadow-md"
+                  style={{ border: `1px solid ${S.border}`, background: S.surface, boxShadow: S.shadow }}
                 >
                   <div className="flex items-start justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: S.text3 }}>
                       {card.label}
                     </p>
-                    <div className={`rounded-xl ${card.bg} p-2.5`}>
-                      <Icon className={`h-4 w-4 ${card.iconColor}`} />
+                    <div className="rounded-xl p-2.5" style={{ background: card.iconBg }}>
+                      <Icon className="h-4 w-4" style={{ color: card.iconColor }} />
                     </div>
                   </div>
-                  <p className="mt-3 text-3xl font-bold tracking-tight text-gray-900">
+                  <p className="mt-3 text-3xl font-bold tracking-tight" style={{ color: S.text }}>
                     {card.value}
                   </p>
                   <div className="mt-1.5">{card.sub}</div>
                   {/* Bottom accent bar */}
-                  <div className={`absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r ${card.color} opacity-60`} />
+                  <div
+                    className="absolute bottom-0 left-0 h-0.5 w-full opacity-60"
+                    style={{ background: card.accentColor }}
+                  />
                 </div>
               );
             })
           : null}
       </div>
 
-      {/* ── Alert banner ── */}
+      {/* Alert banner */}
       {kpis && kpis.late_rents > 0 && (
-        <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-3.5">
-          <AlertTriangle className="h-4 w-4 shrink-0 text-red-500" />
-          <p className="flex-1 text-sm text-red-700">
+        <div
+          className="flex items-center gap-3 rounded-xl px-5 py-3.5"
+          style={{ border: `1px solid ${S.red}`, background: S.redBg }}
+        >
+          <AlertTriangle className="h-4 w-4 shrink-0" style={{ color: S.red }} />
+          <p className="flex-1 text-sm" style={{ color: S.red }}>
             <strong>{kpis.late_rents} loyer{kpis.late_rents > 1 ? "s" : ""} impayé{kpis.late_rents > 1 ? "s" : ""}</strong> — prenez action rapidement pour éviter les pénalités.
           </p>
-          <Link href="/app/transactions?status=late" className="shrink-0 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600 transition-colors">
+          <Link
+            href="/app/transactions?status=late"
+            className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{ background: S.red, color: "#fff" }}
+          >
             Voir les impayés →
           </Link>
         </div>
       )}
 
-      {/* ── Chart + Transactions ── */}
+      {/* Chart + Transactions */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Revenue chart */}
-        <div className="col-span-2 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div
+          className="col-span-2 rounded-2xl p-6"
+          style={{ border: `1px solid ${S.border}`, background: S.surface, boxShadow: S.shadow }}
+        >
           <div className="mb-5 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-gray-900">Revenus sur 12 mois</h2>
+              <h2 className="text-base font-semibold" style={{ color: S.text }}>Revenus sur 12 mois</h2>
               {stats && (
-                <p className="text-xs text-gray-400">Total : {fmt(stats.total)}</p>
+                <p className="text-xs" style={{ color: S.text3 }}>Total : {fmt(stats.total)}</p>
               )}
             </div>
             <Link
               href="/app/transactions"
-              className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+              style={{ border: `1px solid ${S.border}`, color: S.text2 }}
             >
               Détails <ArrowRight className="h-3 w-3" />
             </Link>
@@ -197,33 +246,40 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent transactions */}
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div
+          className="rounded-2xl p-6"
+          style={{ border: `1px solid ${S.border}`, background: S.surface, boxShadow: S.shadow }}
+        >
           <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-gray-900">Activité récente</h2>
-            <Link href="/app/transactions" className="flex items-center gap-1 text-xs font-medium text-orange-600 hover:underline">
+            <h2 className="text-base font-semibold" style={{ color: S.text }}>Activité récente</h2>
+            <Link
+              href="/app/transactions"
+              className="flex items-center gap-1 text-xs font-medium hover:underline"
+              style={{ color: S.orange }}
+            >
               Tout voir <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
           {!kpis?.recent_transactions?.length ? (
             <div className="flex flex-col items-center justify-center py-10">
-              <TrendingUp className="mb-2 h-8 w-8 text-gray-200" />
-              <p className="text-sm text-gray-400">Aucune transaction</p>
+              <TrendingUp className="mb-2 h-8 w-8" style={{ color: S.border }} />
+              <p className="text-sm" style={{ color: S.text3 }}>Aucune transaction</p>
             </div>
           ) : (
             <ul className="space-y-1">
               {kpis.recent_transactions.map((tx) => (
                 <li
                   key={tx.id}
-                  className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-between rounded-xl px-3 py-2.5 transition-colors"
                 >
                   <div>
-                    <p className="text-xs font-semibold text-gray-800">{tx.reference}</p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs font-semibold" style={{ color: S.text }}>{tx.reference}</p>
+                    <p className="text-xs" style={{ color: S.text3 }}>
                       {tx.due_date ? new Date(tx.due_date).toLocaleDateString("fr-FR") : "—"}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <span className="text-sm font-bold text-gray-900">
+                    <span className="text-sm font-bold" style={{ color: S.text }}>
                       CHF {tx.amount.toLocaleString("fr-CH")}
                     </span>
                     <RentStatusBadge status={tx.status} />
@@ -235,23 +291,24 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Quick actions ── */}
+      {/* Quick actions */}
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-500 uppercase tracking-wide">Actions rapides</h2>
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide" style={{ color: S.text3 }}>Actions rapides</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { href: "/app/properties/new", icon: Building2, label: "Ajouter un bien", color: "text-orange-600", bg: "bg-orange-50 hover:bg-orange-100" },
-            { href: "/app/contracts", icon: FileText, label: "Voir les contrats", color: "text-blue-600", bg: "bg-blue-50 hover:bg-blue-100" },
-            { href: "/app/rfqs/new", icon: Plus, label: "Appel d'offre", color: "text-purple-600", bg: "bg-purple-50 hover:bg-purple-100" },
-            { href: "/app/transactions?status=late", icon: AlertTriangle, label: "Gérer les impayés", color: "text-red-600", bg: "bg-red-50 hover:bg-red-100" },
-          ].map(({ href, icon: Icon, label, color, bg }) => (
+            { href: "/app/properties/new", icon: Building2, label: "Ajouter un bien", iconColor: S.orange, bg: S.orangeBg },
+            { href: "/app/contracts",      icon: FileText,   label: "Voir les contrats", iconColor: S.blue,   bg: S.blueBg },
+            { href: "/app/rfqs/new",       icon: Plus,       label: "Appel d'offre",  iconColor: S.orange, bg: S.orangeBg },
+            { href: "/app/transactions?status=late", icon: AlertTriangle, label: "Gérer les impayés", iconColor: S.red, bg: S.redBg },
+          ].map(({ href, icon: Icon, label, iconColor, bg }) => (
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 rounded-xl border border-transparent ${bg} px-4 py-3.5 transition-all hover:shadow-sm`}
+              className="flex items-center gap-3 rounded-xl px-4 py-3.5 transition-all hover:shadow-sm"
+              style={{ background: bg, border: `1px solid transparent` }}
             >
-              <Icon className={`h-4 w-4 shrink-0 ${color}`} />
-              <span className="text-sm font-medium text-gray-700">{label}</span>
+              <Icon className="h-4 w-4 shrink-0" style={{ color: iconColor }} />
+              <span className="text-sm font-medium" style={{ color: S.text2 }}>{label}</span>
             </Link>
           ))}
         </div>
