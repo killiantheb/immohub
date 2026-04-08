@@ -54,7 +54,7 @@ function FeatureColumn({ icon, title, subtitle, features, delay = 0 }: FeatureCo
           height: 48,
           borderRadius: "0.75rem",
           background: C.orangeBg,
-          border: `1px solid ${C.orangeBorder}`}`,
+          border: `1px solid ${C.orangeBorder}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -238,7 +238,7 @@ export function FeatureReseau() {
               <div
                 style={{
                   background: C.orangeBg,
-                  border: `1px solid ${C.orangeBorder}`}`,
+                  border: `1px solid ${C.orangeBorder}`,
                   borderRadius: "0.625rem",
                   padding: "0.75rem 1.5rem",
                   display: "inline-block",

@@ -107,7 +107,7 @@ export function Tarifs() {
               transition={{ duration: 0.6, delay: i * 0.12 }}
               style={{
                 background: plan.featured ? C.goldBg : C.surface,
-                border: `1px solid ${C.orangeBorder}`}` : `1px solid ${C.border}`,
+                border: `1px solid ${C.orangeBorder}` : `1px solid ${C.border}`,
                 borderRadius: "1.25rem",
                 padding: "2.25rem",
                 position: "relative",
