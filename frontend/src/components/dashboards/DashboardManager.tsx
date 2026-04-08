@@ -79,8 +79,8 @@ function MetricCard({ label, value, sub, icon: Icon, color, bg, trend }: MetricP
         )}
       </div>
       <p style={{ fontSize: 22, fontWeight: 800, color: S.text, marginBottom: 2, letterSpacing: "-0.02em" }}>{value}</p>
-      <p style={{ fontSize: 12, color: S.text2, fontWeight: 500 }}>{label}</p>
-      {sub && <p style={{ fontSize: 11, color: S.text3, marginTop: 2 }}>{sub}</p>}
+      <p style={{ fontSize: 13, color: S.text2, fontWeight: 500 }}>{label}</p>
+      {sub && <p style={{ fontSize: 12, color: S.text3, marginTop: 2 }}>{sub}</p>}
     </Card>
   );
 }
@@ -114,7 +114,7 @@ function BriefingIA({ biensVacants, loyersAttente, interOuvertes }: {
         <p style={{ fontSize: 12, fontWeight: 700, color: S.orange, marginBottom: 3, letterSpacing: "0.04em", textTransform: "uppercase" }}>
           Briefing Althy · {new Date().toLocaleDateString("fr-CH", { weekday: "long", day: "numeric", month: "long" })}
         </p>
-        <p style={{ fontSize: 13, color: S.text2, lineHeight: 1.55 }}>{summary}</p>
+        <p style={{ fontSize: 14, color: S.text2, lineHeight: 1.55 }}>{summary}</p>
       </div>
     </div>
   );
@@ -208,13 +208,13 @@ export function DashboardManager({ firstName, role }: Props) {
     <div>
       {/* Greeting */}
       <div style={{ marginBottom: "1.75rem" }}>
-        <p style={{ fontSize: 11, letterSpacing: "2px", textTransform: "uppercase", color: S.text3, marginBottom: 6 }}>
+        <p style={{ fontSize: 12, letterSpacing: "2px", textTransform: "uppercase", color: S.text3, marginBottom: 6 }}>
           {roleLabel}
         </p>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: S.text, marginBottom: 4 }}>
-          Bonjour{firstName ? `, ${firstName}` : ""} 👋
+        <h1 style={{ fontSize: 32, fontWeight: 400, fontFamily: "var(--font-serif),'Cormorant Garamond',serif", color: S.text, marginBottom: 4, letterSpacing: "0.01em" }}>
+          Bonjour{firstName ? `, ${firstName}` : ""}
         </h1>
-        <p style={{ fontSize: 13, color: S.text3 }}>
+        <p style={{ fontSize: 14, color: S.text3 }}>
           {new Date().toLocaleDateString("fr-CH", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
         </p>
       </div>

@@ -5,70 +5,83 @@
 /* ── Althy — Design tokens ────────────────────────────────────────────────── */
 :root {
   /* Surfaces */
-  --althy-bg:          #F3F1EC;
+  --althy-bg:          #F5F3EE;
   --althy-surface:     #FFFFFF;
-  --althy-surface-2:   #EDEBE5;
-  --althy-border:      rgba(26,24,20,0.08);
-  --althy-border-2:    rgba(26,24,20,0.04);
+  --althy-surface-2:   #EDE9E2;
+  --althy-border:      rgba(26,22,14,0.08);
+  --althy-border-2:    rgba(26,22,14,0.04);
 
-  /* Text — fort contraste */
-  --althy-text:        #1A1814;
-  --althy-text-2:      #4C4740;
-  --althy-text-3:      #9A9088;
+  /* Text — contraste maximum */
+  --althy-text:        #1C1A14;
+  --althy-text-2:      #4A4238;
+  --althy-text-3:      #7A7060;
 
-  /* Brand — or chaud */
+  /* Brand orange Althy */
+  --althy-orange:      #C4601C;
+  --althy-orange-bg:   rgba(196,96,28,0.08);
+
+  /* Or — accent luxe */
   --althy-gold:        #B68A4A;
-  --althy-gold-light:  #C9A870;
-  --althy-gold-bg:     rgba(182,138,74,0.10);
-  --althy-gold-border: rgba(182,138,74,0.25);
+  --althy-gold-light:  #C9A46A;
+  --althy-gold-bg:     rgba(182,138,74,0.09);
+  --althy-gold-border: rgba(182,138,74,0.22);
 
   /* Sémantique */
-  --althy-green:       #2E5C28;
-  --althy-green-bg:    rgba(46,92,40,0.08);
-  --althy-red:         #902E2E;
-  --althy-red-bg:      rgba(144,46,46,0.08);
-  --althy-blue:        #1A4A7A;
-  --althy-blue-bg:     rgba(26,74,122,0.08);
-  --althy-amber:       #7A5520;
-  --althy-amber-bg:    rgba(122,85,32,0.08);
-  --althy-purple:      #5A3E7A;
-  --althy-purple-bg:   rgba(90,62,122,0.08);
+  --althy-green:       #2A5822;
+  --althy-green-bg:    rgba(42,88,34,0.08);
+  --althy-red:         #8E2A2A;
+  --althy-red-bg:      rgba(142,42,42,0.08);
+  --althy-blue:        #1A4878;
+  --althy-blue-bg:     rgba(26,72,120,0.08);
+  --althy-amber:       #7A5018;
+  --althy-amber-bg:    rgba(122,80,24,0.08);
+  --althy-purple:      #583A72;
+  --althy-purple-bg:   rgba(88,58,114,0.08);
 
-  /* Sidebar sombre */
-  --sidebar-bg:        #0D0C0A;
-  --sidebar-border:    rgba(255,245,230,0.06);
-  --sidebar-text:      rgba(224,212,196,0.70);
-  --sidebar-text-on:   #EDE4D8;
-  --sidebar-gold:      #C4A87A;
-  --sidebar-hover:     rgba(255,245,230,0.05);
-  --sidebar-active:    rgba(196,168,122,0.12);
+  /* Sidebar claire et chaude */
+  --sidebar-bg:        #FEFCF7;
+  --sidebar-border:    rgba(182,138,74,0.12);
+  --sidebar-text:      #4A4238;
+  --sidebar-text-on:   #1C1A14;
+  --sidebar-gold:      #B68A4A;
+  --sidebar-hover:     rgba(182,138,74,0.05);
+  --sidebar-active:    rgba(182,138,74,0.09);
 
-  /* Ombres */
-  --althy-shadow:      0 1px 4px rgba(26,24,20,0.05), 0 1px 2px rgba(26,24,20,0.03);
-  --althy-shadow-md:   0 4px 20px rgba(26,24,20,0.07), 0 1px 4px rgba(26,24,20,0.04);
-  --althy-shadow-lg:   0 8px 40px rgba(26,24,20,0.09), 0 2px 8px rgba(26,24,20,0.05);
+  /* Ombres fines */
+  --althy-shadow:      0 1px 3px rgba(26,22,14,0.05), 0 1px 2px rgba(26,22,14,0.03);
+  --althy-shadow-md:   0 4px 18px rgba(26,22,14,0.07), 0 1px 4px rgba(26,22,14,0.04);
+  --althy-shadow-lg:   0 8px 36px rgba(26,22,14,0.09), 0 2px 8px rgba(26,22,14,0.04);
 }
 
+/* ── Base ─────────────────────────────────────────────────────────────────── */
 @layer base {
+  html { font-size: 15px; }
+
   body {
     background-color: var(--althy-bg);
     color: var(--althy-text);
     font-family: var(--font-sans), 'DM Sans', system-ui, sans-serif;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3 {
     font-family: var(--font-serif), 'Cormorant Garamond', Georgia, serif;
+    font-weight: 400;
     letter-spacing: 0.01em;
+    color: var(--althy-text);
   }
+
+  a { color: inherit; }
 }
 
+/* ── Components ──────────────────────────────────────────────────────────── */
 @layer components {
   .btn-primary {
     @apply inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-all;
     background: var(--althy-gold);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.025em;
   }
   .btn-primary:hover { background: var(--althy-gold-light); }
 
@@ -81,10 +94,11 @@
   .btn-secondary:hover { background: var(--althy-surface-2); }
 
   .input {
-    @apply block w-full rounded-lg border px-3 py-2.5 text-sm transition-all outline-none;
+    @apply block w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition-all;
     border-color: var(--althy-border);
     background: var(--althy-surface);
     color: var(--althy-text);
+    font-size: 0.875rem;
   }
   .input::placeholder { color: var(--althy-text-3); }
   .input:focus {
@@ -95,18 +109,28 @@
   .card {
     background: var(--althy-surface);
     border: 1px solid var(--althy-border);
-    border-radius: 12px;
+    border-radius: 14px;
     box-shadow: var(--althy-shadow);
   }
 
   .label {
-    @apply mb-1.5 block text-xs font-medium uppercase;
+    @apply mb-1.5 block font-medium uppercase;
+    font-size: 0.7rem;
     color: var(--althy-text-3);
-    letter-spacing: 0.08em;
+    letter-spacing: 0.09em;
+  }
+
+  /* Headings de section dans les dashboards */
+  .section-title {
+    font-family: var(--font-serif), 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: var(--althy-text);
+    letter-spacing: 0.01em;
   }
 }
 
-/* ── Landing page responsive ── */
+/* ── Landing page ─────────────────────────────────────────────────────────── */
 .nav-links { display: flex; gap: 1.5rem; }
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
 .steps-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
@@ -118,12 +142,11 @@
   .steps-grid { grid-template-columns: 1fr; }
   .pricing-grid { grid-template-columns: 1fr; }
 }
-
 @media (max-width: 360px) {
   .ql-grid { grid-template-columns: repeat(2, 1fr) !important; }
 }
 
-/* ── Animations ── */
+/* ── Animations ──────────────────────────────────────────────────────────── */
 @keyframes althyFloat {
   0%, 100% { transform: translateY(0); }
   40%       { transform: translateY(-10px); }
@@ -134,11 +157,14 @@
   50%       { opacity: 0.4; }
 }
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(5px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Scrollbar fine sur sidebar sombre ── */
+/* ── Scrollbar sidebar ───────────────────────────────────────────────────── */
 .sidebar-scroll::-webkit-scrollbar       { width: 2px; }
 .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
-.sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(255,245,230,0.10); border-radius: 2px; }
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(182,138,74,0.18);
+  border-radius: 2px;
+}

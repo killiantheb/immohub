@@ -287,11 +287,11 @@ export function DashboardOpener({ firstName }: { firstName: string }) {
       {/* Greeting + badge */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: "1.75rem" }}>
         <div>
-          <p style={{ fontSize: 11, letterSpacing: "2px", textTransform: "uppercase", color: S.text3, marginBottom: 6 }}>Ouvreur</p>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: S.text, marginBottom: 4 }}>
-            Bonjour{firstName ? `, ${firstName}` : ""} 👋
+          <p style={{ fontSize: 12, letterSpacing: "2px", textTransform: "uppercase", color: S.text3, marginBottom: 6 }}>Ouvreur</p>
+          <h1 style={{ fontSize: 32, fontWeight: 400, fontFamily: "var(--font-serif),'Cormorant Garamond',serif", color: S.text, marginBottom: 4, letterSpacing: "0.01em" }}>
+            Bonjour{firstName ? `, ${firstName}` : ""}
           </h1>
-          <p style={{ fontSize: 13, color: S.text3 }}>
+          <p style={{ fontSize: 14, color: S.text3 }}>
             {new Date().toLocaleDateString("fr-CH", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
           </p>
         </div>

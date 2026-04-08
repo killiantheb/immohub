@@ -324,11 +324,11 @@ export function DashboardArtisan({ firstName }: { firstName: string }) {
     <div>
       {/* Greeting */}
       <div style={{ marginBottom: "1.75rem" }}>
-        <p style={{ fontSize: 11, letterSpacing: "2px", textTransform: "uppercase", color: S.text3, marginBottom: 6 }}>Artisan</p>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: S.text, marginBottom: 4 }}>
-          Bonjour{firstName ? `, ${firstName}` : ""} 👋
+        <p style={{ fontSize: 12, letterSpacing: "2px", textTransform: "uppercase", color: S.text3, marginBottom: 6 }}>Artisan</p>
+        <h1 style={{ fontSize: 32, fontWeight: 400, fontFamily: "var(--font-serif),'Cormorant Garamond',serif", color: S.text, marginBottom: 4, letterSpacing: "0.01em" }}>
+          Bonjour{firstName ? `, ${firstName}` : ""}
         </h1>
-        <p style={{ fontSize: 13, color: S.text3 }}>
+        <p style={{ fontSize: 14, color: S.text3 }}>
           {new Date().toLocaleDateString("fr-CH", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
         </p>
       </div>
