@@ -457,7 +457,7 @@ async def update_prospect(
     )
 
 
-@router.delete("/contacts/{contact_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/contacts/{contact_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def delete_prospect(
     contact_id: str,
     current_user: AuthUserDep,
@@ -713,7 +713,7 @@ async def property_overview(
     }
 
 
-@router.delete("/notes/{note_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/notes/{note_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def delete_note(
     note_id: str,
     current_user: AuthUserDep,
