@@ -30,7 +30,7 @@ from app.services.ai_service import (
     recommend_best_quote,
     score_tenant_application,
 )
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -1283,4 +1283,417 @@ async def rediger_description(
         _generate(),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ── GET /chat — SSE with auto-injected context ────────────────────────────────
+
+@router.get("/chat")
+async def chat_get(
+    current_user: AuthUserDep,
+    db: DbDep,
+    message: str = Query(..., description="Message de l'utilisateur"),
+    _=rate_limit(20, 60),
+) -> StreamingResponse:
+    """
+    SSE streaming chat avec contexte auto-injecté (biens, locataires, interventions).
+    Compatible EventSource — auth via Bearer header.
+    """
+    from app.models.bien import Bien
+    from app.models.intervention import Intervention
+    from app.models.locataire import Locataire
+    from sqlalchemy import and_, func, select as sa_sel
+
+    uid = current_user.id
+    ctx: dict = {"role": current_user.role, "user_name": current_user.first_name or ""}
+
+    try:
+        # Biens de l'utilisateur
+        biens_count = (await db.execute(
+            sa_sel(func.count()).select_from(Bien).where(Bien.owner_id == uid)
+        )).scalar() or 0
+        ctx["nb_biens"] = biens_count
+
+        biens_res = await db.execute(sa_sel(Bien).where(Bien.owner_id == uid).limit(10))
+        biens = biens_res.scalars().all()
+        bien_ids = [b.id for b in biens]
+        ctx["biens"] = [{"adresse": b.adresse, "ville": b.ville, "statut": b.statut} for b in biens]
+
+        if bien_ids:
+            # Locataires actifs
+            loc_res = await db.execute(
+                sa_sel(func.count()).select_from(Locataire).where(
+                    and_(Locataire.bien_id.in_(bien_ids), Locataire.statut == "actif")
+                )
+            )
+            ctx["nb_locataires_actifs"] = loc_res.scalar() or 0
+
+            # Interventions en cours
+            inter_res = await db.execute(
+                sa_sel(Intervention).where(
+                    and_(
+                        Intervention.bien_id.in_(bien_ids),
+                        Intervention.statut.in_(["nouveau", "en_cours"]),
+                    )
+                ).limit(5)
+            )
+            interventions = inter_res.scalars().all()
+            ctx["interventions_en_cours"] = [
+                {"titre": i.titre, "categorie": i.categorie, "urgence": i.urgence, "statut": i.statut}
+                for i in interventions
+            ]
+    except Exception:
+        pass  # Degrade gracefully — still return a streamed answer
+
+    async def _generate():
+        async for chunk in chat_stream(
+            message=message,
+            context=ctx,
+            db=db,
+            user_id=str(current_user.id),
+        ):
+            yield chunk
+
+    return StreamingResponse(
+        _generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ── POST /briefing-quotidien ──────────────────────────────────────────────────
+
+@router.post("/briefing-quotidien")
+async def briefing_quotidien(
+    current_user: AuthUserDep,
+    db: DbDep,
+) -> dict:
+    """
+    Déclenche la génération du briefing quotidien pour tous les utilisateurs actifs.
+    Réservé aux super_admin — le job tourne aussi automatiquement à 07h00.
+    """
+    if current_user.role != "super_admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux super_admin")
+
+    from app.tasks.ai_tasks import daily_briefing_all_users
+    task = daily_briefing_all_users.delay()
+    return {"task_id": task.id, "status": "queued"}
+
+
+# ── POST /scoring-locataire ───────────────────────────────────────────────────
+
+class ScoringLocataireRequest(BaseModel):
+    locataire_id: _uuid.UUID
+
+
+class ScoringLocataireResponse(BaseModel):
+    locataire_id: _uuid.UUID
+    ponctualite: float
+    solvabilite: float
+    communication: float
+    etat_logement: float
+    score_global: float
+    nb_retards: int
+    resume: str
+
+
+@router.post("/scoring-locataire", response_model=ScoringLocataireResponse)
+async def scoring_locataire(
+    payload: ScoringLocataireRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(20, 60),
+) -> ScoringLocataireResponse:
+    """
+    Calcule le score d'un locataire à partir de ses paiements et dossier,
+    génère un résumé via Claude, et sauvegarde dans scoring_locataires.
+    """
+    from anthropic import AsyncAnthropic
+    from app.core.config import settings
+    from app.models.locataire import DossierLocataire, Locataire
+    from app.models.paiement import Paiement
+    from app.models.scoring import ScoringLocataire
+    from datetime import datetime, timezone
+    from sqlalchemy import and_, select as sa_sel
+
+    loc_res = await db.execute(sa_sel(Locataire).where(Locataire.id == payload.locataire_id))
+    loc = loc_res.scalar_one_or_none()
+    if not loc:
+        raise HTTPException(404, "Locataire introuvable")
+
+    # Fetch paiements
+    paie_res = await db.execute(
+        sa_sel(Paiement).where(Paiement.locataire_id == payload.locataire_id)
+    )
+    paiements = paie_res.scalars().all()
+
+    # Fetch dossier
+    dos_res = await db.execute(
+        sa_sel(DossierLocataire).where(DossierLocataire.locataire_id == payload.locataire_id)
+    )
+    dossier = dos_res.scalar_one_or_none()
+
+    # ── Calcul ponctualité ────────────────────────────────────────────────────
+    nb_retards = sum(1 for p in paiements if p.statut == "retard")
+    avg_jours_retard = 0.0
+    if paiements:
+        retard_paiements = [p for p in paiements if p.jours_retard > 0]
+        if retard_paiements:
+            avg_jours_retard = sum(p.jours_retard for p in retard_paiements) / len(retard_paiements)
+
+    ponctualite = max(0.0, min(10.0, 10.0 - (nb_retards * 0.8) - (avg_jours_retard * 0.05)))
+
+    # ── Calcul solvabilité ────────────────────────────────────────────────────
+    solvabilite = 5.0  # default
+    if dossier and dossier.salaire_net and loc.loyer:
+        ratio = float(loc.loyer) / float(dossier.salaire_net)
+        if ratio <= 0.25:
+            solvabilite = 10.0
+        elif ratio <= 0.33:
+            solvabilite = 8.0
+        elif ratio <= 0.40:
+            solvabilite = 6.0
+        elif ratio <= 0.50:
+            solvabilite = 4.0
+        else:
+            solvabilite = 2.0
+
+    communication = 5.0  # pas de données directes
+    etat_logement = 5.0  # pas de données directes
+
+    score_global = round((ponctualite * 0.4 + solvabilite * 0.3 + communication * 0.15 + etat_logement * 0.15), 2)
+
+    # ── Résumé Claude ─────────────────────────────────────────────────────────
+    try:
+        client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        prompt_data = {
+            "nb_paiements": len(paiements),
+            "nb_retards": nb_retards,
+            "avg_jours_retard": round(avg_jours_retard, 1),
+            "type_contrat": dossier.type_contrat if dossier else None,
+            "anciennete_mois": dossier.anciennete if dossier else None,
+            "ratio_loyer_salaire": round(float(loc.loyer or 0) / float(dossier.salaire_net or 1), 2) if dossier and dossier.salaire_net else None,
+            "score_global": score_global,
+        }
+        resp = await client.messages.create(
+            model="claude-sonnet-4-5",
+            max_tokens=1024,
+            system="Tu es Althy, assistante immobilière suisse. Génère un résumé concis (2-3 phrases) du profil locataire en français.",
+            messages=[{"role": "user", "content": f"Données locataire : {_json.dumps(prompt_data, ensure_ascii=False)}"}],
+        )
+        resume = resp.content[0].text.strip()
+    except Exception:
+        resume = f"Score global {score_global:.1f}/10. Ponctualité {ponctualite:.1f}/10, solvabilité {solvabilite:.1f}/10."
+
+    # ── Upsert scoring ────────────────────────────────────────────────────────
+    existing_res = await db.execute(
+        sa_sel(ScoringLocataire).where(ScoringLocataire.locataire_id == payload.locataire_id)
+    )
+    scoring = existing_res.scalar_one_or_none()
+
+    if scoring:
+        scoring.ponctualite = round(ponctualite, 2)
+        scoring.solvabilite = round(solvabilite, 2)
+        scoring.communication = communication
+        scoring.etat_logement = etat_logement
+        scoring.score_global = score_global
+        scoring.nb_retards = nb_retards
+        scoring.updated_at = datetime.now(timezone.utc)
+    else:
+        scoring = ScoringLocataire(
+            locataire_id=payload.locataire_id,
+            ponctualite=round(ponctualite, 2),
+            solvabilite=round(solvabilite, 2),
+            communication=communication,
+            etat_logement=etat_logement,
+            score_global=score_global,
+            nb_retards=nb_retards,
+            updated_at=datetime.now(timezone.utc),
+        )
+        db.add(scoring)
+
+    await db.commit()
+
+    return ScoringLocataireResponse(
+        locataire_id=payload.locataire_id,
+        ponctualite=round(ponctualite, 2),
+        solvabilite=round(solvabilite, 2),
+        communication=communication,
+        etat_logement=etat_logement,
+        score_global=score_global,
+        nb_retards=nb_retards,
+        resume=resume,
+    )
+
+
+# ── POST /generer-document ────────────────────────────────────────────────────
+
+class GenererDocumentRequest(BaseModel):
+    type: str  # bail | quittance | edl | relance
+    bien_id: _uuid.UUID
+    locataire_id: _uuid.UUID | None = None
+    params: dict = {}
+
+
+class GenererDocumentResponse(BaseModel):
+    document_id: _uuid.UUID
+    url: str
+    type: str
+
+
+@router.post("/generer-document", response_model=GenererDocumentResponse)
+async def generer_document(
+    payload: GenererDocumentRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(5, 60),
+) -> GenererDocumentResponse:
+    """
+    Génère un document (bail, quittance, EDL, relance) via Claude,
+    crée un PDF et le stocke dans Supabase Storage.
+    """
+    import io
+    from anthropic import AsyncAnthropic
+    from app.core.config import settings
+    from app.models.bien import Bien
+    from app.models.document_althy import DocumentAlthy
+    from app.models.locataire import DossierLocataire, Locataire
+    from datetime import date, datetime, timezone
+    from fpdf import FPDF
+    from sqlalchemy import select as sa_sel
+    import httpx
+
+    DOC_TYPES = {"bail", "quittance", "edl", "relance"}
+    if payload.type not in DOC_TYPES:
+        raise HTTPException(422, f"type doit être l'un de : {', '.join(DOC_TYPES)}")
+
+    # ── Fetch bien ────────────────────────────────────────────────────────────
+    bien_res = await db.execute(sa_sel(Bien).where(Bien.id == payload.bien_id))
+    bien = bien_res.scalar_one_or_none()
+    if not bien:
+        raise HTTPException(404, "Bien introuvable")
+
+    # ── Fetch locataire (optional) ────────────────────────────────────────────
+    loc_data: dict = {}
+    if payload.locataire_id:
+        loc_res = await db.execute(sa_sel(Locataire).where(Locataire.id == payload.locataire_id))
+        loc = loc_res.scalar_one_or_none()
+        if loc:
+            loc_data = {
+                "loyer": float(loc.loyer or 0),
+                "charges": float(loc.charges or 0),
+                "date_entree": loc.date_entree.isoformat() if loc.date_entree else None,
+                "date_sortie": loc.date_sortie.isoformat() if loc.date_sortie else None,
+            }
+            dos_res = await db.execute(
+                sa_sel(DossierLocataire).where(DossierLocataire.locataire_id == payload.locataire_id)
+            )
+            dossier = dos_res.scalar_one_or_none()
+            if dossier:
+                loc_data["employeur"] = dossier.employeur
+                loc_data["type_contrat"] = dossier.type_contrat
+
+    # ── Build prompt ──────────────────────────────────────────────────────────
+    bien_info = f"{bien.adresse}, {bien.cp} {bien.ville} ({bien.type})"
+    today_str = date.today().strftime("%d/%m/%Y")
+    params_str = _json.dumps(payload.params, ensure_ascii=False) if payload.params else "{}"
+
+    type_prompts = {
+        "bail": (
+            f"Génère un bail à loyer conforme au droit suisse (CO art. 253 ss) pour le bien : {bien_info}. "
+            f"Données locataire : {_json.dumps(loc_data, ensure_ascii=False)}. "
+            f"Paramètres supplémentaires : {params_str}. "
+            "Structure : parties, objet, loyer/charges, durée, résiliation, dépôt, clauses spéciales. "
+            "Sois complet et professionnel."
+        ),
+        "quittance": (
+            f"Génère une quittance de loyer pour : {bien_info}, date : {today_str}. "
+            f"Données : {_json.dumps(loc_data, ensure_ascii=False)}. Params : {params_str}. "
+            "Inclure : désignation du bien, montant loyer + charges, période, signature propriétaire."
+        ),
+        "edl": (
+            f"Génère un état des lieux {'d\\'entrée' if payload.params.get('type') == 'entree' else 'de sortie'} "
+            f"pour : {bien_info}, date : {today_str}. "
+            f"Params : {params_str}. "
+            "Structure : pièces (entrée, séjour, cuisine, salle de bain, chambres, WC, extérieur), "
+            "état de chaque élément, compteurs, clés remises. Format structuré et professionnel."
+        ),
+        "relance": (
+            f"Rédige une lettre de relance pour loyer impayé concernant le bien : {bien_info}. "
+            f"Date : {today_str}. Données : {_json.dumps(loc_data, ensure_ascii=False)}. "
+            f"Params : {params_str}. "
+            "Ton professionnel mais ferme. Mentionner le montant dû, la date d'échéance, "
+            "et les conséquences légales suisses en cas de non-paiement (CO art. 257d)."
+        ),
+    }
+
+    # ── Claude generation ─────────────────────────────────────────────────────
+    try:
+        client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        response = await client.messages.create(
+            model="claude-sonnet-4-5",
+            max_tokens=4096,
+            system="Tu es Althy, assistante immobilière suisse experte en droit du bail. "
+                   "Génère des documents juridiques précis et conformes au droit suisse.",
+            messages=[{"role": "user", "content": type_prompts[payload.type]}],
+        )
+        doc_text = response.content[0].text.strip()
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    # ── PDF generation ────────────────────────────────────────────────────────
+    pdf = FPDF()
+    pdf.set_margins(20, 20, 20)
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 14)
+    pdf.cell(0, 10, f"Althy — {payload.type.upper()} — {today_str}", ln=True, align="C")
+    pdf.ln(5)
+    pdf.set_font("Helvetica", size=10)
+    for line in doc_text.split("\n"):
+        pdf.multi_cell(0, 6, line if line else " ")
+
+    pdf_bytes = pdf.output()
+
+    # ── Upload to Supabase Storage ────────────────────────────────────────────
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    storage_path = f"documents/{payload.type}/{payload.bien_id}/{ts}.pdf"
+
+    async with httpx.AsyncClient(timeout=30.0) as http:
+        upload_resp = await http.post(
+            f"{settings.SUPABASE_URL}/storage/v1/object/althy-docs/{storage_path}",
+            content=bytes(pdf_bytes),
+            headers={
+                "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
+                "Content-Type": "application/pdf",
+            },
+        )
+        if upload_resp.status_code not in (200, 201):
+            raise HTTPException(500, f"Erreur upload Supabase: {upload_resp.text}")
+
+    public_url = f"{settings.SUPABASE_URL}/storage/v1/object/public/althy-docs/{storage_path}"
+
+    # ── Save document record ──────────────────────────────────────────────────
+    doc_type_map = {
+        "bail": "bail",
+        "quittance": "quittance",
+        "edl": "edl_entree" if payload.params.get("type") != "sortie" else "edl_sortie",
+        "relance": "autre",
+    }
+
+    doc = DocumentAlthy(
+        bien_id=payload.bien_id,
+        locataire_id=payload.locataire_id,
+        type=doc_type_map[payload.type],
+        url_storage=public_url,
+        date_document=date.today(),
+        genere_par_ia=True,
+    )
+    db.add(doc)
+    await db.commit()
+    await db.refresh(doc)
+
+    return GenererDocumentResponse(
+        document_id=doc.id,
+        url=public_url,
+        type=payload.type,
     )

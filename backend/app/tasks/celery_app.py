@@ -10,6 +10,7 @@ celery_app = Celery(
         "app.tasks.notifications",
         "app.tasks.rent_tasks",
         "app.tasks.mission_tasks",
+        "app.tasks.ai_tasks",
     ],
 )
 
@@ -45,5 +46,10 @@ celery_app.conf.beat_schedule = {
     "calculate-commissions": {
         "task": "tasks.calculate_commissions",
         "schedule": crontab(hour=9, minute=0),
+    },
+    # Every day at 07:00 Zurich time — AI daily briefing for all active users
+    "daily-briefing-all-users": {
+        "task": "tasks.daily_briefing_all_users",
+        "schedule": crontab(hour=7, minute=0),
     },
 }

@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.mission_ouvreur import MissionOuvreur, ProfileOuvreur
 from app.models.user import User
+from app.services.geocoding import geocode
 from app.schemas.mission_ouvreur import (
     MissionOuvreurCreate,
     MissionOuvreurRead,
@@ -161,8 +162,17 @@ async def update_my_profile(
     p = result.scalar_one_or_none()
     if not p:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Profil introuvable")
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    data = payload.model_dump(exclude_unset=True)
+    for field, value in data.items():
         setattr(p, field, value)
+
+    # Auto-géocode si lat/lng absents et que l'utilisateur a une adresse
+    if p.lat is None or p.lng is None:
+        if current_user.adresse:
+            coords = await geocode(current_user.adresse)
+            if coords:
+                p.lat, p.lng = coords
+
     await db.flush()
     await db.refresh(p)
     return ProfileOuvreurRead.model_validate(p)

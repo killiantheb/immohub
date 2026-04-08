@@ -46,3 +46,5 @@ class Bien(BaseModel):
     loyer: Mapped[float | None] = mapped_column(Numeric(10, 2))
     charges: Mapped[float | None] = mapped_column(Numeric(10, 2))
     statut: Mapped[str] = mapped_column(BienStatut, nullable=False, default="vacant", server_default="vacant")
+    lat: Mapped[float | None] = mapped_column(Float)
+    lng: Mapped[float | None] = mapped_column(Float)

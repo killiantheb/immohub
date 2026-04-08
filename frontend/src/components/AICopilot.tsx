@@ -15,18 +15,18 @@ interface Message {
   action?: { type: string; path: string; label: string; requires_validation?: boolean };
 }
 
-// ── Role-specific suggestions ─────────────────────────────────────────────────
-
 type UserRole = "owner" | "agency" | "tenant" | "company" | "opener" | "super_admin";
+
+// ── Role-specific suggestions ─────────────────────────────────────────────────
 
 const ROLE_SUGGESTIONS: Record<UserRole, string[]> = {
   owner: [
     "Rédiger un bail pour mon appartement",
     "Générer un état des lieux d'entrée",
     "Analyser mes impayés de loyer",
-    "Créer un post pour les réseaux sociaux",
     "Historique complet de mon bien",
     "Relancer un locataire en retard",
+    "Créer un post pour les réseaux sociaux",
   ],
   agency: [
     "Adapter le bail au profil de l'agence",
@@ -34,7 +34,6 @@ const ROLE_SUGGESTIONS: Record<UserRole, string[]> = {
     "Analyser les performances du portefeuille",
     "Paramétrer mes commissions de gérance",
     "EDL professionnel pour un bien",
-    "Récupérer les infos légales de l'agence",
   ],
   tenant: [
     "Expliquer mon bail simplement",
@@ -42,14 +41,12 @@ const ROLE_SUGGESTIONS: Record<UserRole, string[]> = {
     "Signaler un problème dans mon logement",
     "Comprendre mon état des lieux de sortie",
     "Comment contester une hausse de loyer ?",
-    "Voir mon historique de logements",
   ],
   company: [
     "Rédiger un devis pour cet appel d'offre",
     "Voir les nouvelles opportunités",
     "Rédiger un rapport d'intervention",
     "Comment améliorer ma note ?",
-    "Importer un devis existant",
   ],
   opener: [
     "Trouver des missions près de moi",
@@ -65,32 +62,29 @@ const ROLE_SUGGESTIONS: Record<UserRole, string[]> = {
 };
 
 const PAGE_SUGGESTIONS: Record<string, string[]> = {
-  "/app/properties":     ["Rédiger une annonce pour ce bien", "Générer un EDL d'entrée", "Historique complet du bien"],
-  "/app/properties/new": ["Quels documents fournir pour louer ?", "Comment fixer le loyer ?"],
-  "/app/contracts":      ["Rédiger un nouveau bail", "Explique ce bail", "Quand résilier ?"],
-  "/app/contracts/new":  ["Aide-moi à rédiger ce bail", "Quelles clauses inclure ?"],
-  "/app/transactions":   ["Analyser mes impayés", "Relancer un locataire", "Exporter la comptabilité"],
-  "/app/openers":        ["Trouver des ouvreurs proches", "Créer une mission", "Quel type choisir ?"],
-  "/app/rfqs":           ["Rédiger un appel d'offre", "Comparer les devis reçus", "Quelle urgence choisir ?"],
-  "/app/rfqs/new":       ["Aide-moi à décrire les travaux", "Quel budget prévoir ?"],
-  "/app/companies":      ["Conseils pour choisir un prestataire", "Comparer les notes"],
-  "/tenant":             ["Expliquer mon bail", "Mes droits locataires", "Signaler un problème"],
-  "/opener":             ["Mes prochaines missions", "Rédiger un rapport", "Optimiser ma zone"],
+  "/app/biens":            ["Rédiger une annonce pour ce bien", "Générer un EDL d'entrée", "Historique complet"],
+  "/app/biens/new":        ["Quels documents fournir pour louer ?", "Comment fixer le loyer ?"],
+  "/app/locataires":       ["Scorer ce locataire", "Générer une quittance", "Analyser les retards"],
+  "/app/interventions":    ["Relancer l'artisan", "Rédiger un rapport", "Prioriser les urgences"],
+  "/app/publications/new": ["Aide-moi à décrire la mission", "Quel budget prévoir ?"],
+  "/app/settings":         ["Comment optimiser ma zone ?", "Configurer les notifications"],
+  "/app/properties":       ["Rédiger une annonce", "Générer un EDL", "Historique du bien"],
+  "/app/contracts":        ["Rédiger un bail", "Explique ce bail", "Quand résilier ?"],
+  "/app/transactions":     ["Analyser mes impayés", "Relancer un locataire"],
+  "/app/rfqs":             ["Rédiger un appel d'offre", "Comparer les devis"],
 };
 
 function getSuggestions(pathname: string, role?: UserRole): string[] {
-  // Page-specific first
   for (const [path, suggestions] of Object.entries(PAGE_SUGGESTIONS)) {
     if (pathname === path || (path !== "/" && pathname.startsWith(path))) {
       return suggestions;
     }
   }
-  // Role-specific fallback
-  if (role && ROLE_SUGGESTIONS[role]) return ROLE_SUGGESTIONS[role].slice(0, 3);
-  return ["Comment puis-je vous aider ?", "Expliquer la réglementation locative suisse"];
+  if (role && ROLE_SUGGESTIONS[role]) return ROLE_SUGGESTIONS[role].slice(0, 4);
+  return ["Comment puis-je vous aider ?", "Réglementation locative suisse"];
 }
 
-// ── Typing indicator ──────────────────────────────────────────────────────────
+// ── Typing dots ───────────────────────────────────────────────────────────────
 
 function TypingDots() {
   return (
@@ -126,7 +120,7 @@ function MessageBubble({
         {!isUser && (
           <div className="flex items-center gap-1 mb-0.5">
             <Bot className="h-3.5 w-3.5 text-primary-600" />
-            <span className="text-xs font-medium text-primary-700">CathyAI</span>
+            <span className="text-xs font-medium text-primary-700">Althy IA</span>
           </div>
         )}
         <div
@@ -180,7 +174,7 @@ export function AICopilot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Bonjour ! Je suis CathyAI, votre copilote immobilier. Comment puis-je vous aider ?",
+      content: "Bonjour ! Je suis Althy IA, votre copilote immobilier suisse. Comment puis-je vous aider ?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -206,12 +200,9 @@ export function AICopilot() {
   async function sendMessage(text: string) {
     if (!text.trim() || streaming) return;
 
-    const userMsg: Message = { role: "user", content: text };
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => [...prev, { role: "user", content: text }]);
     setInput("");
     setStreaming(true);
-
-    // Add empty assistant bubble to stream into
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
     abortRef.current = new AbortController();
@@ -221,25 +212,17 @@ export function AICopilot() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token ?? "";
 
-      const response = await fetch(
-        `${baseURL}/ai/chat`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            message: text,
-            context: {
-              page: pathname,
-              role: profile?.role,
-              user_name: profile?.first_name ?? undefined,
-            },
-          }),
-          signal: abortRef.current.signal,
+      // Use GET /ai/chat — backend auto-injects biens/locataires/interventions context
+      const url = new URL(`${baseURL}/ai/chat`);
+      url.searchParams.set("message", text);
+
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+        signal: abortRef.current.signal,
+      });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -273,19 +256,14 @@ export function AICopilot() {
             }
             if (parsed.text) {
               const chunk: string = parsed.text;
-
-              // Check for <action> tag in accumulated content
               setMessages((prev) => {
                 const next = [...prev];
                 const last = next[next.length - 1];
                 const updated = last.content + chunk;
 
-                // Extract action tag if present
                 const actionMatch = updated.match(/<action>([\s\S]*?)<\/action>/);
                 if (actionMatch) {
-                  try {
-                    actionData = JSON.parse(actionMatch[1]);
-                  } catch {}
+                  try { actionData = JSON.parse(actionMatch[1]); } catch {}
                 }
 
                 next[next.length - 1] = {
@@ -315,14 +293,6 @@ export function AICopilot() {
     }
   }
 
-  function handleAction(path: string) {
-    window.location.href = path;
-  }
-
-  function handleValidate(action: NonNullable<Message["action"]>) {
-    window.location.href = action.path;
-  }
-
   return (
     <>
       {/* Floating button */}
@@ -331,7 +301,7 @@ export function AICopilot() {
         className={`fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all ${
           open ? "bg-gray-700 hover:bg-gray-800" : "bg-primary-600 hover:bg-primary-700"
         }`}
-        aria-label="Ouvrir le copilote IA"
+        aria-label="Ouvrir Althy IA"
       >
         {open ? (
           <ChevronDown className="h-6 w-6 text-white" />
@@ -353,9 +323,9 @@ export function AICopilot() {
             <div className="flex items-center gap-2">
               <Bot className="h-5 w-5 text-white" />
               <div>
-                <p className="text-sm font-semibold text-white">CathyAI</p>
+                <p className="text-sm font-semibold text-white">Althy IA</p>
                 <p className="text-xs text-primary-200 capitalize">
-                  {role ? `Copilote ${role}` : "Copilote IA"}
+                  {role ? `Copilote ${role}` : "Copilote immobilier"}
                 </p>
               </div>
             </div>
@@ -375,7 +345,11 @@ export function AICopilot() {
                     </div>
                   </div>
                 ) : (
-                  <MessageBubble msg={msg} onAction={handleAction} onValidate={handleValidate} />
+                  <MessageBubble
+                    msg={msg}
+                    onAction={(path) => { window.location.href = path; }}
+                    onValidate={(action) => { window.location.href = action.path; }}
+                  />
                 )}
               </div>
             ))}

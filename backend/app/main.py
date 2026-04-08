@@ -26,6 +26,7 @@ from app.routers.missions_ouvreurs import router as missions_ouvreurs_router
 from app.routers.notifications import router as notifications_router
 from app.routers.paiements import router as paiements_router
 from app.routers.profiles_artisans import router as profiles_artisans_router
+from app.routers.geocode import router as geocode_router
 from app.routers.matching import router as matching_router
 from app.routers.scoring import router as scoring_router
 from app.routers.favorites import router as favorites_router
@@ -125,6 +126,7 @@ app.include_router(profiles_artisans_router, prefix="/api/v1/profiles-artisans",
 app.include_router(scoring_router, prefix="/api/v1/scoring", tags=["scoring"])
 app.include_router(notifications_router, prefix="/api/v1/notifications", tags=["notifications"])
 app.include_router(matching_router, prefix="/api/v1/matching", tags=["matching"])
+app.include_router(geocode_router, prefix="/api/v1/geocode", tags=["geocode"])
 
 
 # ── Health check ──────────────────────────────────────────────────────────────
