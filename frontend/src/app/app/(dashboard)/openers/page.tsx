@@ -155,7 +155,6 @@ export default function OpenersPage() {
               color: tab === value ? S.orange : S.text3,
               background: "transparent",
               border: "none",
-              borderBottom: tab === value ? `2px solid ${S.orange}` : "2px solid transparent",
               cursor: "pointer",
               fontFamily: "inherit",
               padding: "8px 16px",
