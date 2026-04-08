@@ -52,23 +52,59 @@ class MissionOuvreurRead(MissionOuvreurBase):
 # ── Profile ouvreur ───────────────────────────────────────────────────────────
 
 class ProfileOuvreurBase(BaseModel):
+    # Identité
+    statut_ouvreur: Optional[str] = None   # independant/employe_agence
+    numero_avs: Optional[str] = None
+    permis_conduire: bool = False
+    vehicule: bool = False
+    # Zone & dispo
     rayon_km: int = 20
     jours_dispo: Optional[list[int]] = None
     heure_debut: Optional[time] = None
     heure_fin: Optional[time] = None
     types_missions: Optional[list[str]] = None
-    vehicule: bool = False
     lat: Optional[float] = None
     lng: Optional[float] = None
+    # Préférences charge
+    montant_min_mission: Optional[float] = None
+    urgences_acceptees: bool = False
+    majoration_urgence_pct: int = 0
+    missions_par_jour: int = 5
+    # Paiement
+    iban: Optional[str] = None
+    bic: Optional[str] = None
+    bank_account_holder: Optional[str] = None
+    billing_name: Optional[str] = None
+    billing_adresse: Optional[str] = None
+    virement_auto: bool = False
 
 
 class ProfileOuvreurCreate(ProfileOuvreurBase):
     user_id: uuid.UUID
 
 
-class ProfileOuvreurUpdate(ProfileOuvreurBase):
-    rayon_km: Optional[int] = None  # type: ignore[assignment]
-    vehicule: Optional[bool] = None  # type: ignore[assignment]
+class ProfileOuvreurUpdate(BaseModel):
+    statut_ouvreur: Optional[str] = None
+    numero_avs: Optional[str] = None
+    permis_conduire: Optional[bool] = None
+    vehicule: Optional[bool] = None
+    rayon_km: Optional[int] = None
+    jours_dispo: Optional[list[int]] = None
+    heure_debut: Optional[time] = None
+    heure_fin: Optional[time] = None
+    types_missions: Optional[list[str]] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    montant_min_mission: Optional[float] = None
+    urgences_acceptees: Optional[bool] = None
+    majoration_urgence_pct: Optional[int] = None
+    missions_par_jour: Optional[int] = None
+    iban: Optional[str] = None
+    bic: Optional[str] = None
+    bank_account_holder: Optional[str] = None
+    billing_name: Optional[str] = None
+    billing_adresse: Optional[str] = None
+    virement_auto: Optional[bool] = None
 
 
 class ProfileOuvreurRead(ProfileOuvreurBase):

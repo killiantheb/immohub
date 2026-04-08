@@ -17,6 +17,8 @@ export interface UserProfile {
   last_name: string | null;
   phone: string | null;
   avatar_url: string | null;
+  adresse: string | null;
+  langue: string | null;
   is_verified: boolean;
   is_active: boolean;
   created_at: string;
@@ -26,6 +28,20 @@ export interface UserProfile {
   bank_account_holder: string | null;
   // AI quota
   monthly_ai_tokens_used: number;
+  // notification channels
+  notif_email: boolean;
+  notif_sms: boolean;
+  notif_push: boolean;
+  notif_inapp: boolean;
+  // notification events
+  notif_nouvelle_mission: boolean;
+  notif_devis_accepte: boolean;
+  notif_devis_refuse: boolean;
+  notif_mission_urgente: boolean;
+  notif_rappel_j1: boolean;
+  notif_rappel_2h: boolean;
+  notif_facture_impayee: boolean;
+  notif_paiement_recu: boolean;
   // computed fields from backend
   full_name: string;
   permissions: string[];
