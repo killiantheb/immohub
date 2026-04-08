@@ -16,8 +16,17 @@ from app.routers import (
     transactions,
 )
 from app.routers.agency_settings import router as agency_settings_router
+from app.routers.biens import router as biens_router
 from app.routers.crm import router as crm_router
 from app.routers.documents import router as documents_router
+from app.routers.documents_althy import router as docs_althy_router
+from app.routers.interventions_althy import router as interventions_althy_router
+from app.routers.locataires import router as locataires_router
+from app.routers.missions_ouvreurs import router as missions_ouvreurs_router
+from app.routers.notifications import router as notifications_router
+from app.routers.paiements import router as paiements_router
+from app.routers.profiles_artisans import router as profiles_artisans_router
+from app.routers.scoring import router as scoring_router
 from app.routers.favorites import router as favorites_router
 from app.routers.insurance import router as insurance_router
 from app.routers.ratings import router as ratings_router
@@ -104,6 +113,16 @@ app.include_router(agency_settings_router, prefix="/api/v1/agency", tags=["agenc
 app.include_router(insurance_router, prefix="/api/v1/insurance", tags=["insurance"])
 app.include_router(crm_router, prefix="/api/v1/crm", tags=["crm"])
 app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
+# ── Althy core routers ────────────────────────────────────────────────────────
+app.include_router(biens_router, prefix="/api/v1/biens", tags=["biens"])
+app.include_router(locataires_router, prefix="/api/v1/locataires", tags=["locataires"])
+app.include_router(docs_althy_router, prefix="/api/v1/docs-althy", tags=["docs-althy"])
+app.include_router(paiements_router, prefix="/api/v1/paiements", tags=["paiements"])
+app.include_router(interventions_althy_router, prefix="/api/v1/interventions-althy", tags=["interventions-althy"])
+app.include_router(missions_ouvreurs_router, prefix="/api/v1/ouvreurs", tags=["ouvreurs"])
+app.include_router(profiles_artisans_router, prefix="/api/v1/profiles-artisans", tags=["profiles-artisans"])
+app.include_router(scoring_router, prefix="/api/v1/scoring", tags=["scoring"])
+app.include_router(notifications_router, prefix="/api/v1/notifications", tags=["notifications"])
 
 
 # ── Health check ──────────────────────────────────────────────────────────────
