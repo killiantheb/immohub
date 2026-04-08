@@ -22,6 +22,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
+import { CathySphere } from "@/components/CathySphere";
 
 // ── Nav items ─────────────────────────────────────────────────────────────────
 
@@ -103,7 +104,7 @@ const S = {
   collapseBtn: {
     padding: 6, borderRadius: 6, border: "none",
     background: "transparent", cursor: "pointer",
-    color: "rgba(224,212,196,0.30)",
+    color: "#BDB6A8",
     display: "flex", alignItems: "center", justifyContent: "center",
     flexShrink: 0,
     transition: "color 0.15s",
@@ -137,20 +138,20 @@ const S = {
   }),
 
   navIcon: (active: boolean): React.CSSProperties => ({
-    color: active ? "var(--sidebar-gold)" : "rgba(224,212,196,0.45)",
+    color: active ? "var(--sidebar-gold)" : "#9A9088",
     flexShrink: 0,
     transition: "color 0.15s",
   }),
 
   chevron: (active: boolean): React.CSSProperties => ({
-    color: active ? "rgba(196,168,122,0.6)" : "rgba(224,212,196,0.20)",
+    color: active ? "rgba(182,138,74,0.7)" : "#BDB6A8",
     flexShrink: 0,
   }),
 
   subItem: (active: boolean): React.CSSProperties => ({
     display: "block", padding: "6px 20px 6px 14px",
     fontSize: 12,
-    color: active ? "var(--sidebar-gold)" : "rgba(224,212,196,0.45)",
+    color: active ? "var(--sidebar-gold)" : "#706860",
     fontWeight: active ? 500 : 400,
     textDecoration: "none",
     letterSpacing: "0.01em",
@@ -164,7 +165,7 @@ const S = {
   }),
 
   email: {
-    fontSize: 10.5, color: "rgba(224,212,196,0.28)",
+    fontSize: 10.5, color: "#9A9088",
     wordBreak: "break-all" as const, lineHeight: 1.4,
     letterSpacing: "0.01em",
   } as React.CSSProperties,
@@ -173,34 +174,13 @@ const S = {
     display: "flex", alignItems: "center", gap: 8,
     justifyContent: collapsed ? "center" : "flex-start",
     background: "none", border: "none", cursor: "pointer",
-    fontSize: 12, color: "rgba(224,212,196,0.28)",
+    fontSize: 12, color: "#9A9088",
     fontFamily: "var(--font-sans), inherit",
     padding: collapsed ? "4px 0" : 0,
     transition: "color 0.15s",
     letterSpacing: "0.01em",
   }),
 };
-
-// ── Logo mark (monogram) ──────────────────────────────────────────────────────
-
-function AlthyMark() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden>
-      <rect x="1" y="1" width="20" height="20" rx="4" stroke="#C4A87A" strokeWidth="1"/>
-      <text
-        x="11" y="15.5"
-        textAnchor="middle"
-        fontFamily="var(--font-serif),'Cormorant Garamond',serif"
-        fontSize="13"
-        fontWeight="300"
-        fill="#C4A87A"
-        letterSpacing="1"
-      >
-        A
-      </text>
-    </svg>
-  );
-}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -236,11 +216,11 @@ export function DashboardSidebar() {
       <div style={S.brand(collapsed)}>
         {!collapsed ? (
           <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-            <AlthyMark />
+            <CathySphere size={26} />
             <span style={S.wordmark}>Althy</span>
           </Link>
         ) : (
-          <AlthyMark />
+          <CathySphere size={26} />
         )}
         <button
           onClick={() => setCollapsed(c => !c)}
@@ -341,7 +321,7 @@ export function DashboardSidebar() {
           style={S.logoutBtn(collapsed)}
           title="Déconnexion"
         >
-          <LogOut size={13} strokeWidth={1.5} style={{ color: "rgba(224,212,196,0.28)" }} />
+          <LogOut size={13} strokeWidth={1.5} style={{ color: "#9A9088" }} />
           {!collapsed && "Déconnexion"}
         </button>
       </div>
