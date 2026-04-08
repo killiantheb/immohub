@@ -16,334 +16,316 @@ down_revision = "0005"
 branch_labels = None
 depends_on = None
 
+# Helper: create enum idempotently via DO block (works with asyncpg)
+def _create_enum(name: str, *values: str) -> None:
+    labels = ", ".join(f"'{v}'" for v in values)
+    op.execute(f"""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = '{name}') THEN
+                CREATE TYPE {name} AS ENUM ({labels});
+            END IF;
+        END $$;
+    """)
+
+# Enum column that never auto-creates the type (we handle it above)
+def _enum(name: str) -> sa.Enum:
+    return sa.Enum(name=name, create_type=False)
+
 
 def upgrade() -> None:
     # ── 1. users — colonne adresse ─────────────────────────────────────────────
-    op.add_column("users", sa.Column("adresse", sa.String(300), nullable=True))
+    # Add only if missing (idempotent)
+    op.execute("""
+        DO $$ BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'users' AND column_name = 'adresse'
+            ) THEN
+                ALTER TABLE users ADD COLUMN adresse VARCHAR(300);
+            END IF;
+        END $$;
+    """)
 
-    # ── Enums ──────────────────────────────────────────────────────────────────
-    bien_type = postgresql.ENUM(
+    # ── 2. Enums (idempotent) ──────────────────────────────────────────────────
+    _create_enum("bien_type_enum",
         "appartement", "villa", "studio", "maison", "commerce",
-        "bureau", "parking", "garage", "cave", "autre",
-        name="bien_type_enum", create_type=False,
-    )
-    bien_type.create(op.get_bind(), checkfirst=True)
-
-    bien_statut = postgresql.ENUM(
-        "loue", "vacant", "en_travaux",
-        name="bien_statut_enum", create_type=False,
-    )
-    bien_statut.create(op.get_bind(), checkfirst=True)
-
-    locataire_statut = postgresql.ENUM(
-        "actif", "sorti",
-        name="locataire_statut_enum", create_type=False,
-    )
-    locataire_statut.create(op.get_bind(), checkfirst=True)
-
-    type_caution = postgresql.ENUM(
-        "cash", "compte_bloque", "organisme",
-        name="type_caution_enum", create_type=False,
-    )
-    type_caution.create(op.get_bind(), checkfirst=True)
-
-    type_contrat = postgresql.ENUM(
-        "cdi", "cdd", "independant", "retraite", "autre",
-        name="type_contrat_enum", create_type=False,
-    )
-    type_contrat.create(op.get_bind(), checkfirst=True)
-
-    doc_type = postgresql.ENUM(
+        "bureau", "parking", "garage", "cave", "autre")
+    _create_enum("bien_statut_enum", "loue", "vacant", "en_travaux")
+    _create_enum("locataire_statut_enum", "actif", "sorti")
+    _create_enum("type_caution_enum", "cash", "compte_bloque", "organisme")
+    _create_enum("type_contrat_enum", "cdi", "cdd", "independant", "retraite", "autre")
+    _create_enum("document_althy_type_enum",
         "bail", "edl_entree", "edl_sortie", "quittance",
         "attestation_assurance", "contrat_travail", "fiche_salaire",
-        "extrait_poursuites", "attestation_caution", "autre",
-        name="document_althy_type_enum", create_type=False,
-    )
-    doc_type.create(op.get_bind(), checkfirst=True)
-
-    paiement_statut = postgresql.ENUM(
-        "recu", "en_attente", "retard",
-        name="paiement_statut_enum", create_type=False,
-    )
-    paiement_statut.create(op.get_bind(), checkfirst=True)
-
-    intervention_categorie = postgresql.ENUM(
+        "extrait_poursuites", "attestation_caution", "autre")
+    _create_enum("paiement_statut_enum", "recu", "en_attente", "retard")
+    _create_enum("intervention_categorie_enum",
         "plomberie", "electricite", "menuiserie", "peinture",
-        "serrurerie", "chauffage", "autre",
-        name="intervention_categorie_enum", create_type=False,
-    )
-    intervention_categorie.create(op.get_bind(), checkfirst=True)
+        "serrurerie", "chauffage", "autre")
+    _create_enum("intervention_urgence_enum",
+        "faible", "moderee", "urgente", "tres_urgente")
+    _create_enum("intervention_statut_enum",
+        "nouveau", "en_cours", "planifie", "resolu")
+    _create_enum("devis_statut_enum", "en_attente", "accepte", "refuse")
+    _create_enum("mission_ouvreur_type_enum",
+        "visite", "edl_entree", "edl_sortie", "remise_cles", "expertise")
+    _create_enum("mission_ouvreur_statut_enum",
+        "proposee", "acceptee", "effectuee", "annulee")
 
-    intervention_urgence = postgresql.ENUM(
-        "faible", "moderee", "urgente", "tres_urgente",
-        name="intervention_urgence_enum", create_type=False,
-    )
-    intervention_urgence.create(op.get_bind(), checkfirst=True)
+    # ── 3. Tables (IF NOT EXISTS) ──────────────────────────────────────────────
 
-    intervention_statut = postgresql.ENUM(
-        "nouveau", "en_cours", "planifie", "resolu",
-        name="intervention_statut_enum", create_type=False,
-    )
-    intervention_statut.create(op.get_bind(), checkfirst=True)
+    # biens
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS biens (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            owner_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+            adresse VARCHAR(300) NOT NULL,
+            ville VARCHAR(100) NOT NULL,
+            cp VARCHAR(10) NOT NULL,
+            type bien_type_enum NOT NULL DEFAULT 'appartement',
+            surface FLOAT,
+            etage INTEGER,
+            loyer NUMERIC(10,2),
+            charges NUMERIC(10,2),
+            statut bien_statut_enum NOT NULL DEFAULT 'vacant',
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_biens_owner_id ON biens(owner_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_biens_statut ON biens(statut)")
 
-    devis_statut = postgresql.ENUM(
-        "en_attente", "accepte", "refuse",
-        name="devis_statut_enum", create_type=False,
-    )
-    devis_statut.create(op.get_bind(), checkfirst=True)
+    # locataires
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS locataires (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            bien_id UUID NOT NULL REFERENCES biens(id) ON DELETE RESTRICT,
+            user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            date_entree DATE,
+            date_sortie DATE,
+            loyer NUMERIC(10,2),
+            charges NUMERIC(10,2),
+            depot_garantie NUMERIC(10,2),
+            type_caution type_caution_enum,
+            banque_caution VARCHAR(200),
+            iban_caution VARCHAR(34),
+            statut locataire_statut_enum NOT NULL DEFAULT 'actif',
+            motif_depart VARCHAR(300),
+            note_interne TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_locataires_bien_id ON locataires(bien_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_locataires_user_id ON locataires(user_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_locataires_statut ON locataires(statut)")
 
-    mission_type = postgresql.ENUM(
-        "visite", "edl_entree", "edl_sortie", "remise_cles", "expertise",
-        name="mission_ouvreur_type_enum", create_type=False,
-    )
-    mission_type.create(op.get_bind(), checkfirst=True)
+    # dossiers_locataires
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS dossiers_locataires (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            locataire_id UUID NOT NULL UNIQUE REFERENCES locataires(id) ON DELETE CASCADE,
+            employeur VARCHAR(200),
+            poste VARCHAR(200),
+            type_contrat type_contrat_enum,
+            salaire_net NUMERIC(10,2),
+            anciennete INTEGER,
+            assureur_rc VARCHAR(200),
+            numero_police VARCHAR(100),
+            validite_assurance DATE,
+            resultat_poursuites VARCHAR(100),
+            date_poursuites DATE,
+            office_poursuites VARCHAR(200),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_dossiers_locataire_id ON dossiers_locataires(locataire_id)")
 
-    mission_statut = postgresql.ENUM(
-        "proposee", "acceptee", "effectuee", "annulee",
-        name="mission_ouvreur_statut_enum", create_type=False,
-    )
-    mission_statut.create(op.get_bind(), checkfirst=True)
+    # documents
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS documents (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            bien_id UUID REFERENCES biens(id) ON DELETE CASCADE,
+            locataire_id UUID REFERENCES locataires(id) ON DELETE SET NULL,
+            type document_althy_type_enum NOT NULL,
+            url_storage TEXT NOT NULL,
+            date_document DATE,
+            genere_par_ia BOOLEAN NOT NULL DEFAULT false,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_documents_bien_id ON documents(bien_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_documents_locataire_id ON documents(locataire_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_documents_type ON documents(type)")
 
-    # ── 2. biens ───────────────────────────────────────────────────────────────
-    op.create_table(
-        "biens",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("owner_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="RESTRICT"), nullable=False),
-        sa.Column("adresse", sa.String(300), nullable=False),
-        sa.Column("ville", sa.String(100), nullable=False),
-        sa.Column("cp", sa.String(10), nullable=False),
-        sa.Column("type", sa.Enum(name="bien_type_enum"), nullable=False, server_default="appartement"),
-        sa.Column("surface", sa.Float(), nullable=True),
-        sa.Column("etage", sa.Integer(), nullable=True),
-        sa.Column("loyer", sa.Numeric(10, 2), nullable=True),
-        sa.Column("charges", sa.Numeric(10, 2), nullable=True),
-        sa.Column("statut", sa.Enum(name="bien_statut_enum"), nullable=False, server_default="vacant"),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    )
-    op.create_index("ix_biens_owner_id", "biens", ["owner_id"])
-    op.create_index("ix_biens_statut", "biens", ["statut"])
+    # paiements
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS paiements (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            locataire_id UUID NOT NULL REFERENCES locataires(id) ON DELETE CASCADE,
+            bien_id UUID NOT NULL REFERENCES biens(id) ON DELETE CASCADE,
+            mois VARCHAR(7) NOT NULL,
+            montant NUMERIC(10,2) NOT NULL,
+            date_echeance DATE NOT NULL,
+            date_paiement DATE,
+            statut paiement_statut_enum NOT NULL DEFAULT 'en_attente',
+            jours_retard INTEGER NOT NULL DEFAULT 0,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_paiements_locataire_id ON paiements(locataire_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_paiements_bien_id ON paiements(bien_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_paiements_statut ON paiements(statut)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_paiements_mois ON paiements(mois)")
 
-    # ── 3. locataires ─────────────────────────────────────────────────────────
-    op.create_table(
-        "locataires",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("bien_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("biens.id", ondelete="RESTRICT"), nullable=False),
-        sa.Column("user_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
-        sa.Column("date_entree", sa.Date(), nullable=True),
-        sa.Column("date_sortie", sa.Date(), nullable=True),
-        sa.Column("loyer", sa.Numeric(10, 2), nullable=True),
-        sa.Column("charges", sa.Numeric(10, 2), nullable=True),
-        sa.Column("depot_garantie", sa.Numeric(10, 2), nullable=True),
-        sa.Column("type_caution", sa.Enum(name="type_caution_enum"), nullable=True),
-        sa.Column("banque_caution", sa.String(200), nullable=True),
-        sa.Column("iban_caution", sa.String(34), nullable=True),
-        sa.Column("statut", sa.Enum(name="locataire_statut_enum"), nullable=False, server_default="actif"),
-        sa.Column("motif_depart", sa.String(300), nullable=True),
-        sa.Column("note_interne", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    )
-    op.create_index("ix_locataires_bien_id", "locataires", ["bien_id"])
-    op.create_index("ix_locataires_user_id", "locataires", ["user_id"])
-    op.create_index("ix_locataires_statut", "locataires", ["statut"])
+    # interventions
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS interventions (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            bien_id UUID NOT NULL REFERENCES biens(id) ON DELETE CASCADE,
+            signale_par_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+            artisan_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            titre VARCHAR(300) NOT NULL,
+            description TEXT,
+            categorie intervention_categorie_enum NOT NULL DEFAULT 'autre',
+            urgence intervention_urgence_enum NOT NULL DEFAULT 'moderee',
+            statut intervention_statut_enum NOT NULL DEFAULT 'nouveau',
+            avancement INTEGER NOT NULL DEFAULT 0,
+            date_signalement DATE,
+            date_intervention DATE,
+            cout NUMERIC(10,2),
+            photos TEXT[],
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_interventions_bien_id ON interventions(bien_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_interventions_statut ON interventions(statut)")
 
-    # ── 4. dossiers_locataires ────────────────────────────────────────────────
-    op.create_table(
-        "dossiers_locataires",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("locataire_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("locataires.id", ondelete="CASCADE"), nullable=False, unique=True),
-        sa.Column("employeur", sa.String(200), nullable=True),
-        sa.Column("poste", sa.String(200), nullable=True),
-        sa.Column("type_contrat", sa.Enum(name="type_contrat_enum"), nullable=True),
-        sa.Column("salaire_net", sa.Numeric(10, 2), nullable=True),
-        sa.Column("anciennete", sa.Integer(), nullable=True),
-        sa.Column("assureur_rc", sa.String(200), nullable=True),
-        sa.Column("numero_police", sa.String(100), nullable=True),
-        sa.Column("validite_assurance", sa.Date(), nullable=True),
-        sa.Column("resultat_poursuites", sa.String(100), nullable=True),
-        sa.Column("date_poursuites", sa.Date(), nullable=True),
-        sa.Column("office_poursuites", sa.String(200), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    )
-    op.create_index("ix_dossiers_locataire_id", "dossiers_locataires", ["locataire_id"])
+    # devis
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS devis (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            intervention_id UUID NOT NULL REFERENCES interventions(id) ON DELETE CASCADE,
+            artisan_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+            montant NUMERIC(10,2) NOT NULL,
+            description TEXT,
+            statut devis_statut_enum NOT NULL DEFAULT 'en_attente',
+            date_envoi DATE,
+            date_reponse DATE,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_devis_intervention_id ON devis(intervention_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_devis_artisan_id ON devis(artisan_id)")
 
-    # ── 5. documents ──────────────────────────────────────────────────────────
-    op.create_table(
-        "documents",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("bien_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("biens.id", ondelete="CASCADE"), nullable=True),
-        sa.Column("locataire_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("locataires.id", ondelete="SET NULL"), nullable=True),
-        sa.Column("type", sa.Enum(name="document_althy_type_enum"), nullable=False),
-        sa.Column("url_storage", sa.Text(), nullable=False),
-        sa.Column("date_document", sa.Date(), nullable=True),
-        sa.Column("genere_par_ia", sa.Boolean(), nullable=False, server_default="false"),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    )
-    op.create_index("ix_documents_bien_id", "documents", ["bien_id"])
-    op.create_index("ix_documents_locataire_id", "documents", ["locataire_id"])
-    op.create_index("ix_documents_type", "documents", ["type"])
+    # missions_ouvreurs
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS missions_ouvreurs (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            bien_id UUID NOT NULL REFERENCES biens(id) ON DELETE CASCADE,
+            agence_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            ouvreur_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            type mission_ouvreur_type_enum NOT NULL,
+            date_mission VARCHAR(20),
+            creneau_debut TIME,
+            creneau_fin TIME,
+            nb_candidats INTEGER NOT NULL DEFAULT 0,
+            instructions TEXT,
+            remuneration NUMERIC(8,2),
+            statut mission_ouvreur_statut_enum NOT NULL DEFAULT 'proposee',
+            rayon_km INTEGER NOT NULL DEFAULT 20,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_missions_ouvreurs_bien_id ON missions_ouvreurs(bien_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_missions_ouvreurs_ouvreur_id ON missions_ouvreurs(ouvreur_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_missions_ouvreurs_statut ON missions_ouvreurs(statut)")
 
-    # ── 6. paiements ──────────────────────────────────────────────────────────
-    op.create_table(
-        "paiements",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("locataire_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("locataires.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("bien_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("biens.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("mois", sa.String(7), nullable=False),
-        sa.Column("montant", sa.Numeric(10, 2), nullable=False),
-        sa.Column("date_echeance", sa.Date(), nullable=False),
-        sa.Column("date_paiement", sa.Date(), nullable=True),
-        sa.Column("statut", sa.Enum(name="paiement_statut_enum"), nullable=False, server_default="en_attente"),
-        sa.Column("jours_retard", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    )
-    op.create_index("ix_paiements_locataire_id", "paiements", ["locataire_id"])
-    op.create_index("ix_paiements_bien_id", "paiements", ["bien_id"])
-    op.create_index("ix_paiements_statut", "paiements", ["statut"])
-    op.create_index("ix_paiements_mois", "paiements", ["mois"])
+    # profiles_ouvreurs
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS profiles_ouvreurs (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+            rayon_km INTEGER NOT NULL DEFAULT 20,
+            jours_dispo INTEGER[],
+            heure_debut TIME,
+            heure_fin TIME,
+            types_missions TEXT[],
+            note_moyenne FLOAT NOT NULL DEFAULT 0,
+            nb_missions INTEGER NOT NULL DEFAULT 0,
+            vehicule BOOLEAN NOT NULL DEFAULT false,
+            lat FLOAT,
+            lng FLOAT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_profiles_ouvreurs_user_id ON profiles_ouvreurs(user_id)")
 
-    # ── 7. interventions ──────────────────────────────────────────────────────
-    op.create_table(
-        "interventions",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("bien_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("biens.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("signale_par_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="RESTRICT"), nullable=False),
-        sa.Column("artisan_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
-        sa.Column("titre", sa.String(300), nullable=False),
-        sa.Column("description", sa.Text(), nullable=True),
-        sa.Column("categorie", sa.Enum(name="intervention_categorie_enum"), nullable=False, server_default="autre"),
-        sa.Column("urgence", sa.Enum(name="intervention_urgence_enum"), nullable=False, server_default="moderee"),
-        sa.Column("statut", sa.Enum(name="intervention_statut_enum"), nullable=False, server_default="nouveau"),
-        sa.Column("avancement", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("date_signalement", sa.Date(), nullable=True),
-        sa.Column("date_intervention", sa.Date(), nullable=True),
-        sa.Column("cout", sa.Numeric(10, 2), nullable=True),
-        sa.Column("photos", postgresql.ARRAY(sa.Text()), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    )
-    op.create_index("ix_interventions_bien_id", "interventions", ["bien_id"])
-    op.create_index("ix_interventions_statut", "interventions", ["statut"])
+    # profiles_artisans
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS profiles_artisans (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+            raison_sociale VARCHAR(300),
+            uid_ide VARCHAR(20),
+            numero_tva VARCHAR(30),
+            specialites TEXT[],
+            rayon_km INTEGER NOT NULL DEFAULT 30,
+            note_moyenne FLOAT NOT NULL DEFAULT 0,
+            nb_chantiers INTEGER NOT NULL DEFAULT 0,
+            assurance_rc BOOLEAN NOT NULL DEFAULT false,
+            lat FLOAT,
+            lng FLOAT,
+            iban VARCHAR(34),
+            delai_paiement_jours INTEGER NOT NULL DEFAULT 30,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_profiles_artisans_user_id ON profiles_artisans(user_id)")
 
-    # ── 8. devis ──────────────────────────────────────────────────────────────
-    op.create_table(
-        "devis",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("intervention_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("interventions.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("artisan_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="RESTRICT"), nullable=False),
-        sa.Column("montant", sa.Numeric(10, 2), nullable=False),
-        sa.Column("description", sa.Text(), nullable=True),
-        sa.Column("statut", sa.Enum(name="devis_statut_enum"), nullable=False, server_default="en_attente"),
-        sa.Column("date_envoi", sa.Date(), nullable=True),
-        sa.Column("date_reponse", sa.Date(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    )
-    op.create_index("ix_devis_intervention_id", "devis", ["intervention_id"])
-    op.create_index("ix_devis_artisan_id", "devis", ["artisan_id"])
+    # scoring_locataires
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS scoring_locataires (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            locataire_id UUID NOT NULL UNIQUE REFERENCES locataires(id) ON DELETE CASCADE,
+            ponctualite FLOAT NOT NULL DEFAULT 5,
+            solvabilite FLOAT NOT NULL DEFAULT 5,
+            communication FLOAT NOT NULL DEFAULT 5,
+            etat_logement FLOAT NOT NULL DEFAULT 5,
+            score_global FLOAT NOT NULL DEFAULT 5,
+            nb_retards INTEGER NOT NULL DEFAULT 0,
+            updated_at TIMESTAMPTZ,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_scoring_locataires_locataire_id ON scoring_locataires(locataire_id)")
 
-    # ── 9. missions_ouvreurs ──────────────────────────────────────────────────
-    op.create_table(
-        "missions_ouvreurs",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("bien_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("biens.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("agence_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
-        sa.Column("ouvreur_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
-        sa.Column("type", sa.Enum(name="mission_ouvreur_type_enum"), nullable=False),
-        sa.Column("date_mission", sa.String(20), nullable=True),
-        sa.Column("creneau_debut", sa.Time(), nullable=True),
-        sa.Column("creneau_fin", sa.Time(), nullable=True),
-        sa.Column("nb_candidats", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("instructions", sa.Text(), nullable=True),
-        sa.Column("remuneration", sa.Numeric(8, 2), nullable=True),
-        sa.Column("statut", sa.Enum(name="mission_ouvreur_statut_enum"), nullable=False, server_default="proposee"),
-        sa.Column("rayon_km", sa.Integer(), nullable=False, server_default="20"),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    )
-    op.create_index("ix_missions_ouvreurs_bien_id", "missions_ouvreurs", ["bien_id"])
-    op.create_index("ix_missions_ouvreurs_ouvreur_id", "missions_ouvreurs", ["ouvreur_id"])
-    op.create_index("ix_missions_ouvreurs_statut", "missions_ouvreurs", ["statut"])
+    # notifications
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS notifications (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            type VARCHAR(100) NOT NULL,
+            titre VARCHAR(300) NOT NULL,
+            message TEXT NOT NULL,
+            lu BOOLEAN NOT NULL DEFAULT false,
+            lien VARCHAR(500),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_notifications_user_id ON notifications(user_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_notifications_lu ON notifications(lu)")
 
-    # ── 10. profiles_ouvreurs ─────────────────────────────────────────────────
-    op.create_table(
-        "profiles_ouvreurs",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("user_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True),
-        sa.Column("rayon_km", sa.Integer(), nullable=False, server_default="20"),
-        sa.Column("jours_dispo", postgresql.ARRAY(sa.Integer()), nullable=True),
-        sa.Column("heure_debut", sa.Time(), nullable=True),
-        sa.Column("heure_fin", sa.Time(), nullable=True),
-        sa.Column("types_missions", postgresql.ARRAY(sa.Text()), nullable=True),
-        sa.Column("note_moyenne", sa.Float(), nullable=False, server_default="0"),
-        sa.Column("nb_missions", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("vehicule", sa.Boolean(), nullable=False, server_default="false"),
-        sa.Column("lat", sa.Float(), nullable=True),
-        sa.Column("lng", sa.Float(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    )
-    op.create_index("ix_profiles_ouvreurs_user_id", "profiles_ouvreurs", ["user_id"])
-
-    # ── 11. profiles_artisans ─────────────────────────────────────────────────
-    op.create_table(
-        "profiles_artisans",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("user_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True),
-        sa.Column("raison_sociale", sa.String(300), nullable=True),
-        sa.Column("uid_ide", sa.String(20), nullable=True),
-        sa.Column("numero_tva", sa.String(30), nullable=True),
-        sa.Column("specialites", postgresql.ARRAY(sa.Text()), nullable=True),
-        sa.Column("rayon_km", sa.Integer(), nullable=False, server_default="30"),
-        sa.Column("note_moyenne", sa.Float(), nullable=False, server_default="0"),
-        sa.Column("nb_chantiers", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("assurance_rc", sa.Boolean(), nullable=False, server_default="false"),
-        sa.Column("lat", sa.Float(), nullable=True),
-        sa.Column("lng", sa.Float(), nullable=True),
-        sa.Column("iban", sa.String(34), nullable=True),
-        sa.Column("delai_paiement_jours", sa.Integer(), nullable=False, server_default="30"),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    )
-    op.create_index("ix_profiles_artisans_user_id", "profiles_artisans", ["user_id"])
-
-    # ── 12. scoring_locataires ────────────────────────────────────────────────
-    op.create_table(
-        "scoring_locataires",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("locataire_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("locataires.id", ondelete="CASCADE"), nullable=False, unique=True),
-        sa.Column("ponctualite", sa.Float(), nullable=False, server_default="5"),
-        sa.Column("solvabilite", sa.Float(), nullable=False, server_default="5"),
-        sa.Column("communication", sa.Float(), nullable=False, server_default="5"),
-        sa.Column("etat_logement", sa.Float(), nullable=False, server_default="5"),
-        sa.Column("score_global", sa.Float(), nullable=False, server_default="5"),
-        sa.Column("nb_retards", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    )
-    op.create_index("ix_scoring_locataires_locataire_id", "scoring_locataires", ["locataire_id"])
-
-    # ── 13. notifications ─────────────────────────────────────────────────────
-    op.create_table(
-        "notifications",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("user_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("type", sa.String(100), nullable=False),
-        sa.Column("titre", sa.String(300), nullable=False),
-        sa.Column("message", sa.Text(), nullable=False),
-        sa.Column("lu", sa.Boolean(), nullable=False, server_default="false"),
-        sa.Column("lien", sa.String(500), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-    )
-    op.create_index("ix_notifications_user_id", "notifications", ["user_id"])
-    op.create_index("ix_notifications_lu", "notifications", ["lu"])
-
-    # ── Row Level Security (enable) ───────────────────────────────────────────
+    # ── Row Level Security ────────────────────────────────────────────────────
     for table in [
         "biens", "locataires", "dossiers_locataires", "documents",
         "paiements", "interventions", "devis", "missions_ouvreurs",
@@ -361,9 +343,18 @@ def downgrade() -> None:
         "paiements", "documents", "dossiers_locataires", "locataires", "biens",
     ]
     for table in tables:
-        op.drop_table(table)
+        op.execute(f"DROP TABLE IF EXISTS {table} CASCADE")
 
-    op.drop_column("users", "adresse")
+    op.execute("""
+        DO $$ BEGIN
+            IF EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'users' AND column_name = 'adresse'
+            ) THEN
+                ALTER TABLE users DROP COLUMN adresse;
+            END IF;
+        END $$;
+    """)
 
     for enum_name in [
         "bien_type_enum", "bien_statut_enum", "locataire_statut_enum",
