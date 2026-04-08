@@ -4,13 +4,13 @@ import { motion } from "framer-motion"
 import { POUR_QUI } from "@/lib/data/landing"
 
 const C = {
-  surface: "#111111",
-  border: "rgba(255,255,255,0.08)",
-  text: "#FFFFFF",
-  textMid: "rgba(255,255,255,0.60)",
-  textMuted: "rgba(255,255,255,0.38)",
-  gold: "#C9A96E",
-  goldBg: "rgba(201,169,110,0.10)",
+  surface: "#1A1208",
+  border: "rgba(26,18,8,0.08)",
+  text: "#1A1208",
+  textMid: "rgba(26,18,8,0.60)",
+  textMuted: "rgba(26,18,8,0.38)",
+  gold: "#E8602C",
+  goldBg: "rgba(232,96,44,0.08)",
 } as const
 
 const containerVariants = {
@@ -27,7 +27,7 @@ export function PourQui() {
   return (
     <section
       id="pour-qui"
-      style={{ background: "#0A0A0A", padding: "7rem 1.5rem" }}
+      style={{ background: "#FAF8F4", padding: "7rem 1.5rem" }}
     >
       <div style={{ maxWidth: 1280, margin: "0 auto" }}>
         {/* Labels */}
@@ -40,7 +40,7 @@ export function PourQui() {
         >
           <span
             style={{
-              color: C.gold,
+              color: C.orange,
               fontSize: "0.75rem",
               fontWeight: 500,
               letterSpacing: "0.22em",
@@ -95,7 +95,7 @@ export function PourQui() {
                 transition: "border-color 0.25s",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "rgba(201,169,110,0.25)"
+                e.currentTarget.style.borderColor = "rgba(232,96,44,0.20)"
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = C.border
@@ -107,7 +107,7 @@ export function PourQui() {
                   position: "absolute",
                   top: "1.25rem",
                   right: "1.25rem",
-                  color: C.gold,
+                  color: C.orange,
                   fontSize: "0.7rem",
                   fontWeight: 600,
                   letterSpacing: "0.08em",
@@ -146,7 +146,7 @@ export function PourQui() {
               {/* Arrow */}
               <span
                 style={{
-                  color: C.gold,
+                  color: C.orange,
                   fontSize: "1.1rem",
                   position: "absolute",
                   bottom: "1.5rem",

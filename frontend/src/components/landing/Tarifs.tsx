@@ -5,16 +5,16 @@ import { PLANS } from "@/lib/data/landing"
 import Link from "next/link"
 
 const C = {
-  bg: "#111111",
-  surface: "#111111",
-  surface2: "#161616",
-  border: "rgba(255,255,255,0.08)",
-  text: "#FFFFFF",
-  textMid: "rgba(255,255,255,0.65)",
-  textMuted: "rgba(255,255,255,0.38)",
-  gold: "#C9A96E",
-  goldBg: "rgba(201,169,110,0.05)",
-  goldBorder: "rgba(201,169,110,0.35)",
+  bg: "#1A1208",
+  surface: "#1A1208",
+  surface2: "#F2EDE5",
+  border: "rgba(26,18,8,0.08)",
+  text: "#1A1208",
+  textMid: "rgba(26,18,8,0.65)",
+  textMuted: "rgba(26,18,8,0.38)",
+  gold: "#E8602C",
+  goldBg: "rgba(232,96,44,0.05)",
+  goldBorder: "rgba(232,96,44,0.28)",
 } as const
 
 function CheckIcon({ small = false }: { small?: boolean }) {
@@ -31,7 +31,7 @@ export function Tarifs() {
   return (
     <section
       id="tarifs"
-      style={{ background: "#0A0A0A", padding: "7rem 1.5rem" }}
+      style={{ background: "#FAF8F4", padding: "7rem 1.5rem" }}
     >
       <div style={{ maxWidth: 1280, margin: "0 auto" }}>
         {/* Label */}
@@ -44,7 +44,7 @@ export function Tarifs() {
         >
           <span
             style={{
-              color: C.gold,
+              color: C.orange,
               fontSize: "0.75rem",
               fontWeight: 500,
               letterSpacing: "0.22em",
@@ -107,7 +107,7 @@ export function Tarifs() {
               transition={{ duration: 0.6, delay: i * 0.12 }}
               style={{
                 background: plan.featured ? C.goldBg : C.surface,
-                border: plan.featured ? `1px solid ${C.goldBorder}` : `1px solid ${C.border}`,
+                border: `1px solid ${C.orangeBorder}`}` : `1px solid ${C.border}`,
                 borderRadius: "1.25rem",
                 padding: "2.25rem",
                 position: "relative",
@@ -140,7 +140,7 @@ export function Tarifs() {
               {/* Plan name */}
               <div
                 style={{
-                  color: C.gold,
+                  color: C.orange,
                   fontSize: "0.7rem",
                   fontWeight: 600,
                   letterSpacing: "0.2em",
@@ -188,7 +188,7 @@ export function Tarifs() {
                   if (plan.featured) {
                     e.currentTarget.style.opacity = "0.85"
                   } else {
-                    e.currentTarget.style.background = "rgba(255,255,255,0.06)"
+                    e.currentTarget.style.background = "rgba(26,18,8,0.06)"
                   }
                 }}
                 onMouseLeave={(e) => {

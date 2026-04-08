@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { CathySphere } from "@/components/CathySphere"
 
 const C = {
-  bg: "#0A0A0A",
-  gold: "#C9A96E",
-  text: "#FFFFFF",
-  textMid: "rgba(255,255,255,0.65)",
-  border: "rgba(255,255,255,0.06)",
+  bg: "rgba(250,248,244,0.92)",
+  bgSolid: "#FAF8F4",
+  border: "rgba(40,18,8,0.08)",
+  text: "#1A1208",
+  textMid: "rgba(26,18,8,0.58)",
+  orange: "#E8602C",
+  orangeBorder: "rgba(232,96,44,0.22)",
 } as const
 
 export function Navbar() {
@@ -29,11 +32,11 @@ export function Navbar() {
         left: 0,
         right: 0,
         zIndex: 50,
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        background: "rgba(0,0,0,0.80)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        background: C.bg,
         borderBottom: `1px solid ${C.border}`,
-        boxShadow: scrolled ? "0 4px 40px rgba(0,0,0,0.5)" : "none",
+        boxShadow: scrolled ? "0 4px 24px rgba(40,18,8,0.07)" : "none",
         transition: "box-shadow 0.3s ease",
       }}
     >
@@ -42,21 +45,23 @@ export function Navbar() {
           maxWidth: 1280,
           margin: "0 auto",
           padding: "0 1.5rem",
-          height: 64,
+          height: 68,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
         }}
       >
-        {/* Logo */}
-        <Link href="/" style={{ textDecoration: "none" }}>
+        {/* Logo — Sphère + Althy */}
+        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.6rem" }}>
+          <CathySphere size={30} />
           <span
             style={{
-              fontFamily: "var(--font-serif)",
-              color: C.gold,
-              fontSize: "1.5rem",
-              fontWeight: 300,
-              letterSpacing: "0.25em",
+              fontFamily: "var(--font-serif), 'Cormorant Garamond', serif",
+              color: C.orange,
+              fontSize: "1.65rem",
+              fontWeight: 500,
+              letterSpacing: "0.16em",
+              lineHeight: 1,
               userSelect: "none",
             }}
           >
@@ -78,6 +83,7 @@ export function Navbar() {
                 color: C.textMid,
                 textDecoration: "none",
                 fontSize: "0.875rem",
+                letterSpacing: "0.01em",
                 transition: "color 0.2s",
               }}
               onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
@@ -88,42 +94,38 @@ export function Navbar() {
           ))}
         </div>
 
-        {/* Desktop CTA buttons */}
+        {/* Desktop CTAs */}
         <div className="hidden md:flex" style={{ gap: "0.75rem", alignItems: "center" }}>
           <Link
             href="/app"
             style={{
-              color: C.text,
+              color: C.textMid,
               textDecoration: "none",
               fontSize: "0.875rem",
               padding: "0.5rem 1.25rem",
-              border: "1px solid rgba(255,255,255,0.18)",
+              border: `1px solid ${C.border}`,
               borderRadius: "100px",
               transition: "border-color 0.2s, color 0.2s",
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.4)"
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)"
-            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.orangeBorder; e.currentTarget.style.color = C.orange }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textMid }}
           >
             Se connecter
           </Link>
           <Link
             href="/app"
             style={{
-              background: C.gold,
-              color: "#000000",
+              background: C.orange,
+              color: "#FFFFFF",
               textDecoration: "none",
               fontSize: "0.875rem",
               fontWeight: 600,
-              padding: "0.5rem 1.25rem",
+              padding: "0.5rem 1.4rem",
               borderRadius: "100px",
-              transition: "opacity 0.2s",
+              transition: "opacity 0.2s, transform 0.2s",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.87"; e.currentTarget.style.transform = "translateY(-1px)" }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)" }}
           >
             Essayer gratuitement
           </Link>
@@ -133,13 +135,7 @@ export function Navbar() {
         <button
           className="flex md:hidden"
           onClick={() => setMenuOpen(!menuOpen)}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: "0.5rem",
-            color: C.text,
-          }}
+          style={{ background: "none", border: "none", cursor: "pointer", padding: "0.5rem", color: C.text }}
           aria-label="Menu"
         >
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -163,7 +159,7 @@ export function Navbar() {
       {menuOpen && (
         <div
           style={{
-            background: "rgba(10,10,10,0.98)",
+            background: "#FAF8F4",
             borderTop: `1px solid ${C.border}`,
             padding: "1.5rem",
             display: "flex",
@@ -192,35 +188,10 @@ export function Navbar() {
             </a>
           ))}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", paddingTop: "0.5rem" }}>
-            <Link
-              href="/app"
-              onClick={() => setMenuOpen(false)}
-              style={{
-                color: C.text,
-                textDecoration: "none",
-                fontSize: "0.9375rem",
-                padding: "0.75rem 1.5rem",
-                border: "1px solid rgba(255,255,255,0.18)",
-                borderRadius: "100px",
-                textAlign: "center",
-              }}
-            >
+            <Link href="/app" onClick={() => setMenuOpen(false)} style={{ color: C.text, textDecoration: "none", fontSize: "0.9375rem", padding: "0.75rem 1.5rem", border: `1px solid ${C.border}`, borderRadius: "100px", textAlign: "center" }}>
               Se connecter
             </Link>
-            <Link
-              href="/app"
-              onClick={() => setMenuOpen(false)}
-              style={{
-                background: C.gold,
-                color: "#000000",
-                textDecoration: "none",
-                fontSize: "0.9375rem",
-                fontWeight: 600,
-                padding: "0.75rem 1.5rem",
-                borderRadius: "100px",
-                textAlign: "center",
-              }}
-            >
+            <Link href="/app" onClick={() => setMenuOpen(false)} style={{ background: C.orange, color: "#FFFFFF", textDecoration: "none", fontSize: "0.9375rem", fontWeight: 600, padding: "0.75rem 1.5rem", borderRadius: "100px", textAlign: "center" }}>
               Essayer gratuitement
             </Link>
           </div>

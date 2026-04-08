@@ -4,12 +4,12 @@ import { motion } from "framer-motion"
 import Link from "next/link"
 
 const C = {
-  bg: "#0F0D0A",
-  border: "rgba(201,169,110,0.22)",
-  text: "#FFFFFF",
-  textMid: "rgba(255,255,255,0.65)",
-  gold: "#C9A96E",
-  goldBorder: "rgba(201,169,110,0.30)",
+  bg: "#FAF8F4",
+  border: "rgba(232,96,44,0.18)",
+  text: "#1A1208",
+  textMid: "rgba(26,18,8,0.65)",
+  gold: "#E8602C",
+  goldBorder: "rgba(232,96,44,0.22)",
 } as const
 
 export function CTAFinal() {
@@ -64,7 +64,7 @@ export function CTAFinal() {
         >
           <span
             style={{
-              color: C.gold,
+              color: C.orange,
               fontSize: "0.75rem",
               fontWeight: 500,
               letterSpacing: "0.22em",
@@ -90,7 +90,7 @@ export function CTAFinal() {
           }}
         >
           Prêt à laisser{" "}
-          <span style={{ color: C.gold }}>Althy gérer</span> ?
+          <span style={{ color: C.orange }}>Althy gérer</span> ?
         </motion.h2>
 
         <motion.p
@@ -156,12 +156,12 @@ export function CTAFinal() {
               fontWeight: 500,
               padding: "0.9rem 2.25rem",
               borderRadius: "100px",
-              border: "1px solid rgba(255,255,255,0.18)",
+              border: "1px solid rgba(26,18,8,0.18)",
               display: "inline-block",
               transition: "border-color 0.2s",
             }}
             onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)")}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)")}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(26,18,8,0.18)")}
           >
             Nous contacter
           </Link>

@@ -13,7 +13,7 @@ import { Footer } from "@/components/landing/Footer"
 
 export default function LandingPage() {
   return (
-    <div style={{ background: "#0A0A0A", minHeight: "100vh", overflowX: "hidden" }}>
+    <div style={{ background: "#FAF8F4", minHeight: "100vh", overflowX: "hidden" }}>
       <Navbar />
       <Hero />
       <SocialProof />

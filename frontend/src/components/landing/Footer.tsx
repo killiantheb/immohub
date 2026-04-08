@@ -3,11 +3,11 @@
 import Link from "next/link"
 
 const C = {
-  bg: "#0A0A0A",
-  border: "rgba(255,255,255,0.06)",
-  text: "#FFFFFF",
-  textMuted: "rgba(255,255,255,0.40)",
-  gold: "#C9A96E",
+  bg: "#FAF8F4",
+  border: "rgba(26,18,8,0.06)",
+  text: "#1A1208",
+  textMuted: "rgba(26,18,8,0.40)",
+  gold: "#E8602C",
 } as const
 
 export function Footer() {
@@ -42,7 +42,7 @@ export function Footer() {
               <span
                 style={{
                   fontFamily: "var(--font-serif)",
-                  color: C.gold,
+                  color: C.orange,
                   fontSize: "1.625rem",
                   fontWeight: 300,
                   letterSpacing: "0.25em",
@@ -99,7 +99,7 @@ export function Footer() {
             <a
               href="mailto:contact@althy.ch"
               style={{
-                color: C.gold,
+                color: C.orange,
                 textDecoration: "none",
                 fontSize: "0.875rem",
                 transition: "opacity 0.2s",

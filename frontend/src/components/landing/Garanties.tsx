@@ -2,9 +2,9 @@ import { GARANTIES } from "@/lib/data/landing"
 import { Shield, FileText, CalendarCheck, Headphones } from "lucide-react"
 
 const C = {
-  border: "rgba(255,255,255,0.06)",
-  text: "#FFFFFF",
-  gold: "#C9A96E",
+  border: "rgba(26,18,8,0.06)",
+  text: "#1A1208",
+  gold: "#E8602C",
 } as const
 
 const ICONS: Record<string, React.ReactNode> = {
@@ -18,7 +18,7 @@ export function Garanties() {
   return (
     <div
       style={{
-        background: "#111111",
+        background: "#1A1208",
         borderTop: `1px solid ${C.border}`,
         borderBottom: `1px solid ${C.border}`,
         padding: "2.5rem 1.5rem",

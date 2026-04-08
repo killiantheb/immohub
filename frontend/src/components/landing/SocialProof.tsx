@@ -4,16 +4,16 @@ import Marquee from "react-fast-marquee"
 import { MARQUEE_ITEMS } from "@/lib/data/landing"
 
 const C = {
-  gold: "#C9A96E",
-  textMuted: "rgba(255,255,255,0.45)",
-  border: "rgba(255,255,255,0.06)",
+  gold: "#E8602C",
+  textMuted: "rgba(26,18,8,0.45)",
+  border: "rgba(26,18,8,0.06)",
 } as const
 
 export function SocialProof() {
   return (
     <div
       style={{
-        background: "#111111",
+        background: "#1A1208",
         borderTop: `1px solid ${C.border}`,
         borderBottom: `1px solid ${C.border}`,
         padding: "1.125rem 0",
@@ -22,7 +22,7 @@ export function SocialProof() {
     >
       <Marquee
         gradient
-        gradientColor="#111111"
+        gradientColor="#1A1208"
         gradientWidth={120}
         speed={38}
         pauseOnHover
@@ -51,7 +51,7 @@ export function SocialProof() {
             </span>
             <span
               style={{
-                color: C.gold,
+                color: C.orange,
                 fontSize: "0.5rem",
                 opacity: 0.6,
               }}

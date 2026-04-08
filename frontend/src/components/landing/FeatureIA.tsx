@@ -5,15 +5,15 @@ import { IA_QUESTIONS } from "@/lib/data/landing"
 import Link from "next/link"
 
 const C = {
-  bg: "#111111",
+  bg: "#1A1208",
   surface2: "#1A1A1A",
-  border: "rgba(255,255,255,0.08)",
-  text: "#FFFFFF",
-  textMid: "rgba(255,255,255,0.65)",
-  textMuted: "rgba(255,255,255,0.38)",
-  gold: "#C9A96E",
-  goldBg: "rgba(201,169,110,0.10)",
-  goldBorder: "rgba(201,169,110,0.25)",
+  border: "rgba(26,18,8,0.08)",
+  text: "#1A1208",
+  textMid: "rgba(26,18,8,0.65)",
+  textMuted: "rgba(26,18,8,0.38)",
+  gold: "#E8602C",
+  goldBg: "rgba(232,96,44,0.08)",
+  goldBorder: "rgba(232,96,44,0.20)",
 } as const
 
 const containerVariants = {
@@ -42,7 +42,7 @@ export function FeatureIA() {
         >
           <span
             style={{
-              color: C.gold,
+              color: C.orange,
               fontSize: "0.75rem",
               fontWeight: 500,
               letterSpacing: "0.22em",
@@ -69,7 +69,7 @@ export function FeatureIA() {
           }}
         >
           Althy parle.{" "}
-          <span style={{ color: C.gold }}>Vous décidez.</span>
+          <span style={{ color: C.orange }}>Vous décidez.</span>
         </motion.h2>
 
         {/* Description */}
@@ -119,11 +119,11 @@ export function FeatureIA() {
                 transition: "border-color 0.2s, background 0.2s",
               }}
               whileHover={{
-                borderColor: "rgba(201,169,110,0.35)",
+                borderColor: "rgba(232,96,44,0.28)",
                 backgroundColor: "rgba(201,169,110,0.06)",
               }}
             >
-              <span style={{ color: C.gold, fontSize: "0.7rem", flexShrink: 0 }}>✦</span>
+              <span style={{ color: C.orange, fontSize: "0.7rem", flexShrink: 0 }}>✦</span>
               <span
                 style={{
                   color: "rgba(255,255,255,0.70)",
@@ -147,7 +147,7 @@ export function FeatureIA() {
           <Link
             href="/app"
             style={{
-              color: C.gold,
+              color: C.orange,
               textDecoration: "none",
               fontSize: "1rem",
               fontWeight: 500,

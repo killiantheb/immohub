@@ -4,14 +4,14 @@ import { motion } from "framer-motion"
 import { TESTIMONIALS } from "@/lib/data/landing"
 
 const C = {
-  bg: "#111111",
-  surface: "#111111",
-  surface2: "#161616",
-  border: "rgba(255,255,255,0.08)",
-  text: "#FFFFFF",
-  textMid: "rgba(255,255,255,0.75)",
-  textMuted: "rgba(255,255,255,0.45)",
-  gold: "#C9A96E",
+  bg: "#1A1208",
+  surface: "#1A1208",
+  surface2: "#F2EDE5",
+  border: "rgba(26,18,8,0.08)",
+  text: "#1A1208",
+  textMid: "rgba(26,18,8,0.75)",
+  textMuted: "rgba(26,18,8,0.45)",
+  gold: "#E8602C",
 } as const
 
 export function Testimonials() {
@@ -30,7 +30,7 @@ export function Testimonials() {
         >
           <span
             style={{
-              color: C.gold,
+              color: C.orange,
               fontSize: "0.75rem",
               fontWeight: 500,
               letterSpacing: "0.22em",
@@ -56,7 +56,7 @@ export function Testimonials() {
           }}
         >
           Ils ont choisi{" "}
-          <span style={{ color: C.gold }}>Althy.</span>
+          <span style={{ color: C.orange }}>Althy.</span>
         </motion.h2>
       </div>
 
@@ -82,7 +82,7 @@ export function Testimonials() {
           <div
             key={t.name}
             style={{
-              background: "#161616",
+              background: "#F2EDE5",
               border: `1px solid ${C.border}`,
               borderRadius: "1rem",
               padding: "1.75rem 1.5rem",
@@ -95,7 +95,7 @@ export function Testimonials() {
               transition: "border-color 0.25s",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "rgba(201,169,110,0.22)"
+              e.currentTarget.style.borderColor = "rgba(232,96,44,0.18)"
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = C.border
@@ -104,7 +104,7 @@ export function Testimonials() {
             {/* Gold quote mark */}
             <div
               style={{
-                color: C.gold,
+                color: C.orange,
                 fontSize: "3rem",
                 lineHeight: 0.8,
                 fontFamily: "Georgia, serif",
@@ -136,11 +136,11 @@ export function Testimonials() {
                   height: 36,
                   borderRadius: "50%",
                   background: "rgba(201,169,110,0.12)",
-                  border: "1px solid rgba(201,169,110,0.22)",
+                  border: "1px solid rgba(232,96,44,0.18)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: C.gold,
+                  color: C.orange,
                   fontSize: "0.8125rem",
                   fontWeight: 700,
                   flexShrink: 0,

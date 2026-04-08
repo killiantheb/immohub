@@ -4,16 +4,16 @@ import { motion } from "framer-motion"
 import { OUVREUR_FEATURES, ARTISAN_FEATURES } from "@/lib/data/landing"
 
 const C = {
-  bg: "#0A0A0A",
-  surface: "#111111",
-  surface2: "#161616",
-  border: "rgba(255,255,255,0.08)",
-  text: "#FFFFFF",
-  textMid: "rgba(255,255,255,0.65)",
-  textMuted: "rgba(255,255,255,0.38)",
-  gold: "#C9A96E",
-  goldBg: "rgba(201,169,110,0.10)",
-  goldBorder: "rgba(201,169,110,0.25)",
+  bg: "#FAF8F4",
+  surface: "#1A1208",
+  surface2: "#F2EDE5",
+  border: "rgba(26,18,8,0.08)",
+  text: "#1A1208",
+  textMid: "rgba(26,18,8,0.65)",
+  textMuted: "rgba(26,18,8,0.38)",
+  gold: "#E8602C",
+  goldBg: "rgba(232,96,44,0.08)",
+  goldBorder: "rgba(232,96,44,0.20)",
 } as const
 
 function CheckIcon() {
@@ -53,8 +53,8 @@ function FeatureColumn({ icon, title, subtitle, features, delay = 0 }: FeatureCo
           width: 48,
           height: 48,
           borderRadius: "0.75rem",
-          background: C.goldBg,
-          border: `1px solid ${C.goldBorder}`,
+          background: C.orangeBg,
+          border: `1px solid ${C.orangeBorder}`}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -115,7 +115,7 @@ export function FeatureReseau() {
         >
           <span
             style={{
-              color: C.gold,
+              color: C.orange,
               fontSize: "0.75rem",
               fontWeight: 500,
               letterSpacing: "0.22em",
@@ -142,7 +142,7 @@ export function FeatureReseau() {
           }}
         >
           Votre réseau.{" "}
-          <span style={{ color: C.gold }}>Géolocalisé et automatisé.</span>
+          <span style={{ color: C.orange }}>Géolocalisé et automatisé.</span>
         </motion.h2>
 
         {/* 2-col cards */}
@@ -237,14 +237,14 @@ export function FeatureReseau() {
             <div>
               <div
                 style={{
-                  background: C.goldBg,
-                  border: `1px solid ${C.goldBorder}`,
+                  background: C.orangeBg,
+                  border: `1px solid ${C.orangeBorder}`}`,
                   borderRadius: "0.625rem",
                   padding: "0.75rem 1.5rem",
                   display: "inline-block",
                 }}
               >
-                <span style={{ color: C.gold, fontSize: "0.8rem", fontWeight: 600, letterSpacing: "0.08em" }}>
+                <span style={{ color: C.orange, fontSize: "0.8rem", fontWeight: 600, letterSpacing: "0.08em" }}>
                   Suisse Romande — missions actives
                 </span>
               </div>
