@@ -83,20 +83,20 @@ const S = {
   }),
 
   brand: (collapsed: boolean): React.CSSProperties => ({
-    padding: collapsed ? "18px 0" : "22px 20px 18px",
+    padding: collapsed ? "20px 0" : "24px 22px 20px",
     display: "flex", alignItems: "center",
     justifyContent: collapsed ? "center" : "space-between",
     borderBottom: "1px solid var(--sidebar-border)",
-    minHeight: 64,
-    gap: 10,
+    minHeight: 72,
+    gap: 12,
   }),
 
   wordmark: {
     fontFamily: "var(--font-serif), 'Cormorant Garamond', serif",
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 300,
     color: "var(--sidebar-gold)",
-    letterSpacing: "4px",
+    letterSpacing: "5px",
     textDecoration: "none",
     lineHeight: 1,
   } as React.CSSProperties,
@@ -104,54 +104,54 @@ const S = {
   collapseBtn: {
     padding: 6, borderRadius: 6, border: "none",
     background: "transparent", cursor: "pointer",
-    color: "#BDB6A8",
+    color: "#A8907C",
     display: "flex", alignItems: "center", justifyContent: "center",
     flexShrink: 0,
     transition: "color 0.15s",
   } as React.CSSProperties,
 
   roleBadge: {
-    fontSize: 9, letterSpacing: "1.8px", textTransform: "uppercase" as const,
+    fontSize: 10, letterSpacing: "2px", textTransform: "uppercase" as const,
     color: "var(--sidebar-gold)",
-    padding: "3px 10px",
-    border: "0.5px solid rgba(196,168,122,0.25)",
+    padding: "4px 12px",
+    border: "0.5px solid rgba(232,96,44,0.28)",
     borderRadius: 2,
     display: "inline-block",
   },
 
   navItem: (active: boolean, collapsed: boolean): React.CSSProperties => ({
     width: "100%", display: "flex", alignItems: "center",
-    gap: 10, padding: collapsed ? "11px 0" : "9px 20px",
+    gap: 12, padding: collapsed ? "12px 0" : "10px 22px",
     justifyContent: collapsed ? "center" : "flex-start",
     background: active ? "var(--sidebar-active)" : "transparent",
     border: "none",
-    borderLeft: active ? "2px solid var(--sidebar-gold)" : "2px solid transparent",
+    borderLeft: active ? "2.5px solid var(--sidebar-gold)" : "2.5px solid transparent",
     cursor: "pointer", fontFamily: "var(--font-sans), inherit",
     transition: "background 0.15s, color 0.15s",
   }),
 
   navLabel: (active: boolean): React.CSSProperties => ({
-    flex: 1, fontSize: 12.5, textAlign: "left",
+    flex: 1, fontSize: 14, textAlign: "left",
     color: active ? "var(--sidebar-text-on)" : "var(--sidebar-text)",
     fontWeight: active ? 500 : 400,
     letterSpacing: "0.01em",
   }),
 
   navIcon: (active: boolean): React.CSSProperties => ({
-    color: active ? "var(--sidebar-gold)" : "#9A9088",
+    color: active ? "var(--sidebar-gold)" : "#7A6450",
     flexShrink: 0,
     transition: "color 0.15s",
   }),
 
   chevron: (active: boolean): React.CSSProperties => ({
-    color: active ? "rgba(182,138,74,0.7)" : "#BDB6A8",
+    color: active ? "var(--sidebar-gold)" : "#A8907C",
     flexShrink: 0,
   }),
 
   subItem: (active: boolean): React.CSSProperties => ({
-    display: "block", padding: "6px 20px 6px 14px",
-    fontSize: 12,
-    color: active ? "var(--sidebar-gold)" : "#706860",
+    display: "block", padding: "7px 22px 7px 16px",
+    fontSize: 13,
+    color: active ? "var(--sidebar-gold)" : "#5A4838",
     fontWeight: active ? 500 : 400,
     textDecoration: "none",
     letterSpacing: "0.01em",
@@ -159,13 +159,13 @@ const S = {
   }),
 
   footer: (collapsed: boolean): React.CSSProperties => ({
-    padding: collapsed ? "14px 0" : "14px 20px",
+    padding: collapsed ? "16px 0" : "16px 22px",
     borderTop: "1px solid var(--sidebar-border)",
-    display: "flex", flexDirection: "column", gap: 6,
+    display: "flex", flexDirection: "column", gap: 8,
   }),
 
   email: {
-    fontSize: 10.5, color: "#9A9088",
+    fontSize: 11.5, color: "#7A6450",
     wordBreak: "break-all" as const, lineHeight: 1.4,
     letterSpacing: "0.01em",
   } as React.CSSProperties,
@@ -174,7 +174,7 @@ const S = {
     display: "flex", alignItems: "center", gap: 8,
     justifyContent: collapsed ? "center" : "flex-start",
     background: "none", border: "none", cursor: "pointer",
-    fontSize: 12, color: "#9A9088",
+    fontSize: 13, color: "#7A6450",
     fontFamily: "var(--font-sans), inherit",
     padding: collapsed ? "4px 0" : 0,
     transition: "color 0.15s",
@@ -207,7 +207,7 @@ export function DashboardSidebar() {
     router.push("/login");
   }
 
-  const w = collapsed ? 58 : 228;
+  const w = collapsed ? 62 : 252;
 
   return (
     <aside style={S.sidebar(w)}>
@@ -216,11 +216,11 @@ export function DashboardSidebar() {
       <div style={S.brand(collapsed)}>
         {!collapsed ? (
           <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-            <CathySphere size={26} />
+            <CathySphere size={30} />
             <span style={S.wordmark}>Althy</span>
           </Link>
         ) : (
-          <CathySphere size={26} />
+          <CathySphere size={30} />
         )}
         <button
           onClick={() => setCollapsed(c => !c)}
@@ -321,7 +321,7 @@ export function DashboardSidebar() {
           style={S.logoutBtn(collapsed)}
           title="Déconnexion"
         >
-          <LogOut size={13} strokeWidth={1.5} style={{ color: "#9A9088" }} />
+          <LogOut size={14} strokeWidth={1.5} style={{ color: "#7A6450" }} />
           {!collapsed && "Déconnexion"}
         </button>
       </div>

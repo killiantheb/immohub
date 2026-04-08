@@ -5,52 +5,52 @@
 /* ── Althy — Design tokens ────────────────────────────────────────────────── */
 :root {
   /* Surfaces */
-  --althy-bg:          #F5F3EE;
+  --althy-bg:          #F8F5F0;
   --althy-surface:     #FFFFFF;
-  --althy-surface-2:   #EDE9E2;
-  --althy-border:      rgba(26,22,14,0.08);
-  --althy-border-2:    rgba(26,22,14,0.04);
+  --althy-surface-2:   #F0EBE3;
+  --althy-border:      rgba(40,18,8,0.09);
+  --althy-border-2:    rgba(40,18,8,0.04);
 
-  /* Text — contraste maximum */
-  --althy-text:        #1C1A14;
-  --althy-text-2:      #4A4238;
-  --althy-text-3:      #7A7060;
+  /* Text */
+  --althy-text:        #1A1208;
+  --althy-text-2:      #3D2A18;
+  --althy-text-3:      #7A6450;
 
-  /* Brand orange Althy */
-  --althy-orange:      #C4601C;
-  --althy-orange-bg:   rgba(196,96,28,0.08);
+  /* Hermès Orange — couleur principale */
+  --althy-orange:      #E8602C;
+  --althy-orange-bg:   rgba(232,96,44,0.08);
 
-  /* Or — accent luxe */
-  --althy-gold:        #B68A4A;
-  --althy-gold-light:  #C9A46A;
-  --althy-gold-bg:     rgba(182,138,74,0.09);
-  --althy-gold-border: rgba(182,138,74,0.22);
+  /* Or — accent secondaire */
+  --althy-gold:        #E8602C;
+  --althy-gold-light:  #F07840;
+  --althy-gold-bg:     rgba(232,96,44,0.08);
+  --althy-gold-border: rgba(232,96,44,0.22);
 
-  /* Sémantique */
-  --althy-green:       #2A5822;
-  --althy-green-bg:    rgba(42,88,34,0.08);
-  --althy-red:         #8E2A2A;
-  --althy-red-bg:      rgba(142,42,42,0.08);
-  --althy-blue:        #1A4878;
-  --althy-blue-bg:     rgba(26,72,120,0.08);
-  --althy-amber:       #7A5018;
-  --althy-amber-bg:    rgba(122,80,24,0.08);
-  --althy-purple:      #583A72;
-  --althy-purple-bg:   rgba(88,58,114,0.08);
+  /* Sémantique — tons chauds, pas multicolore criard */
+  --althy-green:       #2E5E22;
+  --althy-green-bg:    rgba(46,94,34,0.07);
+  --althy-red:         #9E2A18;
+  --althy-red-bg:      rgba(158,42,24,0.07);
+  --althy-blue:        #1E4A7A;
+  --althy-blue-bg:     rgba(30,74,122,0.07);
+  --althy-amber:       #8A5210;
+  --althy-amber-bg:    rgba(138,82,16,0.07);
+  --althy-purple:      #5A3870;
+  --althy-purple-bg:   rgba(90,56,112,0.07);
 
-  /* Sidebar claire et chaude */
-  --sidebar-bg:        #FEFCF7;
-  --sidebar-border:    rgba(182,138,74,0.12);
-  --sidebar-text:      #4A4238;
-  --sidebar-text-on:   #1C1A14;
-  --sidebar-gold:      #B68A4A;
-  --sidebar-hover:     rgba(182,138,74,0.05);
-  --sidebar-active:    rgba(182,138,74,0.09);
+  /* Sidebar — orange Hermès comme accent */
+  --sidebar-bg:        #FEFCF8;
+  --sidebar-border:    rgba(232,96,44,0.10);
+  --sidebar-text:      #3D2A18;
+  --sidebar-text-on:   #1A1208;
+  --sidebar-gold:      #E8602C;
+  --sidebar-hover:     rgba(232,96,44,0.04);
+  --sidebar-active:    rgba(232,96,44,0.08);
 
-  /* Ombres fines */
-  --althy-shadow:      0 1px 3px rgba(26,22,14,0.05), 0 1px 2px rgba(26,22,14,0.03);
-  --althy-shadow-md:   0 4px 18px rgba(26,22,14,0.07), 0 1px 4px rgba(26,22,14,0.04);
-  --althy-shadow-lg:   0 8px 36px rgba(26,22,14,0.09), 0 2px 8px rgba(26,22,14,0.04);
+  /* Ombres */
+  --althy-shadow:      0 1px 3px rgba(40,18,8,0.06), 0 1px 2px rgba(40,18,8,0.04);
+  --althy-shadow-md:   0 4px 18px rgba(40,18,8,0.08), 0 1px 4px rgba(40,18,8,0.04);
+  --althy-shadow-lg:   0 8px 36px rgba(40,18,8,0.10), 0 2px 8px rgba(40,18,8,0.05);
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────────── */
@@ -79,14 +79,14 @@
 /* ── Components ──────────────────────────────────────────────────────────── */
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-all;
-    background: var(--althy-gold);
-    letter-spacing: 0.025em;
+    @apply inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all;
+    background: var(--althy-orange);
+    letter-spacing: 0.03em;
   }
   .btn-primary:hover { background: var(--althy-gold-light); }
 
   .btn-secondary {
-    @apply inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-all;
+    @apply inline-flex items-center gap-2 rounded-lg border px-5 py-2.5 text-sm font-medium transition-all;
     border-color: var(--althy-border);
     color: var(--althy-text-2);
     background: var(--althy-surface);
@@ -98,12 +98,12 @@
     border-color: var(--althy-border);
     background: var(--althy-surface);
     color: var(--althy-text);
-    font-size: 0.875rem;
+    font-size: 0.9rem;
   }
   .input::placeholder { color: var(--althy-text-3); }
   .input:focus {
-    border-color: var(--althy-gold-border);
-    box-shadow: 0 0 0 3px var(--althy-gold-bg);
+    border-color: var(--althy-orange);
+    box-shadow: 0 0 0 3px var(--althy-orange-bg);
   }
 
   .card {
@@ -115,15 +115,14 @@
 
   .label {
     @apply mb-1.5 block font-medium uppercase;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     color: var(--althy-text-3);
-    letter-spacing: 0.09em;
+    letter-spacing: 0.08em;
   }
 
-  /* Headings de section dans les dashboards */
   .section-title {
     font-family: var(--font-serif), 'Cormorant Garamond', serif;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     font-weight: 400;
     color: var(--althy-text);
     letter-spacing: 0.01em;
@@ -165,6 +164,6 @@
 .sidebar-scroll::-webkit-scrollbar       { width: 2px; }
 .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
 .sidebar-scroll::-webkit-scrollbar-thumb {
-  background: rgba(182,138,74,0.18);
+  background: rgba(232,96,44,0.20);
   border-radius: 2px;
 }
