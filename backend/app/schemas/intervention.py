@@ -21,7 +21,7 @@ class InterventionBase(BaseModel):
         "peinture", "serrurerie", "chauffage", "autre"
     ] = "autre"
     urgence: Literal["faible", "moderee", "urgente", "tres_urgente"] = "moderee"
-    statut: Literal["nouveau", "en_cours", "planifie", "resolu"] = "nouveau"
+    statut: Literal["brouillon", "publie", "nouveau", "en_cours", "planifie", "resolu"] = "nouveau"
     avancement: int = Field(default=0, ge=0, le=100)
     date_signalement: Optional[date] = None
     date_intervention: Optional[date] = None
@@ -39,7 +39,7 @@ class InterventionUpdate(BaseModel):
     description: Optional[str] = None
     categorie: Optional[str] = None
     urgence: Optional[str] = None
-    statut: Optional[Literal["nouveau", "en_cours", "planifie", "resolu"]] = None
+    statut: Optional[Literal["brouillon", "publie", "nouveau", "en_cours", "planifie", "resolu"]] = None
     avancement: Optional[int] = Field(default=None, ge=0, le=100)
     date_intervention: Optional[date] = None
     cout: Optional[Decimal] = None

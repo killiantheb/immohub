@@ -1218,3 +1218,69 @@ async def anomalies(
         )
         for a in alerts
     ]
+
+
+# ── Rédiger description (SSE) ─────────────────────────────────────────────────
+
+class RedigerDescriptionRequest(BaseModel):
+    type_publication: str          # "mission" | "devis"
+    type_intervention: str         # visite/EDL/plomberie/etc.
+    adresse_bien: str | None = None
+    description_contexte: str | None = None
+
+
+@router.post(
+    "/rediger-description",
+    summary="Rédige une description de mission ou devis (SSE streaming)",
+)
+async def rediger_description(
+    payload: RedigerDescriptionRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(15, 60),
+) -> StreamingResponse:
+    """
+    Génère une description professionnelle pour une publication (mission ouvreur
+    ou devis artisan) en streaming SSE.
+    """
+    if payload.type_publication == "mission":
+        prompt = (
+            f"Rédige une description professionnelle et concise (3-5 lignes) pour une mission ouvreur de type "
+            f"'{payload.type_intervention}'"
+            + (f" au bien situé à {payload.adresse_bien}" if payload.adresse_bien else "")
+            + (f". Contexte : {payload.description_contexte}" if payload.description_contexte else "")
+            + ". La description doit être claire, attrayante pour un ouvreur qualifié, "
+            "et mentionner le type de mission, les attentes principales et le niveau de service attendu. "
+            "Réponds uniquement avec la description, sans titre ni introduction."
+        )
+    else:
+        prompt = (
+            f"Rédige une description professionnelle pour une demande de devis de travaux : "
+            f"type '{payload.type_intervention}'"
+            + (f" au bien situé à {payload.adresse_bien}" if payload.adresse_bien else "")
+            + (f". Contexte supplémentaire : {payload.description_contexte}" if payload.description_contexte else "")
+            + ". La description doit être précise pour un artisan, mentionner la nature du problème, "
+            "les contraintes éventuelles et les attentes en termes de qualité. "
+            "Réponds uniquement avec la description, sans titre ni introduction."
+        )
+
+    context = {
+        "page": "publications/new",
+        "role": current_user.role,
+        "user_name": current_user.first_name or "",
+    }
+
+    async def _generate():
+        async for chunk in chat_stream(
+            message=prompt,
+            context=context,
+            db=db,
+            user_id=str(current_user.id),
+        ):
+            yield chunk
+
+    return StreamingResponse(
+        _generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

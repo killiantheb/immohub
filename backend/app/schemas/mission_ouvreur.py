@@ -23,7 +23,7 @@ class MissionOuvreurBase(BaseModel):
     nb_candidats: int = 0
     instructions: Optional[str] = None
     remuneration: Optional[Decimal] = None
-    statut: Literal["proposee", "acceptee", "effectuee", "annulee"] = "proposee"
+    statut: Literal["brouillon", "proposee", "publiee", "acceptee", "effectuee", "annulee"] = "proposee"
     rayon_km: int = 20
 
 
@@ -39,7 +39,7 @@ class MissionOuvreurUpdate(BaseModel):
     nb_candidats: Optional[int] = None
     instructions: Optional[str] = None
     remuneration: Optional[Decimal] = None
-    statut: Optional[Literal["proposee", "acceptee", "effectuee", "annulee"]] = None
+    statut: Optional[Literal["brouillon", "proposee", "publiee", "acceptee", "effectuee", "annulee"]] = None
 
 
 class MissionOuvreurRead(MissionOuvreurBase):
