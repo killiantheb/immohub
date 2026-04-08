@@ -2,6 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Althy design tokens (light) ─────────────────────────────────────────── */
+:root {
+  /* Surfaces */
+  --althy-bg:        #FAF5EB;
+  --althy-surface:   #FFFFFF;
+  --althy-surface-2: #F5EDE0;
+  --althy-border:    rgba(28,15,6,0.09);
+  --althy-border-2:  rgba(28,15,6,0.05);
+  /* Text */
+  --althy-text:      #1C0F06;
+  --althy-text-2:    rgba(28,15,6,0.58);
+  --althy-text-3:    rgba(28,15,6,0.32);
+  /* Brand */
+  --althy-orange:    #D4601A;
+  --althy-orange-bg: rgba(212,96,26,0.10);
+  /* Semantic */
+  --althy-green:     #3B6D11;
+  --althy-green-bg:  rgba(59,109,17,0.10);
+  --althy-red:       #A32D2D;
+  --althy-red-bg:    rgba(163,45,45,0.10);
+  --althy-blue:      #185FA5;
+  --althy-blue-bg:   rgba(24,95,165,0.10);
+  --althy-amber:     #854F0B;
+  --althy-amber-bg:  rgba(133,79,11,0.10);
+  --althy-purple:    #6B4590;
+  --althy-purple-bg: rgba(107,69,144,0.10);
+  /* Shadows */
+  --althy-shadow:    0 1px 3px rgba(28,15,6,0.06), 0 1px 2px rgba(28,15,6,0.04);
+  --althy-shadow-md: 0 4px 12px rgba(28,15,6,0.08), 0 1px 3px rgba(28,15,6,0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --althy-bg:        #0D0804;
+    --althy-surface:   #1A120A;
+    --althy-surface-2: #231A10;
+    --althy-border:    rgba(255,220,180,0.09);
+    --althy-border-2:  rgba(255,220,180,0.05);
+    --althy-text:      rgba(255,220,180,0.92);
+    --althy-text-2:    rgba(200,150,80,0.60);
+    --althy-text-3:    rgba(200,150,80,0.32);
+    --althy-orange:    #E8783C;
+    --althy-orange-bg: rgba(232,120,60,0.14);
+    --althy-green:     #6ABD3A;
+    --althy-green-bg:  rgba(106,189,58,0.14);
+    --althy-red:       #E05050;
+    --althy-red-bg:    rgba(224,80,80,0.14);
+    --althy-blue:      #5AA0E0;
+    --althy-blue-bg:   rgba(90,160,224,0.14);
+    --althy-amber:     #D4943A;
+    --althy-amber-bg:  rgba(212,148,58,0.14);
+    --althy-purple:    #A07AD4;
+    --althy-purple-bg: rgba(160,122,212,0.14);
+    --althy-shadow:    0 1px 3px rgba(0,0,0,0.30), 0 1px 2px rgba(0,0,0,0.20);
+    --althy-shadow-md: 0 4px 12px rgba(0,0,0,0.40), 0 1px 3px rgba(0,0,0,0.30);
+  }
+}
+
 :root {
   --cathy-orange: #D4601A;
   --cathy-orange-light: rgba(212, 96, 26, 0.12);
