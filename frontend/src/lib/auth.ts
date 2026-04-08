@@ -67,6 +67,11 @@ export function useAuth() {
       options: { data: metadata },
     });
     if (error) throw error;
+    // When email confirmation is enabled, Supabase silently "succeeds" for
+    // existing emails but returns an empty identities array instead of an error.
+    if (data.user?.identities?.length === 0) {
+      throw new Error("User already registered");
+    }
     if (data.user) setUser(data.user);
     return data;
   };

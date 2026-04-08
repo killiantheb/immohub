@@ -75,6 +75,7 @@ function getNavLinks(role?: string) {
     ...base,
     { href: '/app/properties',   label: 'Biens' },
     { href: '/app/contracts',    label: 'Contrats' },
+    { href: '/app/crm',          label: 'CRM' },
     { href: '/app/transactions', label: 'Transactions' },
     { href: '/app/accounting',   label: 'Comptabilité' },
     { href: '/app/openers',      label: 'Missions' },
@@ -121,7 +122,7 @@ function getQuickLinks(role?: string) {
   return [
     { href: '/app/properties',   label: 'Biens',           icon: '🏠' },
     { href: '/app/contracts',    label: 'Contrats',        icon: '📄' },
-    { href: '/app/documents',    label: 'Documents',       icon: '📑' },
+    { href: '/app/crm',          label: 'CRM',             icon: '👥' },
     { href: '/app/transactions', label: 'Transactions',    icon: '💶' },
     { href: '/app/accounting',   label: 'Comptabilité',    icon: '📊' },
     { href: '/app/openers',      label: 'Missions',        icon: '📍' },
@@ -266,7 +267,7 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Title */}
-        <p style={{ fontFamily: 'var(--font-serif)', fontSize: 11, fontWeight: 300, letterSpacing: '8px', color: 'rgba(180,80,20,0.45)', textTransform: 'uppercase', marginBottom: '2rem' }}>Althy</p>
+        <Link href="/app/dashboard" onClick={() => setShowDashboard(false)} style={{ fontFamily: 'var(--font-serif)', fontSize: 11, fontWeight: 300, letterSpacing: '8px', color: 'rgba(180,80,20,0.45)', textTransform: 'uppercase', marginBottom: '2rem', textDecoration: 'none', display: 'block' }}>Althy</Link>
 
         {/* Sphere */}
         <div style={{ marginBottom: '1.8rem', animation: 'althyFloat 5.5s ease-in-out infinite' }} suppressHydrationWarning>
@@ -358,7 +359,7 @@ export function CathyShell({ children }: { children: React.ReactNode }) {
           >
             ←
           </button>
-          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 20, fontWeight: 300, color: O, letterSpacing: '3px' }}>Althy</span>
+          <Link href="/app/dashboard" onClick={() => setShowDashboard(false)} style={{ fontFamily: 'var(--font-serif)', fontSize: 20, fontWeight: 300, color: O, letterSpacing: '3px', textDecoration: 'none' }}>Althy</Link>
           {roleLabel && (
             <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, background: 'rgba(212,96,26,0.08)', color: O, letterSpacing: '1px', textTransform: 'uppercase' }}>
               {roleLabel}

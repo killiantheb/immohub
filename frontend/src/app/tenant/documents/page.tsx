@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 
@@ -59,7 +60,7 @@ export default function TenantDocumentsPage() {
           >
             ← Retour
           </button>
-          <p style={{ fontFamily: 'var(--font-serif)', fontSize: 11, letterSpacing: '6px', color: 'rgba(180,80,20,0.45)', textTransform: 'uppercase', margin: 0 }}>Althy</p>
+          <Link href="/" style={{ fontFamily: 'var(--font-serif)', fontSize: 11, letterSpacing: '6px', color: 'rgba(180,80,20,0.45)', textTransform: 'uppercase', margin: 0, textDecoration: 'none' }}>Althy</Link>
         </div>
 
         <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 24, fontWeight: 300, color: T, marginBottom: '1.5rem', letterSpacing: '0.5px' }}>

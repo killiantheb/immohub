@@ -5,6 +5,7 @@ from app.models.base import Base, BaseModel
 from app.models.company import Company, Quote
 from app.models.contract import Contract
 from app.models.conversation_message import ConversationMessage
+from app.models.crm import CRMContact, CRMNote
 from app.models.favorite import Favorite
 from app.models.inspection import Inspection
 from app.models.listing import Listing
@@ -37,4 +38,6 @@ __all__ = [
     "AgencySettings",
     "DocumentTemplate",
     "GeneratedDocument",
+    "CRMContact",
+    "CRMNote",
 ]

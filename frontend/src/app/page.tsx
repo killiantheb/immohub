@@ -91,7 +91,7 @@ export default function LandingPage() {
       {/* ── Nav ───────────────────────────────────────────────────────────── */}
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: 'rgba(250,245,235,0.92)', backdropFilter: 'blur(12px)', borderBottom: `0.5px solid ${O20}`, height: 56, display: 'flex', alignItems: 'center', padding: '0 1.5rem' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 300, color: O, letterSpacing: '3px' }}>Althy</span>
+          <Link href="/" style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 300, color: O, letterSpacing: '3px', textDecoration: 'none' }}>Althy</Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
             <div className="nav-links" style={{ fontSize: 13, color: T5 }}>
               {['Comment ça marche', 'Pour qui', 'Tarifs'].map((lbl, i) => (
@@ -100,6 +100,9 @@ export default function LandingPage() {
                 </Link>
               ))}
             </div>
+            <Link href="/login" style={{ padding: '7px 18px', borderRadius: 24, border: `0.5px solid ${O20}`, background: 'transparent', color: T5, fontSize: 12, textDecoration: 'none', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
+              Connexion
+            </Link>
             <Link href="/register" style={{ padding: '7px 18px', borderRadius: 24, background: O, color: '#fff', fontSize: 12, fontWeight: 500, textDecoration: 'none', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
               Essayer gratuitement
             </Link>
@@ -363,7 +366,7 @@ export default function LandingPage() {
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}
       <footer style={{ maxWidth: 1080, margin: '0 auto', padding: '2.5rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <span style={{ fontFamily: 'var(--font-serif)', fontSize: 18, fontWeight: 300, color: O, letterSpacing: '3px' }}>Althy</span>
+        <Link href="/" style={{ fontFamily: 'var(--font-serif)', fontSize: 18, fontWeight: 300, color: O, letterSpacing: '3px', textDecoration: 'none' }}>Althy</Link>
         <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
           {[['Mentions légales', '/legal'], ['Confidentialité', '/privacy'], ['CGU', '/terms'], ['Contact', '/contact']].map(([lbl, href]) => (
             <Link key={href} href={href} style={{ fontSize: 11, color: T3, textDecoration: 'none', letterSpacing: '0.5px' }}>

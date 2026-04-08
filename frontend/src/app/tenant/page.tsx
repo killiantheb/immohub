@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AlthySphere } from '@/components/AlthySphere'
 import { api } from '@/lib/api'
@@ -87,7 +88,7 @@ export default function TenantPage() {
 
       {/* Header */}
       <div style={{ width: '100%', maxWidth: 400, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <span style={{ fontFamily: 'var(--font-serif)', fontSize: 11, letterSpacing: '6px', color: 'rgba(180,80,20,0.45)', textTransform: 'uppercase' }}>Althy</span>
+        <Link href="/" style={{ fontFamily: 'var(--font-serif)', fontSize: 11, letterSpacing: '6px', color: 'rgba(180,80,20,0.45)', textTransform: 'uppercase', textDecoration: 'none' }}>Althy</Link>
         <span style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: T4, padding: '4px 10px', borderRadius: 20, border: `0.5px solid ${O20}`, background: 'rgba(212,96,26,0.05)' }}>Locataire</span>
       </div>
 

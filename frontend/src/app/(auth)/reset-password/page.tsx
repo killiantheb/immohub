@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
@@ -51,7 +52,7 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-beige-100 px-6">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 28, fontWeight: 300, color: '#D4601A', letterSpacing: '3px' }}>Althy</span>
+          <Link href="/" style={{ fontFamily: 'var(--font-serif)', fontSize: 28, fontWeight: 300, color: '#D4601A', letterSpacing: '3px', textDecoration: 'none', display: 'block' }}>Althy</Link>
           <h1 className="mt-4 text-2xl font-bold text-gray-900">Nouveau mot de passe</h1>
           <p className="mt-1 text-sm text-gray-500">Choisissez un nouveau mot de passe sécurisé.</p>
         </div>
