@@ -2,103 +2,107 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Althy design tokens (light) ─────────────────────────────────────────── */
+/* ── Althy — Design tokens ────────────────────────────────────────────────── */
 :root {
   /* Surfaces */
-  --althy-bg:        #FAF5EB;
-  --althy-surface:   #FFFFFF;
-  --althy-surface-2: #F5EDE0;
-  --althy-border:    rgba(28,15,6,0.09);
-  --althy-border-2:  rgba(28,15,6,0.05);
-  /* Text */
-  --althy-text:      #1C0F06;
-  --althy-text-2:    rgba(28,15,6,0.58);
-  --althy-text-3:    rgba(28,15,6,0.32);
-  /* Brand */
-  --althy-orange:    #D4601A;
-  --althy-orange-bg: rgba(212,96,26,0.10);
-  /* Semantic */
-  --althy-green:     #3B6D11;
-  --althy-green-bg:  rgba(59,109,17,0.10);
-  --althy-red:       #A32D2D;
-  --althy-red-bg:    rgba(163,45,45,0.10);
-  --althy-blue:      #185FA5;
-  --althy-blue-bg:   rgba(24,95,165,0.10);
-  --althy-amber:     #854F0B;
-  --althy-amber-bg:  rgba(133,79,11,0.10);
-  --althy-purple:    #6B4590;
-  --althy-purple-bg: rgba(107,69,144,0.10);
-  /* Shadows */
-  --althy-shadow:    0 1px 3px rgba(28,15,6,0.06), 0 1px 2px rgba(28,15,6,0.04);
-  --althy-shadow-md: 0 4px 12px rgba(28,15,6,0.08), 0 1px 3px rgba(28,15,6,0.06);
-}
+  --althy-bg:          #F3F1EC;
+  --althy-surface:     #FFFFFF;
+  --althy-surface-2:   #EDEBE5;
+  --althy-border:      rgba(26,24,20,0.08);
+  --althy-border-2:    rgba(26,24,20,0.04);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --althy-bg:        #0D0804;
-    --althy-surface:   #1A120A;
-    --althy-surface-2: #231A10;
-    --althy-border:    rgba(255,220,180,0.09);
-    --althy-border-2:  rgba(255,220,180,0.05);
-    --althy-text:      rgba(255,220,180,0.92);
-    --althy-text-2:    rgba(200,150,80,0.60);
-    --althy-text-3:    rgba(200,150,80,0.32);
-    --althy-orange:    #E8783C;
-    --althy-orange-bg: rgba(232,120,60,0.14);
-    --althy-green:     #6ABD3A;
-    --althy-green-bg:  rgba(106,189,58,0.14);
-    --althy-red:       #E05050;
-    --althy-red-bg:    rgba(224,80,80,0.14);
-    --althy-blue:      #5AA0E0;
-    --althy-blue-bg:   rgba(90,160,224,0.14);
-    --althy-amber:     #D4943A;
-    --althy-amber-bg:  rgba(212,148,58,0.14);
-    --althy-purple:    #A07AD4;
-    --althy-purple-bg: rgba(160,122,212,0.14);
-    --althy-shadow:    0 1px 3px rgba(0,0,0,0.30), 0 1px 2px rgba(0,0,0,0.20);
-    --althy-shadow-md: 0 4px 12px rgba(0,0,0,0.40), 0 1px 3px rgba(0,0,0,0.30);
-  }
-}
+  /* Text — fort contraste */
+  --althy-text:        #1A1814;
+  --althy-text-2:      #4C4740;
+  --althy-text-3:      #9A9088;
 
-:root {
-  --cathy-orange: #D4601A;
-  --cathy-orange-light: rgba(212, 96, 26, 0.12);
-  --cathy-beige: #F5EDE0;
-  --cathy-dark: #060402;
-  --cathy-dark-2: #0D0804;
-  --cathy-text: rgba(255, 220, 180, 0.92);
-  --cathy-text-dim: rgba(200, 150, 80, 0.45);
-  --cathy-text-muted: rgba(200, 150, 80, 0.25);
-  --font-serif: 'Cormorant Garamond', serif;
-  --font-sans: 'DM Sans', sans-serif;
+  /* Brand — or chaud */
+  --althy-gold:        #B68A4A;
+  --althy-gold-light:  #C9A870;
+  --althy-gold-bg:     rgba(182,138,74,0.10);
+  --althy-gold-border: rgba(182,138,74,0.25);
+
+  /* Sémantique */
+  --althy-green:       #2E5C28;
+  --althy-green-bg:    rgba(46,92,40,0.08);
+  --althy-red:         #902E2E;
+  --althy-red-bg:      rgba(144,46,46,0.08);
+  --althy-blue:        #1A4A7A;
+  --althy-blue-bg:     rgba(26,74,122,0.08);
+  --althy-amber:       #7A5520;
+  --althy-amber-bg:    rgba(122,85,32,0.08);
+  --althy-purple:      #5A3E7A;
+  --althy-purple-bg:   rgba(90,62,122,0.08);
+
+  /* Sidebar sombre */
+  --sidebar-bg:        #0D0C0A;
+  --sidebar-border:    rgba(255,245,230,0.06);
+  --sidebar-text:      rgba(224,212,196,0.70);
+  --sidebar-text-on:   #EDE4D8;
+  --sidebar-gold:      #C4A87A;
+  --sidebar-hover:     rgba(255,245,230,0.05);
+  --sidebar-active:    rgba(196,168,122,0.12);
+
+  /* Ombres */
+  --althy-shadow:      0 1px 4px rgba(26,24,20,0.05), 0 1px 2px rgba(26,24,20,0.03);
+  --althy-shadow-md:   0 4px 20px rgba(26,24,20,0.07), 0 1px 4px rgba(26,24,20,0.04);
+  --althy-shadow-lg:   0 8px 40px rgba(26,24,20,0.09), 0 2px 8px rgba(26,24,20,0.05);
 }
 
 @layer base {
   body {
-    background-color: theme('colors.beige.100');
-    @apply text-gray-900 antialiased;
+    background-color: var(--althy-bg);
+    color: var(--althy-text);
+    font-family: var(--font-sans), 'DM Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-serif), 'Cormorant Garamond', Georgia, serif;
+    letter-spacing: 0.01em;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 transition-colors;
+    @apply inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-all;
+    background: var(--althy-gold);
+    letter-spacing: 0.02em;
   }
+  .btn-primary:hover { background: var(--althy-gold-light); }
 
   .btn-secondary {
-    @apply rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 transition-colors;
+    @apply inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-all;
+    border-color: var(--althy-border);
+    color: var(--althy-text-2);
+    background: var(--althy-surface);
   }
+  .btn-secondary:hover { background: var(--althy-surface-2); }
 
   .input {
-    @apply block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm placeholder-gray-400 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400;
+    @apply block w-full rounded-lg border px-3 py-2.5 text-sm transition-all outline-none;
+    border-color: var(--althy-border);
+    background: var(--althy-surface);
+    color: var(--althy-text);
+  }
+  .input::placeholder { color: var(--althy-text-3); }
+  .input:focus {
+    border-color: var(--althy-gold-border);
+    box-shadow: 0 0 0 3px var(--althy-gold-bg);
   }
 
   .card {
-    @apply rounded-xl border border-gray-100 bg-white p-6 shadow-sm;
+    background: var(--althy-surface);
+    border: 1px solid var(--althy-border);
+    border-radius: 12px;
+    box-shadow: var(--althy-shadow);
   }
 
   .label {
-    @apply mb-1 block text-sm font-medium text-gray-700;
+    @apply mb-1.5 block text-xs font-medium uppercase;
+    color: var(--althy-text-3);
+    letter-spacing: 0.08em;
   }
 }
 
@@ -111,12 +115,10 @@
 @media (max-width: 768px) {
   .nav-links { display: none; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .stats-grid > *:nth-child(2) { border-right: none !important; }
   .steps-grid { grid-template-columns: 1fr; }
   .pricing-grid { grid-template-columns: 1fr; }
 }
 
-/* ── CathyShell quick grid ── */
 @media (max-width: 360px) {
   .ql-grid { grid-template-columns: repeat(2, 1fr) !important; }
 }
@@ -124,10 +126,19 @@
 /* ── Animations ── */
 @keyframes althyFloat {
   0%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-10px); }
-  70% { transform: translateY(-5px); }
+  40%       { transform: translateY(-10px); }
+  70%       { transform: translateY(-5px); }
 }
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  50%       { opacity: 0.4; }
 }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Scrollbar fine sur sidebar sombre ── */
+.sidebar-scroll::-webkit-scrollbar       { width: 2px; }
+.sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(255,245,230,0.10); border-radius: 2px; }
