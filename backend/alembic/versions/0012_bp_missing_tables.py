@@ -225,24 +225,30 @@ def upgrade() -> None:
         END $$;
     """)
 
-    # listings
+    # listings — ownership via property_id → properties.owner_id
     op.execute("""
         DO $$ BEGIN
             IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='listings' AND policyname='listings_owner') THEN
                 CREATE POLICY listings_owner ON listings
-                    USING (owner_id = auth.uid());
+                    USING (
+                        property_id IN (SELECT id FROM properties WHERE owner_id = auth.uid())
+                    );
             END IF;
         END $$;
     """)
 
-    # offers — acheteur ou propriétaire du listing
+    # offers — acheteur ou propriétaire du listing (via properties)
     op.execute("""
         DO $$ BEGIN
             IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='offers' AND policyname='offers_participant') THEN
                 CREATE POLICY offers_participant ON offers
                     USING (
                         buyer_id = auth.uid()
-                        OR listing_id IN (SELECT id FROM listings WHERE owner_id = auth.uid())
+                        OR listing_id IN (
+                            SELECT l.id FROM listings l
+                            JOIN properties p ON p.id = l.property_id
+                            WHERE p.owner_id = auth.uid()
+                        )
                     );
             END IF;
         END $$;

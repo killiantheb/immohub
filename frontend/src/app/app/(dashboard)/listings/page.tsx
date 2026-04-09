@@ -254,8 +254,8 @@ export default function ListingsPage() {
                     {PORTALS.map(p => (
                       <span key={p.key} style={{
                         padding: "2px 8px", borderRadius: 6, fontSize: 10.5,
-                        backgroundColor: (listing as Record<string, unknown>)[p.key] ? S.greenBg : S.surface2,
-                        color: (listing as Record<string, unknown>)[p.key] ? S.green : S.text3,
+                        backgroundColor: (listing as unknown as Record<string, boolean>)[p.key] ? S.greenBg : S.surface2,
+                        color: (listing as unknown as Record<string, boolean>)[p.key] ? S.green : S.text3,
                         fontWeight: 500,
                       }}>
                         {p.logo} {p.name}
