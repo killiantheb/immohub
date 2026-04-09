@@ -14,8 +14,16 @@ export const api = axios.create({
   },
 });
 
-// Request interceptor — attach Supabase JWT
+// Request interceptor — force HTTPS + attach Supabase JWT
 api.interceptors.request.use(async (config) => {
+  // Belt-and-suspenders: fix http:// regardless of how baseURL was resolved
+  if (config.baseURL?.startsWith("http://")) {
+    config.baseURL = config.baseURL.replace(/^http:\/\//, "https://");
+  }
+  if (typeof config.url === "string" && config.url.startsWith("http://")) {
+    config.url = config.url.replace(/^http:\/\//, "https://");
+  }
+
   const supabase = createClient();
   const {
     data: { session },
