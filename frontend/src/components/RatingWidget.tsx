@@ -101,7 +101,7 @@ export function RatingWidget({ entityType, entityId, title, compact = false }: P
     setSubmitting(true)
     setError('')
     try {
-      await api.post('/ratings/', {
+      await api.post('/ratings', {
         entity_type: entityType,
         entity_id: entityId,
         score: myScore,
