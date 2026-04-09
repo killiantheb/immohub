@@ -46,42 +46,9 @@ def upgrade() -> None:
     """)
     op.execute("CREATE INDEX IF NOT EXISTS ix_profiles_user_id ON profiles(user_id)")
 
-    # ── 2. listings — annonces location/vente ─────────────────────────────────
-    op.execute("""
-        CREATE TABLE IF NOT EXISTS listings (
-            id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            owner_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            property_id     UUID REFERENCES properties(id) ON DELETE SET NULL,
-            title           VARCHAR(300) NOT NULL,
-            description     TEXT,
-            listing_type    VARCHAR(20)  NOT NULL DEFAULT 'rental',  -- rental | sale
-            status          VARCHAR(20)  NOT NULL DEFAULT 'draft',   -- draft | active | paused | closed
-            monthly_rent    NUMERIC(10,2),
-            sale_price      NUMERIC(12,2),
-            charges         NUMERIC(10,2),
-            deposit         NUMERIC(10,2),
-            available_from  DATE,
-            published_at    TIMESTAMPTZ,
-            -- Diffusion portails
-            on_homegate     BOOLEAN NOT NULL DEFAULT false,
-            on_immoscout    BOOLEAN NOT NULL DEFAULT false,
-            on_booking      BOOLEAN NOT NULL DEFAULT false,
-            on_airbnb       BOOLEAN NOT NULL DEFAULT false,
-            external_ids    JSONB   NOT NULL DEFAULT '{}',
-            -- Médias
-            photos          TEXT[]  NOT NULL DEFAULT '{}',
-            virtual_tour    TEXT,
-            -- IA
-            ai_generated    BOOLEAN NOT NULL DEFAULT false,
-            views_count     INTEGER NOT NULL DEFAULT 0,
-            inquiries_count INTEGER NOT NULL DEFAULT 0,
-            created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-            updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-        )
-    """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_listings_owner_id    ON listings(owner_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_listings_property_id ON listings(property_id)")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_listings_status      ON listings(status)")
+    # ── 2. listings — already created in migration 0001, skip table creation ──
+    # Only add indexes that don't exist yet (0001 already created property_id + status indexes)
+    # No-op block kept for reference
 
     # ── 3. offers — offres acheteurs/locataires ────────────────────────────────
     op.execute("""
