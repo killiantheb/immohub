@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 import uuid
 from collections import defaultdict
@@ -519,6 +520,76 @@ async def _increment_monthly_tokens(db: AsyncSession, user_id: str, tokens: int)
         await db.flush()
 
 
+# ── Intent detection (keyword-based, no extra API call) ──────────────────────
+
+_INTENT_RULES: list[tuple[re.Pattern[str], str, list[dict]]] = [
+    (
+        re.compile(
+            r"chaudière|plombier|électricien|artisan|panne|cassé|fuite|réparation|"
+            r"chauffage|dégât|infiltration|problème technique",
+            re.IGNORECASE,
+        ),
+        "search_artisan",
+        [
+            {"id": "new_intervention", "label": "Créer une intervention", "icon": "wrench",
+             "path": "/app/interventions", "requires_validation": False},
+            {"id": "find_artisan",     "label": "Trouver un artisan",     "icon": "search",
+             "path": "/app/interventions", "requires_validation": False},
+        ],
+    ),
+    (
+        re.compile(
+            r"quittance|reçu de loyer|attestation.*loyer|loyer.*reçu|"
+            r"bail|contrat.*bail|état des lieux|génère.*document",
+            re.IGNORECASE,
+        ),
+        "generate_document",
+        [
+            {"id": "gen_doc",      "label": "Générer le document", "icon": "file-text",
+             "path": "/app/documents", "requires_validation": True},
+            {"id": "view_docs",   "label": "Mes documents",        "icon": "folder",
+             "path": "/app/documents", "requires_validation": False},
+        ],
+    ),
+    (
+        re.compile(
+            r"pas payé|impayé|retard.*loyer|loyer.*retard|n'a pas payé|"
+            r"relance|mise en demeure|défaut de paiement",
+            re.IGNORECASE,
+        ),
+        "rent_reminder",
+        [
+            {"id": "send_reminder", "label": "Envoyer une relance", "icon": "mail",
+             "path": "/app/crm", "requires_validation": True},
+            {"id": "view_payments", "label": "Voir les paiements",  "icon": "credit-card",
+             "path": "/app/finances", "requires_validation": False},
+        ],
+    ),
+    (
+        re.compile(
+            r"combien vaut|valeur.*bien|estimation|estimer|prix.*marché|"
+            r"évaluation|valeur vénale|valorisation",
+            re.IGNORECASE,
+        ),
+        "estimate_property",
+        [
+            {"id": "estimate",    "label": "Lancer l'estimation", "icon": "trending-up",
+             "path": "/estimation", "requires_validation": False},
+            {"id": "view_market", "label": "Analyse de marché",   "icon": "bar-chart",
+             "path": "/app/biens", "requires_validation": False},
+        ],
+    ),
+]
+
+
+def _detect_intent(message: str) -> dict | None:
+    """Return {intent, actions} if a keyword pattern matches, else None."""
+    for pattern, intent, actions in _INTENT_RULES:
+        if pattern.search(message):
+            return {"intent": intent, "actions": actions}
+    return None
+
+
 async def chat_stream(
     message: str,
     context: dict,
@@ -527,7 +598,11 @@ async def chat_stream(
 ) -> AsyncGenerator[str, None]:
     """
     Stream a Claude response as SSE chunks with conversation memory.
-    Yields strings formatted as SSE events: "data: <text>\\n\\n"
+    Protocol:
+      data: {"type": "intent", "intent": "...", "actions": [...]}\n\n  (optional)
+      data: {"type": "text",   "text": "..."}\n\n                      (repeated)
+      data: {"type": "done"}\n\n
+    Backwards-compatible: "text" key still present for legacy parsers.
     """
     if not _check_rate_limit(user_id):
         yield 'data: {"error": "Limite de débit atteinte. Réessayez dans une minute."}\n\n'
@@ -536,6 +611,11 @@ async def chat_stream(
     if not await _check_monthly_quota(db, user_id):
         yield 'data: {"error": "Quota mensuel IA atteint. Contactez le support."}\n\n'
         return
+
+    # Emit intent + action suggestions before the text stream
+    detected = _detect_intent(message)
+    if detected:
+        yield f"data: {json.dumps({'type': 'intent', **detected})}\n\n"
 
     session_id = context.get("session_id") or str(uuid.uuid4())
 
@@ -573,13 +653,14 @@ async def chat_stream(
             async for text in stream.text_stream:
                 full_reply += text
                 escaped = text.replace("\n", "\\n")
-                yield f"data: {json.dumps({'text': escaped})}\n\n"
+                yield f"data: {json.dumps({'type': 'text', 'text': escaped})}\n\n"
 
             final = await stream.get_final_message()
             total_input = final.usage.input_tokens
             total_output = final.usage.output_tokens
 
-        yield "data: [DONE]\n\n"
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+        yield "data: [DONE]\n\n"  # backwards compatibility
 
         # Persist conversation + update token quota
         await _save_messages(db, user_id, session_id, message, full_reply)
@@ -587,7 +668,7 @@ async def chat_stream(
 
     except anthropic.APIError as exc:
         log.error("Claude API error in chat_stream: %s", exc)
-        yield f"data: {json.dumps({'error': 'Erreur IA temporaire.'})}\n\n"
+        yield f"data: {json.dumps({'type': 'error', 'error': 'Erreur IA temporaire.'})}\n\n"
 
     finally:
         class _FakeUsage:

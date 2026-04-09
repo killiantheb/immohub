@@ -41,6 +41,7 @@ interface NavItem {
 const ICON = { size: 15, strokeWidth: 1.5 };
 
 const NAV: NavItem[] = [
+  { label: "Althy IA",        href: "/app/sphere",      icon: <Sparkles {...ICON} />,         section: "sphere" },
   { label: "Tableau de bord", href: "/app",             icon: <LayoutGrid {...ICON} />,       section: "dashboard" },
   { label: "Biens",           href: "/app/biens",       icon: <Building2 {...ICON} />,        section: "biens",
     children: [{ label: "Tous les biens", href: "/app/biens" }] },
