@@ -102,7 +102,12 @@ _CORS_REGEX = _re.compile(r"https://[a-zA-Z0-9-]+\.vercel\.app$")
 
 @app.exception_handler(Exception)
 async def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    response = JSONResponse(status_code=500, content={"detail": "Internal server error"})
+    import traceback
+    tb = traceback.format_exc()
+    response = JSONResponse(
+        status_code=500,
+        content={"detail": f"{type(exc).__name__}: {exc}", "traceback": tb},
+    )
     origin = request.headers.get("origin", "")
     if origin and (origin in _CORS_ORIGINS or _CORS_REGEX.match(origin)):
         response.headers["Access-Control-Allow-Origin"] = origin
