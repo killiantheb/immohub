@@ -3,16 +3,20 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { PlusCircle, Trash2, Users2, Eye } from "lucide-react";
+import { PlusCircle, Trash2, Users2, Eye, Link2, MessageSquare, Send, CheckCircle2 } from "lucide-react";
 
 const S = {
+  bg:      "var(--althy-bg)",
   surface: "var(--althy-surface)",
+  surface2:"var(--althy-surface-2)",
   border:  "var(--althy-border)",
   text:    "var(--althy-text)",
   text2:   "var(--althy-text-2)",
   text3:   "var(--althy-text-3)",
   orange:  "var(--althy-orange)",
   orangeBg:"var(--althy-orange-bg)",
+  amber:   "var(--althy-amber)",
+  amberBg: "var(--althy-amber-bg)",
   green:   "var(--althy-green)",
   greenBg: "var(--althy-green-bg)",
   shadow:  "var(--althy-shadow)",
@@ -34,8 +38,173 @@ const AVAILABLE_SECTIONS = [
   { key: "documents", label: "Documents" },
 ];
 
+interface Invitation {
+  id: string;
+  proprio_email: string;
+  proprio_name: string | null;
+  bien_id: string | null;
+  token: string;
+  inv_status: string;
+  created_at: string;
+}
+
+interface PortailMessage {
+  id: string;
+  sender_type: string;
+  content: string;
+  created_at: string;
+}
+
+function InvitationsTab() {
+  const qc = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ proprio_email: "", proprio_name: "", bien_id: "" });
+  const [selectedInv, setSelectedInv] = useState<Invitation | null>(null);
+  const [newMessage, setNewMessage] = useState("");
+
+  const { data, isLoading } = useQuery<{ items: Invitation[] }>({
+    queryKey: ["portail-invitations"],
+    queryFn: () => api.get<{ items: Invitation[] }>("/portail/invitations").then(r => r.data),
+  });
+
+  const createInv = useMutation({
+    mutationFn: () => api.post("/portail/invitations", { ...form, bien_id: form.bien_id || null }).then(r => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["portail-invitations"] }); setShowForm(false); setForm({ proprio_email: "", proprio_name: "", bien_id: "" }); },
+  });
+
+  const { data: messagesData } = useQuery<{ items: PortailMessage[] }>({
+    queryKey: ["portail-messages", selectedInv?.id],
+    queryFn: () => api.get<{ items: PortailMessage[] }>(`/portail/messages/${selectedInv!.id}`).then(r => r.data),
+    enabled: !!selectedInv,
+    refetchInterval: 5000,
+  });
+
+  const sendMsg = useMutation({
+    mutationFn: (content: string) => api.post(`/portail/messages/${selectedInv!.id}`, { content }).then(r => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["portail-messages", selectedInv?.id] }); setNewMessage(""); },
+  });
+
+  const invitations = data?.items ?? [];
+  const messages = messagesData?.items ?? [];
+
+  if (selectedInv) {
+    return (
+      <div>
+        <button onClick={() => setSelectedInv(null)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: S.text3, fontSize: 13, cursor: "pointer", marginBottom: 16 }}>← Retour</button>
+        <div style={{ backgroundColor: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ padding: "14px 18px", borderBottom: `1px solid ${S.border}`, backgroundColor: S.surface2 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: S.text }}>{selectedInv.proprio_name ?? selectedInv.proprio_email}</div>
+            <div style={{ fontSize: 12, color: S.text3 }}>
+              Portail : <code style={{ fontSize: 11, backgroundColor: S.bg, padding: "1px 6px", borderRadius: 4 }}>/portail/{selectedInv.token}</code>
+              <button onClick={() => navigator.clipboard.writeText(`${window.location.origin}/portail/${selectedInv.token}`)} style={{ marginLeft: 8, padding: "2px 8px", border: `1px solid ${S.border}`, borderRadius: 6, fontSize: 11, backgroundColor: "transparent", color: S.text3, cursor: "pointer" }}>Copier le lien</button>
+            </div>
+          </div>
+          {/* Messages */}
+          <div style={{ padding: 16, minHeight: 200, maxHeight: 360, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+            {messages.length === 0 && <div style={{ textAlign: "center", padding: "30px 0", color: S.text3, fontSize: 13 }}>Aucun message pour l&apos;instant</div>}
+            {messages.map(m => (
+              <div key={m.id} style={{ display: "flex", justifyContent: m.sender_type === "agency" ? "flex-end" : "flex-start" }}>
+                <div style={{
+                  maxWidth: "70%", padding: "8px 12px", borderRadius: m.sender_type === "agency" ? "12px 12px 4px 12px" : "12px 12px 12px 4px",
+                  backgroundColor: m.sender_type === "agency" ? S.orange : m.sender_type === "ai" ? S.amberBg : S.surface2,
+                  color: m.sender_type === "agency" ? "#fff" : S.text,
+                  fontSize: 13, lineHeight: 1.5,
+                }}>
+                  {m.sender_type === "ai" && <div style={{ fontSize: 10, fontWeight: 700, color: S.amber, marginBottom: 3 }}>✨ Althy IA</div>}
+                  {m.content}
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Input */}
+          <div style={{ padding: "12px 16px", borderTop: `1px solid ${S.border}`, display: "flex", gap: 8 }}>
+            <input
+              value={newMessage}
+              onChange={e => setNewMessage(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && newMessage.trim()) { e.preventDefault(); sendMsg.mutate(newMessage.trim()); } }}
+              placeholder="Votre message…"
+              style={{ flex: 1, padding: "9px 12px", border: `1px solid ${S.border}`, borderRadius: 9, fontSize: 13, outline: "none", backgroundColor: S.surface2, color: S.text }}
+            />
+            <button onClick={() => newMessage.trim() && sendMsg.mutate(newMessage.trim())} disabled={sendMsg.isPending || !newMessage.trim()}
+              style={{ padding: "9px 14px", backgroundColor: S.orange, color: "#fff", border: "none", borderRadius: 9, cursor: "pointer" }}>
+              <Send size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        <p style={{ margin: 0, fontSize: 13, color: S.text3 }}>Invitations token CHF 9/mois — le proprio accède à son portail sans créer de compte.</p>
+        <button onClick={() => setShowForm(v => !v)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", backgroundColor: S.orange, color: "#fff", border: "none", borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <PlusCircle size={14} /> Inviter un proprio
+        </button>
+      </div>
+
+      {showForm && (
+        <div style={{ backgroundColor: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: 20, marginBottom: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            {[
+              { key: "proprio_email", label: "Email", placeholder: "proprio@email.ch", col: "1/3" },
+              { key: "proprio_name",  label: "Nom (optionnel)", placeholder: "Jean Dupont" },
+              { key: "bien_id",       label: "ID Bien (optionnel)", placeholder: "UUID du bien" },
+            ].map(({ key, label, placeholder, col }) => (
+              <div key={key} style={{ gridColumn: col ?? "auto" }}>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: S.text3, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</label>
+                <input value={(form as Record<string, string>)[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} placeholder={placeholder}
+                  style={{ width: "100%", padding: "9px 12px", border: `1px solid ${S.border}`, borderRadius: 8, fontSize: 13, backgroundColor: S.bg, color: S.text, outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => createInv.mutate()} disabled={!form.proprio_email || createInv.isPending}
+              style={{ padding: "9px 18px", backgroundColor: S.orange, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              {createInv.isPending ? "Création…" : "Créer l'invitation"}
+            </button>
+            <button onClick={() => setShowForm(false)} style={{ padding: "9px 18px", border: `1px solid ${S.border}`, borderRadius: 8, backgroundColor: "transparent", color: S.text3, fontSize: 13, cursor: "pointer" }}>Annuler</button>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div style={{ textAlign: "center", padding: 30, color: S.text3 }}>Chargement…</div>
+      ) : invitations.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "40px 20px", backgroundColor: S.surface, border: `1px solid ${S.border}`, borderRadius: 14 }}>
+          <Link2 size={28} style={{ color: S.text3, marginBottom: 10 }} />
+          <div style={{ fontSize: 14, fontWeight: 600, color: S.text, marginBottom: 4 }}>Aucune invitation envoyée</div>
+          <div style={{ fontSize: 13, color: S.text3 }}>Invitez vos propriétaires mandants pour leur donner accès à leur portail.</div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {invitations.map(inv => (
+            <div key={inv.id} style={{ backgroundColor: S.surface, border: `1px solid ${S.border}`, borderRadius: 12, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: S.text }}>{inv.proprio_name ?? inv.proprio_email}</div>
+                <div style={{ fontSize: 12, color: S.text3 }}>{inv.proprio_email}</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ padding: "2px 8px", borderRadius: 20, fontSize: 10.5, fontWeight: 600, backgroundColor: inv.inv_status === "active" ? S.greenBg : S.surface2, color: inv.inv_status === "active" ? S.green : S.text3 }}>
+                  {inv.inv_status === "active" ? <><CheckCircle2 size={10} style={{ display: "inline", marginRight: 3 }} />Actif</> : "En attente"}
+                </span>
+                <button onClick={() => setSelectedInv(inv)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", border: `1px solid ${S.border}`, borderRadius: 8, backgroundColor: "transparent", color: S.text2, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                  <MessageSquare size={12} /> Canal
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PortailPage() {
   const qc = useQueryClient();
+  const [activeTab, setActiveTab] = useState<"comptes" | "invitations">("invitations");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     email: "",
@@ -84,18 +253,23 @@ export default function PortailPage() {
             Donnez accès à vos propriétaires · CHF 9/mois par portail
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(v => !v)}
-          style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "9px 18px", borderRadius: 9,
-            background: S.orange, color: "white",
-            fontWeight: 600, fontSize: 13, border: "none", cursor: "pointer",
-          }}
-        >
-          <PlusCircle size={15} /> Créer un portail
-        </button>
       </div>
+
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 2, borderBottom: `1px solid ${S.border}`, marginBottom: 24 }}>
+        {([
+          { id: "invitations", label: "Invitations proprio", icon: <Link2 size={13} /> },
+          { id: "comptes",     label: "Comptes Supabase",    icon: <Users2 size={13} /> },
+        ] as const).map(t => (
+          <button key={t.id} onClick={() => setActiveTab(t.id)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", background: "none", border: "none", borderBottom: `2px solid ${activeTab === t.id ? S.orange : "transparent"}`, color: activeTab === t.id ? S.orange : S.text3, fontWeight: activeTab === t.id ? 700 : 500, fontSize: 13, cursor: "pointer" }}>
+            {t.icon}{t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "invitations" && <InvitationsTab />}
+
+      {activeTab === "comptes" && <>
 
       {/* Create form */}
       {showForm && (
@@ -286,6 +460,7 @@ export default function PortailPage() {
         <Eye size={13} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }} />
         Chaque portail actif est facturé CHF 9/mois. Le propriétaire reçoit un email d&apos;invitation automatique.
       </div>
+      </>}
     </div>
   );
 }

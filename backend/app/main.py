@@ -41,6 +41,7 @@ from app.routers.hunters import router as hunters_router
 from app.routers.stripe_webhooks import router as stripe_router
 from app.routers.portail import router as portail_router
 from app.routers.integrations import router as integrations_router
+from app.routers.vente import router as vente_router
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -169,6 +170,7 @@ app.include_router(hunters_router, prefix="/api/v1/hunters", tags=["hunters"])
 app.include_router(stripe_router, prefix="/api/v1/webhooks", tags=["stripe"])
 app.include_router(portail_router, prefix="/api/v1/portail", tags=["portail"])
 app.include_router(integrations_router, prefix="/api/v1/integrations", tags=["integrations"])
+app.include_router(vente_router, prefix="/api/v1/vente", tags=["vente"])
 
 
 # ── Health check ──────────────────────────────────────────────────────────────

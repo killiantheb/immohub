@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, MapPin, Phone, Mail, TrendingUp, Clock } from "lucide-react";
+import { Plus, MapPin, Phone, Mail, TrendingUp, Clock, Globe, Eye, EyeOff } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
@@ -44,7 +44,23 @@ interface Hunter {
   status: keyof typeof STATUS_CFG;
   referral_amount: number | null;
   referral_paid: boolean;
+  off_market_visible: boolean;
+  referral_type: string | null;
   created_at: string;
+}
+
+interface OffMarketLead {
+  id: string;
+  address: string;
+  city: string;
+  description: string | null;
+  estimated_price: number | null;
+  referral_amount: number | null;
+  referral_type: string | null;
+  status: string;
+  created_at: string;
+  contact_name: string | null;
+  contact_phone: string | null;
 }
 
 function fmt(n: number | null) {
@@ -133,12 +149,28 @@ function NewHunterModal({ onClose }: { onClose: () => void }) {
 
 export default function HuntersPage() {
   const [showNew, setShowNew] = useState(false);
+  const [tab, setTab] = useState<"mes-leads" | "off-market">("mes-leads");
+  const qc = useQueryClient();
+
   const { data, isLoading } = useQuery({
     queryKey: ["hunters"],
     queryFn: () => api.get<{ items: Hunter[] }>("/hunters").then(r => r.data),
   });
 
+  const { data: offMarketData, isLoading: loadingOM } = useQuery({
+    queryKey: ["hunters-off-market"],
+    queryFn: () => api.get<{ items: OffMarketLead[]; total: number }>("/hunters/off-market").then(r => r.data),
+    enabled: tab === "off-market",
+  });
+
+  const publishMut = useMutation({
+    mutationFn: ({ id, visible }: { id: string; visible: boolean }) =>
+      api.post(`/hunters/${id}/publish`, { visible, referral_type: "vente" }).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["hunters"] }),
+  });
+
   const items = data?.items ?? [];
+  const omItems = offMarketData?.items ?? [];
   const earned = items.filter(h => h.referral_paid).reduce((a, h) => a + (h.referral_amount ?? 0), 0);
   const pending = items.filter(h => !h.referral_paid && h.status === "closed").reduce((a, h) => a + (h.referral_amount ?? 0), 0);
 
@@ -170,6 +202,58 @@ export default function HuntersPage() {
         ))}
       </div>
 
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 2, borderBottom: `1px solid ${S.border}`, marginBottom: 20 }}>
+        {([
+          { id: "mes-leads",  label: "Mes leads",             icon: <TrendingUp size={13} /> },
+          { id: "off-market", label: "Marché off-market",     icon: <Globe size={13} /> },
+        ] as const).map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 16px", background: "none", border: "none", borderBottom: `2px solid ${tab === t.id ? S.orange : "transparent"}`, color: tab === t.id ? S.orange : S.text3, fontWeight: tab === t.id ? 700 : 500, fontSize: 13, cursor: "pointer" }}>
+            {t.icon}{t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "off-market" ? (
+        /* ── Off-market marketplace ── */
+        <div>
+          <p style={{ margin: "0 0 16px", fontSize: 13, color: S.text3 }}>Leads off-market publiés par les hunters — visibles aux agents premium. Contactez le hunter pour obtenir les coordonnées vendeur.</p>
+          {loadingOM ? (
+            <div style={{ textAlign: "center", padding: 40, color: S.text3 }}>Chargement…</div>
+          ) : omItems.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "50px 20px", backgroundColor: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, color: S.text3, fontSize: 13 }}>
+              Aucun lead off-market publié pour l&apos;instant
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {omItems.map(h => (
+                <div key={h.id} style={{ backgroundColor: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: "16px 20px", boxShadow: S.shadow }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <MapPin size={13} color={S.text3} />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: S.text }}>{h.address}, {h.city}</span>
+                        <span style={{ padding: "2px 7px", borderRadius: 20, fontSize: 10, fontWeight: 600, backgroundColor: h.referral_type === "location" ? S.surface2 : S.orangeBg, color: h.referral_type === "location" ? S.text3 : S.orange }}>
+                          {h.referral_type === "location" ? "Location" : "Vente"}
+                        </span>
+                      </div>
+                      {h.description && <p style={{ margin: "0 0 8px", fontSize: 12.5, color: S.text3, lineHeight: 1.5 }}>{h.description}</p>}
+                      {h.estimated_price && <span style={{ fontSize: 12.5, color: S.text2 }}>Estimé : <strong>{fmt(h.estimated_price)}</strong></span>}
+                      {h.contact_name && <div style={{ fontSize: 12, color: S.green, marginTop: 4 }}>👤 {h.contact_name}{h.contact_phone ? ` · ${h.contact_phone}` : ""}</div>}
+                    </div>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <div style={{ fontSize: 17, fontWeight: 800, color: S.orange }}>{fmt(h.referral_amount)}</div>
+                      <div style={{ fontSize: 11, color: S.text3 }}>Referral fee</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+      /* ── Mes leads ── */
+      <>
       {/* Info banner */}
       <div style={{ backgroundColor: S.orangeBg, border: "1px solid rgba(232,96,44,0.22)", borderRadius: 12, padding: "14px 18px", marginBottom: 24, display: "flex", gap: 10 }}>
         <TrendingUp size={18} color={S.orange} style={{ flexShrink: 0, marginTop: 1 }} />
@@ -216,12 +300,21 @@ export default function HuntersPage() {
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
                     <div style={{ fontSize: 18, fontWeight: 800, color: h.referral_paid ? S.green : S.orange }}>{fmt(h.referral_amount)}</div>
                     <div style={{ fontSize: 11, color: h.referral_paid ? S.green : S.text3 }}>{h.referral_paid ? "Payé ✓" : "Referral fee"}</div>
+                    <button
+                      onClick={e => { e.stopPropagation(); publishMut.mutate({ id: h.id, visible: !h.off_market_visible }); }}
+                      style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", border: `1px solid ${h.off_market_visible ? S.green : S.border}`, borderRadius: 8, backgroundColor: h.off_market_visible ? S.greenBg : "transparent", color: h.off_market_visible ? S.green : S.text3, fontSize: 11, fontWeight: 600, cursor: "pointer" }}
+                    >
+                      {h.off_market_visible ? <Eye size={11} /> : <EyeOff size={11} />}
+                      {h.off_market_visible ? "Publié" : "Publier"}
+                    </button>
                   </div>
                 </div>
               </div>
             );
           })}
         </div>
+      )}
+      </>
       )}
     </div>
   );

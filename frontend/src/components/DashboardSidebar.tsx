@@ -25,6 +25,7 @@ import {
   Calculator,
   Target,
   CreditCard,
+  TrendingUp,
 } from "lucide-react";
 import { CathySphere } from "@/components/CathySphere";
 
@@ -63,6 +64,7 @@ const NAV: NavItem[] = [
     ]},
   { label: "Annonces",         href: "/app/listings",    icon: <Megaphone {...ICON} />,         section: "listings" },
   { label: "Comptabilité",     href: "/app/comptabilite",icon: <Calculator {...ICON} />,        section: "comptabilite" },
+  { label: "Vente",            href: "/app/vente",       icon: <TrendingUp {...ICON} />,        section: "vente" },
   { label: "Hunters",          href: "/app/hunters",     icon: <Target {...ICON} />,            section: "hunters" },
   { label: "Portail Proprio", href: "/app/portail",     icon: <Users2 {...ICON} />,            section: "portail" },
   { label: "Publications",     href: "/app/publications/new", icon: <SendHorizonal {...ICON} />, section: "publications" },
