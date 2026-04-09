@@ -34,6 +34,8 @@ from app.routers.insurance import router as insurance_router
 from app.routers.ratings import router as ratings_router
 from app.routers.smart_onboarding import router as smart_onboarding_router
 from app.routers.tenants import router as tenants_router
+from app.routers.listings import router as listings_router
+from app.routers.hunters import router as hunters_router
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -153,6 +155,8 @@ app.include_router(scoring_router, prefix="/api/v1/scoring", tags=["scoring"])
 app.include_router(notifications_router, prefix="/api/v1/notifications", tags=["notifications"])
 app.include_router(matching_router, prefix="/api/v1/matching", tags=["matching"])
 app.include_router(geocode_router, prefix="/api/v1/geocode", tags=["geocode"])
+app.include_router(listings_router, prefix="/api/v1/listings", tags=["listings"])
+app.include_router(hunters_router, prefix="/api/v1/hunters", tags=["hunters"])
 
 
 # ── Health check ──────────────────────────────────────────────────────────────

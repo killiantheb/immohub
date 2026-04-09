@@ -1698,3 +1698,103 @@ async def generer_document(
         url=public_url,
         type=payload.type,
     )
+
+
+# ── Property estimation (lead magnet) ─────────────────────────────────────────
+
+class EstimateRequest(BaseModel):
+    address: str
+    city: str
+    property_type: str = "apartment"  # apartment | house | villa | commercial
+    surface: float | None = None
+    rooms: int | None = None
+    year_built: int | None = None
+    condition: str = "good"  # new | good | average | poor
+
+
+class EstimateResponse(BaseModel):
+    sale_price_min: int
+    sale_price_max: int
+    rent_monthly_min: int
+    rent_monthly_max: int
+    rent_seasonal_week: int | None
+    rent_nightly: int | None
+    gross_yield_pct: float
+    price_per_sqm: int | None
+    ai_comment: str
+    confidence: str  # high | medium | low
+
+
+# City-based fallback price/m² (CHF)
+_CITY_PRICES: dict[str, int] = {
+    "genève": 13500, "geneva": 13500, "ge": 13500,
+    "zürich": 13000, "zurich": 13000, "zuerich": 13000,
+    "lausanne": 10500, "vaud": 9000,
+    "berne": 8500, "bern": 8500,
+    "bâle": 9000, "basel": 9000, "bale": 9000,
+    "zug": 14000, "zoug": 14000,
+    "lugano": 9500,
+    "neuchâtel": 7500, "neuchatel": 7500,
+    "fribourg": 7000,
+}
+
+
+def _price_per_sqm(city: str) -> int:
+    city_lower = city.lower().strip()
+    for key, price in _CITY_PRICES.items():
+        if key in city_lower:
+            return price
+    return 7500  # Swiss average fallback
+
+
+@router.post("/estimate", response_model=EstimateResponse)
+async def estimate_property(body: EstimateRequest):
+    """Public estimation endpoint — no auth required (lead magnet)."""
+    p_sqm = _price_per_sqm(body.city)
+
+    if body.surface and body.surface > 0:
+        mid_price = int(p_sqm * body.surface)
+        price_min = int(mid_price * 0.88)
+        price_max = int(mid_price * 1.12)
+        rent_monthly = int(body.surface * 25)  # ~CHF 25/m²/month in CH
+    else:
+        # No surface: estimate based on rooms
+        rooms = body.rooms or 3
+        estimated_surface = rooms * 30  # rough ~30m² per room
+        mid_price = int(p_sqm * estimated_surface)
+        price_min = int(mid_price * 0.85)
+        price_max = int(mid_price * 1.15)
+        rent_monthly = int(estimated_surface * 25)
+
+    rent_min = int(rent_monthly * 0.88)
+    rent_max = int(rent_monthly * 1.12)
+
+    gross_yield = round((rent_monthly * 12 / mid_price) * 100, 1)
+
+    city_lower = body.city.lower()
+    is_tourist = any(k in city_lower for k in ["genève", "geneva", "lausanne", "verbier", "zermatt", "lugano"])
+    rent_seasonal_week = int(rent_monthly * 0.4) if is_tourist else None
+    rent_nightly = int(rent_monthly / 15) if is_tourist else None
+
+    surface_text = f"{int(body.surface)}m² · " if body.surface else ""
+    ai_comment = (
+        f"Estimation basée sur le marché immobilier de {body.city} ({surface_text}"
+        f"prix moyen CHF {p_sqm:,}/m²). "
+        f"Rendement brut estimé de {gross_yield}% — "
+        + ("excellent pour la Suisse romande." if gross_yield >= 5 else
+           "dans la moyenne suisse." if gross_yield >= 3.5 else
+           "typique des marchés premium suisses.")
+    )
+
+    return EstimateResponse(
+        sale_price_min=price_min,
+        sale_price_max=price_max,
+        rent_monthly_min=rent_min,
+        rent_monthly_max=rent_max,
+        rent_seasonal_week=rent_seasonal_week,
+        rent_nightly=rent_nightly,
+        gross_yield_pct=gross_yield,
+        price_per_sqm=p_sqm if body.surface else None,
+        ai_comment=ai_comment,
+        confidence="medium" if body.surface else "low",
+    )
