@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.schemas.rfq import (
@@ -12,7 +14,9 @@ from app.schemas.rfq import (
     RFQRead,
 )
 from app.services.rfq_service import RFQService, qualify_need
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
@@ -166,3 +170,120 @@ async def rate_rfq(
     result = RFQRead.model_validate(rfq)
     result.quotes = await svc._load_quotes(rfq_id)
     return result
+
+
+# ── IA Comparaison devis ───────────────────────────────────────────────────────
+
+
+class CompareDevisResponse(BaseModel):
+    rfq_id: str
+    nb_devis: int
+    rapport: str   # Rapport IA complet en Markdown
+    recommandation: str  # "Devis A" / "Devis B" / etc.
+    cached: bool
+
+
+@router.post("/{rfq_id}/compare-devis", response_model=CompareDevisResponse)
+async def compare_devis(
+    rfq_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """
+    Althy compare les devis reçus pour un appel d'offres et génère un rapport IA détaillé.
+    Analyse : montant, matériaux, main-d'œuvre, délai, fiabilité artisan.
+    Commission Althy : 10 % sur artisans (CLAUDE.md §3.4).
+    """
+    import anthropic
+    from app.core.config import settings
+    from app.services.ai_service import MODEL, _check_rate_limit, _log_usage
+
+    svc = RFQService(db)
+    rfq = await svc.get_rfq(rfq_id, current_user)
+    quotes = await svc._load_quotes(rfq_id)
+
+    if len(quotes) < 2:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Au moins 2 devis requis pour une comparaison.",
+        )
+
+    # Check cache
+    cached_row = (await db.execute(
+        text("SELECT ia_compare_report, ia_compared_at FROM rfqs WHERE id = :id"),
+        {"id": rfq_id},
+    )).fetchone()
+    if cached_row and cached_row[0] and cached_row[1]:
+        return CompareDevisResponse(
+            rfq_id=rfq_id,
+            nb_devis=len(quotes),
+            rapport=cached_row[0],
+            recommandation=_extract_recommandation(cached_row[0]),
+            cached=True,
+        )
+
+    if not _check_rate_limit(str(current_user.id)):
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Limite IA atteinte")
+
+    # Construire le contexte devis
+    devis_lines = []
+    for i, q in enumerate(quotes):
+        label = chr(65 + i)  # A, B, C...
+        devis_lines.append(
+            f"**Devis {label}** — {q.company_name or 'Artisan'}\n"
+            f"  Montant : CHF {q.total_price or '?'}\n"
+            f"  Délai : {q.delivery_days or '?'} jours\n"
+            f"  Description : {q.description or 'Pas de détail'}\n"
+            f"  Note artisan : {q.company_rating or 'N/A'}/5"
+        )
+
+    prompt = f"""Tu es un expert en gestion immobilière suisse. Compare ces devis pour un appel d'offres.
+
+**Appel d'offres :** {rfq.title}
+**Catégorie :** {rfq.category}
+**Description :** {rfq.description or 'Pas de description'}
+
+**Devis reçus :**
+{chr(10).join(devis_lines)}
+
+Génère un rapport de comparaison structuré en Markdown avec :
+1. **Tableau récapitulatif** (montant, délai, note artisan)
+2. **Analyse de chaque devis** (points forts, points faibles, justification du prix)
+3. **Recommandation** — quel devis choisir et POURQUOI en 2-3 phrases claires
+   Format exact : "Recommandation : Devis X car..."
+4. **Alertes** si un devis est anormalement cher ou bas (>30% d'écart)
+
+Sois factuel, précis, et mets en avant le rapport qualité/prix. Maximum 400 mots."""
+
+    client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+    msg = await client.messages.create(
+        model=MODEL,
+        max_tokens=800,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    await _log_usage(db, str(current_user.id), "compare_devis", msg.usage)
+
+    rapport = msg.content[0].text.strip()  # type: ignore[union-attr]
+
+    # Mettre en cache sur le RFQ
+    await db.execute(
+        text("UPDATE rfqs SET ia_compare_report = :r, ia_compared_at = :t WHERE id = :id"),
+        {"r": rapport, "t": datetime.now(UTC), "id": rfq_id},
+    )
+    await db.commit()
+
+    return CompareDevisResponse(
+        rfq_id=rfq_id,
+        nb_devis=len(quotes),
+        rapport=rapport,
+        recommandation=_extract_recommandation(rapport),
+        cached=False,
+    )
+
+
+def _extract_recommandation(rapport: str) -> str:
+    """Extrait la ligne Recommandation du rapport IA."""
+    for line in rapport.splitlines():
+        if "Recommandation" in line and "Devis" in line:
+            return line.strip().lstrip("#").strip()
+    return "Voir le rapport complet"
