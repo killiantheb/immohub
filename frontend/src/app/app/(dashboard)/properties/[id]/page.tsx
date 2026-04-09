@@ -627,9 +627,14 @@ export default function PropertyDetailPage() {
   const [tab, setTab] = useState<Tab>("details");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [favoriteAdded, setFavoriteAdded] = useState(false);
+  const [rentedModal, setRentedModal] = useState(false);
+  const [selectedCrmId, setSelectedCrmId] = useState<string | null>(null);
+  const [extName, setExtName] = useState('');
+  const [extEmail, setExtEmail] = useState('');
+  const { data: overview } = usePropertyOverview(id);
 
   async function addToFavorites() {
-    try { await api.post('/favorites/', { property_id: id }); setFavoriteAdded(true); }
+    try { await api.post('/favorites', { property_id: id }); setFavoriteAdded(true); }
     catch { setFavoriteAdded(true); }
   }
 
@@ -663,60 +668,87 @@ export default function PropertyDetailPage() {
 
   return (
     <div>
-      <Link href="/app/properties" className="mb-6 flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800">
-        <ArrowLeft className="h-4 w-4" /> Biens immobiliers
+      {/* Back */}
+      <Link href="/app/properties" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: T3, textDecoration: 'none', marginBottom: 20, letterSpacing: '0.5px' }}>
+        <ArrowLeft style={{ width: 14, height: 14 }} /> Biens immobiliers
       </Link>
 
       {/* Hero */}
-      <div className="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-        {cover ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={cover.url} alt="" className="h-56 w-full object-cover" />
-        ) : (
-          <div className="flex h-40 items-center justify-center bg-gray-50">
-            <Building2 className="h-16 w-16 text-gray-200" />
-          </div>
-        )}
-        <div className="flex flex-wrap items-start justify-between gap-4 p-5">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-gray-900">
-                {PROPERTY_TYPE_LABELS[property.type as PropertyType] ?? property.type}
-                {property.surface ? ` · ${property.surface} m²` : ""}
-              </h1>
-              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${PROPERTY_STATUS_COLORS[property.status as PropertyStatus]}`}>
-                {PROPERTY_STATUS_LABELS[property.status as PropertyStatus] ?? property.status}
-              </span>
+      <div style={{ marginBottom: 24, borderRadius: 20, overflow: 'hidden', border: `0.5px solid ${O20}`, boxShadow: '0 8px 32px rgba(28,15,6,0.10)' }}>
+        {/* Cover image */}
+        <div style={{ position: 'relative', height: cover ? 280 : 140, background: BG }}>
+          {cover ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={cover.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          ) : (
+            <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+              <Building2 style={{ width: 56, height: 56, color: O20 }} />
             </div>
-            <p className="mt-1 flex items-center gap-1 text-gray-500">
-              <MapPin className="h-4 w-4 shrink-0" />
-              {property.address}, {property.zip_code} {property.city}
-            </p>
-            {property.monthly_rent && (
-              <p className="mt-1 text-sm font-medium" style={{ color: O }}>
-                CHF {Number(property.monthly_rent).toLocaleString('fr-CH')} / mois
+          )}
+          {cover && <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 35%, rgba(28,15,6,0.72))' }} />}
+          {/* Status badge */}
+          <span style={{ position: 'absolute', top: 16, right: 16, fontSize: 10, letterSpacing: '1.5px', padding: '4px 12px', borderRadius: 20, background: 'rgba(255,255,255,0.92)', color: T, fontWeight: 500, textTransform: 'uppercase' }}>
+            {PROPERTY_STATUS_LABELS[property.status as PropertyStatus] ?? property.status}
+          </span>
+          {/* Title overlay (on image) */}
+          {cover && (
+            <div style={{ position: 'absolute', bottom: 20, left: 24, right: 24 }}>
+              <h1 style={{ fontFamily: 'var(--font-serif),serif', fontSize: 26, fontWeight: 400, color: '#fff', lineHeight: 1.2, margin: 0 }}>
+                {PROPERTY_TYPE_LABELS[property.type as PropertyType] ?? property.type}
+                {property.surface ? ` · ${property.surface} m²` : ''}
+              </h1>
+              <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12, marginTop: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <MapPin style={{ width: 11, height: 11, flexShrink: 0 }} />
+                {property.address}, {property.zip_code} {property.city}
               </p>
+            </div>
+          )}
+        </div>
+
+        {/* Info bar */}
+        <div style={{ background: '#fff', padding: '16px 24px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16, justifyContent: 'space-between' }}>
+          <div>
+            {!cover && (
+              <>
+                <h1 style={{ fontFamily: 'var(--font-serif),serif', fontSize: 22, fontWeight: 400, color: T, marginBottom: 2 }}>
+                  {PROPERTY_TYPE_LABELS[property.type as PropertyType] ?? property.type}
+                  {property.surface ? ` · ${property.surface} m²` : ''}
+                </h1>
+                <p style={{ color: T3, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                  <MapPin style={{ width: 11, height: 11 }} />{property.address}, {property.zip_code} {property.city}
+                </p>
+              </>
             )}
+            {property.monthly_rent ? (
+              <p style={{ fontFamily: 'var(--font-serif),serif', fontSize: 22, fontWeight: 300, color: O, margin: 0 }}>
+                CHF {Number(property.monthly_rent).toLocaleString('fr-CH')} <span style={{ fontSize: 12, fontFamily: 'inherit', fontWeight: 400 }}>/ mois</span>
+              </p>
+            ) : property.price_sale ? (
+              <p style={{ fontFamily: 'var(--font-serif),serif', fontSize: 22, fontWeight: 300, color: O, margin: 0 }}>
+                CHF {Number(property.price_sale).toLocaleString('fr-CH')}
+              </p>
+            ) : null}
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <DocumentQuickGenerator label="Fiche PDF" icon="🏠" templateType="fiche_bien" propertyId={id} variant="primary" />
             <DocumentQuickGenerator label="Demande pièces" icon="📋" propertyId={id} smartPieces variant="outline" />
-            <button onClick={addToFavorites} title={favoriteAdded ? "Ajouté aux favoris" : "Ajouter aux favoris"}
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">
-              <Star className={`h-4 w-4 ${favoriteAdded ? "fill-orange-400 text-orange-400" : ""}`} />
-              {favoriteAdded ? "Favori" : "Favoris"}
+            <button onClick={addToFavorites}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, border: `0.5px solid ${favoriteAdded ? O : O20}`, background: favoriteAdded ? O10 : 'transparent', color: favoriteAdded ? O : T3, cursor: 'pointer', fontSize: 12, fontFamily: 'inherit' }}>
+              <Star style={{ width: 13, height: 13, fill: favoriteAdded ? O : 'none', stroke: favoriteAdded ? O : 'currentColor' }} />
+              {favoriteAdded ? 'Favori' : 'Favoris'}
             </button>
             {confirmDelete ? (
               <>
-                <button onClick={async () => { await deleteProperty.mutateAsync(id); router.push("/app/properties"); }}
-                  className="btn-danger flex items-center gap-1" disabled={deleteProperty.isPending}>
-                  {deleteProperty.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />} Confirmer
+                <button onClick={async () => { await deleteProperty.mutateAsync(id); router.push('/app/properties'); }}
+                  disabled={deleteProperty.isPending}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, border: '0.5px solid rgba(163,45,45,0.35)', background: 'rgba(163,45,45,0.07)', color: '#A32D2D', cursor: 'pointer', fontSize: 12, fontFamily: 'inherit' }}>
+                  {deleteProperty.isPending ? <Loader2 style={{ width: 13, height: 13 }} className="animate-spin" /> : <Trash2 style={{ width: 13, height: 13 }} />} Confirmer
                 </button>
-                <button onClick={() => setConfirmDelete(false)} className="btn-secondary">Annuler</button>
+                <button onClick={() => setConfirmDelete(false)} style={{ padding: '7px 14px', borderRadius: 10, border: `0.5px solid ${O20}`, background: 'transparent', color: T3, cursor: 'pointer', fontSize: 12, fontFamily: 'inherit' }}>Annuler</button>
               </>
             ) : (
-              <button onClick={() => setConfirmDelete(true)} className="btn-secondary flex items-center gap-1 text-red-600 hover:border-red-300">
-                <Trash2 className="h-4 w-4" /> Supprimer
+              <button onClick={() => setConfirmDelete(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, border: '0.5px solid rgba(163,45,45,0.2)', background: 'transparent', color: '#A32D2D', cursor: 'pointer', fontSize: 12, fontFamily: 'inherit' }}>
+                <Trash2 style={{ width: 13, height: 13 }} /> Supprimer
               </button>
             )}
           </div>
@@ -724,10 +756,18 @@ export default function PropertyDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 flex gap-1 border-b border-gray-200 overflow-x-auto">
+      <div style={{ marginBottom: 24, display: 'flex', gap: 2, overflowX: 'auto', borderBottom: `0.5px solid ${O20}` }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${tab === t.id ? "border-b-2 border-primary-600 text-primary-600" : "text-gray-500 hover:text-gray-800"}`}>
+            style={{
+              padding: '9px 16px', fontSize: 12, fontFamily: 'inherit', background: 'transparent', border: 'none',
+              cursor: 'pointer', whiteSpace: 'nowrap', marginBottom: -1,
+              color: tab === t.id ? O : T3,
+              borderBottom: tab === t.id ? `2px solid ${O}` : '2px solid transparent',
+              fontWeight: tab === t.id ? 500 : 400,
+              letterSpacing: tab === t.id ? '0.3px' : 0,
+              transition: 'all 0.15s',
+            }}>
             {t.label}
           </button>
         ))}
@@ -735,10 +775,11 @@ export default function PropertyDetailPage() {
 
       {/* Tab content */}
       {tab === "details" && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="space-y-6 lg:col-span-2">
-            <div className="card">
-              <h2 className="mb-4 text-base font-semibold text-gray-900">Informations générales</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Informations générales */}
+            <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: `0.5px solid ${O20}`, boxShadow: '0 2px 12px rgba(28,15,6,0.05)' }}>
+              <p style={{ fontSize: 10, letterSpacing: '1.8px', textTransform: 'uppercase', color: T3, marginBottom: 16 }}>Informations générales</p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <EditableField label="Surface (m²)" value={property.surface} onSave={saveNum("surface")} type="number" />
                 <EditableField label="Pièces" value={property.rooms} onSave={saveNum("rooms")} type="number" />
@@ -748,8 +789,9 @@ export default function PropertyDetailPage() {
                 <EditableField label="Code postal" value={property.zip_code} onSave={save("zip_code")} />
               </div>
             </div>
-            <div className="card">
-              <h2 className="mb-4 text-base font-semibold text-gray-900">Finances</h2>
+            {/* Finances */}
+            <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: `0.5px solid ${O20}`, boxShadow: '0 2px 12px rgba(28,15,6,0.05)' }}>
+              <p style={{ fontSize: 10, letterSpacing: '1.8px', textTransform: 'uppercase', color: T3, marginBottom: 16 }}>Finances</p>
               <div className="grid grid-cols-2 gap-3">
                 <EditableField label="Loyer mensuel (CHF)" value={property.monthly_rent} onSave={saveNum("monthly_rent")} type="number" />
                 <EditableField label="Charges (CHF/mois)" value={property.charges} onSave={saveNum("charges")} type="number" />
@@ -757,48 +799,65 @@ export default function PropertyDetailPage() {
                 <EditableField label="Prix de vente (CHF)" value={property.price_sale} onSave={saveNum("price_sale")} type="number" />
               </div>
             </div>
-            <div className="card">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-base font-semibold text-gray-900">Description</h2>
+            {/* Description */}
+            <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: `0.5px solid ${O20}`, boxShadow: '0 2px 12px rgba(28,15,6,0.05)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <p style={{ fontSize: 10, letterSpacing: '1.8px', textTransform: 'uppercase', color: T3 }}>Description</p>
                 <button onClick={() => generateDesc.mutate()} disabled={generateDesc.isPending}
-                  className="btn-secondary flex items-center gap-1.5 text-xs">
-                  {generateDesc.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-amber-500" />}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 8, border: `0.5px solid ${O20}`, background: 'transparent', color: T3, cursor: 'pointer', fontSize: 11, fontFamily: 'inherit' }}>
+                  {generateDesc.isPending ? <Loader2 style={{ width: 12, height: 12 }} className="animate-spin" /> : <Sparkles style={{ width: 12, height: 12, color: '#D4A017' }} />}
                   Générer avec l'IA
                 </button>
               </div>
               <EditableField label="Description" value={property.description} onSave={save("description")} type="textarea" />
             </div>
           </div>
-          <div className="space-y-6">
-            <div className="card">
-              <h2 className="mb-4 text-base font-semibold text-gray-900">Options</h2>
-              <ul className="space-y-2 text-sm">
+
+          {/* Sidebar */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Options */}
+            <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: `0.5px solid ${O20}`, boxShadow: '0 2px 12px rgba(28,15,6,0.05)' }}>
+              <p style={{ fontSize: 10, letterSpacing: '1.8px', textTransform: 'uppercase', color: T3, marginBottom: 16 }}>Options</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
                   { key: "is_furnished", label: "Meublé", value: property.is_furnished },
                   { key: "has_parking", label: "Parking", value: property.has_parking },
                   { key: "pets_allowed", label: "Animaux acceptés", value: property.pets_allowed },
+                  { key: "has_balcony", label: "Balcon", value: (property as any).has_balcony },
+                  { key: "has_terrace", label: "Terrasse", value: (property as any).has_terrace },
+                  { key: "has_garden", label: "Jardin", value: (property as any).has_garden },
                 ].map(({ key, label, value }) => (
-                  <li key={key} className="flex items-center justify-between">
-                    <span className="text-gray-600">{label}</span>
+                  <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 13, color: T5 }}>{label}</span>
                     <button onClick={() => update.mutate({ [key]: !value })}
-                      className={`rounded-full px-3 py-0.5 text-xs font-medium ${value ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                      {value ? "Oui" : "Non"}
+                      style={{ fontSize: 10, padding: '3px 12px', borderRadius: 20, border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: value ? 'rgba(59,109,17,0.10)' : O10, color: value ? '#3B6D11' : T3 }}>
+                      {value ? 'Oui' : 'Non'}
                     </button>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
-            <div className="card">
-              <h2 className="mb-3 text-base font-semibold text-gray-900">Statut</h2>
-              <select value={property.status} onChange={e => update.mutate({ status: e.target.value as PropertyStatus })} className="input w-full">
+            {/* Statut */}
+            <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: `0.5px solid ${O20}`, boxShadow: '0 2px 12px rgba(28,15,6,0.05)' }}>
+              <p style={{ fontSize: 10, letterSpacing: '1.8px', textTransform: 'uppercase', color: T3, marginBottom: 14 }}>Statut du bien</p>
+              <select
+                value={property.status}
+                onChange={e => {
+                  const s = e.target.value as PropertyStatus;
+                  if (s === 'rented') { setRentedModal(true); }
+                  else { update.mutate({ status: s }); }
+                }}
+                style={{ width: '100%', padding: '9px 13px', border: `0.5px solid ${O20}`, borderRadius: 10, fontSize: 13, color: T, background: BG, outline: 'none', fontFamily: 'inherit', cursor: 'pointer' }}
+              >
                 {(["available", "rented", "for_sale", "sold", "maintenance"] as PropertyStatus[]).map(s => (
                   <option key={s} value={s}>{PROPERTY_STATUS_LABELS[s]}</option>
                 ))}
               </select>
             </div>
-            <div className="card text-xs text-gray-400 space-y-1">
-              <p>Créé le {new Date(property.created_at).toLocaleDateString("fr-FR")}</p>
-              <p>Modifié le {new Date(property.updated_at).toLocaleDateString("fr-FR")}</p>
+            {/* Meta */}
+            <div style={{ background: '#fff', borderRadius: 16, padding: '16px 24px', border: `0.5px solid ${O20}` }}>
+              <p style={{ fontSize: 11, color: T3, marginBottom: 4 }}>Créé le {new Date(property.created_at).toLocaleDateString('fr-CH', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              <p style={{ fontSize: 11, color: T3 }}>Modifié le {new Date(property.updated_at).toLocaleDateString('fr-CH', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
             </div>
           </div>
         </div>
@@ -814,6 +873,94 @@ export default function PropertyDetailPage() {
       <div style={{ marginTop: '2rem' }}>
         <RatingWidget entityType="property" entityId={id} title="Avis sur ce bien" />
       </div>
+
+      {/* ── Rented modal ──────────────────────────────────────────────────────── */}
+      {rentedModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(28,15,6,0.50)', backdropFilter: 'blur(6px)' }}
+          onClick={e => { if (e.target === e.currentTarget) { setRentedModal(false); setExtName(''); setExtEmail(''); setSelectedCrmId(null); } }}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: 32, width: '90%', maxWidth: 480, boxShadow: '0 24px 64px rgba(28,15,6,0.20)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h2 style={{ fontFamily: 'var(--font-serif),serif', fontSize: 22, fontWeight: 400, color: T, marginBottom: 6 }}>
+              Qui est le locataire ?
+            </h2>
+            <p style={{ fontSize: 13, color: T3, marginBottom: 24, lineHeight: 1.5 }}>
+              Choisissez un contact CRM existant ou saisissez un locataire externe.
+            </p>
+
+            {/* CRM contacts */}
+            {(overview?.crm_contacts?.length ?? 0) > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <p style={{ fontSize: 10, letterSpacing: '1.8px', textTransform: 'uppercase', color: T3, marginBottom: 10 }}>Contacts CRM</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
+                  {overview!.crm_contacts.map(c => (
+                    <button key={c.id}
+                      onClick={() => setSelectedCrmId(c.id === selectedCrmId ? null : c.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                        borderRadius: 12, border: `0.5px solid ${selectedCrmId === c.id ? O : O20}`,
+                        background: selectedCrmId === c.id ? O10 : 'transparent',
+                        cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'all 0.15s',
+                      }}>
+                      <div style={{ width: 34, height: 34, borderRadius: '50%', background: O10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 500, color: O, flexShrink: 0 }}>
+                        {(c.first_name?.[0] ?? '') + (c.last_name?.[0] ?? '')}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: T }}>{c.first_name} {c.last_name}</div>
+                        <div style={{ fontSize: 11, color: T3 }}>{c.email ?? c.phone ?? '—'}</div>
+                      </div>
+                      {selectedCrmId === c.id && <span style={{ color: O, fontSize: 16, flexShrink: 0 }}>✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <div style={{ flex: 1, height: '0.5px', background: O20 }} />
+              <span style={{ fontSize: 11, color: T3, whiteSpace: 'nowrap' }}>ou locataire externe</span>
+              <div style={{ flex: 1, height: '0.5px', background: O20 }} />
+            </div>
+
+            {/* External tenant fields */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
+              <input
+                placeholder="Nom complet"
+                value={extName}
+                onChange={e => { setExtName(e.target.value); if (e.target.value) setSelectedCrmId(null); }}
+                style={{ padding: '9px 13px', border: `0.5px solid ${O20}`, borderRadius: 10, fontSize: 13, color: T, outline: 'none', fontFamily: 'inherit', background: BG }}
+              />
+              <input
+                placeholder="Email (optionnel)"
+                value={extEmail}
+                onChange={e => setExtEmail(e.target.value)}
+                style={{ padding: '9px 13px', border: `0.5px solid ${O20}`, borderRadius: 10, fontSize: 13, color: T, outline: 'none', fontFamily: 'inherit', background: BG }}
+              />
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => {
+                  update.mutate({ status: 'rented' });
+                  setRentedModal(false);
+                  setExtName('');
+                  setExtEmail('');
+                  setSelectedCrmId(null);
+                }}
+                style={{ flex: 1, padding: '11px 18px', borderRadius: 12, border: 'none', background: O, color: '#fff', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500 }}
+              >
+                Confirmer — Marquer loué
+              </button>
+              <button
+                onClick={() => { setRentedModal(false); setExtName(''); setExtEmail(''); setSelectedCrmId(null); }}
+                style={{ padding: '11px 16px', borderRadius: 12, border: `0.5px solid ${O20}`, background: 'transparent', color: T3, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

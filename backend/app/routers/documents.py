@@ -69,32 +69,49 @@ def _wrap_html(body: str, agency: dict, title: str) -> str:
 <meta charset="UTF-8"/>
 <title>{title}</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap');
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  body {{ font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 12px; color: #1a1a1a; background: #fff; }}
-  .page {{ max-width: 780px; margin: 0 auto; padding: 30px 40px; }}
-  .header {{ display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #D4601A; padding-bottom: 12px; margin-bottom: 20px; }}
-  .agency-info {{ font-size: 11px; color: #555; text-align: right; line-height: 1.6; }}
-  h1 {{ font-size: 16px; font-weight: 700; text-align: center; background: #1a1a1a; color: #fff; padding: 8px 16px; margin: 16px 0; letter-spacing: 0.5px; }}
-  h2 {{ font-size: 12px; font-weight: 700; text-align: center; background: #D4601A; color: #fff; padding: 5px 12px; margin: 14px 0 6px; }}
-  h3 {{ font-size: 11px; font-weight: 700; color: #D4601A; margin: 10px 0 4px; text-decoration: underline; }}
-  table.info {{ width: 100%; border-collapse: collapse; margin: 6px 0; }}
-  table.info td {{ padding: 3px 6px; vertical-align: top; font-size: 11px; }}
-  table.info td:first-child {{ font-weight: 600; width: 160px; white-space: nowrap; }}
-  table.bank {{ width: 100%; border-collapse: collapse; margin: 6px 0; border: 1px solid #ddd; }}
-  table.bank td {{ padding: 4px 8px; border: 1px solid #ddd; font-size: 11px; }}
-  table.bank td:first-child {{ background: #f5f5f5; font-weight: 600; width: 140px; }}
-  ul.clauses {{ margin: 6px 0 6px 18px; }}
-  ul.clauses li {{ margin-bottom: 3px; font-size: 11px; line-height: 1.5; }}
-  p {{ margin: 6px 0; line-height: 1.6; font-size: 11px; }}
-  .important {{ font-weight: 700; color: #D4601A; margin: 8px 0 4px; }}
-  .signature-block {{ display: flex; justify-content: space-between; margin-top: 24px; }}
-  .signature-line {{ width: 44%; border-top: 1px solid #333; padding-top: 4px; font-size: 11px; }}
-  .footer {{ margin-top: 20px; padding-top: 8px; border-top: 1px solid #eee; font-size: 10px; color: #888; text-align: center; }}
-  @media print {{ body {{ print-color-adjust: exact; }} }}
+  body {{ font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; font-size: 11.5px; color: #1C0F06; background: #fff; }}
+  .page {{ max-width: 760px; margin: 0 auto; padding: 0 40px 36px; }}
+  /* Top accent bar */
+  .top-bar {{ height: 3px; background: #D4601A; margin: 0 -40px 32px; }}
+  /* Header */
+  .header {{ display: flex; align-items: flex-start; justify-content: space-between; padding-bottom: 20px; margin-bottom: 28px; border-bottom: 0.5px solid rgba(212,96,26,0.25); }}
+  .agency-info {{ font-size: 10px; color: #8C6E5A; text-align: right; line-height: 1.8; }}
+  /* Title */
+  h1 {{ font-family: 'Cormorant Garamond', 'Times New Roman', serif; font-size: 20px; font-weight: 400; text-align: center; color: #1C0F06; margin: 18px 0 4px; letter-spacing: 1.5px; text-transform: uppercase; }}
+  .doc-ref {{ text-align: center; font-size: 9.5px; color: #8C6E5A; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 24px; }}
+  /* Section headers */
+  h2 {{ font-size: 8.5px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #D4601A; padding: 0; margin: 20px 0 2px; }}
+  h2::after {{ content: ''; display: block; width: 40px; height: 1px; background: #D4601A; margin-top: 4px; margin-bottom: 8px; }}
+  h3 {{ font-size: 10px; font-weight: 600; color: #1C0F06; margin: 10px 0 4px; }}
+  /* Info tables */
+  table.info {{ width: 100%; border-collapse: collapse; margin: 4px 0 10px; }}
+  table.info tr:nth-child(odd) td {{ background: #FAF5EB; }}
+  table.info td {{ padding: 5px 8px; vertical-align: top; font-size: 10.5px; border: none; }}
+  table.info td:first-child {{ font-weight: 500; color: #8C6E5A; width: 150px; white-space: nowrap; }}
+  table.info td:last-child {{ color: #1C0F06; font-weight: 500; }}
+  /* Bank/financial tables */
+  table.bank {{ width: 100%; border-collapse: collapse; margin: 8px 0; border: 0.5px solid rgba(212,96,26,0.2); border-radius: 8px; overflow: hidden; }}
+  table.bank td {{ padding: 5px 10px; font-size: 10.5px; border: 0.5px solid rgba(212,96,26,0.12); }}
+  table.bank td:first-child {{ background: #FAF5EB; font-weight: 500; color: #8C6E5A; width: 150px; }}
+  /* Lists */
+  ul.clauses {{ margin: 6px 0 8px 16px; }}
+  ul.clauses li {{ margin-bottom: 4px; font-size: 10.5px; line-height: 1.6; color: #3A2010; }}
+  /* Paragraphs */
+  p {{ margin: 6px 0; line-height: 1.7; font-size: 10.5px; color: #3A2010; }}
+  .important {{ font-weight: 600; color: #D4601A; font-size: 11px; margin: 10px 0 5px; }}
+  /* Signature */
+  .signature-block {{ display: flex; justify-content: space-between; margin-top: 32px; gap: 24px; }}
+  .signature-line {{ flex: 1; border-top: 0.5px solid #8C6E5A; padding-top: 6px; font-size: 10px; color: #8C6E5A; }}
+  /* Footer */
+  .footer {{ margin-top: 28px; padding-top: 10px; border-top: 0.5px solid rgba(212,96,26,0.2); font-size: 9px; color: #8C6E5A; text-align: center; letter-spacing: 0.3px; }}
+  @media print {{ body {{ print-color-adjust: exact; -webkit-print-color-adjust: exact; }} }}
 </style>
 </head>
 <body>
 <div class="page">
+  <div class="top-bar"></div>
   <div class="header">
     {logo_html}
     <div class="agency-info">
@@ -107,7 +124,7 @@ def _wrap_html(body: str, agency: dict, title: str) -> str:
   {body}
   {DISCLAIMER_FR}
   <div class="footer">
-    Document généré le {datetime.now().strftime('%d.%m.%Y')} • {agency['name']} • {agency.get('website', 'althy.ch')}
+    Document généré le {datetime.now().strftime('%d.%m.%Y')}&nbsp;&nbsp;·&nbsp;&nbsp;{agency['name']}&nbsp;&nbsp;·&nbsp;&nbsp;{agency.get('website', 'althy.ch')}
   </div>
 </div>
 </body>

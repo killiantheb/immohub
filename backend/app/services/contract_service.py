@@ -268,53 +268,104 @@ Signé le: {contract.signed_at.strftime("%d/%m/%Y %H:%M") if contract.signed_at 
         # Wrap in minimal valid PDF bytes (not a real PDF, but won't crash)
         return content.encode()
 
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
+    # ── Luxury light PDF ──────────────────────────────────────────────────────
+    # Palette
+    OR, OG, OB = 212, 96, 26          # terracotta orange
+    TOR, TOG, TOB = 28, 15, 6          # near-black brown
+    T3R, T3G, T3B = 140, 110, 90       # muted brown
+    BGr, BGg, BGb = 250, 245, 235      # warm cream
+    LR, LG, LB = 230, 220, 208         # light line color
+
+    pdf = FPDF(format="A4")
+    pdf.set_margins(22, 22, 22)
+    pdf.set_auto_page_break(auto=True, margin=22)
     pdf.add_page()
-    pdf.set_font("Helvetica", "B", 20)
-    pdf.cell(0, 12, "CONTRAT IMMOBILIER", align="C", new_x="LMARGIN", new_y="NEXT")
-    pdf.set_font("Helvetica", "", 11)
-    pdf.cell(0, 8, f"Référence : {contract.reference}", new_x="LMARGIN", new_y="NEXT")
-    pdf.ln(4)
+
+    # ── Top accent bar ────────────────────────────────────────────────────────
+    pdf.set_fill_color(OR, OG, OB)
+    pdf.rect(0, 0, 210, 3, style="F")
+
+    # ── Header ────────────────────────────────────────────────────────────────
+    pdf.ln(8)
+    pdf.set_font("Times", "B", 22)
+    pdf.set_text_color(TOR, TOG, TOB)
+    pdf.cell(0, 10, "CONTRAT IMMOBILIER", align="C", new_x="LMARGIN", new_y="NEXT")
+
+    pdf.set_font("Helvetica", "", 9)
+    pdf.set_text_color(T3R, T3G, T3B)
+    pdf.cell(0, 6, f"Référence  {contract.reference}", align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(3)
+
+    # Thin divider
+    pdf.set_draw_color(LR, LG, LB)
+    pdf.set_line_width(0.3)
+    pdf.line(22, pdf.get_y(), 188, pdf.get_y())
+    pdf.ln(10)
 
     def section(title: str) -> None:
-        pdf.set_font("Helvetica", "B", 12)
-        pdf.set_fill_color(240, 240, 240)
-        pdf.cell(0, 8, title, fill=True, new_x="LMARGIN", new_y="NEXT")
-        pdf.set_font("Helvetica", "", 11)
-        pdf.ln(2)
+        """Luxury section header — small caps style, orange underline."""
+        pdf.set_font("Helvetica", "B", 8)
+        pdf.set_text_color(OR, OG, OB)
+        pdf.cell(0, 5, title.upper(), new_x="LMARGIN", new_y="NEXT")
+        # thin orange accent line
+        y = pdf.get_y()
+        pdf.set_draw_color(OR, OG, OB)
+        pdf.set_line_width(0.4)
+        pdf.line(22, y, 80, y)
+        pdf.set_draw_color(LR, LG, LB)
+        pdf.set_line_width(0.3)
+        pdf.ln(6)
 
     def row(label: str, value: str) -> None:
-        pdf.set_font("Helvetica", "B", 10)
-        pdf.cell(60, 7, label + " :")
-        pdf.set_font("Helvetica", "", 10)
+        y0 = pdf.get_y()
+        # subtle alternating row bg
+        pdf.set_fill_color(BGr, BGg, BGb)
+        pdf.set_draw_color(BGr, BGg, BGb)
+        pdf.rect(22, y0, 166, 7, style="F")
+        # label
+        pdf.set_font("Helvetica", "", 9)
+        pdf.set_text_color(T3R, T3G, T3B)
+        pdf.set_xy(22, y0)
+        pdf.cell(58, 7, label)
+        # value
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.set_text_color(TOR, TOG, TOB)
         pdf.cell(0, 7, value, new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(1)
 
     section("Informations générales")
-    row("Type", _CONTRACT_TYPE_FR.get(contract.type, contract.type))
+    row("Type de contrat", _CONTRACT_TYPE_FR.get(contract.type, contract.type))
     row("Statut", _CONTRACT_STATUS_FR.get(contract.status, contract.status))
     row("Date de début", contract.start_date.strftime("%d/%m/%Y") if contract.start_date else "—")
     row(
         "Date de fin",
         contract.end_date.strftime("%d/%m/%Y") if contract.end_date else "Indéterminée",
     )
-    pdf.ln(4)
-
-    section("Conditions financières")
-    row("Loyer mensuel", f"{float(contract.monthly_rent):.2f} €" if contract.monthly_rent else "—")
-    row("Charges", f"{float(contract.charges):.2f} €" if contract.charges else "—")
-    row("Dépôt de garantie", f"{float(contract.deposit):.2f} €" if contract.deposit else "—")
-    pdf.ln(4)
-
-    section("Signature")
-    if contract.signed_at:
-        row("Signé le", contract.signed_at.strftime("%d/%m/%Y à %H:%M"))
-        row("Adresse IP", contract.signed_ip or "—")
-    else:
-        pdf.cell(0, 7, "Non signé", new_x="LMARGIN", new_y="NEXT")
     pdf.ln(8)
 
-    pdf.set_font("Helvetica", "I", 8)
-    pdf.cell(0, 5, "Document généré automatiquement par CATHY", align="C")
+    section("Conditions financières")
+    row("Loyer mensuel", f"{float(contract.monthly_rent):,.2f} CHF" if contract.monthly_rent else "—")
+    row("Charges", f"{float(contract.charges):,.2f} CHF" if contract.charges else "—")
+    row("Dépôt de garantie", f"{float(contract.deposit):,.2f} CHF" if contract.deposit else "—")
+    pdf.ln(8)
+
+    section("Signature électronique")
+    if contract.signed_at:
+        row("Signé le", contract.signed_at.strftime("%d %B %Y à %H:%M UTC"))
+        row("Adresse IP", contract.signed_ip or "—")
+    else:
+        pdf.set_font("Helvetica", "I", 9)
+        pdf.set_text_color(T3R, T3G, T3B)
+        pdf.cell(0, 7, "Document en attente de signature", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(16)
+
+    # ── Footer ─────────────────────────────────────────────────────────────────
+    pdf.set_draw_color(LR, LG, LB)
+    pdf.set_line_width(0.3)
+    pdf.line(22, pdf.get_y(), 188, pdf.get_y())
+    pdf.ln(4)
+    pdf.set_font("Helvetica", "", 7.5)
+    pdf.set_text_color(T3R, T3G, T3B)
+    pdf.cell(0, 5, "Document généré automatiquement — Althy  ·  althy.ch", align="C")
 
     return pdf.output()
