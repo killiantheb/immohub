@@ -79,6 +79,12 @@ def _decode_token(token: str) -> dict:
             detail=f"Invalid token: {exc}",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token verification failed",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
 
 
 # ── primary dependency ────────────────────────────────────────────────────────

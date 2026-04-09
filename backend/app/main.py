@@ -36,6 +36,7 @@ from app.routers.smart_onboarding import router as smart_onboarding_router
 from app.routers.tenants import router as tenants_router
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
@@ -87,6 +88,11 @@ app.add_middleware(
 
 # ── Proxy headers (Railway terminates TLS; trust X-Forwarded-Proto) ───────────
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+
+# ── Global exception handler — ensures 500s also carry CORS headers ───────────
+@app.exception_handler(Exception)
+async def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 # ── Security headers ──────────────────────────────────────────────────────────
 @app.middleware("http")
