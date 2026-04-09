@@ -223,8 +223,36 @@ class ContractService:
     # ── PDF ───────────────────────────────────────────────────────────────────
 
     async def generate_pdf(self, contract_id: str, current_user: User) -> Response:
+        from app.models.property import PropertyImage
+        from sqlalchemy import select as _select, and_ as _and_
+
         contract = await self._get_or_404(contract_id, current_user)
-        pdf_bytes = _build_pdf(contract)
+
+        # Load cover image for this property
+        cover_url: str | None = None
+        if contract.property_id:
+            img_res = await self.db.execute(
+                _select(PropertyImage)
+                .where(_and_(
+                    PropertyImage.property_id == contract.property_id,
+                    PropertyImage.is_cover.is_(True),
+                ))
+                .limit(1)
+            )
+            cover_img = img_res.scalar_one_or_none()
+            if not cover_img:
+                # Fallback: first image
+                img_res = await self.db.execute(
+                    _select(PropertyImage)
+                    .where(PropertyImage.property_id == contract.property_id)
+                    .order_by(PropertyImage.order)
+                    .limit(1)
+                )
+                cover_img = img_res.scalar_one_or_none()
+            if cover_img:
+                cover_url = cover_img.url
+
+        pdf_bytes = _build_pdf(contract, cover_url=cover_url)
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
@@ -250,7 +278,7 @@ _CONTRACT_STATUS_FR = {
 }
 
 
-def _build_pdf(contract: Contract) -> bytes:
+def _build_pdf(contract: Contract, cover_url: str | None = None) -> bytes:
     try:
         from fpdf import FPDF
     except ImportError:
@@ -284,6 +312,19 @@ Signé le: {contract.signed_at.strftime("%d/%m/%Y %H:%M") if contract.signed_at 
     # ── Top accent bar ────────────────────────────────────────────────────────
     pdf.set_fill_color(OR, OG, OB)
     pdf.rect(0, 0, 210, 3, style="F")
+
+    # ── Cover photo ───────────────────────────────────────────────────────────
+    if cover_url:
+        try:
+            import httpx as _httpx, io as _io
+            r = _httpx.get(cover_url, timeout=5, follow_redirects=True)
+            if r.status_code == 200:
+                img_bytes = _io.BytesIO(r.content)
+                page_w = 210 - 44  # A4 minus margins
+                pdf.image(img_bytes, x=22, y=pdf.get_y(), w=page_w, h=55)
+                pdf.ln(60)
+        except Exception:
+            pass  # image unavailable — skip gracefully
 
     # ── Header ────────────────────────────────────────────────────────────────
     pdf.ln(8)

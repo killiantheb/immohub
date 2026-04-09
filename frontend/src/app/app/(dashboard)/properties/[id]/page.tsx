@@ -632,6 +632,15 @@ export default function PropertyDetailPage() {
   const [extName, setExtName] = useState('');
   const [extEmail, setExtEmail] = useState('');
   const { data: overview } = usePropertyOverview(id);
+  const { data: allCrmContacts } = useQuery({
+    queryKey: ['crm', 'contacts', 'all'],
+    queryFn: async () => {
+      const { data } = await api.get('/crm/contacts');
+      return data as Array<{ id: string; first_name: string | null; last_name: string | null; email: string | null; phone: string | null; status: string }>;
+    },
+    enabled: rentedModal,
+    staleTime: 60_000,
+  });
 
   async function addToFavorites() {
     try { await api.post('/favorites', { property_id: id }); setFavoriteAdded(true); }
@@ -762,7 +771,7 @@ export default function PropertyDetailPage() {
             style={{
               padding: '9px 16px', fontSize: 12, fontFamily: 'inherit', background: 'transparent', border: 'none',
               cursor: 'pointer', whiteSpace: 'nowrap', marginBottom: -1,
-              color: tab === t.id ? O : T3,
+              color: tab === t.id ? O : T5,
               borderBottom: tab === t.id ? `2px solid ${O}` : '2px solid transparent',
               fontWeight: tab === t.id ? 500 : 400,
               letterSpacing: tab === t.id ? '0.3px' : 0,
@@ -779,7 +788,7 @@ export default function PropertyDetailPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Informations générales */}
             <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: `0.5px solid ${O20}`, boxShadow: '0 2px 12px rgba(28,15,6,0.05)' }}>
-              <p style={{ fontSize: 10, letterSpacing: '1.8px', textTransform: 'uppercase', color: T3, marginBottom: 16 }}>Informations générales</p>
+              <p style={{ fontSize: 10, letterSpacing: '1.8px', textTransform: 'uppercase', color: T5, marginBottom: 16 }}>Informations générales</p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <EditableField label="Surface (m²)" value={property.surface} onSave={saveNum("surface")} type="number" />
                 <EditableField label="Pièces" value={property.rooms} onSave={saveNum("rooms")} type="number" />
@@ -791,7 +800,7 @@ export default function PropertyDetailPage() {
             </div>
             {/* Finances */}
             <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: `0.5px solid ${O20}`, boxShadow: '0 2px 12px rgba(28,15,6,0.05)' }}>
-              <p style={{ fontSize: 10, letterSpacing: '1.8px', textTransform: 'uppercase', color: T3, marginBottom: 16 }}>Finances</p>
+              <p style={{ fontSize: 10, letterSpacing: '1.8px', textTransform: 'uppercase', color: T5, marginBottom: 16 }}>Finances</p>
               <div className="grid grid-cols-2 gap-3">
                 <EditableField label="Loyer mensuel (CHF)" value={property.monthly_rent} onSave={saveNum("monthly_rent")} type="number" />
                 <EditableField label="Charges (CHF/mois)" value={property.charges} onSave={saveNum("charges")} type="number" />
@@ -817,7 +826,7 @@ export default function PropertyDetailPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Options */}
             <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: `0.5px solid ${O20}`, boxShadow: '0 2px 12px rgba(28,15,6,0.05)' }}>
-              <p style={{ fontSize: 10, letterSpacing: '1.8px', textTransform: 'uppercase', color: T3, marginBottom: 16 }}>Options</p>
+              <p style={{ fontSize: 10, letterSpacing: '1.8px', textTransform: 'uppercase', color: T5, marginBottom: 16 }}>Options</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
                   { key: "is_furnished", label: "Meublé", value: property.is_furnished },
@@ -839,7 +848,7 @@ export default function PropertyDetailPage() {
             </div>
             {/* Statut */}
             <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: `0.5px solid ${O20}`, boxShadow: '0 2px 12px rgba(28,15,6,0.05)' }}>
-              <p style={{ fontSize: 10, letterSpacing: '1.8px', textTransform: 'uppercase', color: T3, marginBottom: 14 }}>Statut du bien</p>
+              <p style={{ fontSize: 10, letterSpacing: '1.8px', textTransform: 'uppercase', color: T5, marginBottom: 14 }}>Statut du bien</p>
               <select
                 value={property.status}
                 onChange={e => {
@@ -887,11 +896,11 @@ export default function PropertyDetailPage() {
             </p>
 
             {/* CRM contacts */}
-            {(overview?.crm_contacts?.length ?? 0) > 0 && (
+            {(allCrmContacts?.length ?? 0) > 0 && (
               <div style={{ marginBottom: 20 }}>
-                <p style={{ fontSize: 10, letterSpacing: '1.8px', textTransform: 'uppercase', color: T3, marginBottom: 10 }}>Contacts CRM</p>
+                <p style={{ fontSize: 10, letterSpacing: '1.8px', textTransform: 'uppercase', color: T5, marginBottom: 10 }}>Contacts CRM</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
-                  {overview!.crm_contacts.map(c => (
+                  {allCrmContacts!.map(c => (
                     <button key={c.id}
                       onClick={() => setSelectedCrmId(c.id === selectedCrmId ? null : c.id)}
                       style={{

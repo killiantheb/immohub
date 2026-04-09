@@ -95,7 +95,10 @@ export function useUpdateProperty(id: string) {
       if (ctx?.prev) qc.setQueryData(propertyKeys.detail(id), ctx.prev);
     },
     onSuccess: (updated) => {
-      qc.setQueryData(propertyKeys.detail(id), updated);
+      // Merge to preserve images/documents not returned by PUT
+      qc.setQueryData<Property>(propertyKeys.detail(id), (prev) =>
+        prev ? { ...prev, ...updated } : updated
+      );
       qc.invalidateQueries({ queryKey: propertyKeys.all });
     },
   });

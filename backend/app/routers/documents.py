@@ -463,14 +463,20 @@ def _build_fiche_bien(ctx: dict) -> str:
 
     features_html = " • ".join(features) if features else "—"
 
+    cover_html = ""
+    cover_url = prop.get("cover_url") or prop.get("cover_image_url")
+    if cover_url:
+        cover_html = f'<img src="{cover_url}" style="width:100%;max-height:280px;object-fit:cover;border-radius:8px;margin-bottom:20px;display:block;" />'
+
     return f"""
 <h1>Fiche de présentation</h1>
 
-<p style="text-align:center;font-size:13px;font-weight:600;color:#D4601A;">{prop.get('status_label','À Louer')}</p>
-<p style="text-align:center;font-size:18px;font-weight:700;">{prop.get('type_label','Appartement')} {prop.get('rooms','')}{'.5' if prop.get('rooms') else ''} pièces à {prop['city']}</p>
-<p style="text-align:center;color:#666;">{prop.get('nearby_landmarks','')}</p>
+{cover_html}
+<p style="text-align:center;font-size:12px;font-weight:600;letter-spacing:1px;color:#D4601A;text-transform:uppercase;">{prop.get('status_label','À Louer')}</p>
+<p style="text-align:center;font-size:20px;font-weight:300;font-family:Georgia,serif;color:#1C0F06;margin:4px 0;">{prop.get('type_label','Appartement')} · {prop['city']}</p>
+<p style="text-align:center;color:#8C6E5A;font-size:11px;margin-bottom:16px;">{prop.get('nearby_landmarks','')}</p>
 
-<div style="display:flex;gap:20px;margin:16px 0;background:#f9f9f9;padding:12px;border-radius:6px;">
+<div style="display:flex;gap:20px;margin:16px 0;background:#FAF5EB;padding:14px 18px;border-radius:10px;border:0.5px solid rgba(212,96,26,0.2);">
   <div><span style="font-size:20px;font-weight:700;color:#D4601A;">CHF {_fmt_chf(contract.get('monthly_rent') or prop.get('monthly_rent'))}.-</span><br/><span style="font-size:10px;color:#888;">/ mois</span></div>
   <div><strong>{prop.get('surface','–')} m²</strong><br/><span style="font-size:10px;color:#888;">surface habitable</span></div>
   <div><strong>{prop.get('rooms','–')}</strong><br/><span style="font-size:10px;color:#888;">pièces</span></div>
@@ -821,6 +827,7 @@ def _build_ctx(
                 "available": "À Louer", "rented": "Loué", "for_sale": "À Vendre",
                 "sold": "Vendu",
             }.get(prop.status, "Disponible"),
+            "cover_url": extra.get("cover_url"),
         }
 
     contract_info: dict = {}
@@ -1003,7 +1010,28 @@ async def generate_document(
     except Exception:
         pass
 
-    ctx = _build_ctx(contract, prop, owner, tenant, agency_user, agency_settings, payload.extra)
+    # Load cover image URL for the property
+    extra_with_cover = dict(payload.extra)
+    if prop:
+        from app.models.property import PropertyImage as _PropImg
+        cover_res = await db.execute(
+            select(_PropImg)
+            .where(_PropImg.property_id == prop.id, _PropImg.is_cover.is_(True))
+            .limit(1)
+        )
+        cover_img = cover_res.scalar_one_or_none()
+        if not cover_img:
+            cover_res = await db.execute(
+                select(_PropImg)
+                .where(_PropImg.property_id == prop.id)
+                .order_by(_PropImg.order)
+                .limit(1)
+            )
+            cover_img = cover_res.scalar_one_or_none()
+        if cover_img:
+            extra_with_cover["cover_url"] = cover_img.url
+
+    ctx = _build_ctx(contract, prop, owner, tenant, agency_user, agency_settings, extra_with_cover)
 
     # Generate body HTML
     ttype = payload.template_type

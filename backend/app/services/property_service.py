@@ -144,8 +144,27 @@ class PropertyService:
         items_q = base_q.order_by(Property.created_at.desc()).offset(offset).limit(size)
         rows = (await self.db.execute(items_q)).scalars().all()
 
+        # Load images for all properties in one query
+        from collections import defaultdict
+        imgs_by_prop: dict = defaultdict(list)
+        if rows:
+            prop_ids = [r.id for r in rows]
+            img_rows = (await self.db.execute(
+                select(PropertyImage)
+                .where(PropertyImage.property_id.in_(prop_ids))
+                .order_by(PropertyImage.property_id, PropertyImage.order)
+            )).scalars().all()
+            for img in img_rows:
+                imgs_by_prop[img.property_id].append(PropertyImageResponse.model_validate(img))
+
+        items = []
+        for r in rows:
+            pr = PropertyRead.model_validate(r)
+            pr.images = imgs_by_prop.get(r.id, [])
+            items.append(pr)
+
         return PaginatedProperties(
-            items=[PropertyRead.model_validate(r) for r in rows],
+            items=items,
             total=total,
             page=page,
             size=size,
