@@ -9,19 +9,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Althy — or chaud sur fond ivoire
+        // Althy — terre cuite Hermès sur fond ivoire
         primary: {
-          50:  "#fdf8f0",
-          100: "#f7edd8",
-          200: "#edd9b0",
-          300: "#dfc07f",
-          400: "#cfa458",
-          500: "#B68A4A",
-          600: "#9A7038",
-          700: "#7D5929",
-          800: "#5E411C",
-          900: "#3A280F",
+          50:  "#FEF5EF",
+          100: "#FDE3D0",
+          200: "#FAC4A0",
+          300: "#F5A070",
+          400: "#EF7A42",
+          500: "#E8602C",   // ← couleur principale althy-orange
+          600: "#C44820",
+          700: "#9E3418",
+          800: "#7A2510",
+          900: "#4A1408",
         },
+        // Ivoire chaud — surfaces
         stone: {
           50:  "#FAFAF8",
           100: "#F3F1EC",

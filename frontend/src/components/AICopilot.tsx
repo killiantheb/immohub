@@ -1,32 +1,28 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
-import { Bot, ChevronDown, Loader2, Send, Sparkles, X } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { ChevronDown, Send, Sparkles, X } from "lucide-react";
 import { baseURL } from "@/lib/api";
 import { useUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase";
 
-const S = {
-  bg: "var(--althy-bg)",
-  surface: "var(--althy-surface)",
-  surface2: "var(--althy-surface-2)",
-  border: "var(--althy-border)",
-  text: "var(--althy-text)",
-  text2: "var(--althy-text-2)",
-  text3: "var(--althy-text-3)",
-  orange: "var(--althy-orange)",
-  orangeBg: "var(--althy-orange-bg)",
-  green: "var(--althy-green)",
-  greenBg: "var(--althy-green-bg)",
-  red: "var(--althy-red)",
-  redBg: "var(--althy-red-bg)",
-  amber: "var(--althy-amber)",
-  amberBg: "var(--althy-amber-bg)",
-  blue: "var(--althy-blue)",
-  blueBg: "var(--althy-blue-bg)",
-  shadow: "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const T = {
+  bg:        "var(--althy-bg)",
+  surface:   "var(--althy-surface)",
+  surface2:  "var(--althy-surface-2)",
+  border:    "var(--althy-border)",
+  text:      "var(--althy-text)",
+  text2:     "var(--althy-text-2)",
+  text3:     "var(--althy-text-3)",
+  orange:    "var(--althy-orange)",
+  orangeBg:  "var(--althy-orange-bg)",
+  amber:     "var(--althy-amber)",
+  amberBg:   "var(--althy-amber-bg)",
+  shadow:    "var(--althy-shadow)",
+  shadowMd:  "var(--althy-shadow-md)",
+  shadowLg:  "var(--althy-shadow-lg)",
 } as const;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -37,86 +33,176 @@ interface Message {
   action?: { type: string; path: string; label: string; requires_validation?: boolean };
 }
 
+type SphereState = "idle" | "listening" | "streaming";
 type UserRole = "owner" | "agency" | "tenant" | "company" | "opener" | "super_admin";
 
-// ── Role-specific suggestions ─────────────────────────────────────────────────
+// ── Contextual suggestions ────────────────────────────────────────────────────
 
 const ROLE_SUGGESTIONS: Record<UserRole, string[]> = {
-  owner: [
-    "Rédiger un bail pour mon appartement",
-    "Générer un état des lieux d'entrée",
-    "Analyser mes impayés de loyer",
-    "Historique complet de mon bien",
-    "Relancer un locataire en retard",
-    "Créer un post pour les réseaux sociaux",
-  ],
-  agency: [
-    "Adapter le bail au profil de l'agence",
-    "Exporter ma comptabilité pour le fiduciaire",
-    "Analyser les performances du portefeuille",
-    "Paramétrer mes commissions de gérance",
-    "EDL professionnel pour un bien",
-  ],
-  tenant: [
-    "Expliquer mon bail simplement",
-    "Quels sont mes droits locataires ?",
-    "Signaler un problème dans mon logement",
-    "Comprendre mon état des lieux de sortie",
-    "Comment contester une hausse de loyer ?",
-  ],
-  company: [
-    "Rédiger un devis pour cet appel d'offre",
-    "Voir les nouvelles opportunités",
-    "Rédiger un rapport d'intervention",
-    "Comment améliorer ma note ?",
-  ],
-  opener: [
-    "Trouver des missions près de moi",
-    "Rédiger mon rapport de visite",
-    "Comment optimiser ma zone ?",
-    "Aide pour un état des lieux",
-  ],
-  super_admin: [
-    "Statistiques de la plateforme",
-    "Analyser les transactions récentes",
-    "Quels utilisateurs sont actifs ?",
-  ],
+  owner:       ["Rédiger un bail", "Générer un état des lieux", "Analyser mes impayés", "Relancer un locataire"],
+  agency:      ["Adapter le bail à l'agence", "Export comptabilité fiduciaire", "Analyse du portefeuille", "EDL professionnel"],
+  tenant:      ["Expliquer mon bail", "Signaler un problème", "Contester une hausse de loyer", "Mes droits locataires"],
+  company:     ["Rédiger un devis", "Nouvelles opportunités", "Rapport d'intervention", "Améliorer ma note"],
+  opener:      ["Missions près de moi", "Rapport de visite", "Optimiser ma zone", "Aide état des lieux"],
+  super_admin: ["Stats plateforme", "Transactions récentes", "Utilisateurs actifs", "Alertes système"],
 };
 
 const PAGE_SUGGESTIONS: Record<string, string[]> = {
-  "/app/biens":            ["Rédiger une annonce pour ce bien", "Générer un EDL d'entrée", "Historique complet"],
-  "/app/biens/new":        ["Quels documents fournir pour louer ?", "Comment fixer le loyer ?"],
-  "/app/locataires":       ["Scorer ce locataire", "Générer une quittance", "Analyser les retards"],
-  "/app/interventions":    ["Relancer l'artisan", "Rédiger un rapport", "Prioriser les urgences"],
-  "/app/publications/new": ["Aide-moi à décrire la mission", "Quel budget prévoir ?"],
-  "/app/settings":         ["Comment optimiser ma zone ?", "Configurer les notifications"],
-  "/app/properties":       ["Rédiger une annonce", "Générer un EDL", "Historique du bien"],
-  "/app/contracts":        ["Rédiger un bail", "Explique ce bail", "Quand résilier ?"],
-  "/app/transactions":     ["Analyser mes impayés", "Relancer un locataire"],
-  "/app/rfqs":             ["Rédiger un appel d'offre", "Comparer les devis"],
+  "/app/properties":   ["Rédiger une annonce pour ce bien", "Générer un EDL d'entrée", "Historique complet"],
+  "/app/contracts":    ["Rédiger un bail", "Explique ce bail", "Quand résilier ?"],
+  "/app/transactions": ["Analyser mes impayés", "Relancer un locataire"],
+  "/app/rfqs":         ["Rédiger un appel d'offre", "Comparer les devis"],
+  "/app/interventions":["Relancer l'artisan", "Rédiger un rapport", "Prioriser les urgences"],
 };
 
 function getSuggestions(pathname: string, role?: UserRole): string[] {
   for (const [path, suggestions] of Object.entries(PAGE_SUGGESTIONS)) {
-    if (pathname === path || (path !== "/" && pathname.startsWith(path))) {
-      return suggestions;
-    }
+    if (pathname.startsWith(path)) return suggestions;
   }
-  if (role && ROLE_SUGGESTIONS[role]) return ROLE_SUGGESTIONS[role].slice(0, 4);
-  return ["Comment puis-je vous aider ?", "Réglementation locative suisse"];
+  if (role && ROLE_SUGGESTIONS[role]) return ROLE_SUGGESTIONS[role];
+  return ["Comment puis-je vous aider ?", "Réglementation locative suisse", "Générer un document", "Analyser mes biens"];
 }
 
-// ── Typing dots ───────────────────────────────────────────────────────────────
+// ── CSS keyframes (injected once) ─────────────────────────────────────────────
+
+const SPHERE_CSS = `
+@keyframes althy-sphere-idle {
+  0%, 100% { transform: scale(1);    filter: brightness(1);   }
+  50%       { transform: scale(1.04); filter: brightness(1.08); }
+}
+@keyframes althy-sphere-listen {
+  0%, 100% { transform: scale(1);    filter: brightness(1.05); }
+  50%       { transform: scale(1.07); filter: brightness(1.15); }
+}
+@keyframes althy-sphere-stream {
+  0%   { transform: scale(1);    filter: brightness(1);    }
+  25%  { transform: scale(1.06); filter: brightness(1.12); }
+  50%  { transform: scale(1.02); filter: brightness(1.08); }
+  75%  { transform: scale(1.08); filter: brightness(1.15); }
+  100% { transform: scale(1);    filter: brightness(1);    }
+}
+@keyframes althy-ring-out {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  100% { transform: scale(2.6); opacity: 0;    }
+}
+@keyframes althy-ring-out-2 {
+  0%   { transform: scale(1);   opacity: 0.35; }
+  100% { transform: scale(2.2); opacity: 0;    }
+}
+@keyframes althy-glow-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1;   }
+}
+@keyframes althy-dots {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40%           { transform: scale(1);   opacity: 1;   }
+}
+@keyframes althy-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+`;
+
+let cssInjected = false;
+function injectCSS() {
+  if (cssInjected || typeof document === "undefined") return;
+  const style = document.createElement("style");
+  style.textContent = SPHERE_CSS;
+  document.head.appendChild(style);
+  cssInjected = true;
+}
+
+// ── Sphere orb visual ─────────────────────────────────────────────────────────
+
+function SphereOrb({ state, size = 56 }: { state: SphereState; size?: number }) {
+  const anim = {
+    idle:      "althy-sphere-idle 3.5s ease-in-out infinite",
+    listening: "althy-sphere-listen 1.8s ease-in-out infinite",
+    streaming: "althy-sphere-stream 1.2s ease-in-out infinite",
+  }[state];
+
+  const glowColor = "rgba(232,96,44,";
+  const glowIntensity = { idle: 0.4, listening: 0.55, streaming: 0.65 }[state];
+
+  return (
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+      {/* Outer glow rings — only when listening or streaming */}
+      {state !== "idle" && (
+        <>
+          <div style={{
+            position: "absolute", inset: 0, borderRadius: "50%",
+            backgroundColor: glowColor + "0.18)",
+            animation: "althy-ring-out 1.8s ease-out infinite",
+          }} />
+          <div style={{
+            position: "absolute", inset: 0, borderRadius: "50%",
+            backgroundColor: glowColor + "0.12)",
+            animation: "althy-ring-out-2 1.8s ease-out 0.6s infinite",
+          }} />
+        </>
+      )}
+
+      {/* Ambient glow */}
+      <div style={{
+        position: "absolute",
+        inset: -size * 0.18,
+        borderRadius: "50%",
+        background: `radial-gradient(circle, ${glowColor}${glowIntensity}) 0%, transparent 70%)`,
+        animation: "althy-glow-pulse 2.5s ease-in-out infinite",
+        pointerEvents: "none",
+      }} />
+
+      {/* The sphere itself */}
+      <div style={{
+        position: "relative", width: size, height: size, borderRadius: "50%",
+        background: "radial-gradient(circle at 33% 28%, #F9A06A 0%, #E86030 42%, #B83C12 78%, #6E2008 100%)",
+        boxShadow: `
+          0 ${size * 0.1}px ${size * 0.45}px ${glowColor}${glowIntensity + 0.05}),
+          inset 0 -${size * 0.06}px ${size * 0.12}px rgba(0,0,0,0.32),
+          inset 0  ${size * 0.04}px ${size * 0.10}px rgba(255,255,255,0.12)
+        `,
+        animation: anim,
+        cursor: "pointer",
+        overflow: "hidden",
+      }}>
+        {/* Glossy highlight */}
+        <div style={{
+          position: "absolute",
+          top: "14%", left: "20%",
+          width: "32%", height: "24%",
+          background: "radial-gradient(ellipse, rgba(255,255,255,0.52) 0%, transparent 100%)",
+          borderRadius: "50%",
+          transform: "rotate(-25deg)",
+          pointerEvents: "none",
+        }} />
+
+        {/* Secondary smaller highlight */}
+        <div style={{
+          position: "absolute",
+          top: "52%", left: "58%",
+          width: "14%", height: "10%",
+          background: "radial-gradient(ellipse, rgba(255,255,255,0.18) 0%, transparent 100%)",
+          borderRadius: "50%",
+          pointerEvents: "none",
+        }} />
+      </div>
+    </div>
+  );
+}
+
+// ── Typing indicator ──────────────────────────────────────────────────────────
 
 function TypingDots() {
   return (
-    <span className="inline-flex items-center gap-0.5">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className="h-1.5 w-1.5 rounded-full animate-bounce"
-          style={{ backgroundColor: S.text3, animationDelay: `${i * 150}ms` }}
-        />
+    <span className="inline-flex items-center gap-1">
+      {[0, 1, 2].map(i => (
+        <span key={i} style={{
+          display: "inline-block",
+          width: 6, height: 6,
+          borderRadius: "50%",
+          backgroundColor: T.orange,
+          animation: `althy-dots 1.2s ease-in-out ${i * 0.2}s infinite`,
+        }} />
       ))}
     </span>
   );
@@ -125,57 +211,65 @@ function TypingDots() {
 // ── Message bubble ────────────────────────────────────────────────────────────
 
 function MessageBubble({
-  msg,
-  onAction,
-  onValidate,
+  msg, onAction, onValidate,
 }: {
   msg: Message;
   onAction: (path: string) => void;
   onValidate?: (action: NonNullable<Message["action"]>) => void;
 }) {
   const isUser = msg.role === "user";
-  const display = msg.content.replace(/\\n/g, "\n");
-
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-      <div className="max-w-[85%] space-y-1">
+    <div
+      className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+      style={{ animation: "althy-fade-up 0.25s ease-out" }}
+    >
+      <div style={{ maxWidth: "84%", display: "flex", flexDirection: "column", gap: 4 }}>
         {!isUser && (
-          <div className="flex items-center gap-1 mb-0.5">
-            <Bot className="h-3.5 w-3.5" style={{ color: S.orange }} />
-            <span className="text-xs font-medium" style={{ color: S.orange }}>Althy IA</span>
-          </div>
+          <span style={{ fontSize: 10, fontWeight: 600, color: T.orange, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            Althy
+          </span>
         )}
-        <div
-          className="rounded-2xl px-3.5 py-2.5 leading-relaxed whitespace-pre-wrap"
-          style={{
-            fontSize: 14,
-            backgroundColor: isUser ? S.orange : S.surface2,
-            color: isUser ? "#fff" : S.text,
-            borderRadius: isUser ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-          }}
-        >
-          {display}
+        <div style={{
+          padding: "10px 14px",
+          borderRadius: isUser ? "16px 16px 4px 16px" : "4px 16px 16px 16px",
+          backgroundColor: isUser ? T.orange : T.surface2,
+          color: isUser ? "#fff" : T.text,
+          fontSize: 13.5,
+          lineHeight: 1.55,
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+        }}>
+          {msg.content.replace(/\\n/g, "\n")}
         </div>
+
         {msg.action && (
           msg.action.requires_validation ? (
-            <div
-              className="mt-1 rounded-lg px-3 py-2 space-y-1.5"
-              style={{ border: `1px solid ${S.amber}`, backgroundColor: S.amberBg }}
-            >
-              <p className="text-xs font-medium" style={{ color: S.amber }}>Validation requise</p>
-              <div className="flex gap-2">
+            <div style={{
+              padding: "10px 12px", borderRadius: 10,
+              border: `1px solid ${T.amber}`,
+              backgroundColor: T.amberBg,
+              display: "flex", flexDirection: "column", gap: 8,
+            }}>
+              <p style={{ fontSize: 11, fontWeight: 600, color: T.amber, margin: 0 }}>Validation requise</p>
+              <div style={{ display: "flex", gap: 8 }}>
                 <button
                   onClick={() => onValidate?.(msg.action!)}
-                  className="flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
-                  style={{ backgroundColor: S.amber, color: "#fff" }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 4,
+                    padding: "5px 10px", borderRadius: 7, border: "none",
+                    backgroundColor: T.amber, color: "#fff",
+                    fontSize: 12, fontWeight: 600, cursor: "pointer",
+                  }}
                 >
-                  <Sparkles className="h-3 w-3" />
-                  {msg.action.label}
+                  <Sparkles size={11} /> {msg.action.label}
                 </button>
                 <button
                   onClick={() => onAction(msg.action!.path)}
-                  className="rounded-md px-2.5 py-1 text-xs transition-colors"
-                  style={{ border: `1px solid ${S.amber}`, color: S.amber, backgroundColor: "transparent" }}
+                  style={{
+                    padding: "5px 10px", borderRadius: 7,
+                    border: `1px solid ${T.amber}`, backgroundColor: "transparent",
+                    color: T.amber, fontSize: 12, cursor: "pointer",
+                  }}
                 >
                   Voir
                 </button>
@@ -184,11 +278,15 @@ function MessageBubble({
           ) : (
             <button
               onClick={() => onAction(msg.action!.path)}
-              className="mt-1 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
-              style={{ border: `1px solid ${S.orange}`, backgroundColor: S.orangeBg, color: S.orange }}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "6px 12px", borderRadius: 8,
+                border: `1px solid ${T.orange}`,
+                backgroundColor: T.orangeBg, color: T.orange,
+                fontSize: 12, fontWeight: 600, cursor: "pointer",
+              }}
             >
-              <Sparkles className="h-3 w-3" />
-              {msg.action.label}
+              <Sparkles size={12} /> {msg.action.label}
             </button>
           )
         )}
@@ -201,39 +299,42 @@ function MessageBubble({
 
 export function AICopilot() {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: "Bonjour ! Je suis Althy IA, votre copilote immobilier suisse. Comment puis-je vous aider ?",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([{
+    role: "assistant",
+    content: "Bonjour ! Je suis Althy — votre assistant immobilier suisse. Parlez-moi, je m'occupe du reste.",
+  }]);
   const [input, setInput] = useState("");
-  const [streaming, setStreaming] = useState(false);
+  const [sphereState, setSphereState] = useState<SphereState>("idle");
 
-  const pathname = usePathname();
+  const pathname  = usePathname();
+  const router    = useRouter();
   const { data: profile } = useUser();
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const bottomRef  = useRef<HTMLDivElement>(null);
+  const inputRef   = useRef<HTMLInputElement>(null);
+  const abortRef   = useRef<AbortController | null>(null);
 
-  const role = profile?.role as UserRole | undefined;
+  const role        = profile?.role as UserRole | undefined;
   const suggestions = getSuggestions(pathname, role);
+  const streaming   = sphereState === "streaming";
+
+  // Inject CSS once
+  useEffect(() => { injectCSS(); }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   useEffect(() => {
-    if (open) inputRef.current?.focus();
+    if (open) setTimeout(() => inputRef.current?.focus(), 120);
   }, [open]);
 
   async function sendMessage(text: string) {
     if (!text.trim() || streaming) return;
 
-    setMessages((prev) => [...prev, { role: "user", content: text }]);
+    setMessages(prev => [...prev, { role: "user", content: text }]);
     setInput("");
-    setStreaming(true);
-    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+    setSphereState("streaming");
+    setMessages(prev => [...prev, { role: "assistant", content: "" }]);
 
     abortRef.current = new AbortController();
 
@@ -242,23 +343,20 @@ export function AICopilot() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token ?? "";
 
-      // Use GET /ai/chat — backend auto-injects biens/locataires/interventions context
       const url = new URL(`${baseURL}/ai/chat`);
       url.searchParams.set("message", text);
 
       const response = await fetch(url.toString(), {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         signal: abortRef.current.signal,
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-      const reader = response.body?.getReader();
+      const reader  = response.body?.getReader();
       const decoder = new TextDecoder();
-      let buffer = "";
+      let buffer    = "";
       let actionData: Message["action"] | undefined;
 
       while (reader) {
@@ -277,7 +375,7 @@ export function AICopilot() {
           try {
             const parsed = JSON.parse(raw);
             if (parsed.error) {
-              setMessages((prev) => {
+              setMessages(prev => {
                 const next = [...prev];
                 next[next.length - 1] = { role: "assistant", content: parsed.error };
                 return next;
@@ -285,17 +383,12 @@ export function AICopilot() {
               break;
             }
             if (parsed.text) {
-              const chunk: string = parsed.text;
-              setMessages((prev) => {
+              setMessages(prev => {
                 const next = [...prev];
                 const last = next[next.length - 1];
-                const updated = last.content + chunk;
-
+                const updated = last.content + (parsed.text as string);
                 const actionMatch = updated.match(/<action>([\s\S]*?)<\/action>/);
-                if (actionMatch) {
-                  try { actionData = JSON.parse(actionMatch[1]); } catch {}
-                }
-
+                if (actionMatch) { try { actionData = JSON.parse(actionMatch[1]); } catch {} }
                 next[next.length - 1] = {
                   ...last,
                   content: updated.replace(/<action>[\s\S]*?<\/action>/, "").trim(),
@@ -309,96 +402,85 @@ export function AICopilot() {
       }
     } catch (err: unknown) {
       if ((err as Error)?.name !== "AbortError") {
-        setMessages((prev) => {
+        setMessages(prev => {
           const next = [...prev];
-          next[next.length - 1] = {
-            role: "assistant",
-            content: "Une erreur est survenue. Réessayez dans un instant.",
-          };
+          next[next.length - 1] = { role: "assistant", content: "Erreur de connexion. Réessayez." };
           return next;
         });
       }
     } finally {
-      setStreaming(false);
+      setSphereState("idle");
     }
   }
 
   return (
     <>
-      {/* Floating button */}
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full transition-all"
-        style={{
-          backgroundColor: open ? S.text2 : S.orange,
-          boxShadow: S.shadowMd,
-        }}
-        aria-label="Ouvrir Althy IA"
-      >
-        {open ? (
-          <ChevronDown className="h-6 w-6" style={{ color: "#fff" }} />
-        ) : (
-          <Bot className="h-6 w-6" style={{ color: "#fff" }} />
-        )}
-        {!open && (
-          <span
-            className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold"
-            style={{ backgroundColor: S.green, color: "#fff" }}
-          >
-            AI
-          </span>
-        )}
-      </button>
-
-      {/* Chat panel */}
+      {/* ── Chat panel ────────────────────────────────────────────────────── */}
       {open && (
         <div
-          className="fixed bottom-24 right-6 z-50 flex w-[360px] flex-col rounded-2xl"
-          style={{ border: `1px solid ${S.border}`, backgroundColor: S.surface, boxShadow: S.shadowMd }}
+          style={{
+            position: "fixed", bottom: 88, right: 24, zIndex: 50,
+            width: 368,
+            display: "flex", flexDirection: "column",
+            borderRadius: 20,
+            border: `1px solid ${T.border}`,
+            backgroundColor: T.surface,
+            boxShadow: T.shadowLg,
+            overflow: "hidden",
+            animation: "althy-fade-up 0.2s ease-out",
+          }}
         >
           {/* Header */}
-          <div
-            className="flex items-center justify-between rounded-t-2xl px-4 py-3"
-            style={{ backgroundColor: S.orange }}
-          >
-            <div className="flex items-center gap-2">
-              <Bot className="h-5 w-5" style={{ color: "#fff" }} />
+          <div style={{
+            padding: "14px 16px",
+            background: "radial-gradient(circle at 15% 50%, #F9A06A 0%, #E86030 45%, #C04010 100%)",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <SphereOrb state={sphereState} size={32} />
               <div>
-                <p className="text-sm font-semibold" style={{ color: "#fff" }}>Althy IA</p>
-                <p className="text-xs capitalize" style={{ color: "rgba(255,255,255,0.7)" }}>
-                  {role ? `Copilote ${role}` : "Copilote immobilier"}
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>
+                  Althy IA
+                </p>
+                <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.72)" }}>
+                  {role ? `Copilote ${role}` : "Assistant immobilier suisse"}
                 </p>
               </div>
             </div>
             <button
               onClick={() => setOpen(false)}
-              className="rounded-lg p-1 transition-colors"
-              style={{ backgroundColor: "transparent" }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+              style={{
+                background: "rgba(255,255,255,0.15)", border: "none",
+                borderRadius: 8, padding: 6, cursor: "pointer", color: "#fff",
+                display: "flex", alignItems: "center",
+              }}
             >
-              <X className="h-4 w-4" style={{ color: "#fff" }} />
+              <X size={15} />
             </button>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 space-y-4 overflow-y-auto p-4" style={{ maxHeight: 380 }}>
+          <div style={{
+            flex: 1, overflowY: "auto", padding: "16px 14px",
+            display: "flex", flexDirection: "column", gap: 12,
+            maxHeight: 380,
+          }}>
             {messages.map((msg, i) => (
               <div key={i}>
                 {msg.content === "" && msg.role === "assistant" && streaming ? (
-                  <div className="flex justify-start">
-                    <div
-                      className="rounded-2xl px-3.5 py-2.5"
-                      style={{ backgroundColor: S.surface2, borderRadius: "16px 16px 16px 4px" }}
-                    >
+                  <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                    <div style={{
+                      padding: "10px 14px", borderRadius: "4px 16px 16px 16px",
+                      backgroundColor: T.surface2,
+                    }}>
                       <TypingDots />
                     </div>
                   </div>
                 ) : (
                   <MessageBubble
                     msg={msg}
-                    onAction={(path) => { window.location.href = path; }}
-                    onValidate={(action) => { window.location.href = action.path; }}
+                    onAction={path => { router.push(path); setOpen(false); }}
+                    onValidate={action => { router.push(action.path); setOpen(false); }}
                   />
                 )}
               </div>
@@ -407,72 +489,100 @@ export function AICopilot() {
           </div>
 
           {/* Suggestions */}
-          {messages.length <= 1 && (
-            <div className="px-3 py-2" style={{ borderTop: `1px solid ${S.border}` }}>
-              <p className="mb-1.5 text-xs" style={{ color: S.text3 }}>Suggestions</p>
-              <div className="flex flex-wrap gap-1.5">
-                {suggestions.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => sendMessage(s)}
-                    disabled={streaming}
-                    className="rounded-full px-2.5 py-1 text-xs transition-colors disabled:opacity-50"
-                    style={{ border: `1px solid ${S.border}`, backgroundColor: S.bg, color: S.text2 }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = S.orange;
-                      e.currentTarget.style.backgroundColor = S.orangeBg;
-                      e.currentTarget.style.color = S.orange;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = S.border;
-                      e.currentTarget.style.backgroundColor = S.bg;
-                      e.currentTarget.style.color = S.text2;
-                    }}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
+          {messages.length <= 2 && (
+            <div style={{
+              padding: "0 12px 8px",
+              display: "flex", flexWrap: "wrap", gap: 6,
+            }}>
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => sendMessage(s)}
+                  style={{
+                    padding: "5px 10px", borderRadius: 20,
+                    border: `1px solid ${T.border}`,
+                    backgroundColor: T.surface2, color: T.text2,
+                    fontSize: 11.5, cursor: "pointer",
+                    transition: "border-color 0.15s",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = T.orange)}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = T.border)}
+                >
+                  {s}
+                </button>
+              ))}
             </div>
           )}
 
           {/* Input */}
-          <div className="p-3" style={{ borderTop: `1px solid ${S.border}` }}>
-            <form
-              onSubmit={(e) => { e.preventDefault(); sendMessage(input); }}
-              className="flex items-center gap-2"
+          <div style={{
+            padding: "10px 12px",
+            borderTop: `1px solid ${T.border}`,
+            display: "flex", alignItems: "center", gap: 8,
+          }}>
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={e => {
+                setInput(e.target.value);
+                setSphereState(e.target.value ? "listening" : "idle");
+              }}
+              onBlur={() => { if (!streaming) setSphereState("idle"); }}
+              onKeyDown={e => {
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); }
+              }}
+              placeholder="Posez votre question..."
+              disabled={streaming}
+              style={{
+                flex: 1, border: `1px solid ${T.border}`, borderRadius: 12,
+                padding: "8px 12px", fontSize: 13.5,
+                backgroundColor: T.surface2, color: T.text,
+                outline: "none",
+              }}
+              onFocus={e => (e.target.style.borderColor = T.orange)}
+            />
+            <button
+              onClick={() => sendMessage(input)}
+              disabled={!input.trim() || streaming}
+              style={{
+                width: 36, height: 36, borderRadius: 10, border: "none",
+                backgroundColor: input.trim() && !streaming ? T.orange : T.surface2,
+                color: input.trim() && !streaming ? "#fff" : T.text3,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: input.trim() && !streaming ? "pointer" : "default",
+                transition: "background-color 0.15s",
+                flexShrink: 0,
+              }}
             >
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                disabled={streaming}
-                placeholder="Posez votre question…"
-                className="flex-1 rounded-xl px-3 py-2 outline-none disabled:opacity-60"
-                style={{
-                  fontSize: 14,
-                  border: `1px solid ${S.border}`,
-                  backgroundColor: S.bg,
-                  color: S.text,
-                }}
-              />
-              <button
-                type="submit"
-                disabled={!input.trim() || streaming}
-                className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors disabled:opacity-40"
-                style={{ backgroundColor: S.orange, color: "#fff" }}
-              >
-                {streaming ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </button>
-            </form>
+              <Send size={15} />
+            </button>
           </div>
         </div>
       )}
+
+      {/* ── Floating sphere button ─────────────────────────────────────────── */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        aria-label="Althy IA"
+        style={{
+          position: "fixed", bottom: 24, right: 24, zIndex: 50,
+          background: "none", border: "none", padding: 0, cursor: "pointer",
+        }}
+      >
+        {open ? (
+          /* Close state — small flat circle */
+          <div style={{
+            width: 52, height: 52, borderRadius: "50%",
+            background: "radial-gradient(circle at 33% 28%, #F9A06A, #E86030 45%, #B83C12 80%, #6E2008 100%)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 4px 16px rgba(232,96,44,0.45)",
+          }}>
+            <ChevronDown size={20} color="#fff" />
+          </div>
+        ) : (
+          <SphereOrb state={sphereState} size={56} />
+        )}
+      </button>
     </>
   );
 }
