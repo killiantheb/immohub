@@ -30,8 +30,9 @@ from app.services.ai_service import (
     recommend_best_quote,
     score_tenant_application,
 )
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
+import pydantic as _pydantic
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -1797,4 +1798,316 @@ async def estimate_property(body: EstimateRequest):
         price_per_sqm=p_sqm if body.surface else None,
         ai_comment=ai_comment,
         confidence="medium" if body.surface else "low",
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Scan factures — OCR + extraction IA + affectation OBLF suisse
+# ═══════════════════════════════════════════════════════════════════════════════
+
+OBLF_CATEGORIES = {
+    "entretien": "Entretien courant (nettoyage, jardinage, petites réparations)",
+    "reparation": "Réparations (électricité, plomberie, toiture, carrelage)",
+    "assurance": "Assurances (bâtiment, RC, incendie, dégâts d'eau)",
+    "impots": "Impôts et taxes (foncier, déchets, eaux usées)",
+    "frais_admin": "Frais administratifs (gérance, courrier recommandé, notaire)",
+    "amortissement": "Amortissement et entretien différé",
+    "autre": "Autre charge locative",
+}
+
+
+class ScanFactureResponse(BaseModel):
+    id: _uuid.UUID
+    montant: float | None
+    fournisseur: str | None
+    date_facture: str | None
+    description: str | None
+    numero_facture: str | None
+    categorie_oblf: str | None
+    sous_categorie: str | None
+    bien_id: _uuid.UUID | None
+    bien_adresse: str | None
+    statut: str
+    confidence: float
+
+
+class ConfirmerFactureRequest(BaseModel):
+    depense_id: _uuid.UUID
+    bien_id: _uuid.UUID
+    categorie_oblf: str
+    montant: float | None = None
+    description: str | None = None
+
+
+@router.post("/scan-facture", response_model=ScanFactureResponse)
+async def scan_facture(
+    request: Request,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(20, 60),
+):
+    """
+    Scan une facture (image JPEG/PNG/WEBP ou PDF) via Claude Vision.
+    Extrait montant, fournisseur, date, description, numéro.
+    Propose une catégorie OBLF et un bien de rattachement.
+    Body : multipart/form-data avec champ 'file'.
+    """
+    import base64
+    import io as _io
+    import httpx
+    from datetime import date as _date, datetime, timezone
+    from anthropic import AsyncAnthropic
+    from app.core.config import settings
+    from app.models.bien import Bien
+    from sqlalchemy import select as sa_sel, text as sa_text
+
+    form = await request.form()
+    file = form.get("file")
+    if not file or not hasattr(file, "read"):
+        raise HTTPException(422, "Champ 'file' requis (image ou PDF)")
+
+    file_bytes = await file.read()  # type: ignore[union-attr]
+    content_type: str = getattr(file, "content_type", None) or "image/jpeg"
+    filename: str = getattr(file, "filename", None) or "facture"
+
+    # Detect media type
+    fn_lower = filename.lower()
+    if fn_lower.endswith((".jpg", ".jpeg")) or "jpeg" in content_type:
+        media_type = "image/jpeg"
+    elif fn_lower.endswith(".png") or "png" in content_type:
+        media_type = "image/png"
+    elif fn_lower.endswith(".webp") or "webp" in content_type:
+        media_type = "image/webp"
+    elif fn_lower.endswith(".gif"):
+        media_type = "image/gif"
+    else:
+        media_type = "pdf"
+
+    # Upload to Supabase Storage
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    storage_path = f"factures/{current_user.id}/{ts}_{filename}"
+    public_url: str | None = None
+    async with httpx.AsyncClient(timeout=30.0) as http:
+        up = await http.post(
+            f"{settings.SUPABASE_URL}/storage/v1/object/althy-docs/{storage_path}",
+            content=file_bytes,
+            headers={
+                "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
+                "Content-Type": content_type,
+            },
+        )
+        if up.status_code in (200, 201):
+            public_url = f"{settings.SUPABASE_URL}/storage/v1/object/public/althy-docs/{storage_path}"
+
+    # Build Claude prompt
+    OBLF_LIST = "\n".join(f"- {k}: {v}" for k, v in OBLF_CATEGORIES.items())
+    extraction_prompt = (
+        "Analyse cette facture et extrais les informations suivantes.\n\n"
+        f"Catégories OBLF disponibles (droit suisse du bail) :\n{OBLF_LIST}\n\n"
+        "Retourne UNIQUEMENT ce JSON (pas de markdown) :\n"
+        '{"montant":<float|null>,"fournisseur":"<str|null>","date_facture":"<YYYY-MM-DD|null>",'
+        '"description":"<str|null>","numero_facture":"<str|null>",'
+        '"categorie_oblf":"<clé|null>","sous_categorie":"<str|null>","confidence":<0.0-1.0>}'
+    )
+
+    extracted: dict = {}
+    try:
+        client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        if media_type != "pdf":
+            b64 = base64.standard_b64encode(file_bytes).decode()
+            msg = await client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=400,
+                messages=[{"role": "user", "content": [
+                    {"type": "text", "text": extraction_prompt},
+                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": b64}},
+                ]}],
+            )
+        else:
+            try:
+                import pdfplumber
+                with pdfplumber.open(_io.BytesIO(file_bytes)) as pdf:
+                    pdf_text = "\n".join(p.extract_text() or "" for p in pdf.pages)
+            except Exception:
+                pdf_text = "(Contenu PDF non lisible)"
+            msg = await client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=400,
+                messages=[{"role": "user", "content": f"{extraction_prompt}\n\nContenu PDF:\n{pdf_text[:3000]}"}],
+            )
+
+        raw = msg.content[0].text.strip()  # type: ignore[union-attr]
+        if "```" in raw:
+            raw = raw.split("```")[1].lstrip("json").strip()
+        extracted = _json.loads(raw)
+    except Exception:
+        extracted = {"confidence": 0.3}
+
+    # Find the most likely bien for this owner
+    biens_rows = (await db.execute(
+        sa_sel(Bien).where(Bien.owner_id == current_user.id, Bien.is_active.is_(True)).limit(1)
+    )).scalars().all()
+    bien_id = biens_rows[0].id if biens_rows else None
+    bien_adresse = f"{biens_rows[0].adresse}, {biens_rows[0].ville}" if biens_rows else None
+
+    # Parse date
+    date_str = extracted.get("date_facture")
+    date_parsed = None
+    if date_str:
+        try:
+            date_parsed = _date.fromisoformat(str(date_str))
+        except (ValueError, TypeError):
+            pass
+
+    # Insert into DB
+    insert_row = (await db.execute(
+        sa_text("""
+            INSERT INTO depenses_scannees
+                (owner_id, bien_id, montant, fournisseur, date_facture, description,
+                 numero_facture, categorie_oblf, sous_categorie, url_fichier_source, media_type)
+            VALUES
+                (:owner_id, :bien_id, :montant, :fournisseur, :date_facture, :description,
+                 :numero_facture, :categorie_oblf, :sous_categorie, :url, :media_type)
+            RETURNING id
+        """),
+        {
+            "owner_id": str(current_user.id), "bien_id": str(bien_id) if bien_id else None,
+            "montant": extracted.get("montant"), "fournisseur": extracted.get("fournisseur"),
+            "date_facture": date_parsed, "description": extracted.get("description"),
+            "numero_facture": extracted.get("numero_facture"),
+            "categorie_oblf": extracted.get("categorie_oblf"),
+            "sous_categorie": extracted.get("sous_categorie"),
+            "url": public_url, "media_type": media_type,
+        },
+    )).fetchone()
+    await db.commit()
+
+    return ScanFactureResponse(
+        id=insert_row[0] if insert_row else _uuid.uuid4(),
+        montant=extracted.get("montant"),
+        fournisseur=extracted.get("fournisseur"),
+        date_facture=extracted.get("date_facture"),
+        description=extracted.get("description"),
+        numero_facture=extracted.get("numero_facture"),
+        categorie_oblf=extracted.get("categorie_oblf"),
+        sous_categorie=extracted.get("sous_categorie"),
+        bien_id=bien_id,
+        bien_adresse=bien_adresse,
+        statut="propose",
+        confidence=float(extracted.get("confidence", 0.3)),
+    )
+
+
+@router.post("/confirmer-facture")
+async def confirmer_facture(
+    payload: ConfirmerFactureRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+) -> dict:
+    """Proprio confirme/corrige l'affectation d'une dépense scannée."""
+    from sqlalchemy import text as sa_text
+    await db.execute(
+        sa_text("""
+            UPDATE depenses_scannees
+            SET bien_id = :bien_id, categorie_oblf = :cat,
+                montant = COALESCE(:montant, montant),
+                description = COALESCE(:desc, description),
+                statut = 'confirme', confirme_par_user = true, updated_at = now()
+            WHERE id = :id AND owner_id = :uid
+        """),
+        {
+            "id": str(payload.depense_id), "uid": str(current_user.id),
+            "bien_id": str(payload.bien_id), "cat": payload.categorie_oblf,
+            "montant": payload.montant, "desc": payload.description,
+        },
+    )
+    await db.commit()
+    return {"confirmed": True, "depense_id": str(payload.depense_id)}
+
+
+@router.get("/depenses-scannees")
+async def list_depenses_scannees(
+    current_user: AuthUserDep,
+    db: DbDep,
+    bien_id: _uuid.UUID | None = None,
+    statut: str | None = None,
+) -> list[dict]:
+    """Liste les factures scannées de l'utilisateur."""
+    from sqlalchemy import text as sa_text
+    where = "WHERE owner_id = :uid"
+    params: dict = {"uid": str(current_user.id)}
+    if bien_id:
+        where += " AND bien_id = :bid"
+        params["bid"] = str(bien_id)
+    if statut:
+        where += " AND statut = :s"
+        params["s"] = statut
+
+    rows = (await db.execute(
+        sa_text(f"SELECT id, montant, fournisseur, date_facture, description, categorie_oblf, statut, bien_id FROM depenses_scannees {where} ORDER BY created_at DESC LIMIT 50"),
+        params,
+    )).fetchall()
+
+    return [
+        {
+            "id": str(r[0]), "montant": float(r[1]) if r[1] else None,
+            "fournisseur": r[2], "date_facture": r[3].isoformat() if r[3] else None,
+            "description": r[4], "categorie_oblf": r[5],
+            "statut": r[6], "bien_id": str(r[7]) if r[7] else None,
+        }
+        for r in rows
+    ]
+
+
+@router.get("/export/etat-locatif")
+async def export_etat_locatif(
+    current_user: AuthUserDep,
+    db: DbDep,
+    year: int = 2025,
+):
+    """Export état locatif annuel au format CSV (fiduciaire suisse, encodage UTF-8 BOM pour Excel)."""
+    import io
+    import csv
+    from fastapi.responses import StreamingResponse
+    from sqlalchemy import text as sa_text
+
+    rows = (await db.execute(
+        sa_text("""
+            SELECT
+                to_char(p.date_echeance, 'YYYY-MM') AS mois,
+                b.adresse, b.ville,
+                COALESCE(u.email, 'N/A')           AS locataire,
+                p.montant                            AS loyer_attendu,
+                CASE WHEN p.statut = 'recu' THEN p.montant ELSE 0 END AS loyer_recu,
+                COALESCE(l.charges, 0)               AS charges,
+                CASE WHEN p.statut = 'recu' THEN COALESCE(p.net_montant, p.montant * 0.96) ELSE NULL END AS net,
+                p.statut
+            FROM paiements p
+            JOIN biens b ON b.id = p.bien_id
+            JOIN locataires l ON l.id = p.locataire_id
+            LEFT JOIN users u ON u.id = l.user_id
+            WHERE b.owner_id = :uid
+              AND EXTRACT(YEAR FROM p.date_echeance) = :year
+            ORDER BY p.date_echeance, b.adresse
+        """),
+        {"uid": str(current_user.id), "year": year},
+    )).fetchall()
+
+    buf = io.StringIO()
+    writer = csv.writer(buf, delimiter=";")
+    writer.writerow(["Mois", "Adresse", "Ville", "Locataire", "Loyer attendu CHF",
+                     "Loyer reçu CHF", "Charges CHF", "Net reçu CHF", "Statut"])
+    for r in rows:
+        writer.writerow([
+            r[0], r[1], r[2], r[3],
+            f"{float(r[4] or 0):.2f}", f"{float(r[5] or 0):.2f}",
+            f"{float(r[6] or 0):.2f}", f"{float(r[7] or 0):.2f}" if r[7] else "",
+            r[8],
+        ])
+    buf.seek(0)
+
+    return StreamingResponse(
+        iter([buf.getvalue().encode("utf-8-sig")]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=etat_locatif_{year}.csv"},
     )

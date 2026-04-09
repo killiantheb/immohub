@@ -947,6 +947,185 @@ Pour plus d'informations : www.portaildespoursuites.ch
 """
 
 
+# ─── Relance 3 niveaux ────────────────────────────────────────────────────────
+
+def _build_relance(ctx: dict, niveau: int = 1) -> str:
+    """
+    Niveau 1 — Rappel amiable (avant échéance ou J+3)
+    Niveau 2 — Mise en demeure (J+7 : CO art. 102)
+    Niveau 3 — Résiliation (J+30 : CO art. 257d — délai congé 30 jours)
+    """
+    agency = ctx["agency"]
+    tenant = ctx["tenant"]
+    contract = ctx.get("contract", {})
+    today = ctx.get("today", "…")
+    montant = ctx.get("montant", "…")
+    periode = ctx.get("periode", "…")
+
+    NIVEAUX = {
+        1: {
+            "titre": "Rappel de loyer",
+            "objet": f"Rappel — Loyer {periode}",
+            "ton": "cordial",
+            "corps": f"""
+<p>Nous nous permettons de vous adresser le présent rappel concernant le loyer du mois de <strong>{periode}</strong>,
+d'un montant de <strong>CHF {montant}</strong>, qui n'apparaît pas encore à notre décompte.</p>
+
+<p>Il s'agit peut-être d'un simple oubli. Nous vous prions de bien vouloir effectuer le virement dans les meilleurs délais
+sur le compte indiqué ci-dessous.</p>
+
+<p>En cas de paiement déjà effectué, nous vous remercions de ne pas tenir compte de ce rappel.</p>
+""",
+            "footer": "Restant à votre disposition pour tout renseignement, nous vous adressons nos cordiales salutations.",
+        },
+        2: {
+            "titre": "Mise en demeure — Loyer impayé",
+            "objet": f"Mise en demeure — Loyer {periode} — CO art. 102",
+            "ton": "ferme",
+            "corps": f"""
+<p>Malgré notre rappel, nous constatons que le loyer du mois de <strong>{periode}</strong>,
+d'un montant de <strong>CHF {montant}</strong>, demeure impayé à ce jour.</p>
+
+<p>Conformément à l'art. 102 du Code des obligations (CO), nous vous mettons formellement en demeure de
+nous verser la somme de <strong>CHF {montant}</strong> dans un délai de <strong>10 jours</strong> à
+compter de la réception du présent courrier.</p>
+
+<p>Passé ce délai, nous nous réservons le droit d'introduire une procédure de poursuite selon la
+Loi fédérale sur la poursuite pour dettes et la faillite (LP), ainsi que toute autre voie de droit
+à notre disposition.</p>
+
+<p><strong>IBAN pour le paiement :</strong> {agency.get('iban', '…')}<br>
+<strong>Référence :</strong> {contract.get('reference', '…')}</p>
+""",
+            "footer": "Veuillez agir sans délai afin d'éviter des frais supplémentaires.",
+        },
+        3: {
+            "titre": "Résiliation du bail pour défaut de paiement",
+            "objet": f"Résiliation — CO art. 257d — Loyer {periode} impayé",
+            "ton": "juridique",
+            "corps": f"""
+<p>En application de l'art. 257d du Code des obligations (CO), nous vous notifions par le présent courrier
+la résiliation de votre bail pour défaut de paiement du loyer.</p>
+
+<p><strong>Arriéré constaté :</strong> CHF {montant} (loyer {periode})</p>
+<p><strong>Délai de paiement accordé :</strong> 30 jours dès réception du présent avis</p>
+<p><strong>Date d'effet de la résiliation :</strong> à l'expiration du délai si le paiement n'est pas intervenu</p>
+
+<p>Si le montant de <strong>CHF {montant}</strong> est intégralement versé sur notre compte (IBAN : {agency.get('iban', '…')})
+dans le délai imparti, la présente résiliation sera annulée.</p>
+
+<p>À défaut, vous serez tenu de libérer les locaux à la date d'effet de la résiliation. Le cas échéant,
+nous engagerons la procédure d'expulsion devant les autorités compétentes.</p>
+
+<p><em>Ce courrier est adressé en recommandé avec accusé de réception, conformément à l'art. 257d al. 1 CO.</em></p>
+""",
+            "footer": "Nous vous invitons à régulariser votre situation dans les plus brefs délais.",
+        },
+    }
+
+    cfg = NIVEAUX.get(niveau, NIVEAUX[1])
+    badge_color = {1: "#2E7D32", 2: "#E65100", 3: "#B71C1C"}[niveau]
+    badge_label = {1: "Niveau 1 — Rappel amiable", 2: "Niveau 2 — Mise en demeure", 3: "Niveau 3 — Résiliation CO 257d"}[niveau]
+
+    return f"""
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+  <span style="background:{badge_color};color:#fff;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;">
+    {badge_label}
+  </span>
+</div>
+
+<div style="text-align:right;margin-bottom:16px;">
+  <p style="margin:0;font-size:12px;">{agency['name']}</p>
+  <p style="margin:0;font-size:12px;">{agency['address']}, {agency['city']}</p>
+  <p style="margin:0;font-size:12px;">{today}</p>
+</div>
+
+<div style="margin-bottom:16px;">
+  <p style="margin:2px 0;"><strong>{tenant.get('full_name','…')}</strong></p>
+  <p style="margin:2px 0;font-size:12px;">{tenant.get('address','')}, {tenant.get('zip','')} {tenant.get('city','')}</p>
+</div>
+
+<p style="font-weight:700;text-decoration:underline;margin-bottom:16px;">Objet : {cfg['objet']}</p>
+
+<p>Madame, Monsieur,</p>
+
+{cfg['corps']}
+
+<p>{cfg['footer']}</p>
+
+<p style="margin-top:24px;">Nous vous prions de recevoir, Madame, Monsieur, nos salutations les meilleures.</p>
+
+<div style="margin-top:32px;">
+  <p><strong>{agency['name']}</strong></p>
+  <p style="margin-top:20px;">__________________________<br>Signature</p>
+</div>
+"""
+
+
+def _build_dossier_vendeur(ctx: dict) -> str:
+    """Dossier de présentation vendeur (pour mise en vente d'un bien)."""
+    agency = ctx["agency"]
+    prop = ctx.get("property", {})
+    contract = ctx.get("contract", {})
+    today = ctx.get("today", "…")
+
+    return f"""
+<h1 style="font-size:22px;font-weight:700;color:#2c2c2c;border-bottom:3px solid #B55A30;padding-bottom:8px;">
+  Dossier Vendeur
+</h1>
+<p style="color:#888;font-size:12px;margin-top:0;">Préparé par {agency['name']} · {today}</p>
+
+<h2>Le bien</h2>
+<table class="info">
+  <tr><td>Adresse</td><td><strong>{prop.get('address','…')}, {prop.get('zip','')} {prop.get('city','')}</strong></td></tr>
+  <tr><td>Type</td><td>{prop.get('type','…')}</td></tr>
+  <tr><td>Surface habitable</td><td>{prop.get('surface','…')} m²</td></tr>
+  <tr><td>Année de construction</td><td>{prop.get('year_built','…')}</td></tr>
+  <tr><td>Nombre de pièces</td><td>{prop.get('rooms','…')}</td></tr>
+  <tr><td>Étage</td><td>{prop.get('floor','…')}</td></tr>
+</table>
+
+<h2>Situation locative</h2>
+<table class="info">
+  <tr><td>Statut actuel</td><td>{prop.get('status','…')}</td></tr>
+  <tr><td>Loyer mensuel</td><td>CHF {_fmt_chf(contract.get('monthly_rent'))}</td></tr>
+  <tr><td>Rendement brut estimé</td><td>{contract.get('gross_yield','…')}</td></tr>
+  <tr><td>Locataire actuel</td><td>{contract.get('tenant_name','…')}</td></tr>
+  <tr><td>Bail échéance</td><td>{contract.get('end_date_long','…')}</td></tr>
+</table>
+
+<h2>Prix de vente</h2>
+<table class="info">
+  <tr><td>Prix demandé</td><td><strong>CHF {_fmt_chf(prop.get('sale_price'))}</strong></td></tr>
+  <tr><td>Prix au m²</td><td>{prop.get('price_per_sqm','…')} CHF/m²</td></tr>
+  <tr><td>Charges PPE</td><td>CHF {_fmt_chf(prop.get('ppe_charges'))}/mois</td></tr>
+</table>
+
+<h2>Documents disponibles</h2>
+<ul>
+  <li>Plans du bien</li>
+  <li>Derniers procès-verbaux de l'assemblée PPE</li>
+  <li>Attestation d'assurance bâtiment</li>
+  <li>Bail en cours et quittances des 12 derniers mois</li>
+  <li>Extraits du registre foncier</li>
+  <li>Rapport d'état du bien (à commander)</li>
+</ul>
+
+<h2>Contact</h2>
+<table class="info">
+  <tr><td>Agence</td><td>{agency['name']}</td></tr>
+  <tr><td>Adresse</td><td>{agency['address']}, {agency['city']}</td></tr>
+  <tr><td>Téléphone</td><td>{agency.get('phone','…')}</td></tr>
+  <tr><td>E-mail</td><td>{agency.get('email','…')}</td></tr>
+</table>
+
+<p style="margin-top:16px;font-size:11px;color:#888;font-style:italic;">
+Données basées sur les informations transmises par le propriétaire.
+L'agence décline toute responsabilité quant à l'exactitude des informations fournies par les tiers.
+</p>
+"""
+
+
 # ─── Context builder ──────────────────────────────────────────────────────────
 
 def _build_ctx(
@@ -1130,6 +1309,8 @@ TEMPLATE_TYPES = [
     "demande_pieces_societe", "demande_pieces_commercial",
     "requisition_poursuite",
     "quittance_loyer",
+    "relance_1", "relance_2", "relance_3",
+    "dossier_vendeur",
 ]
 
 
@@ -1150,6 +1331,10 @@ async def list_template_types() -> list[dict]:
         {"key": "demande_pieces_commercial", "label": "Demande de pièces — Bail commercial", "icon": "🏪"},
         {"key": "requisition_poursuite", "label": "Réquisition de poursuite LP", "icon": "⚖️"},
         {"key": "quittance_loyer", "label": "Quittance de loyer", "icon": "🧾"},
+        {"key": "relance_1", "label": "Lettre de relance — Niveau 1 (rappel amiable)", "icon": "📬"},
+        {"key": "relance_2", "label": "Lettre de relance — Niveau 2 (mise en demeure CO 102)", "icon": "⚠️"},
+        {"key": "relance_3", "label": "Lettre de relance — Niveau 3 (résiliation CO 257d)", "icon": "🔴"},
+        {"key": "dossier_vendeur", "label": "Dossier de présentation vendeur", "icon": "🏷️"},
     ]
 
 
@@ -1272,6 +1457,16 @@ async def generate_document(
     elif ttype == "quittance_loyer":
         ctx["extra"] = payload.extra
         body_html = _build_quittance(ctx)
+    elif ttype in ("relance_1", "relance_2", "relance_3"):
+        niveau = int(ttype[-1])
+        ctx["montant"] = payload.extra.get("montant", "…")
+        ctx["periode"] = payload.extra.get("periode", "…")
+        body_html = _build_relance(ctx, niveau=niveau)
+    elif ttype == "dossier_vendeur":
+        ctx["property"]["sale_price"] = payload.extra.get("sale_price")
+        ctx["property"]["price_per_sqm"] = payload.extra.get("price_per_sqm", "…")
+        ctx["property"]["ppe_charges"] = payload.extra.get("ppe_charges")
+        body_html = _build_dossier_vendeur(ctx)
     else:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Type de document inconnu: {ttype}")
 
@@ -1287,6 +1482,10 @@ async def generate_document(
         "demande_pieces_societe": "Demande de pièces",
         "demande_pieces_commercial": "Demande de pièces",
         "requisition_poursuite": "Réquisition de poursuite",
+        "relance_1": "Lettre de relance — Rappel amiable",
+        "relance_2": "Lettre de relance — Mise en demeure",
+        "relance_3": "Lettre de relance — Résiliation CO 257d",
+        "dossier_vendeur": "Dossier vendeur",
     }
 
     full_html = _wrap_html(body_html, ctx["agency"], title_map.get(ttype, "Document"))

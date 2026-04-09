@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, FileText, TrendingUp } from "lucide-react";
+import { Download, FileText, TrendingUp, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { RevenueChart } from "@/components/RevenueChart";
@@ -48,6 +48,22 @@ interface RevenueStats {
 
 export default function ComptabilitePage() {
   const [year, setYear] = useState(YEAR);
+  const [exportingCsv, setExportingCsv] = useState(false);
+
+  async function downloadCsv() {
+    setExportingCsv(true);
+    try {
+      const resp = await api.get(`/ai/export/etat-locatif?year=${year}`, { responseType: "blob" });
+      const url = URL.createObjectURL(new Blob([resp.data], { type: "text/csv" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `etat_locatif_${year}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExportingCsv(false);
+    }
+  }
 
   const { data: stats } = useQuery({
     queryKey: ["revenue-stats", year],
@@ -82,11 +98,19 @@ export default function ComptabilitePage() {
             style={{ padding: "8px 12px", border: `1px solid ${S.border}`, borderRadius: 9, fontSize: 13, backgroundColor: S.surface, color: S.text, outline: "none" }}>
             {[YEAR, YEAR - 1, YEAR - 2].map(y => <option key={y} value={y}>{y}</option>)}
           </select>
-          <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", border: `1px solid ${S.border}`, borderRadius: 9, backgroundColor: S.surface, color: S.text2, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <button
+            onClick={() => window.print()}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", border: `1px solid ${S.border}`, borderRadius: 9, backgroundColor: S.surface, color: S.text2, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+          >
             <Download size={14} /> Export PDF
           </button>
-          <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", border: `1px solid ${S.orange}`, borderRadius: 9, backgroundColor: S.orangeBg, color: S.orange, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-            <FileText size={14} /> Export Excel fiduciaire
+          <button
+            onClick={downloadCsv}
+            disabled={exportingCsv}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", border: `1px solid ${S.orange}`, borderRadius: 9, backgroundColor: S.orangeBg, color: S.orange, fontSize: 13, fontWeight: 600, cursor: exportingCsv ? "default" : "pointer" }}
+          >
+            {exportingCsv ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <FileText size={14} />}
+            Export CSV fiduciaire
           </button>
         </div>
       </div>
