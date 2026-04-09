@@ -211,7 +211,7 @@ async def _calculate_commissions_async() -> dict:
     from app.models.transaction import Transaction
     from sqlalchemy import select
 
-    COMMISSION_PCT = 3.0
+    COMMISSION_PCT = 4.0  # 4% Althy (CLAUDE.md — affiché "loyer net reçu")
     created = 0
 
     async with AsyncSessionLocal() as db:
@@ -258,3 +258,78 @@ async def _calculate_commissions_async() -> dict:
 
     logger.info("calculate_commissions: created=%d", created)
     return {"commissions_created": created}
+
+
+# ── generate_monthly_quittances ────────────────────────────────────────────────
+
+
+@celery_app.task(bind=True, name="tasks.generate_monthly_quittances", max_retries=3)
+def generate_monthly_quittances(self) -> dict:
+    """
+    Le 1er de chaque mois à 06h30 : génère une quittance pour chaque paiement
+    reçu (statut = 'recu') du mois précédent sans quittance existante.
+    Crée un enregistrement DocumentAlthy de type 'quittance'.
+    """
+    try:
+        return _run(_generate_quittances_async())
+    except Exception as exc:
+        logger.exception("generate_monthly_quittances failed: %s", exc)
+        raise self.retry(exc=exc, countdown=300)
+
+
+async def _generate_quittances_async() -> dict:
+    from app.core.database import AsyncSessionLocal
+    from app.models.document_althy import DocumentAlthy
+    from app.models.locataire import Locataire
+    from app.models.paiement import Paiement
+    from sqlalchemy import and_, exists, select
+
+    now = datetime.now(UTC)
+    # Mois précédent
+    if now.month == 1:
+        target_year, target_month = now.year - 1, 12
+    else:
+        target_year, target_month = now.year, now.month - 1
+    mois_str = f"{target_year}-{target_month:02d}"
+
+    created = 0
+    skipped = 0
+
+    async with AsyncSessionLocal() as db:
+        # Paiements reçus du mois précédent sans quittance
+        paiements = (await db.execute(
+            select(Paiement).where(
+                and_(
+                    Paiement.mois == mois_str,
+                    Paiement.statut == "recu",
+                    ~exists().where(
+                        and_(
+                            DocumentAlthy.locataire_id == Paiement.locataire_id,
+                            DocumentAlthy.type == "quittance",
+                            DocumentAlthy.date_document >= date(target_year, target_month, 1),
+                        )
+                    ),
+                )
+            )
+        )).scalars().all()
+
+        for paiement in paiements:
+            loyer_net = float(paiement.net_montant or paiement.montant)
+            mois_label = f"{target_month:02d}/{target_year}"
+
+            # Créer l'enregistrement document (URL placeholder — PDF généré par service docs)
+            quittance = DocumentAlthy(
+                bien_id=paiement.bien_id,
+                locataire_id=paiement.locataire_id,
+                type="quittance",
+                url_storage=f"quittances/{paiement.bien_id}/{mois_str}.pdf",
+                date_document=date(target_year, target_month, 1),
+                genere_par_ia=True,
+            )
+            db.add(quittance)
+            created += 1
+
+        await db.commit()
+
+    logger.info("generate_monthly_quittances: created=%d skipped=%d mois=%s", created, skipped, mois_str)
+    return {"created": created, "skipped": skipped, "mois": mois_str}

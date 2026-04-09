@@ -38,6 +38,8 @@ class PaiementUpdate(BaseModel):
     statut: Optional[Literal["recu", "en_attente", "retard"]] = None
     jours_retard: Optional[int] = None
     montant: Optional[Decimal] = None
+    net_montant: Optional[Decimal] = None
+    stripe_payment_intent_id: Optional[str] = None
 
 
 class PaiementRead(PaiementBase):
@@ -45,3 +47,6 @@ class PaiementRead(PaiementBase):
 
     id: uuid.UUID
     created_at: datetime
+    # net_montant = montant - 4% Althy — toujours affiché comme "Loyer net reçu"
+    net_montant: Optional[Decimal] = None
+    stripe_payment_intent_id: Optional[str] = None

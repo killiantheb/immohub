@@ -1,15 +1,24 @@
-"""Stripe webhooks — /api/v1/webhooks/stripe
+"""Stripe — webhooks, Connect, Billing, loyer payments.
 
-Événements gérés :
-- checkout.session.completed     → activer abonnement
-- customer.subscription.updated  → mise à jour plan
-- customer.subscription.deleted  → annulation abonnement
-- payment_intent.succeeded       → loyer reçu (4% Althy → proprio)
-- payment_intent.payment_failed  → loyer impayé → notification
-- account.updated                → Stripe Connect account vérifié
+Routes :
+  POST /stripe/connect/onboard          → Stripe Connect Express onboarding
+  GET  /stripe/connect/status           → vérifier le compte Connect
+  POST /stripe/checkout                 → créer une session Checkout abonnement
+  GET  /stripe/subscription             → abonnement actif de l'utilisateur
+  POST /stripe/loyer/{paiement_id}      → PaymentIntent loyer (4% Althy)
+  POST /stripe/webhook                  → événements Stripe asynchrones
+
+Règle absolue CLAUDE.md :
+  - 4 % Althy prélevé en application_fee (transfer_data.destination = compte proprio)
+  - Jamais afficher "commission" côté utilisateur → toujours "Loyer net reçu"
+  - CHF 90 frais dossier → uniquement si locataire retenu (POST /locataires/{id}/retenir)
 """
 
 from __future__ import annotations
+
+import uuid
+from datetime import date
+from typing import Annotated, Literal
 
 import stripe
 from app.core.config import settings
@@ -17,31 +26,32 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Annotated
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 router = APIRouter()
 
 DbDep = Annotated[AsyncSession, Depends(get_db)]
+AuthDep = Annotated[User, Depends(get_current_user)]
+
+PLATFORM_FEE_PCT = settings.STRIPE_PLATFORM_FEE_PCT  # 4.0
 
 
-# ── Stripe Connect onboarding ─────────────────────────────────────────────────
+# ═════════════════════════════════════════════════════════════════════════════
+# Stripe Connect — onboarding propriétaire
+# ═════════════════════════════════════════════════════════════════════════════
+
 
 @router.post("/connect/onboard")
-async def create_connect_account(
-    db: DbDep,
-    user: Annotated[User, Depends(get_current_user)],
-):
-    """Crée ou récupère le compte Stripe Connect du propriétaire."""
-    # Vérifier si le compte existe déjà
-    result = await db.execute(
+async def create_connect_account(db: DbDep, user: AuthDep):
+    """Crée ou récupère le compte Stripe Connect Express du propriétaire."""
+    row = (await db.execute(
         text("SELECT stripe_account_id FROM profiles WHERE user_id = :uid"),
         {"uid": str(user.id)},
-    )
-    row = result.fetchone()
+    )).fetchone()
     account_id = row[0] if row else None
 
     if not account_id:
@@ -59,7 +69,6 @@ async def create_connect_account(
         )
         await db.commit()
 
-    # Générer le lien d'onboarding
     link = stripe.AccountLink.create(
         account=account_id,
         refresh_url=f"{settings.ALLOWED_ORIGINS[0]}/app/abonnement?connect=refresh",
@@ -70,16 +79,12 @@ async def create_connect_account(
 
 
 @router.get("/connect/status")
-async def get_connect_status(
-    db: DbDep,
-    user: Annotated[User, Depends(get_current_user)],
-):
-    """Retourne le statut du compte Stripe Connect."""
-    result = await db.execute(
+async def get_connect_status(db: DbDep, user: AuthDep):
+    """Retourne le statut du compte Stripe Connect du propriétaire."""
+    row = (await db.execute(
         text("SELECT stripe_account_id FROM profiles WHERE user_id = :uid"),
         {"uid": str(user.id)},
-    )
-    row = result.fetchone()
+    )).fetchone()
     if not row or not row[0]:
         return {"connected": False}
 
@@ -93,7 +98,183 @@ async def get_connect_status(
     }
 
 
-# ── Webhook Stripe (événements asynchrones) ───────────────────────────────────
+# ═════════════════════════════════════════════════════════════════════════════
+# Stripe Billing — abonnements
+# ═════════════════════════════════════════════════════════════════════════════
+
+
+class CheckoutRequest(BaseModel):
+    plan: Literal["proprio", "pro", "agence", "portail"]
+
+
+PLAN_PRICE_MAP = {
+    "proprio": "STRIPE_PRICE_PROPRIO_MONTHLY",
+    "pro":     "STRIPE_PRICE_PRO_MONTHLY",
+    "agence":  "STRIPE_PRICE_AGENCY_MONTHLY",
+    "portail": "STRIPE_PRICE_PORTAL_MONTHLY",
+}
+
+
+@router.post("/checkout")
+async def create_checkout_session(payload: CheckoutRequest, db: DbDep, user: AuthDep):
+    """
+    Crée une session Stripe Checkout pour l'abonnement choisi.
+    Retourne l'URL de la page de paiement Stripe.
+    """
+    price_attr = PLAN_PRICE_MAP.get(payload.plan)
+    if not price_attr:
+        raise HTTPException(400, "Plan inconnu")
+    price_id: str = getattr(settings, price_attr, "")
+    if not price_id:
+        raise HTTPException(500, f"Prix Stripe non configuré pour le plan {payload.plan}")
+
+    # Récupérer ou créer le customer Stripe
+    row = (await db.execute(
+        text("SELECT stripe_customer_id FROM profiles WHERE user_id = :uid"),
+        {"uid": str(user.id)},
+    )).fetchone()
+    customer_id = row[0] if row else None
+
+    if not customer_id:
+        customer = stripe.Customer.create(email=user.email, metadata={"user_id": str(user.id)})
+        customer_id = customer.id
+        await db.execute(
+            text("UPDATE profiles SET stripe_customer_id = :cid WHERE user_id = :uid"),
+            {"cid": customer_id, "uid": str(user.id)},
+        )
+        await db.commit()
+
+    session = stripe.checkout.Session.create(
+        customer=customer_id,
+        mode="subscription",
+        line_items=[{"price": price_id, "quantity": 1}],
+        success_url=f"{settings.ALLOWED_ORIGINS[0]}/app/abonnement?checkout=success",
+        cancel_url=f"{settings.ALLOWED_ORIGINS[0]}/app/abonnement?checkout=cancel",
+        metadata={"user_id": str(user.id), "plan": payload.plan},
+        subscription_data={"metadata": {"user_id": str(user.id), "plan": payload.plan}},
+    )
+    return {"url": session.url}
+
+
+@router.get("/subscription")
+async def get_subscription(db: DbDep, user: AuthDep):
+    """Retourne l'abonnement actif de l'utilisateur."""
+    row = (await db.execute(
+        text("""
+            SELECT plan, status, current_period_end
+            FROM subscriptions
+            WHERE user_id = :uid AND is_active = true
+            ORDER BY created_at DESC
+            LIMIT 1
+        """),
+        {"uid": str(user.id)},
+    )).fetchone()
+
+    if not row:
+        return {"plan": "starter", "status": "no_subscription", "current_period_end": None}
+
+    return {
+        "plan": row[0],
+        "status": row[1],
+        "current_period_end": row[2].isoformat() if row[2] else None,
+    }
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Paiement loyer via Stripe Connect
+# ═════════════════════════════════════════════════════════════════════════════
+
+
+class LoyerPaymentResponse(BaseModel):
+    client_secret: str
+    payment_intent_id: str
+    loyer_brut: float    # montant réel (ex: 1800)
+    loyer_net: float     # loyer_brut - 4% Althy (ex: 1728) — affiché "Loyer net reçu"
+    frais_althy: float   # 4% (ex: 72) — JAMAIS affiché à l'utilisateur
+
+
+@router.post("/loyer/{paiement_id}", response_model=LoyerPaymentResponse)
+async def initiate_loyer_payment(
+    paiement_id: uuid.UUID,
+    db: DbDep,
+    user: AuthDep,
+):
+    """
+    Crée un PaymentIntent Stripe pour le paiement d'un loyer.
+    Prélève automatiquement 4% d'application_fee pour Althy.
+    Transfère le solde (96%) au compte Connect du propriétaire.
+
+    Le frontend affiche uniquement : "Loyer net reçu : CHF {loyer_net}"
+    Le frais_althy n'est JAMAIS affiché.
+    """
+    # Récupérer le paiement + le compte Connect du proprio
+    row = (await db.execute(
+        text("""
+            SELECT p.montant, p.bien_id, b.owner_id,
+                   pr.stripe_account_id
+            FROM paiements p
+            JOIN biens b ON b.id = p.bien_id
+            JOIN profiles pr ON pr.user_id = b.owner_id
+            WHERE p.id = :pid AND p.statut = 'en_attente'
+        """),
+        {"pid": str(paiement_id)},
+    )).fetchone()
+
+    if not row:
+        raise HTTPException(404, "Paiement introuvable ou déjà réglé")
+
+    montant, bien_id, owner_id, stripe_account_id = row
+
+    if not stripe_account_id:
+        raise HTTPException(
+            422,
+            "Le propriétaire n'a pas encore connecté son compte Stripe. "
+            "Il doit compléter l'onboarding depuis son espace Abonnement.",
+        )
+
+    loyer_brut = float(montant)
+    frais_althy = round(loyer_brut * PLATFORM_FEE_PCT / 100, 2)
+    loyer_net = round(loyer_brut - frais_althy, 2)
+
+    # Montant en centimes pour Stripe
+    amount_centimes = int(loyer_brut * 100)
+    fee_centimes = int(frais_althy * 100)
+
+    pi = stripe.PaymentIntent.create(
+        amount=amount_centimes,
+        currency="chf",
+        application_fee_amount=fee_centimes,
+        transfer_data={"destination": stripe_account_id},
+        metadata={
+            "paiement_id": str(paiement_id),
+            "bien_id": str(bien_id),
+            "owner_id": str(owner_id),
+            "loyer_net": str(loyer_net),
+        },
+        description=f"Loyer net reçu : CHF {loyer_net}",
+        automatic_payment_methods={"enabled": True},
+    )
+
+    # Stocker le PI ID sur le paiement dès maintenant
+    await db.execute(
+        text("UPDATE paiements SET stripe_payment_intent_id = :pi WHERE id = :pid"),
+        {"pi": pi.id, "pid": str(paiement_id)},
+    )
+    await db.commit()
+
+    return LoyerPaymentResponse(
+        client_secret=pi.client_secret,
+        payment_intent_id=pi.id,
+        loyer_brut=loyer_brut,
+        loyer_net=loyer_net,
+        frais_althy=frais_althy,
+    )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Webhook Stripe (événements asynchrones)
+# ═════════════════════════════════════════════════════════════════════════════
+
 
 @router.post("/webhook", status_code=status.HTTP_200_OK)
 async def stripe_webhook(
@@ -114,14 +295,38 @@ async def stripe_webhook(
         raise HTTPException(400, "Signature webhook invalide")
 
     etype = event["type"]
-    data  = event["data"]["object"]
+    data = event["data"]["object"]
 
-    # ── Abonnement créé / activé ───────────────────────────────────────────
-    if etype == "customer.subscription.updated":
+    # ── checkout.session.completed → créer ou activer l'abonnement ────────
+    if etype == "checkout.session.completed":
         customer_id = data.get("customer")
-        new_status  = data.get("status")
-        plan_id     = data["items"]["data"][0]["price"]["id"] if data.get("items") else None
-        plan_name   = _price_to_plan(plan_id)
+        sub_id = data.get("subscription")
+        metadata = data.get("metadata", {})
+        user_id = metadata.get("user_id")
+        plan = metadata.get("plan", "proprio")
+        if customer_id and user_id:
+            await db.execute(
+                text("""
+                    INSERT INTO subscriptions
+                        (user_id, stripe_customer_id, stripe_subscription_id, plan, status)
+                    VALUES (:uid, :cid, :sid, :plan, 'active')
+                    ON CONFLICT (user_id) DO UPDATE
+                    SET stripe_customer_id  = :cid,
+                        stripe_subscription_id = :sid,
+                        plan = :plan,
+                        status = 'active',
+                        updated_at = now()
+                """),
+                {"uid": user_id, "cid": customer_id, "sid": sub_id, "plan": plan},
+            )
+            await db.commit()
+
+    # ── Abonnement modifié ─────────────────────────────────────────────────
+    elif etype == "customer.subscription.updated":
+        customer_id = data.get("customer")
+        new_status = data.get("status")
+        plan_id = data["items"]["data"][0]["price"]["id"] if data.get("items") else None
+        plan_name = _price_to_plan(plan_id)
         if customer_id:
             await db.execute(
                 text("""
@@ -133,8 +338,7 @@ async def stripe_webhook(
                     WHERE stripe_customer_id = :cid
                 """),
                 {
-                    "s": new_status,
-                    "p": plan_name,
+                    "s": new_status, "p": plan_name,
                     "ps": data.get("current_period_start"),
                     "pe": data.get("current_period_end"),
                     "cid": customer_id,
@@ -155,44 +359,67 @@ async def stripe_webhook(
             )
             await db.commit()
 
-    # ── Loyer reçu — enregistrer la transaction ────────────────────────────
+    # ── Loyer reçu ─────────────────────────────────────────────────────────
     elif etype == "payment_intent.succeeded":
-        pi_id    = data.get("id")
-        amount   = data.get("amount_received", 0) / 100  # centimes → CHF
+        pi_id = data.get("id")
+        amount = data.get("amount_received", 0) / 100
         metadata = data.get("metadata", {})
+        paiement_id = metadata.get("paiement_id")
+        loyer_net_meta = metadata.get("loyer_net")
+
+        platform_fee = round(amount * PLATFORM_FEE_PCT / 100, 2)
+        net_amount = float(loyer_net_meta) if loyer_net_meta else round(amount - platform_fee, 2)
+
+        if paiement_id:
+            # Mettre à jour la table paiements (Althy natif)
+            await db.execute(
+                text("""
+                    UPDATE paiements
+                    SET statut = 'recu',
+                        date_paiement = CURRENT_DATE,
+                        net_montant = :net,
+                        stripe_payment_intent_id = :pi,
+                        updated_at = now()
+                    WHERE id = :pid
+                """),
+                {"net": net_amount, "pi": pi_id, "pid": paiement_id},
+            )
+
+        # Mettre à jour aussi la table transactions (legacy)
         lease_id = metadata.get("lease_id")
         if lease_id:
-            platform_fee = round(amount * settings.STRIPE_PLATFORM_FEE_PCT / 100, 2)
-            net_amount   = round(amount - platform_fee, 2)
             await db.execute(
                 text("""
                     UPDATE transactions
-                    SET status = 'paid',
-                        paid_date = now(),
+                    SET status = 'paid', paid_date = now(),
                         stripe_payment_intent_id = :pi,
-                        net_amount   = :net,
-                        platform_fee = :fee,
-                        updated_at   = now()
+                        net_amount = :net, platform_fee = :fee,
+                        updated_at = now()
                     WHERE stripe_payment_intent_id = :pi
                        OR (lease_id = :lid AND status = 'pending')
                 """),
-                {
-                    "pi": pi_id,
-                    "net": net_amount,
-                    "fee": platform_fee,
-                    "lid": lease_id,
-                },
+                {"pi": pi_id, "net": net_amount, "fee": platform_fee, "lid": lease_id},
             )
-            await db.commit()
+        await db.commit()
 
     # ── Loyer impayé ───────────────────────────────────────────────────────
     elif etype == "payment_intent.payment_failed":
-        pi_id    = data.get("id")
-        reason   = data.get("last_payment_error", {}).get("message", "Échec paiement")
+        pi_id = data.get("id")
+        reason = data.get("last_payment_error", {}).get("message", "Échec paiement")
+        metadata = data.get("metadata", {})
+        paiement_id = metadata.get("paiement_id")
+
+        if paiement_id:
+            await db.execute(
+                text("""
+                    UPDATE paiements SET statut = 'retard', updated_at = now()
+                    WHERE id = :pid
+                """),
+                {"pid": paiement_id},
+            )
         await db.execute(
             text("""
-                UPDATE transactions
-                SET status = 'failed', failure_reason = :r, updated_at = now()
+                UPDATE transactions SET status = 'failed', failure_reason = :r, updated_at = now()
                 WHERE stripe_payment_intent_id = :pi
             """),
             {"r": reason, "pi": pi_id},
@@ -204,10 +431,7 @@ async def stripe_webhook(
         account_id = data.get("id")
         if data.get("payouts_enabled"):
             await db.execute(
-                text("""
-                    UPDATE profiles SET updated_at = now()
-                    WHERE stripe_account_id = :aid
-                """),
+                text("UPDATE profiles SET updated_at = now() WHERE stripe_account_id = :aid"),
                 {"aid": account_id},
             )
             await db.commit()
@@ -217,9 +441,9 @@ async def stripe_webhook(
 
 def _price_to_plan(price_id: str | None) -> str:
     mapping = {
-        settings.STRIPE_PRICE_PROPRIO_MONTHLY: "starter",
+        settings.STRIPE_PRICE_PROPRIO_MONTHLY: "proprio",
         settings.STRIPE_PRICE_PRO_MONTHLY: "pro",
-        settings.STRIPE_PRICE_AGENCY_MONTHLY: "agency",
-        settings.STRIPE_PRICE_PORTAL_MONTHLY: "portal",
+        settings.STRIPE_PRICE_AGENCY_MONTHLY: "agence",
+        settings.STRIPE_PRICE_PORTAL_MONTHLY: "portail",
     }
-    return mapping.get(price_id or "", "starter")
+    return mapping.get(price_id or "", "proprio")

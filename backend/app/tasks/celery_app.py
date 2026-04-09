@@ -52,4 +52,9 @@ celery_app.conf.beat_schedule = {
         "task": "tasks.daily_briefing_all_users",
         "schedule": crontab(hour=7, minute=0),
     },
+    # 1st of each month at 06:30 Zurich — quittances automatiques
+    "generate-monthly-quittances": {
+        "task": "tasks.generate_monthly_quittances",
+        "schedule": crontab(hour=6, minute=30, day_of_month=1),
+    },
 }

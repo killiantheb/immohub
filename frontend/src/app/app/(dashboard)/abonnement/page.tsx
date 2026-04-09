@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Sparkles, Zap, Building2, Crown, ArrowRight, Shield } from "lucide-react";
+import { Check, Sparkles, Zap, Building2, Crown, ArrowRight, Shield, Loader2 } from "lucide-react";
 import { useUser } from "@/lib/auth";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 const S = {
   bg:        "var(--althy-bg)",
@@ -117,10 +119,36 @@ const FEATURES_COMPARE = [
   { name: "Utilisateurs",               starter: "1",           proprio: "1",           agence: "2–50" },
 ];
 
+interface SubscriptionData {
+  plan: string;
+  status: string;
+  current_period_end: string | null;
+}
+
 export default function AbonnementPage() {
   const { data: profile } = useUser();
   const [annual, setAnnual] = useState(false);
-  const currentPlan = "starter"; // TODO: load from subscription
+  const [subscribing, setSubscribing] = useState<string | null>(null);
+
+  const { data: subscription } = useQuery<SubscriptionData>({
+    queryKey: ["subscription"],
+    queryFn: () => api.get("/stripe/subscription").then(r => r.data),
+    staleTime: 60_000,
+  });
+
+  const currentPlan = subscription?.plan ?? "starter";
+  const subStatus = subscription?.status ?? "no_subscription";
+
+  async function handleSubscribe(planId: string) {
+    if (planId === "starter") return;
+    setSubscribing(planId);
+    try {
+      const res = await api.post("/stripe/checkout", { plan: planId });
+      window.location.href = res.data.url;
+    } catch {
+      setSubscribing(null);
+    }
+  }
 
   return (
     <div style={{ padding: "32px 24px", maxWidth: 1100, margin: "0 auto" }}>
@@ -148,16 +176,20 @@ export default function AbonnementPage() {
             <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: S.text }}>
               Plan actuel : <span style={{ color: "var(--althy-orange)", textTransform: "capitalize" }}>{currentPlan}</span>
             </p>
-            <p style={{ margin: "2px 0 0", fontSize: 12, color: S.text3 }}>14 jours d&apos;essai gratuit · Carte requise à l&apos;expiration</p>
+            <p style={{ margin: "2px 0 0", fontSize: 12, color: S.text3 }}>
+              {subscription?.current_period_end
+                ? `Renouvellement le ${new Date(subscription.current_period_end).toLocaleDateString("fr-CH")}`
+                : "14 jours d'essai gratuit · Carte requise à l'expiration"}
+            </p>
           </div>
         </div>
         <div style={{
           padding: "6px 14px", borderRadius: 20,
-          backgroundColor: "var(--althy-green-bg)",
-          border: "1px solid rgba(46,94,34,0.2)",
-          fontSize: 12, fontWeight: 600, color: "var(--althy-green)",
+          backgroundColor: subStatus === "active" ? "var(--althy-green-bg)" : S.surface2,
+          border: subStatus === "active" ? "1px solid rgba(46,94,34,0.2)" : `1px solid ${S.border}`,
+          fontSize: 12, fontWeight: 600, color: subStatus === "active" ? "var(--althy-green)" : S.text3,
         }}>
-          Actif — 12 jours restants
+          {subStatus === "active" ? "Actif" : subStatus === "no_subscription" ? "Essai gratuit" : subStatus}
         </div>
       </div>
 
@@ -231,19 +263,23 @@ export default function AbonnementPage() {
               </ul>
 
               <button
-                disabled={isCurrent}
+                disabled={isCurrent || subscribing === plan.id}
+                onClick={() => !isCurrent && plan.id !== "starter" ? handleSubscribe(plan.id) : undefined}
                 style={{
                   width: "100%", padding: "10px 0",
                   backgroundColor: isCurrent ? S.surface2 : plan.highlight ? "var(--althy-orange)" : S.surface2,
                   color: isCurrent ? S.text3 : plan.highlight ? "#fff" : S.text,
                   border: isCurrent ? `1px solid ${S.border}` : plan.highlight ? "none" : `1px solid ${S.border}`,
                   borderRadius: 10, fontSize: 13, fontWeight: 600,
-                  cursor: isCurrent ? "default" : "pointer",
+                  cursor: isCurrent || plan.id === "starter" ? "default" : "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  opacity: subscribing && subscribing !== plan.id ? 0.6 : 1,
                 }}
               >
-                {isCurrent ? "Plan actuel" : plan.cta}
-                {!isCurrent && <ArrowRight size={14} />}
+                {subscribing === plan.id
+                  ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Redirection…</>
+                  : isCurrent ? "Plan actuel" : plan.cta}
+                {!isCurrent && subscribing !== plan.id && <ArrowRight size={14} />}
               </button>
               {!isCurrent && <p style={{ textAlign: "center", fontSize: 11, color: S.text3, margin: "6px 0 0" }}>{plan.note}</p>}
             </div>
