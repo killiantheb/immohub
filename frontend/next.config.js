@@ -3,6 +3,10 @@ const { withSentryConfig } = require("@sentry/nextjs");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  generateBuildId: async () => {
+    // Force a unique build ID on every deploy to bust all chunk caches
+    return `build-${Date.now()}`;
+  },
   images: {
     remotePatterns: [
       {
