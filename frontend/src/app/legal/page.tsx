@@ -32,9 +32,9 @@ export default function MentionsLegalesPage() {
       <P><strong>Siège social :</strong> Genève, Suisse</P>
       <P><strong>Email :</strong> contact@althy.ch</P>
       <P><strong>Site web :</strong> https://althy.ch</P>
-      <P style={{ marginTop: "0.75rem", padding: "0.75rem 1rem", background: "#FAE4D6", borderRadius: 8, border: "1px solid #F0C4A8", fontSize: 13 }}>
-        Althy est un service en phase de lancement. La société est en cours de constitution au Registre du commerce de Genève. Les présentes mentions légales seront mises à jour dès l'immatriculation officielle.
-      </P>
+      <p style={{ marginTop: "0.75rem", padding: "0.75rem 1rem", background: "#FAE4D6", borderRadius: 8, border: "1px solid #F0C4A8", fontSize: 13, color: "#5C2E0E", lineHeight: 1.65 }}>
+        Althy est un service en phase de lancement. La société est en cours de constitution au Registre du commerce de Genève. Les présentes mentions légales seront mises à jour dès l&apos;immatriculation officielle.
+      </p>
 
       <H2>2. Responsable de la publication</H2>
       <P>Le responsable de la publication est le fondateur d'Althy, joignable à l'adresse <a href="mailto:contact@althy.ch" style={{ color: "#B55A30" }}>contact@althy.ch</a>.</P>

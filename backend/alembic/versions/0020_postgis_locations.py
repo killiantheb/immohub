@@ -74,7 +74,8 @@ def upgrade() -> None:
     """)
 
     # ── Function: find openers within radius ───────────────────────────────────
-    # Uses Haversine via ST_DWithin on geography cast (meters)
+    # role is stored in users table, not profiles — join accordingly.
+    # is_active is also on users, not profiles.
     op.execute("""
         CREATE OR REPLACE FUNCTION find_nearby_openers(
             p_lat FLOAT,
@@ -104,10 +105,11 @@ def upgrade() -> None:
                 pr.intervention_radius_km,
                 pr.hourly_rate
             FROM profiles pr
+            JOIN users u ON u.id = pr.user_id
             WHERE
                 pr.location IS NOT NULL
-                AND (pr.role = 'opener' OR pr.role = 'artisan' OR pr.role = 'expert')
-                AND pr.is_active = TRUE
+                AND u.role IN ('opener', 'artisan', 'expert')
+                AND u.is_active = TRUE
                 AND (pr.vacances_mode IS FALSE OR pr.vacances_mode IS NULL)
                 AND ST_DWithin(
                     pr.location::geography,
