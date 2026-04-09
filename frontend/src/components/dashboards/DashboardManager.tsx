@@ -3,9 +3,9 @@
 import Link from "next/link";
 import {
   AlertTriangle, ArrowRight, Building2, CheckCircle2,
-  Clock, Sparkles, TrendingDown, TrendingUp, Wrench,
+  Clock, PiggyBank, Sparkles, TrendingDown, TrendingUp, Wrench,
 } from "lucide-react";
-import { useManagerDashboard, type BienWithLocataire } from "@/lib/hooks/useDashboardData";
+import { useManagerDashboard, useSavings, useBriefing, type BienWithLocataire } from "@/lib/hooks/useDashboardData";
 import type { AppRole } from "@/lib/hooks/useRole";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -85,19 +85,56 @@ function MetricCard({ label, value, sub, icon: Icon, color, bg, trend }: MetricP
   );
 }
 
+// ── Savings banner ────────────────────────────────────────────────────────────
+function SavingsBanner({ savedMonth }: { savedMonth: number }) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      padding: "0.85rem 1.25rem",
+      background: `linear-gradient(135deg, ${S.greenBg} 0%, #F0FAF0 100%)`,
+      border: `1px solid ${S.green}40`,
+      borderRadius: 14, marginBottom: "1rem",
+      flexWrap: "wrap", gap: 8,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 34, height: 34, borderRadius: 9, background: S.green, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <PiggyBank size={16} style={{ color: "#fff" }} />
+        </div>
+        <div>
+          <p style={{ fontSize: 11, fontWeight: 700, color: S.green, letterSpacing: "0.05em", textTransform: "uppercase", margin: 0 }}>
+            Économisé ce mois vs régie
+          </p>
+          <p style={{ fontSize: 12, color: S.text3, margin: 0 }}>
+            Commission 8 % + frais admin · Althy = CHF 0 commission
+          </p>
+        </div>
+      </div>
+      <p style={{
+        fontFamily: "var(--font-serif)", fontSize: 26, fontWeight: 300,
+        color: S.green, margin: 0, letterSpacing: "-0.01em",
+      }}>
+        {fmtCHF(savedMonth)}
+      </p>
+    </div>
+  );
+}
+
 // ── Briefing IA ───────────────────────────────────────────────────────────────
-function BriefingIA({ biensVacants, loyersAttente, interOuvertes }: {
+function BriefingIA({ biensVacants, loyersAttente, interOuvertes, storedMessage }: {
   biensVacants: number;
   loyersAttente: number;
   interOuvertes: number;
+  storedMessage?: string;
 }) {
-  const items: string[] = [];
-  if (biensVacants > 0) items.push(`${biensVacants} bien${biensVacants > 1 ? "s" : ""} vacant${biensVacants > 1 ? "s" : ""} — publication recommandée`);
-  if (loyersAttente > 0) items.push(`${fmtCHF(loyersAttente)} de loyers en attente de réception`);
-  if (interOuvertes > 0) items.push(`${interOuvertes} intervention${interOuvertes > 1 ? "s" : ""} ouverte${interOuvertes > 1 ? "s" : ""} à suivre`);
-  const summary = items.length === 0
-    ? "Tout est en ordre — aucune action urgente aujourd'hui."
-    : items.join(" · ");
+  const summary = storedMessage ?? (() => {
+    const items: string[] = [];
+    if (biensVacants > 0) items.push(`${biensVacants} bien${biensVacants > 1 ? "s" : ""} vacant${biensVacants > 1 ? "s" : ""} — publication recommandée`);
+    if (loyersAttente > 0) items.push(`${fmtCHF(loyersAttente)} de loyers en attente de réception`);
+    if (interOuvertes > 0) items.push(`${interOuvertes} intervention${interOuvertes > 1 ? "s" : ""} ouverte${interOuvertes > 1 ? "s" : ""} à suivre`);
+    return items.length === 0
+      ? "Tout est en ordre — aucune action urgente aujourd'hui."
+      : items.join(" · ");
+  })();
 
   return (
     <div style={{
@@ -201,8 +238,10 @@ interface Props {
 
 export function DashboardManager({ firstName, role }: Props) {
   const { isLoading, metrics, biens } = useManagerDashboard();
+  const { data: savings } = useSavings();
+  const { data: briefing } = useBriefing();
 
-  const roleLabel = role === "super_admin" ? "Administrateur" : role === "agency" ? "Agence" : "Propriétaire";
+  const roleLabel = role === "super_admin" ? "Administrateur" : role === "agence" || role === "agency" ? "Agence" : "Propriétaire";
 
   return (
     <div>
@@ -219,12 +258,18 @@ export function DashboardManager({ firstName, role }: Props) {
         </p>
       </div>
 
+      {/* Savings banner */}
+      {savings && savings.saved_this_month > 0 && (
+        <SavingsBanner savedMonth={savings.saved_this_month} />
+      )}
+
       {/* Briefing IA */}
       {!isLoading && (
         <BriefingIA
           biensVacants={metrics.biensVacants}
           loyersAttente={metrics.loyersAttente}
           interOuvertes={metrics.interOuvertes}
+          storedMessage={briefing?.is_today ? briefing.message : undefined}
         />
       )}
 

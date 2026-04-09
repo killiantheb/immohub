@@ -52,7 +52,9 @@ async def _daily_briefing_async() -> dict:
     async with AsyncSessionLocal() as db:
         # Fetch active managers and agencies
         users_res = await db.execute(
-            select(User).where(User.role.in_(["owner", "agency"]))
+            select(User).where(
+                User.role.in_(["owner", "agency", "proprio_solo", "agence"])
+            )
         )
         users = users_res.scalars().all()
 

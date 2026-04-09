@@ -117,6 +117,75 @@ export function useManagerDashboard() {
   };
 }
 
+// ── Savings vs régie ─────────────────────────────────────────────────────────
+
+export interface SavingsData {
+  saved_this_month: number;
+  saved_ytd: number;
+  nb_biens: number;
+  loyers_mois: number;
+  regie_rate: number;
+}
+
+export function useSavings() {
+  return useQuery<SavingsData>({
+    queryKey: ["dashboard", "savings"],
+    queryFn: async () => {
+      const { data } = await api.get<SavingsData>("/dashboard/savings");
+      return data;
+    },
+    staleTime: 300_000, // 5 min
+  });
+}
+
+// ── Briefing IA stocké ────────────────────────────────────────────────────────
+
+export interface BriefingData {
+  titre: string;
+  message: string;
+  date: string;
+  is_today: boolean;
+}
+
+export function useBriefing() {
+  return useQuery<BriefingData>({
+    queryKey: ["dashboard", "briefing"],
+    queryFn: async () => {
+      const { data } = await api.get<BriefingData>("/dashboard/briefing");
+      return data;
+    },
+    staleTime: 300_000,
+  });
+}
+
+// ── Potentiel IA bien ────────────────────────────────────────────────────────
+
+export interface PotentielIA {
+  valeur_min: number;
+  valeur_max: number;
+  rendement_brut: number;
+  rendement_net: number;
+  loyer_actuel: number;
+  loyer_marche: number;
+  ecart_marche_pct: number;
+  score_investissement: number;
+  recommandations: string[];
+  conseil_fiscal: string;
+  prochaine_action: string;
+}
+
+export function usePotentielIA(bienId: string | undefined) {
+  return useQuery<PotentielIA>({
+    queryKey: ["bien", bienId, "potentiel"],
+    queryFn: async () => {
+      const { data } = await api.get<PotentielIA>(`/biens/${bienId}/potentiel`);
+      return data;
+    },
+    enabled: Boolean(bienId),
+    staleTime: 3_600_000, // 1h — Claude call is expensive
+  });
+}
+
 // ── Ouvreur dashboard ─────────────────────────────────────────────────────────
 
 export function useOuvreurDashboard() {

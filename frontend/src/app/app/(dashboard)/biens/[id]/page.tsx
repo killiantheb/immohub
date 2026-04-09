@@ -5,14 +5,15 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   AlertTriangle, ArrowLeft, CheckCircle2, ChevronRight,
-  Clock, Download, Eye, FileText, Loader2, MapPin,
-  Plus, RefreshCw, TrendingUp, User, Wrench, XCircle,
+  Clock, Download, Eye, FileText, Lightbulb, Loader2, MapPin,
+  PiggyBank, Plus, RefreshCw, Sparkles, TrendingUp, User, Wrench, XCircle,
 } from "lucide-react";
 import {
   useBien, useDocuments, useInterventions, useLocataireActuel,
   useLocataires, usePaiements, useScoring, useCreateIntervention,
   type DocumentAlthy, type Locataire, type Paiement,
 } from "@/lib/hooks/useBiens";
+import { usePotentielIA } from "@/lib/hooks/useDashboardData";
 
 // ── Design tokens via CSS vars (light + dark auto) ────────────────────────────
 const S = {
@@ -603,9 +604,199 @@ function TabFinances({ bienId }: { bienId: string }) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// TabPotentielIA — 7 blocs d'analyse
+// ══════════════════════════════════════════════════════════════════════════════
+function ScoreRing({ score }: { score: number }) {
+  const color = score >= 7 ? S.green : score >= 5 ? S.amber : S.red;
+  const bg = score >= 7 ? S.greenBg : score >= 5 ? S.amberBg : S.redBg;
+  return (
+    <div style={{
+      width: 72, height: 72, borderRadius: "50%",
+      background: bg, border: `3px solid ${color}`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      flexDirection: "column",
+    }}>
+      <span style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 300, color, lineHeight: 1 }}>
+        {score.toFixed(1)}
+      </span>
+      <span style={{ fontSize: 9, color, textTransform: "uppercase", letterSpacing: "0.05em" }}>/10</span>
+    </div>
+  );
+}
+
+function PotentielBloc({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Card>
+      <p style={{ fontSize: 11, fontWeight: 700, color: S.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "0.85rem" }}>
+        {title}
+      </p>
+      {children}
+    </Card>
+  );
+}
+
+function TabPotentielIA({ bienId }: { bienId: string }) {
+  const { data, isLoading, error, refetch, isFetching } = usePotentielIA(bienId);
+
+  if (isLoading) {
+    return (
+      <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(270px, 1fr))" }}>
+        {Array.from({ length: 7 }).map((_, i) => <Card key={i}><Skel h={100} /></Card>)}
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <Card style={{ textAlign: "center", padding: "2.5rem" }}>
+        <Sparkles size={32} style={{ margin: "0 auto 0.75rem", color: S.text3, opacity: 0.4 }} />
+        <p style={{ fontWeight: 600, color: S.text2, marginBottom: 4 }}>Analyse non disponible</p>
+        <p style={{ fontSize: 13, color: S.text3, marginBottom: "1rem" }}>
+          L&apos;analyse IA nécessite un loyer renseigné pour ce bien.
+        </p>
+        <button style={btnP} onClick={() => refetch()} disabled={isFetching}>
+          {isFetching && <Loader2 size={12} className="animate-spin" />}
+          Générer l&apos;analyse
+        </button>
+      </Card>
+    );
+  }
+
+  const fCHF = (n: number) => n > 0 ? `CHF ${Math.round(n).toLocaleString("fr-CH")}` : "—";
+  const fPct = (n: number) => `${n.toFixed(2)} %`;
+
+  return (
+    <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+
+      {/* Bloc 1 — Valeur estimée */}
+      <PotentielBloc title="Valeur estimée du bien">
+        <div style={{ display: "flex", gap: "1.5rem", alignItems: "flex-end" }}>
+          <div>
+            <p style={{ fontSize: 11, color: S.text3, marginBottom: 2 }}>Fourchette</p>
+            <p style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 300, color: S.text }}>
+              {fCHF(data.valeur_min)} – {fCHF(data.valeur_max)}
+            </p>
+          </div>
+        </div>
+        <p style={{ fontSize: 11, color: S.text3, marginTop: 6 }}>
+          Estimation basée sur multiplicateur 200–260× loyer mensuel (marché CH)
+        </p>
+      </PotentielBloc>
+
+      {/* Bloc 2 — Rendement */}
+      <PotentielBloc title="Rendement locatif">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {[
+            { label: "Brut", val: fPct(data.rendement_brut), color: S.green },
+            { label: "Net charges", val: fPct(data.rendement_net), color: S.text2 },
+          ].map(m => (
+            <div key={m.label} style={{ padding: "0.75rem", borderRadius: 10, background: S.surface2, border: `1px solid ${S.border}`, textAlign: "center" }}>
+              <p style={{ fontSize: 10, color: S.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>{m.label}</p>
+              <p style={{ fontFamily: "var(--font-serif)", fontSize: 20, fontWeight: 300, color: m.color }}>{m.val}</p>
+            </div>
+          ))}
+        </div>
+      </PotentielBloc>
+
+      {/* Bloc 3 — Loyer marché */}
+      <PotentielBloc title="Loyer vs marché">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <div>
+            <p style={{ fontSize: 11, color: S.text3 }}>Actuel</p>
+            <p style={{ fontSize: 18, fontWeight: 700, color: S.text }}>{fCHF(data.loyer_actuel)}/m</p>
+          </div>
+          <div style={{ fontSize: 20, color: S.text3 }}>→</div>
+          <div>
+            <p style={{ fontSize: 11, color: S.text3 }}>Marché estimé</p>
+            <p style={{ fontSize: 18, fontWeight: 700, color: S.orange }}>{fCHF(data.loyer_marche)}/m</p>
+          </div>
+        </div>
+        {data.ecart_marche_pct > 0 && (
+          <div style={{ padding: "6px 10px", borderRadius: 8, background: S.greenBg, fontSize: 12, color: S.green, fontWeight: 600 }}>
+            +{data.ecart_marche_pct}% de potentiel de revalorisation
+          </div>
+        )}
+      </PotentielBloc>
+
+      {/* Bloc 4 — Score investissement */}
+      <PotentielBloc title="Score investissement">
+        <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
+          <ScoreRing score={data.score_investissement} />
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 700, color: S.text }}>
+              {data.score_investissement >= 7 ? "Excellent" : data.score_investissement >= 5 ? "Correct" : "À améliorer"}
+            </p>
+            <p style={{ fontSize: 12, color: S.text3 }}>Score global Althy IA</p>
+            <p style={{ fontSize: 11, color: S.text3, marginTop: 3 }}>
+              Basé sur rendement, statut, surface et loyer marché
+            </p>
+          </div>
+        </div>
+      </PotentielBloc>
+
+      {/* Bloc 5 — Recommandations IA */}
+      <PotentielBloc title="Recommandations IA">
+        {data.recommandations.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {data.recommandations.map((rec, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                <div style={{
+                  width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
+                  background: S.orangeBg, color: S.orange,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 10, fontWeight: 800,
+                }}>{i + 1}</div>
+                <p style={{ fontSize: 13, color: S.text2, lineHeight: 1.45 }}>{rec}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Empty icon={Lightbulb} title="Aucune recommandation" />
+        )}
+      </PotentielBloc>
+
+      {/* Bloc 6 — Conseil fiscal CH */}
+      <PotentielBloc title="Optimisation fiscale CH">
+        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <PiggyBank size={18} style={{ color: S.green, flexShrink: 0, marginTop: 2 }} />
+          <p style={{ fontSize: 13, color: S.text2, lineHeight: 1.55 }}>
+            {data.conseil_fiscal || "—"}
+          </p>
+        </div>
+      </PotentielBloc>
+
+      {/* Bloc 7 — Prochaine action */}
+      <PotentielBloc title="Prochaine action prioritaire">
+        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <div style={{
+            width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+            background: S.orangeBg, color: S.orange,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <TrendingUp size={14} />
+          </div>
+          <p style={{ fontSize: 14, fontWeight: 600, color: S.text, lineHeight: 1.45 }}>
+            {data.prochaine_action || "—"}
+          </p>
+        </div>
+        <button
+          onClick={() => refetch()}
+          disabled={isFetching}
+          style={{ ...btnS, marginTop: "1rem", fontSize: 12 }}
+        >
+          {isFetching ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+          Régénérer l&apos;analyse
+        </button>
+      </PotentielBloc>
+
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // Main page
 // ══════════════════════════════════════════════════════════════════════════════
-type TabId = "locataire" | "historique" | "documents" | "interventions" | "finances";
+type TabId = "locataire" | "historique" | "documents" | "interventions" | "finances" | "potentiel";
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "locataire",     label: "Locataire actuel",  icon: User },
@@ -613,6 +804,7 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "documents",     label: "Documents",         icon: FileText },
   { id: "interventions", label: "Interventions",     icon: Wrench },
   { id: "finances",      label: "Finances",          icon: TrendingUp },
+  { id: "potentiel",     label: "Potentiel IA",      icon: Sparkles },
 ];
 
 export default function BienDetailPage() {
@@ -664,6 +856,7 @@ export default function BienDetailPage() {
         {activeTab === "documents"     && <TabDocuments           bienId={id} />}
         {activeTab === "interventions" && <TabInterventions       bienId={id} />}
         {activeTab === "finances"      && <TabFinances            bienId={id} />}
+        {activeTab === "potentiel"     && <TabPotentielIA         bienId={id} />}
       </div>
     </div>
   );
