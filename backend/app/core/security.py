@@ -45,11 +45,11 @@ def _decode_token(token: str) -> dict:
     Supports both ES256 (asymmetric JWKS, current Supabase default) and
     HS256 (legacy symmetric secret) so the same code works on all projects.
     """
-    # Peek at the algorithm without verifying
-    unverified_header = jwt.get_unverified_header(token)
-    alg = unverified_header.get("alg", "HS256")
-
     try:
+        # Peek at the algorithm without verifying
+        unverified_header = jwt.get_unverified_header(token)
+        alg = unverified_header.get("alg", "HS256")
+
         if alg in ("ES256", "RS256"):
             # Asymmetric: verify via JWKS
             signing_key = _jwks_client.get_signing_key_from_jwt(token)

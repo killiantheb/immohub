@@ -90,9 +90,25 @@ app.add_middleware(
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # ── Global exception handler — ensures 500s also carry CORS headers ───────────
+# NOTE: @app.exception_handler(Exception) registers with ServerErrorMiddleware
+# which sits OUTSIDE CORSMiddleware. We must add CORS headers manually here.
+_CORS_ORIGINS = {
+    "https://althy.ch",
+    "https://www.althy.ch",
+    "http://localhost:3000",
+}
+import re as _re
+_CORS_REGEX = _re.compile(r"https://[a-zA-Z0-9-]+\.vercel\.app$")
+
 @app.exception_handler(Exception)
 async def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
+    response = JSONResponse(status_code=500, content={"detail": "Internal server error"})
+    origin = request.headers.get("origin", "")
+    if origin and (origin in _CORS_ORIGINS or _CORS_REGEX.match(origin)):
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Vary"] = "Origin"
+    return response
 
 # ── Security headers ──────────────────────────────────────────────────────────
 @app.middleware("http")
