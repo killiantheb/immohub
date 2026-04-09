@@ -1,7 +1,7 @@
 import axios from "axios";
 import { createClient } from "./supabase";
 
-// Force HTTPS — the Vercel env var may be set to http:// but CSP blocks non-https traffic
+// Force HTTPS — env var may be http:// on some Vercel environments; CSP blocks non-https
 export const baseURL = (process.env.NEXT_PUBLIC_API_URL ?? "")
   .trim()
   .replace(/\/$/, "")
