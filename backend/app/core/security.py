@@ -24,6 +24,52 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# ── Role definitions (CLAUDE.md §profiles) ───────────────────────────────────
+
+# Canonical role names
+ROLE_PROPRIO_SOLO    = "proprio_solo"
+ROLE_AGENCE          = "agence"
+ROLE_PORTAIL_PROPRIO = "portail_proprio"
+ROLE_OPENER          = "opener"
+ROLE_ARTISAN         = "artisan"
+ROLE_EXPERT          = "expert"
+ROLE_HUNTER          = "hunter"
+ROLE_LOCATAIRE       = "locataire"
+ROLE_ACHETEUR        = "acheteur_premium"
+ROLE_SUPER_ADMIN     = "super_admin"
+
+# Legacy aliases (from old codebase — accepted during transition)
+_LEGACY_ROLE_MAP = {
+    "owner":   ROLE_PROPRIO_SOLO,
+    "agency":  ROLE_AGENCE,
+    "tenant":  ROLE_LOCATAIRE,
+    "company": ROLE_ARTISAN,
+}
+
+# Role groups for convenience
+ROLES_PROPERTY_MANAGERS = (ROLE_PROPRIO_SOLO, ROLE_AGENCE, ROLE_SUPER_ADMIN)
+ROLES_MARKETPLACE       = (ROLE_OPENER, ROLE_ARTISAN, ROLE_EXPERT)
+ROLES_BUYERS_TENANTS    = (ROLE_LOCATAIRE, ROLE_ACHETEUR)
+ROLES_ALL               = (
+    ROLE_PROPRIO_SOLO, ROLE_AGENCE, ROLE_PORTAIL_PROPRIO,
+    ROLE_OPENER, ROLE_ARTISAN, ROLE_EXPERT, ROLE_HUNTER,
+    ROLE_LOCATAIRE, ROLE_ACHETEUR, ROLE_SUPER_ADMIN,
+)
+
+# Sections accessible par rôle
+ROLE_SECTIONS: dict[str, list[str]] = {
+    ROLE_SUPER_ADMIN:     ["*"],  # all
+    ROLE_PROPRIO_SOLO:    ["dashboard", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "sphere", "documents"],
+    ROLE_AGENCE:          ["dashboard", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "sphere", "documents", "portail"],
+    ROLE_PORTAIL_PROPRIO: ["dashboard", "biens", "finances", "documents"],  # accès limité
+    ROLE_OPENER:          ["dashboard", "missions", "finances", "abonnement", "sphere"],
+    ROLE_ARTISAN:         ["dashboard", "interventions", "finances", "abonnement", "sphere"],
+    ROLE_EXPERT:          ["dashboard", "biens", "finances", "abonnement", "sphere"],
+    ROLE_HUNTER:          ["dashboard", "hunters", "abonnement", "sphere"],
+    ROLE_LOCATAIRE:       ["dashboard", "biens", "finances", "documents", "sphere"],
+    ROLE_ACHETEUR:        ["dashboard", "listings", "sphere"],
+}
+
 bearer_scheme = HTTPBearer(auto_error=True)
 
 # ── JWKS client (ES256 / RS256 — Supabase asymmetric keys) ───────────────────
@@ -114,16 +160,23 @@ async def get_current_user(
         # First hit after Supabase signup — create a skeleton profile
         email: str = payload.get("email", "")
         meta: dict = payload.get("user_metadata", {})
+        raw_role = meta.get("role", ROLE_PROPRIO_SOLO)
+        # Normalise legacy role names
+        canonical_role = _LEGACY_ROLE_MAP.get(raw_role, raw_role)
+        if canonical_role not in ROLES_ALL:
+            canonical_role = ROLE_PROPRIO_SOLO
+
         user = User(
             id=uuid.uuid4(),
             supabase_uid=supabase_uid,
             email=email,
-            first_name=meta.get("first_name") or meta.get("full_name", "").split()[0]
-            if meta.get("full_name")
-            else None,
-            last_name=meta.get("last_name")
-            or (" ".join(meta.get("full_name", "").split()[1:]) or None),
-            role=meta.get("role", "owner"),
+            first_name=meta.get("first_name") or (
+                meta.get("full_name", "").split()[0] if meta.get("full_name") else None
+            ),
+            last_name=meta.get("last_name") or (
+                " ".join(meta.get("full_name", "").split()[1:]) or None
+            ),
+            role=canonical_role,
             is_verified=bool(payload.get("email_confirmed_at")),
         )
         db.add(user)
@@ -149,14 +202,42 @@ def require_roles(*roles: str):
     """
     Dependency factory — inject as a default value in route signatures:
 
-        async def route(user = require_roles("super_admin", "agency")):
+        async def route(user = require_roles("proprio_solo", "agence")):
     """
 
     async def _check(user=Depends(get_current_user)):
-        if user.role not in roles:
+        # Normalise legacy role before checking
+        effective_role = _LEGACY_ROLE_MAP.get(user.role, user.role)
+        # super_admin bypasses all role checks
+        if effective_role == ROLE_SUPER_ADMIN:
+            return user
+        if effective_role not in roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Required role(s): {', '.join(roles)}. Your role: {user.role}",
+                detail=f"Rôle requis : {', '.join(roles)}. Votre rôle : {effective_role}",
+            )
+        return user
+
+    return Depends(_check)
+
+
+def require_section(section: str):
+    """
+    Verifies the user's role has access to a given section.
+    More granular than require_roles — maps to ROLE_SECTIONS.
+
+        async def route(user = require_section("hunters")):
+    """
+
+    async def _check(user=Depends(get_current_user)):
+        effective_role = _LEGACY_ROLE_MAP.get(user.role, user.role)
+        if effective_role == ROLE_SUPER_ADMIN:
+            return user
+        allowed = ROLE_SECTIONS.get(effective_role, [])
+        if section not in allowed and "*" not in allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Accès refusé : section '{section}' non autorisée pour le rôle '{effective_role}'",
             )
         return user
 

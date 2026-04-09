@@ -16,12 +16,26 @@ import {
 import { AlthyLogo } from "@/components/AlthyLogo";
 import { useAuth } from "@/lib/auth";
 
+// portail_proprio is NOT in registration — created by agency only
+const REGISTER_ROLES = [
+  "proprio_solo",
+  "agence",
+  "opener",
+  "artisan",
+  "expert",
+  "hunter",
+  "locataire",
+  "acheteur_premium",
+] as const;
+
+type RegisterRole = typeof REGISTER_ROLES[number];
+
 const schema = z
   .object({
     first_name: z.string().min(1, "Prénom requis").max(100),
     last_name: z.string().min(1, "Nom requis").max(100),
     email: z.string().email("Email invalide"),
-    role: z.enum(["owner", "agency", "tenant", "opener", "company"]),
+    role: z.enum(REGISTER_ROLES),
     password: z
       .string()
       .min(8, "8 caractères minimum")
@@ -36,13 +50,16 @@ const schema = z
 
 type FormValues = z.infer<typeof schema>;
 
-const ROLES = [
-  { value: "owner", label: "Propriétaire", desc: "Je gère mes biens en direct" },
-  { value: "agency", label: "Agence", desc: "Je gère des biens pour des clients" },
-  { value: "tenant", label: "Locataire", desc: "Je cherche ou j'occupe un bien" },
-  { value: "opener", label: "Ouvreur", desc: "J'effectue des visites et états des lieux" },
-  { value: "company", label: "Artisan", desc: "Plombier, électricien, peintre, etc." },
-] as const;
+const ROLES: { value: RegisterRole; label: string; desc: string; price: string }[] = [
+  { value: "proprio_solo",     label: "Propriétaire",    desc: "Je gère mes biens en direct",             price: "CHF 29/mois" },
+  { value: "agence",           label: "Agence",           desc: "Je gère des biens pour des clients",      price: "CHF 29/agent/mois" },
+  { value: "locataire",        label: "Locataire",        desc: "Je cherche ou j'occupe un bien",          price: "Gratuit" },
+  { value: "opener",           label: "Ouvreur",          desc: "Visites, états des lieux, remises clés",  price: "Gratuit · Pro CHF 19" },
+  { value: "artisan",          label: "Artisan",          desc: "Plombier, électricien, peintre…",         price: "Gratuit · Pro CHF 19" },
+  { value: "expert",           label: "Expert",           desc: "Expertise, conseil, évaluation",          price: "Gratuit · Pro CHF 19" },
+  { value: "hunter",           label: "Hunter",           desc: "Je signale des biens off-market",         price: "Referral fee" },
+  { value: "acheteur_premium", label: "Acheteur Premium", desc: "Je cherche un bien à acheter",            price: "CHF 9/mois" },
+];
 
 function PasswordStrength({ password }: { password: string }) {
   const checks = [
@@ -80,7 +97,7 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { role: "owner" },
+    defaultValues: { role: "proprio_solo" },
   });
 
   const password = watch("password", "");
@@ -196,7 +213,7 @@ export default function RegisterPage() {
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Je suis…
               </label>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {ROLES.map((r) => (
                   <label
                     key={r.value}
@@ -208,13 +225,19 @@ export default function RegisterPage() {
                       {...register("role")}
                       className="mt-0.5 accent-primary-600"
                     />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{r.label}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium text-gray-900">{r.label}</p>
+                        <span className="shrink-0 text-xs text-primary-600 font-medium">{r.price}</span>
+                      </div>
                       <p className="text-xs text-gray-500">{r.desc}</p>
                     </div>
                   </label>
                 ))}
               </div>
+              <p className="mt-1 text-xs text-gray-400">
+                Le portail propriétaire est créé par l&apos;agence — pas d&apos;inscription directe.
+              </p>
             </div>
 
             {/* Password */}

@@ -39,6 +39,7 @@ from app.routers.tenants import router as tenants_router
 from app.routers.listings import router as listings_router
 from app.routers.hunters import router as hunters_router
 from app.routers.stripe_webhooks import router as stripe_router
+from app.routers.portail import router as portail_router
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -165,6 +166,7 @@ app.include_router(geocode_router, prefix="/api/v1/geocode", tags=["geocode"])
 app.include_router(listings_router, prefix="/api/v1/listings", tags=["listings"])
 app.include_router(hunters_router, prefix="/api/v1/hunters", tags=["hunters"])
 app.include_router(stripe_router, prefix="/api/v1/webhooks", tags=["stripe"])
+app.include_router(portail_router, prefix="/api/v1/portail", tags=["portail"])
 
 
 # ── Health check ──────────────────────────────────────────────────────────────

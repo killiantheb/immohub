@@ -7,11 +7,21 @@ from sqlalchemy import Boolean, DateTime, Enum, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 UserRole = Enum(
-    "super_admin",
-    "agency",
-    "owner",
-    "tenant",
+    # Current canonical roles (CLAUDE.md)
+    "proprio_solo",
+    "agence",
+    "portail_proprio",
     "opener",
+    "artisan",
+    "expert",
+    "hunter",
+    "locataire",
+    "acheteur_premium",
+    # Legacy (kept for backwards compat during migration)
+    "super_admin",
+    "owner",
+    "agency",
+    "tenant",
     "company",
     name="user_role_enum",
 )
@@ -22,7 +32,7 @@ class User(BaseModel):
 
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     hashed_password: Mapped[str | None] = mapped_column(String(255))
-    role: Mapped[str] = mapped_column(UserRole, nullable=False, default="owner")
+    role: Mapped[str] = mapped_column(UserRole, nullable=False, default="proprio_solo")
     first_name: Mapped[str | None] = mapped_column(String(100))
     last_name: Mapped[str | None] = mapped_column(String(100))
     phone: Mapped[str | None] = mapped_column(String(20))

@@ -3,67 +3,147 @@
 import { useAuthStore } from "@/lib/store/authStore";
 import { useUser } from "@/lib/auth";
 
+// ── Canonical roles (CLAUDE.md §profiles) ────────────────────────────────────
+
 export type AppRole =
+  | "proprio_solo"
+  | "agence"
+  | "portail_proprio"
+  | "opener"
+  | "artisan"
+  | "expert"
+  | "hunter"
+  | "locataire"
+  | "acheteur_premium"
   | "super_admin"
-  | "owner"       // propriétaire
-  | "agency"      // agence
-  | "opener"      // ouvreur
-  | "tenant"      // locataire
-  | "company";    // artisan
+  // Legacy (transitional — map to canonical below)
+  | "owner"
+  | "agency"
+  | "tenant"
+  | "company";
 
+/** Canonical label per role */
 export const ROLE_LABELS: Record<AppRole, string> = {
-  super_admin: "Admin",
-  owner:       "Propriétaire",
-  agency:      "Agence",
-  opener:      "Ouvreur",
-  tenant:      "Locataire",
-  company:     "Artisan",
+  proprio_solo:     "Propriétaire",
+  agence:           "Agence",
+  portail_proprio:  "Portail Proprio",
+  opener:           "Ouvreur",
+  artisan:          "Artisan",
+  expert:           "Expert",
+  hunter:           "Hunter",
+  locataire:        "Locataire",
+  acheteur_premium: "Acheteur",
+  super_admin:      "Admin",
+  // Legacy aliases
+  owner:    "Propriétaire",
+  agency:   "Agence",
+  tenant:   "Locataire",
+  company:  "Artisan",
 };
 
-/** Sections autorisées par rôle */
-export const ROLE_SECTIONS: Record<AppRole, string[]> = {
-  super_admin: ["dashboard", "biens", "finances", "interventions", "ouvreurs", "artisans", "publications", "locataire", "crm", "althy", "settings"],
-  owner:       ["dashboard", "biens", "finances", "interventions", "crm", "althy", "settings"],
-  agency:      ["dashboard", "biens", "finances", "interventions", "ouvreurs", "publications", "crm", "althy", "settings"],
-  opener:      ["dashboard", "ouvreurs", "finances", "althy", "settings"],
-  tenant:      ["dashboard", "biens", "finances", "althy", "settings"],
-  company:     ["dashboard", "artisans", "finances", "althy", "settings"],
+/** Map legacy → canonical */
+const LEGACY_MAP: Partial<Record<AppRole, AppRole>> = {
+  owner:   "proprio_solo",
+  agency:  "agence",
+  tenant:  "locataire",
+  company: "artisan",
 };
+
+/** Sections accessibles par rôle (mirrors backend ROLE_SECTIONS) */
+export const ROLE_SECTIONS: Record<AppRole, string[]> = {
+  super_admin:      ["*"],
+  proprio_solo:     ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents"],
+  agence:           ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail"],
+  portail_proprio:  ["dashboard", "biens", "finances", "documents"],
+  opener:           ["dashboard", "sphere", "missions", "finances", "abonnement"],
+  artisan:          ["dashboard", "sphere", "interventions", "finances", "abonnement"],
+  expert:           ["dashboard", "sphere", "biens", "finances", "abonnement"],
+  hunter:           ["dashboard", "sphere", "hunters", "abonnement"],
+  locataire:        ["dashboard", "sphere", "biens", "finances", "documents"],
+  acheteur_premium: ["dashboard", "sphere", "listings"],
+  // Legacy aliases (same sections as canonical)
+  owner:    ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents"],
+  agency:   ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail"],
+  tenant:   ["dashboard", "sphere", "biens", "finances", "documents"],
+  company:  ["dashboard", "sphere", "interventions", "finances", "abonnement"],
+};
+
+/** Plan tarifaire par rôle */
+export const ROLE_PRICE: Record<AppRole, string | null> = {
+  proprio_solo:     "CHF 29/mois",
+  agence:           "CHF 29/agent/mois",
+  portail_proprio:  "CHF 9/mois (facturé à l'agence)",
+  opener:           "Gratuit · Pro CHF 19/mois",
+  artisan:          "Gratuit · Pro CHF 19/mois",
+  expert:           "Gratuit · Pro CHF 19/mois",
+  hunter:           "Referral fee",
+  locataire:        "Gratuit",
+  acheteur_premium: "CHF 9/mois",
+  super_admin:      null,
+  owner:            "CHF 29/mois",
+  agency:           "CHF 29/agent/mois",
+  tenant:           "Gratuit",
+  company:          "Gratuit · Pro CHF 19/mois",
+};
+
+// ── Hook ──────────────────────────────────────────────────────────────────────
 
 /**
- * Retourne le rôle courant depuis le store Zustand (synchrone, côté client).
- * Utilise le profil DB si disponible, sinon les métadonnées Supabase.
+ * Returns the current user's role + permission helpers.
+ * Normalises legacy role names to canonical names.
  */
 export function useRole() {
   const { user } = useAuthStore();
   const { data: profile } = useUser();
 
-  // Profil DB canonique > metadata Supabase
-  const role = (profile?.role ?? user?.user_metadata?.role ?? null) as AppRole | null;
+  const rawRole = (profile?.role ?? user?.user_metadata?.role ?? null) as AppRole | null;
+  const role: AppRole | null = rawRole
+    ? (LEGACY_MAP[rawRole] ?? rawRole)
+    : null;
 
   const can = (section: string): boolean => {
     if (!role) return false;
-    return ROLE_SECTIONS[role]?.includes(section) ?? false;
+    const sections = ROLE_SECTIONS[role] ?? [];
+    return sections.includes("*") || sections.includes(section);
   };
 
-  const isAdmin     = role === "super_admin";
-  const isOwner     = role === "owner";
-  const isAgency    = role === "agency";
-  const isOpener    = role === "opener";
-  const isTenant    = role === "tenant";
-  const isCompany   = role === "company";
-  const isManager   = isOwner || isAgency || isAdmin;
+  const isAdmin        = role === "super_admin";
+  const isProprioSolo  = role === "proprio_solo" || role === "owner";
+  const isAgence       = role === "agence" || role === "agency";
+  const isPortail      = role === "portail_proprio";
+  const isOpener       = role === "opener";
+  const isArtisan      = role === "artisan" || role === "company";
+  const isExpert       = role === "expert";
+  const isHunter       = role === "hunter";
+  const isLocataire    = role === "locataire" || role === "tenant";
+  const isAcheteur     = role === "acheteur_premium";
+
+  /** Propriétaire ou agence — gestion de biens */
+  const isManager = isProprioSolo || isAgence || isAdmin;
+  /** Prestataires marketplace */
+  const isMarketplace = isOpener || isArtisan || isExpert;
 
   return {
     role,
+    rawRole,
     label: role ? ROLE_LABELS[role] : null,
+    price: role ? ROLE_PRICE[role] : null,
     can,
     isAdmin,
-    isOwner,
-    isAgency,
+    isProprioSolo,
+    isAgence,
+    isPortail,
     isOpener,
-    isTenant,
-    isCompany,
+    isArtisan,
+    isExpert,
+    isHunter,
+    isLocataire,
+    isAcheteur,
     isManager,
+    isMarketplace,
+    // Legacy compatibility
+    isOwner: isProprioSolo,
+    isCompany: isArtisan,
+    isTenant: isLocataire,
   };
 }
