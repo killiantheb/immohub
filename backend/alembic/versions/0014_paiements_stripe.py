@@ -24,7 +24,9 @@ def upgrade() -> None:
             ADD COLUMN IF NOT EXISTS stripe_charge_id VARCHAR(100)
     """)
 
-    # ── subscriptions : ensure table exists with required columns ─────────────
+    # ── subscriptions : ensure table exists + add missing columns ────────────
+    # The table may already exist (created by schema.sql) without is_active.
+    # Use ADD COLUMN IF NOT EXISTS to safely bring it up to spec.
     op.execute("""
         CREATE TABLE IF NOT EXISTS subscriptions (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -37,9 +39,13 @@ def upgrade() -> None:
             current_period_end TIMESTAMPTZ,
             cancelled_at TIMESTAMPTZ,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-            is_active BOOLEAN NOT NULL DEFAULT true
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
+    """)
+    # Add is_active separately so it works whether the table is new or pre-existing
+    op.execute("""
+        ALTER TABLE subscriptions
+            ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true
     """)
     op.execute("""
         CREATE UNIQUE INDEX IF NOT EXISTS uq_subscriptions_user
