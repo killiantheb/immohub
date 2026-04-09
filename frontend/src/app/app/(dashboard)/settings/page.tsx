@@ -8,6 +8,8 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useRole } from "@/lib/hooks/useRole";
+import { ZoneMap } from "@/components/map";
+import type { ZoneMapData } from "@/components/map";
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const S = {
@@ -477,17 +479,13 @@ const SLOTS = [
 function TabZone() {
   const { show, Toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [radius, setRadius] = useState(20);
+  const [zoneData, setZoneData] = useState<ZoneMapData | null>(null);
   const [notice, setNotice] = useState("2h");
   const [maxMissions, setMaxMissions] = useState("2");
   const [hourlyRate, setHourlyRate] = useState("");
   const [vacances, setVacances] = useState(false);
   const [vacFrom, setVacFrom] = useState("");
   const [vacTo, setVacTo] = useState("");
-  const [tempAddress, setTempAddress] = useState("");
-  const [tempRadius, setTempRadius] = useState(10);
-  const [tempFrom, setTempFrom] = useState("");
-  const [tempTo, setTempTo] = useState("");
 
   // availability[day][slot] = boolean
   const [avail, setAvail] = useState<Record<string, Record<string, boolean>>>(() =>
@@ -499,7 +497,20 @@ function TabZone() {
   async function save() {
     setSaving(true);
     try {
-      await api.patch("/auth/me", { intervention_radius_km: radius, availability: avail, notice_hours: notice, max_simultaneous: maxMissions, hourly_rate: hourlyRate ? Number(hourlyRate) : null, vacances_mode: vacances, vacances_from: vacFrom || null, vacances_to: vacTo || null, temp_address: tempAddress || null, temp_radius_km: tempRadius, temp_from: tempFrom || null, temp_to: tempTo || null });
+      await api.patch("/auth/me", {
+        intervention_radius_km: zoneData?.primary_location.radius_km,
+        primary_lat: zoneData?.primary_location.lat,
+        primary_lng: zoneData?.primary_location.lng,
+        primary_address: zoneData?.primary_location.address,
+        temp_zones: zoneData?.temp_zones ?? [],
+        availability: avail,
+        notice_hours: notice,
+        max_simultaneous: maxMissions,
+        hourly_rate: hourlyRate ? Number(hourlyRate) : null,
+        vacances_mode: vacances,
+        vacances_from: vacFrom || null,
+        vacances_to: vacTo || null,
+      });
       show("Zone sauvegardée");
     } catch { /* noop */ } finally { setSaving(false); }
   }
@@ -509,14 +520,13 @@ function TabZone() {
       <Toast />
       <Card>
         <SectionTitle>Zone d'intervention</SectionTitle>
-        <div style={{ background: S.surface2, borderRadius: 12, height: 200, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1rem", border: `1px solid ${S.border}` }}>
-          <div style={{ textAlign: "center", color: S.text3 }}>
-            <MapPin size={32} style={{ margin: "0 auto 8px" }} />
-            <p style={{ fontSize: 12 }}>Carte interactive — sélectionnez votre zone</p>
-            <p style={{ fontSize: 11, marginTop: 4 }}>Centrez sur votre adresse principale</p>
-          </div>
-        </div>
-        <RangeField label="Rayon d'intervention" value={radius} onChange={setRadius} min={1} max={50} step={1} suffix=" km" />
+        <ZoneMap
+          mode="radius"
+          initialCenter={[46.2044, 6.1432]}
+          initialRadius={20}
+          onLocationChange={setZoneData}
+          height={340}
+        />
       </Card>
 
       <Card>
@@ -584,18 +594,6 @@ function TabZone() {
               <Field label="Au" value={vacTo} onChange={setVacTo} type="date" />
             </Row>
           )}
-        </FormStack>
-      </Card>
-
-      <Card>
-        <SectionTitle>Zone ponctuelle (déplacement)</SectionTitle>
-        <FormStack>
-          <Field label="Adresse temporaire" value={tempAddress} onChange={setTempAddress} placeholder="Ex: Lyon, France" hint="Je serai disponible dans cette zone pendant la période indiquée" />
-          <RangeField label="Rayon pour cette zone" value={tempRadius} onChange={setTempRadius} min={5} max={50} step={5} suffix=" km" />
-          <Row>
-            <Field label="Du" value={tempFrom} onChange={setTempFrom} type="date" />
-            <Field label="Au" value={tempTo} onChange={setTempTo} type="date" />
-          </Row>
         </FormStack>
       </Card>
 
