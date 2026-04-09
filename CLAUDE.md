@@ -64,9 +64,15 @@ Le tableau de bord existe — mais il est **optionnel**. La sphère IA est le po
 | `locataire` | Gratuit | M1 |
 | `acheteur_premium` | CHF 9/mois | An 2 |
 
-## Les 18 tables DB (§8.2 du BP)
+## Les 22 tables DB (§8.2 du BP)
 
-`users` · `profiles` · `properties` · `leases` · `tenants` · `payments` · `documents` · `expenses` · `interventions` · `quotes` · `missions` · `listings` · `offers` · `partners` · `hunters` · `subscriptions` · `ai_sessions` · `messages`
+`users` · `profiles` · `properties` · `leases` · `tenants` · `payments` · `documents` · `expenses` · `interventions` · `quotes` · `missions` · `listings` · `offers` · `partners` · `hunters` · `subscriptions` · `ai_sessions` · `messages` · `user_settings` · `zones` · `consents` · `integrations`
+
+Migrations Supabase : `supabase/migrations/` (004–007)
+- `004_settings.sql` — user_settings + trigger auto-création + RLS
+- `005_zones.sql` — zones + PostGIS + index GIST + `find_openers_in_zone()`
+- `006_consents.sql` — consents (insert-only, immuable) + vue `consents_latest` + `record_consent()`
+- `007_integrations.sql` — integrations + chiffrement pgcrypto + `upsert_integration()` + vue `integrations_safe`
 
 ## Sources de revenus (§3.4)
 
