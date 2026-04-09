@@ -24,6 +24,7 @@ from app.schemas.property import (
     PropertyDetail,
     PropertyDocumentResponse,
     PropertyImageResponse,
+    PropertyListItem,
     PropertyRead,
     PropertyUpdate,
 )
@@ -159,7 +160,7 @@ class PropertyService:
 
         items = []
         for r in rows:
-            pr = PropertyRead.model_validate(r)
+            pr = PropertyListItem.model_validate(r)
             pr.images = imgs_by_prop.get(r.id, [])
             items.append(pr)
 

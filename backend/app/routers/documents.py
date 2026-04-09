@@ -446,73 +446,279 @@ Le propriétaire peut résilier par courrier conformément à l'article 404 CO s
 """
 
 
-def _build_fiche_bien(ctx: dict) -> str:
-    agency = ctx["agency"]
-    prop = ctx["property"]
+def _build_fiche_bien(ctx: dict) -> str:  # noqa: C901
+    import calendar as _cal
+    agency  = ctx["agency"]
+    prop    = ctx["property"]
     contract = ctx.get("contract", {})
+    extra   = ctx.get("extra", {})
 
-    features = []
-    if prop.get("has_balcony"): features.append("balcon")
-    if prop.get("has_terrace"): features.append("terrasse")
-    if prop.get("has_garden"): features.append("jardin")
-    if prop.get("has_parking"): features.append("place de parc")
-    if prop.get("has_storage"): features.append("cave / storage")
-    if prop.get("has_fireplace"): features.append("cheminée")
-    if prop.get("has_laundry"): features.append("buanderie")
-    if prop.get("is_furnished"): features.append("meublé")
+    # ── Helper: icon chip ─────────────────────────────────────────────────────
+    def chip(label: str, active: bool) -> str:
+        ok   = "background:#FAF5EB;border:0.5px solid rgba(212,96,26,0.35);color:#1C0F06;"
+        off  = "background:#f4f4f4;border:0.5px solid #ddd;color:#bbb;"
+        mark = "✓ " if active else ""
+        return (f'<span style="{ok if active else off}padding:4px 10px;border-radius:20px;'
+                f'font-size:10px;white-space:nowrap;display:inline-block;margin:3px 2px;">'
+                f'{mark}{label}</span>')
 
-    features_html = " • ".join(features) if features else "—"
+    # ── Équipements ───────────────────────────────────────────────────────────
+    equip = [
+        ("Meublé",           prop.get("is_furnished")),
+        ("Balcon",           prop.get("has_balcony")),
+        ("Terrasse",         prop.get("has_terrace")),
+        ("Jardin",           prop.get("has_garden")),
+        ("Parking",          prop.get("has_parking")),
+        ("Cave / stockage",  prop.get("has_storage")),
+        ("Cheminée",         prop.get("has_fireplace")),
+        ("Buanderie",        prop.get("has_laundry")),
+        ("Linge fourni",     prop.get("linen_provided")),
+        ("Animaux acceptés", prop.get("pets_allowed")),
+        ("Fumeurs acceptés", prop.get("smoking_allowed")),
+    ]
+    equip_html = "".join(chip(l, v) for l, v in equip)
 
-    cover_html = ""
-    cover_url = prop.get("cover_url") or prop.get("cover_image_url")
-    if cover_url:
-        cover_html = f'<img src="{cover_url}" style="width:100%;max-height:280px;object-fit:cover;border-radius:8px;margin-bottom:20px;display:block;" />'
+    # ── Cover photo ───────────────────────────────────────────────────────────
+    cover_url = prop.get("cover_url")
+    cover_html = (
+        f'<img src="{cover_url}" '
+        f'style="width:100%;height:260px;object-fit:cover;border-radius:10px;'
+        f'display:block;margin-bottom:22px;" />'
+        if cover_url else ""
+    )
 
+    # ── Key stats bar ─────────────────────────────────────────────────────────
+    def stat(label: str, val) -> str:
+        if not val and val != 0:
+            return ""
+        return (f'<div style="text-align:center;padding:12px 16px;background:#FAF5EB;'
+                f'border-radius:10px;border:0.5px solid rgba(212,96,26,0.2);flex:1;">'
+                f'<div style="font-size:18px;font-weight:300;color:#D4601A;font-family:Georgia,serif">{val}</div>'
+                f'<div style="font-size:9px;color:#8C6E5A;margin-top:2px;letter-spacing:0.5px">{label}</div>'
+                f'</div>')
+
+    stats_cells = [
+        stat("surface m²",    prop.get("surface")),
+        stat("pièces",        prop.get("rooms")),
+        stat("chambres",      prop.get("bedrooms")),
+        stat("sdb",           prop.get("bathrooms")),
+        stat("étage",         prop.get("floor")),
+    ]
+    stats_html = "".join(s for s in stats_cells if s)
+
+    # ── Rental modes & pricing ────────────────────────────────────────────────
+    monthly_rent = (contract.get("monthly_rent") or prop.get("monthly_rent"))
+    deposit      = (contract.get("deposit")       or prop.get("deposit"))
+    charges      = (contract.get("charges")       or prop.get("charges"))
+    price_sale   = prop.get("price_sale")
+    tourist_tax  = prop.get("tourist_tax_amount")
+
+    # Extra can override / add rental modes:
+    # extra = { "price_annual": n, "price_seasonal": n, "price_nightly": n,
+    #           "seasonal_weeks": n, "has_annual": bool, "has_seasonal": bool, "has_nightly": bool }
+    def _num(v):
+        try: return float(v) if v else None
+        except: return None
+
+    price_annual   = _num(extra.get("price_annual"))   or monthly_rent
+    price_seasonal = _num(extra.get("price_seasonal"))
+    price_nightly  = _num(extra.get("price_nightly"))  or (round(float(monthly_rent) / 30, 0) if monthly_rent else None)
+
+    def _truthy(val, default=False):
+        if val is None: return default
+        return str(val).lower() in ("true", "1", "yes")
+
+    has_annual   = _truthy(extra.get("has_annual"),   bool(monthly_rent))
+    has_seasonal = _truthy(extra.get("has_seasonal"), False)
+    has_nightly  = _truthy(extra.get("has_nightly"),  False)
+    has_sale     = bool(price_sale)
+
+    # Detect from contract type
+    if contract.get("type") == "long_term":
+        has_annual = True
+    elif contract.get("type") == "seasonal":
+        has_seasonal = True
+    elif contract.get("type") == "short_term":
+        has_nightly = True
+
+    pricing_rows = []
+    if has_sale and price_sale:
+        pricing_rows.append(
+            f'<tr><td style="width:160px">Prix de vente</td>'
+            f'<td><strong style="color:#D4601A;font-size:14px">CHF {_fmt_chf(price_sale)}.-</strong></td></tr>'
+        )
+    if has_annual and price_annual:
+        pricing_rows.append(
+            f'<tr><td>Location annuelle</td>'
+            f'<td><strong style="color:#D4601A;font-size:14px">CHF {_fmt_chf(price_annual)}.- / mois</strong></td></tr>'
+        )
+        if charges:
+            pricing_rows.append(f'<tr><td>Charges</td><td>CHF {_fmt_chf(charges)}.- / mois</td></tr>')
+        if deposit:
+            pricing_rows.append(f'<tr><td>Caution (dépôt)</td><td>CHF {_fmt_chf(deposit)}.-</td></tr>')
+    if has_seasonal and price_seasonal:
+        seasonal_weeks = extra.get("seasonal_weeks", "")
+        sw = f" ({seasonal_weeks} sem.)" if seasonal_weeks else ""
+        pricing_rows.append(
+            f'<tr><td>Location saisonnière{sw}</td>'
+            f'<td><strong style="color:#D4601A;font-size:14px">CHF {_fmt_chf(price_seasonal)}.-</strong></td></tr>'
+        )
+    if has_nightly and price_nightly:
+        pricing_rows.append(
+            f'<tr><td>Tarif nuitée (base)</td>'
+            f'<td><strong style="color:#D4601A;font-size:14px">CHF {_fmt_chf(price_nightly)}.- / nuit</strong></td></tr>'
+        )
+        if tourist_tax:
+            pricing_rows.append(f'<tr><td>Taxe de séjour</td><td>CHF {_fmt_chf(tourist_tax)} / pers. / nuit</td></tr>')
+
+    pricing_html = ""
+    if pricing_rows:
+        pricing_html = (
+            f'<h2>Tarifs</h2>'
+            f'<table class="bank">{"".join(pricing_rows)}</table>'
+        )
+
+    # ── Weekly nightly calendar ───────────────────────────────────────────────
+    calendar_html = ""
+    if has_nightly and price_nightly:
+        base = float(price_nightly)
+        # Seasonal multipliers (VS Valais typical)
+        season_mult = {
+            1: 0.85, 2: 1.30, 3: 0.80, 4: 0.75, 5: 0.80, 6: 1.10,
+            7: 1.50, 8: 1.50, 9: 0.90, 10: 0.85, 11: 0.80, 12: 1.40,
+        }
+        # Extra can provide custom nightly rates: { "nightly_rates": {"2025-07": 200, "2025-08": 220} }
+        custom_rates = extra.get("nightly_rates", {})  # key: "YYYY-MM", val: nightly price
+
+        today = datetime.now()
+        months_html = []
+        fr_months = ["Janvier","Février","Mars","Avril","Mai","Juin",
+                     "Juillet","Août","Septembre","Octobre","Novembre","Décembre"]
+        fr_days = ["Lu","Ma","Me","Je","Ve","Sa","Di"]
+
+        for mi in range(12):
+            yr  = today.year + (today.month - 1 + mi) // 12
+            mo  = (today.month - 1 + mi) % 12 + 1
+            key = f"{yr}-{mo:02d}"
+            rate = custom_rates.get(key) or round(base * season_mult.get(mo, 1.0), 0)
+            is_high = rate >= base * 1.2
+
+            _, n_days = _cal.monthrange(yr, mo)
+            first_wd  = _cal.weekday(yr, mo, 1)  # 0=Mon
+
+            header_bg = "#D4601A" if is_high else "#FAF5EB"
+            header_fg = "#fff"    if is_high else "#1C0F06"
+
+            cells = ["<td></td>"] * first_wd
+            for d in range(1, n_days + 1):
+                cells.append(f"<td>{d}</td>")
+            # pad to complete weeks
+            while len(cells) % 7 != 0:
+                cells.append("<td></td>")
+
+            rows_cal = ""
+            for i in range(0, len(cells), 7):
+                rows_cal += "<tr>" + "".join(cells[i:i+7]) + "</tr>"
+
+            months_html.append(f"""
+<div style="display:inline-block;width:180px;margin:4px;vertical-align:top;
+  border:0.5px solid rgba(212,96,26,0.2);border-radius:8px;overflow:hidden;">
+  <div style="background:{header_bg};color:{header_fg};padding:5px 8px;
+    font-size:10px;font-weight:600;letter-spacing:0.5px;text-align:center;">
+    {fr_months[mo-1]} {yr}
+    <span style="margin-left:6px;font-size:9px;opacity:0.85;">CHF {int(rate)}/nuit</span>
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:9px;">
+    <tr>{"".join(f"<th style='padding:2px;text-align:center;color:#8C6E5A;font-weight:600'>{d}</th>" for d in fr_days)}</tr>
+    {rows_cal}
+  </table>
+</div>""")
+
+        calendar_html = (
+            f'<h2>Calendrier & tarifs nuitée (12 mois)</h2>'
+            f'<p style="font-size:10px;color:#8C6E5A;margin-bottom:10px;">'
+            f'  Tarif de base : CHF {int(base)}/nuit. '
+            f'  <span style="display:inline-block;background:#D4601A;color:#fff;'
+            f'padding:1px 8px;border-radius:10px;font-size:9px">Haute saison</span>'
+            f'  <span style="display:inline-block;background:#FAF5EB;border:0.5px solid rgba(212,96,26,0.3);'
+            f'color:#1C0F06;padding:1px 8px;border-radius:10px;font-size:9px;margin-left:4px">Basse saison</span>'
+            f'</p>'
+            f'<div style="line-height:0">{"".join(months_html)}</div>'
+        )
+
+    # ── Nearby / location detail ──────────────────────────────────────────────
+    landmarks = prop.get("nearby_landmarks", "")
+    maps_url  = (f"https://www.google.com/maps/search/?api=1&query="
+                 f"{prop.get('address','').replace(' ','+')},"
+                 f"{prop.get('zip_code','')}+{prop.get('city','')}")
+    location_extra = ""
+    if landmarks:
+        location_extra = f'<p style="margin-top:6px;color:#3A2010;"><strong>À proximité :</strong> {landmarks}</p>'
+
+    ref_row = (f'<tr><td>Référence</td><td>{prop.get("reference_number","")}</td></tr>'
+               if prop.get("reference_number") else "")
+    canton_row = (f'<tr><td>Canton</td><td>{prop.get("canton","")}</td></tr>'
+                  if prop.get("canton") else "")
+
+    # ── Final assembly ────────────────────────────────────────────────────────
     return f"""
 <h1>Fiche de présentation</h1>
 
 {cover_html}
-<p style="text-align:center;font-size:12px;font-weight:600;letter-spacing:1px;color:#D4601A;text-transform:uppercase;">{prop.get('status_label','À Louer')}</p>
-<p style="text-align:center;font-size:20px;font-weight:300;font-family:Georgia,serif;color:#1C0F06;margin:4px 0;">{prop.get('type_label','Appartement')} · {prop['city']}</p>
-<p style="text-align:center;color:#8C6E5A;font-size:11px;margin-bottom:16px;">{prop.get('nearby_landmarks','')}</p>
 
-<div style="display:flex;gap:20px;margin:16px 0;background:#FAF5EB;padding:14px 18px;border-radius:10px;border:0.5px solid rgba(212,96,26,0.2);">
-  <div><span style="font-size:20px;font-weight:700;color:#D4601A;">CHF {_fmt_chf(contract.get('monthly_rent') or prop.get('monthly_rent'))}.-</span><br/><span style="font-size:10px;color:#888;">/ mois</span></div>
-  <div><strong>{prop.get('surface','–')} m²</strong><br/><span style="font-size:10px;color:#888;">surface habitable</span></div>
-  <div><strong>{prop.get('rooms','–')}</strong><br/><span style="font-size:10px;color:#888;">pièces</span></div>
-  <div><strong>{prop.get('bedrooms','–')}</strong><br/><span style="font-size:10px;color:#888;">chambres</span></div>
-  <div><strong>{prop.get('bathrooms','–')}</strong><br/><span style="font-size:10px;color:#888;">salles de bain</span></div>
-</div>
+<p style="text-align:center;font-size:11px;font-weight:600;letter-spacing:1.5px;
+color:#D4601A;text-transform:uppercase;margin-bottom:4px;">{prop.get('status_label','À Louer')}</p>
+<p style="text-align:center;font-size:22px;font-weight:300;font-family:Georgia,serif;
+color:#1C0F06;margin:0 0 4px;">{prop.get('type_label','Appartement')} · {prop.get('city','')}</p>
+{f'<p style="text-align:center;font-size:11px;color:#8C6E5A;margin-bottom:16px;">{prop.get("address","")}, {prop.get("zip_code","")} {prop.get("city","")}</p>' if prop.get('address') else ''}
 
-<h2>Description</h2>
-<p>{prop.get('description','')}</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin:16px 0;">{stats_html}</div>
 
-<h2>Caractéristiques</h2>
-<p>{features_html}</p>
-
-<h2>Données techniques</h2>
+<h2>Localisation</h2>
 <table class="bank">
-  <tr><td>Loyer mensuel</td><td><strong>CHF {_fmt_chf(contract.get('monthly_rent') or prop.get('monthly_rent'))}.-</strong></td></tr>
-  <tr><td>Caution</td><td>CHF {_fmt_chf(contract.get('deposit') or prop.get('deposit'))}.-</td></tr>
-  <tr><td>Charges</td><td>{contract.get('charges_label', 'Voir contrat')}</td></tr>
-  <tr><td>Nombre de pièces</td><td>{prop.get('rooms','–')}</td></tr>
-  <tr><td>Chambres</td><td>{prop.get('bedrooms','–')}</td></tr>
-  <tr><td>Salles de bain</td><td>{prop.get('bathrooms','–')}</td></tr>
-  <tr><td>Surface habitable</td><td>{prop.get('surface','–')} m²</td></tr>
-  <tr><td>Adresse</td><td>{prop['address']}, {prop['zip_code']} {prop['city']}</td></tr>
-  {"<tr><td>Réf.</td><td>" + str(prop.get('reference_number','')) + "</td></tr>" if prop.get('reference_number') else ""}
+  <tr><td>Adresse</td><td><strong>{prop.get('address','—')}, {prop.get('zip_code','')} {prop.get('city','—')}</strong></td></tr>
+  {canton_row}
+  <tr><td>Étage</td><td>{prop.get('floor','—')}</td></tr>
+  {ref_row}
+  <tr><td>Plan</td><td><a href="{maps_url}" style="color:#D4601A">Voir sur Google Maps →</a></td></tr>
 </table>
+{location_extra}
+
+<h2>Description du logement</h2>
+<p style="line-height:1.8;color:#3A2010">{prop.get('description','Aucune description disponible.')}</p>
+
+<h2>Équipements & commodités</h2>
+<div style="margin:8px 0">{equip_html}</div>
+
+<h2>Caractéristiques techniques</h2>
+<table class="bank">
+  <tr><td>Type</td><td>{prop.get('type_label','—')}</td></tr>
+  <tr><td>Surface habitable</td><td>{prop.get('surface','—')} m²</td></tr>
+  <tr><td>Nombre de pièces</td><td>{prop.get('rooms','—')}</td></tr>
+  <tr><td>Chambres</td><td>{prop.get('bedrooms','—')}</td></tr>
+  <tr><td>Salles de bain</td><td>{prop.get('bathrooms','—')}</td></tr>
+  <tr><td>Étage</td><td>{prop.get('floor','—')}</td></tr>
+  {"<tr><td>Bâtiment</td><td>" + str(prop.get('building_name','')) + "</td></tr>" if prop.get('building_name') else ""}
+  {"<tr><td>Unité</td><td>" + str(prop.get('unit_number','')) + "</td></tr>" if prop.get('unit_number') else ""}
+</table>
+
+{pricing_html}
+
+{calendar_html}
 
 <h2>Contact</h2>
 <table class="info">
-  <tr><td>Courtier</td><td><strong>{agency.get('representative','')}</strong></td></tr>
-  <tr><td>Téléphone</td><td>{agency.get('phone','')}</td></tr>
-  <tr><td>E-mail</td><td>{agency.get('email','')}</td></tr>
-  <tr><td>Site web</td><td>{agency.get('website','')}</td></tr>
+  <tr><td>Agence / Courtier</td><td><strong>{agency.get('name','')}</strong></td></tr>
+  {"<tr><td>Représentant</td><td>" + agency.get('representative','') + "</td></tr>" if agency.get('representative') else ""}
+  <tr><td>Téléphone</td><td>{agency.get('phone','—')}</td></tr>
+  <tr><td>E-mail</td><td>{agency.get('email','—')}</td></tr>
+  <tr><td>Site web</td><td>{agency.get('website','althy.ch')}</td></tr>
 </table>
 
-<p style="margin-top:16px;font-size:10px;color:#999;font-style:italic;">
-Ce descriptif n'est pas contractuel. Les informations sont indicatives. Ce dossier et son contenu ne peuvent être transmis à des tiers sans autorisation.
+<p style="margin-top:20px;font-size:9px;color:#aaa;font-style:italic;border-top:0.5px solid #eee;padding-top:8px;">
+Ce descriptif est fourni à titre indicatif et n'a pas de valeur contractuelle.
+Les informations sont susceptibles d'être modifiées sans préavis.
+Ce document est confidentiel et ne peut être transmis à des tiers sans autorisation écrite de l'agence.
 </p>
 """
 
@@ -811,6 +1017,11 @@ def _build_ctx(
             "has_fireplace": getattr(prop, "has_fireplace", False),
             "has_laundry": getattr(prop, "has_laundry", False),
             "linen_provided": getattr(prop, "linen_provided", False),
+            "pets_allowed": getattr(prop, "pets_allowed", False),
+            "smoking_allowed": getattr(prop, "smoking_allowed", False),
+            "price_sale": float(prop.price_sale) if getattr(prop, "price_sale", None) else None,
+            "tourist_tax_amount": float(prop.tourist_tax_amount) if getattr(prop, "tourist_tax_amount", None) else None,
+            "charges": float(prop.charges) if getattr(prop, "charges", None) else None,
             "building_name": getattr(prop, "building_name", "") or "",
             "unit_number": getattr(prop, "unit_number", "") or "",
             "bedrooms": getattr(prop, "bedrooms", None),

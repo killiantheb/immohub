@@ -117,6 +117,15 @@ export function DocumentQuickGenerator({
   const [qYear, setQYear] = useState(String(now.getFullYear()));
   const [html, setHtml] = useState("");
   const [error, setError] = useState("");
+  // Fiche bien wizard
+  const [ficheAnnual, setFicheAnnual] = useState(true);
+  const [ficheSeasonal, setFicheSeasonal] = useState(false);
+  const [ficheNightly, setFicheNightly] = useState(false);
+  const [fichePriceAnnual, setFichePriceAnnual] = useState("");
+  const [fichePriceSeasonal, setFichePriceSeasonal] = useState("");
+  const [fichePriceNightly, setFichePriceNightly] = useState("");
+
+  const isFiche = templateType === "fiche_bien";
 
   function handleOpen() {
     setOpen(true);
@@ -124,9 +133,21 @@ export function DocumentQuickGenerator({
     setHtml("");
     setError("");
     // Si pas de wizard → génère directement
-    if (templateType && !smartPieces && !quittanceMode) {
+    if (templateType && !smartPieces && !quittanceMode && !isFiche) {
       generate(templateType);
     }
+  }
+
+  function handleFicheGenerate() {
+    const ficheExtra: Record<string, string> = {
+      has_annual:   String(ficheAnnual),
+      has_seasonal: String(ficheSeasonal),
+      has_nightly:  String(ficheNightly),
+    };
+    if (fichePriceAnnual)   ficheExtra.price_annual   = fichePriceAnnual;
+    if (fichePriceSeasonal) ficheExtra.price_seasonal = fichePriceSeasonal;
+    if (fichePriceNightly)  ficheExtra.price_nightly  = fichePriceNightly;
+    generate("fiche_bien", ficheExtra);
   }
 
   function handleQuittanceGenerate() {
@@ -213,6 +234,67 @@ export function DocumentQuickGenerator({
                   </div>
                   <button onClick={handleQuittanceGenerate} style={{ ...btnStyle("primary"), justifyContent: "center", padding: "11px 0" }}>
                     Générer la quittance
+                  </button>
+                </div>
+              )}
+
+              {/* Wizard — fiche bien */}
+              {step === "wizard" && isFiche && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                  {error && <div style={{ background: S.redBg, border: `1px solid ${S.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: S.red }}>{error}</div>}
+                  <p style={{ fontSize: 13, color: S.text2 }}>Configurez les modes de location pour cette fiche.</p>
+
+                  {/* Annual */}
+                  <div style={{ border: `1.5px solid ${ficheAnnual ? S.orange : S.border}`, borderRadius: 10, padding: "12px 16px", background: ficheAnnual ? S.orangeBg : S.surface }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                      <input type="checkbox" checked={ficheAnnual} onChange={e => setFicheAnnual(e.target.checked)} style={{ accentColor: S.orange, width: 16, height: 16 }} />
+                      <span style={{ fontWeight: 600, fontSize: 13, color: S.text }}>À l'année</span>
+                    </label>
+                    {ficheAnnual && (
+                      <div style={{ marginTop: 10 }}>
+                        <p style={{ fontSize: 11, color: S.text3, marginBottom: 4 }}>Loyer mensuel (CHF) — laisser vide pour utiliser celui du bien</p>
+                        <input type="number" placeholder="ex: 1800" value={fichePriceAnnual} onChange={e => setFichePriceAnnual(e.target.value)}
+                          style={{ width: "100%", padding: "8px 12px", border: `1px solid ${S.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "#fff" }} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Seasonal */}
+                  <div style={{ border: `1.5px solid ${ficheSeasonal ? S.orange : S.border}`, borderRadius: 10, padding: "12px 16px", background: ficheSeasonal ? S.orangeBg : S.surface }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                      <input type="checkbox" checked={ficheSeasonal} onChange={e => setFicheSeasonal(e.target.checked)} style={{ accentColor: S.orange, width: 16, height: 16 }} />
+                      <span style={{ fontWeight: 600, fontSize: 13, color: S.text }}>Saisonnier</span>
+                    </label>
+                    {ficheSeasonal && (
+                      <div style={{ marginTop: 10 }}>
+                        <p style={{ fontSize: 11, color: S.text3, marginBottom: 4 }}>Tarif saisonnier total (CHF)</p>
+                        <input type="number" placeholder="ex: 4500" value={fichePriceSeasonal} onChange={e => setFichePriceSeasonal(e.target.value)}
+                          style={{ width: "100%", padding: "8px 12px", border: `1px solid ${S.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "#fff" }} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Nightly */}
+                  <div style={{ border: `1.5px solid ${ficheNightly ? S.orange : S.border}`, borderRadius: 10, padding: "12px 16px", background: ficheNightly ? S.orangeBg : S.surface }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                      <input type="checkbox" checked={ficheNightly} onChange={e => setFicheNightly(e.target.checked)} style={{ accentColor: S.orange, width: 16, height: 16 }} />
+                      <span style={{ fontWeight: 600, fontSize: 13, color: S.text }}>À la nuitée — génère un calendrier 12 mois</span>
+                    </label>
+                    {ficheNightly && (
+                      <div style={{ marginTop: 10 }}>
+                        <p style={{ fontSize: 11, color: S.text3, marginBottom: 4 }}>Prix de base par nuit (CHF)</p>
+                        <input type="number" placeholder="ex: 120" value={fichePriceNightly} onChange={e => setFichePriceNightly(e.target.value)}
+                          style={{ width: "100%", padding: "8px 12px", border: `1px solid ${S.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "#fff" }} />
+                        <p style={{ fontSize: 10, color: S.text3, marginTop: 6 }}>
+                          Le calendrier affiche les 12 prochains mois avec les tarifs haute/basse saison calculés automatiquement.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <button onClick={handleFicheGenerate} disabled={!ficheAnnual && !ficheSeasonal && !ficheNightly}
+                    style={{ ...btnStyle("primary"), justifyContent: "center", padding: "11px 0", opacity: (!ficheAnnual && !ficheSeasonal && !ficheNightly) ? 0.4 : 1 }}>
+                    Générer la fiche complète
                   </button>
                 </div>
               )}

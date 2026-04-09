@@ -190,13 +190,16 @@ class PropertyRead(BaseModel):
     is_for_sale: bool = False
     tourist_tax_amount: float | None = None
     keys_count: int | None = None
-    # Images included in list for card display
+
+
+class PropertyListItem(PropertyRead):
+    """PropertyRead + images — used only in list responses, NOT in PATCH/PUT."""
     images: list[PropertyImageResponse] = []
 
 
 class PropertyDetail(PropertyRead):
     """Full property response including images and documents."""
-
+    images: list[PropertyImageResponse] = []
     documents: list[PropertyDocumentResponse] = []
 
 
@@ -204,7 +207,7 @@ class PropertyDetail(PropertyRead):
 
 
 class PaginatedProperties(BaseModel):
-    items: list[PropertyRead]
+    items: list[PropertyListItem]
     total: int
     page: int
     size: int
