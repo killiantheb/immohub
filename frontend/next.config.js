@@ -3,17 +3,59 @@ const { withSentryConfig } = require("@sentry/nextjs");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // ── Performance ─────────────────────────────────────────────────────────────
+  compress: true,
+  poweredByHeader: false,
+
+  // Tree-shake lucide-react + recharts icon imports (biggest bundle wins)
+  experimental: {
+    optimizePackageImports: [
+      "lucide-react",
+      "recharts",
+      "@tanstack/react-query",
+    ],
+  },
+
   generateBuildId: async () => {
     return `build-${Date.now()}`;
   },
-  webpack: (config) => {
+
+  webpack: (config, { isServer }) => {
     // Invalidate Vercel's persistent webpack cache so all chunks are rebuilt
     if (config.cache && typeof config.cache === "object") {
       config.cache.version = `v${Date.now()}`;
     }
+
+    // Split recharts + leaflet into separate async chunks (not in initial bundle)
+    if (!isServer) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          ...(config.optimization.splitChunks || {}),
+          cacheGroups: {
+            ...(config.optimization.splitChunks?.cacheGroups || {}),
+            recharts: {
+              name: "recharts",
+              test: /[\\/]node_modules[\\/](recharts|d3-.*)[\\/]/,
+              chunks: "async",
+              priority: 20,
+            },
+            leaflet: {
+              name: "leaflet",
+              test: /[\\/]node_modules[\\/](leaflet|react-leaflet)[\\/]/,
+              chunks: "async",
+              priority: 20,
+            },
+          },
+        },
+      };
+    }
     return config;
   },
+
   images: {
+    formats: ["image/avif", "image/webp"],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     remotePatterns: [
       {
         protocol: "https",

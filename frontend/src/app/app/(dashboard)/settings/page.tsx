@@ -240,6 +240,7 @@ function TabIdentite({ role }: { role: string | null }) {
       )}
 
       <SaveBtn saving={saving} saved={saved} onClick={save} />
+      <RgpdSection />
     </div>
   );
 }
@@ -620,6 +621,67 @@ interface ClassifyResult {
   priorite: string;
   bien_suggestion: string | null;
   resume: string;
+}
+
+// ── RGPD / LPD section (added to TabIdentite via hook) ───────────────────────
+
+function RgpdSection() {
+  const [exporting, setExporting] = useState(false);
+  const [deleteRequested, setDeleteRequested] = useState(false);
+
+  async function exportData() {
+    setExporting(true);
+    try {
+      const resp = await api.get("/rgpd/export", { responseType: "blob" });
+      const url = URL.createObjectURL(new Blob([resp.data], { type: "application/json" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `althy_export_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function requestDeletion() {
+    if (!confirm("Confirmer la demande de suppression de votre compte ? Cette action sera traitée dans 30 jours.")) return;
+    await api.post("/rgpd/delete-account");
+    setDeleteRequested(true);
+  }
+
+  return (
+    <div style={{ marginTop: 24, padding: "16px 18px", border: `1px solid ${S.border}`, borderRadius: 12, backgroundColor: S.surface }}>
+      <h4 style={{ margin: "0 0 4px", fontSize: 13.5, fontWeight: 700, color: S.text }}>RGPD / LPD — Vos droits</h4>
+      <p style={{ margin: "0 0 14px", fontSize: 12, color: S.text3 }}>Conformément au RGPD (art.15-17) et à la LPD suisse (art.25-32).</p>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <button
+          onClick={exportData}
+          disabled={exporting}
+          style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 14px", border: `1px solid ${S.orange}`, borderRadius: 8, backgroundColor: S.orangeBg, color: S.orange, fontSize: 12.5, fontWeight: 600, cursor: exporting ? "default" : "pointer" }}
+        >
+          {exporting ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : "📥"}
+          Exporter mes données
+        </button>
+        <button
+          onClick={() => window.open("mailto:privacy@althy.ch", "_blank")}
+          style={{ padding: "8px 14px", border: `1px solid ${S.border}`, borderRadius: 8, backgroundColor: "transparent", color: S.text2, fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+        >
+          ✉️ Contacter DPO
+        </button>
+        {!deleteRequested ? (
+          <button
+            onClick={requestDeletion}
+            style={{ padding: "8px 14px", border: `1px solid ${S.red}`, borderRadius: 8, backgroundColor: S.redBg, color: S.red, fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}
+          >
+            🗑️ Supprimer mon compte
+          </button>
+        ) : (
+          <span style={{ padding: "8px 14px", fontSize: 12.5, color: S.green }}>✓ Demande envoyée — traitement sous 30 jours</span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 const PROVIDER_LABELS: Record<string, { label: string; icon: string; color: string }> = {

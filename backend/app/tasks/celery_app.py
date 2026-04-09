@@ -11,6 +11,7 @@ celery_app = Celery(
         "app.tasks.rent_tasks",
         "app.tasks.mission_tasks",
         "app.tasks.ai_tasks",
+        "app.tasks.alerts",
     ],
 )
 
@@ -56,5 +57,15 @@ celery_app.conf.beat_schedule = {
     "generate-monthly-quittances": {
         "task": "tasks.generate_monthly_quittances",
         "schedule": crontab(hour=6, minute=30, day_of_month=1),
+    },
+    # Every day at 10:00 Zurich — loyers impayés (J+7)
+    "check-overdue-rents": {
+        "task": "tasks.check_overdue_rents",
+        "schedule": crontab(hour=10, minute=0),
+    },
+    # Every day at 08:30 Zurich — baux expirant dans 90/60/30/14j
+    "check-expiring-leases": {
+        "task": "tasks.check_expiring_leases",
+        "schedule": crontab(hour=8, minute=30),
     },
 }

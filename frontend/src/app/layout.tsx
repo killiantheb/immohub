@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { CookieBanner } from "@/components/CookieBanner";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -54,6 +55,7 @@ export default function RootLayout({
     <html lang="fr" className={`${fraunces.variable} ${dmSans.variable}`}>
       <body className={`${dmSans.variable} font-sans`}>
         <Providers>{children}</Providers>
+        <CookieBanner />
       </body>
     </html>
   );
