@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from typing import Literal
 
@@ -59,7 +60,7 @@ class UpdateProfileRequest(BaseModel):
 class UserProfileResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
+    id: uuid.UUID
     email: str
     role: str
     first_name: str | None

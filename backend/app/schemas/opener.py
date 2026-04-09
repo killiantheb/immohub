@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from typing import Literal
 
@@ -36,8 +37,8 @@ class OpenerProfileUpdate(BaseModel):
 class OpenerRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
-    user_id: str
+    id: uuid.UUID
+    user_id: uuid.UUID
     bio: str | None
     radius_km: float | None
     hourly_rate: float | None
@@ -60,7 +61,7 @@ class OpenerWithDistance(OpenerRead):
 
 
 class MissionCreate(BaseModel):
-    property_id: str
+    property_id: uuid.UUID
     type: MissionType
     scheduled_at: datetime
     notes: str | None = None
@@ -68,7 +69,7 @@ class MissionCreate(BaseModel):
     property_lat: float | None = Field(None, ge=-90, le=90)
     property_lng: float | None = Field(None, ge=-180, le=180)
     # If provided, pre-assigns this opener; otherwise auto-matched
-    opener_id: str | None = None
+    opener_id: uuid.UUID | None = None
 
 
 class MissionComplete(BaseModel):
@@ -85,10 +86,10 @@ class MissionRate(BaseModel):
 class MissionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
-    requester_id: str
-    opener_id: str | None
-    property_id: str
+    id: uuid.UUID
+    requester_id: uuid.UUID
+    opener_id: uuid.UUID | None
+    property_id: uuid.UUID
     type: str
     status: str
     scheduled_at: datetime

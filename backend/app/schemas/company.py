@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from typing import Literal
 
@@ -39,7 +40,7 @@ class CompanyUpdate(BaseModel):
 class CompanyRead(CompanyBase):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
-    owner_id: str
+    id: uuid.UUID
+    owner_id: uuid.UUID
     created_at: datetime
     updated_at: datetime

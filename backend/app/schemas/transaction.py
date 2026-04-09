@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from typing import Literal
 
@@ -10,9 +11,9 @@ TransactionStatus = Literal["pending", "paid", "late", "cancelled"]
 
 
 class TransactionCreate(BaseModel):
-    contract_id: str | None = None
-    property_id: str | None = None
-    tenant_id: str | None = None
+    contract_id: uuid.UUID | None = None
+    property_id: uuid.UUID | None = None
+    tenant_id: uuid.UUID | None = None
     type: TransactionType
     amount: float = Field(..., gt=0)
     due_date: datetime | None = None
@@ -22,12 +23,12 @@ class TransactionCreate(BaseModel):
 class TransactionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
+    id: uuid.UUID
     reference: str
-    owner_id: str
-    contract_id: str | None
-    property_id: str | None
-    tenant_id: str | None
+    owner_id: uuid.UUID
+    contract_id: uuid.UUID | None
+    property_id: uuid.UUID | None
+    tenant_id: uuid.UUID | None
     type: str
     status: str
     amount: float

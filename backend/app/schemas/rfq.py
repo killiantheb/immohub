@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from typing import Literal
 
@@ -44,15 +45,15 @@ class RFQCreate(BaseModel):
     budget_min: float | None = Field(None, ge=0)
     budget_max: float | None = Field(None, ge=0)
     scheduled_date: datetime | None = None
-    property_id: str | None = None
+    property_id: uuid.UUID | None = None
 
 
 class RFQRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
-    owner_id: str
-    property_id: str | None
+    id: uuid.UUID
+    owner_id: uuid.UUID
+    property_id: uuid.UUID | None
     title: str
     description: str
     category: str
@@ -64,7 +65,7 @@ class RFQRead(BaseModel):
     budget_min: float | None
     budget_max: float | None
     scheduled_date: datetime | None
-    selected_quote_id: str | None
+    selected_quote_id: uuid.UUID | None
     commission_amount: float | None
     published_at: datetime | None
     accepted_at: datetime | None
@@ -109,9 +110,9 @@ class RFQQuoteCreate(BaseModel):
 class RFQQuoteRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
-    rfq_id: str
-    company_id: str
+    id: uuid.UUID
+    rfq_id: uuid.UUID
+    company_id: uuid.UUID
     amount: float
     description: str
     delay_days: int | None
@@ -136,7 +137,7 @@ class RFQRating(BaseModel):
 class CompanyMarketplaceRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
+    id: uuid.UUID
     name: str
     type: str
     description: str | None

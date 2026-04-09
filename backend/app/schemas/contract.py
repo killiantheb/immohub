@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from typing import Literal
 
@@ -10,9 +11,9 @@ ContractStatus = Literal["draft", "active", "terminated", "expired"]
 
 
 class ContractCreate(BaseModel):
-    property_id: str
-    tenant_id: str | None = None
-    agency_id: str | None = None
+    property_id: uuid.UUID
+    tenant_id: uuid.UUID | None = None
+    agency_id: uuid.UUID | None = None
     type: ContractType
     status: ContractStatus = "draft"
     start_date: datetime
@@ -43,8 +44,8 @@ class ContractCreate(BaseModel):
 
 
 class ContractUpdate(BaseModel):
-    tenant_id: str | None = None
-    agency_id: str | None = None
+    tenant_id: uuid.UUID | None = None
+    agency_id: uuid.UUID | None = None
     type: ContractType | None = None
     status: ContractStatus | None = None
     start_date: datetime | None = None
@@ -77,12 +78,12 @@ class ContractUpdate(BaseModel):
 class ContractRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
+    id: uuid.UUID
     reference: str
-    owner_id: str
-    property_id: str
-    tenant_id: str | None
-    agency_id: str | None
+    owner_id: uuid.UUID
+    property_id: uuid.UUID
+    tenant_id: uuid.UUID | None
+    agency_id: uuid.UUID | None
     type: str
     status: str
     start_date: datetime

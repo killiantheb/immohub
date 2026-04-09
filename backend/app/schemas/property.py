@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from typing import Literal
 
@@ -29,7 +30,7 @@ DocumentType = Literal["lease", "inventory", "insurance", "notice", "deed", "dia
 class PropertyImageResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
+    id: uuid.UUID
     url: str
     order: int
     is_cover: bool
@@ -39,7 +40,7 @@ class PropertyImageResponse(BaseModel):
 class PropertyDocumentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
+    id: uuid.UUID
     type: str
     url: str
     name: str
@@ -49,8 +50,8 @@ class PropertyDocumentResponse(BaseModel):
 class AuditLogResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
-    user_id: str | None
+    id: uuid.UUID
+    user_id: uuid.UUID | None
     action: str
     resource_type: str
     resource_id: str | None
@@ -146,10 +147,10 @@ class PropertyUpdate(BaseModel):
 class PropertyRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
-    owner_id: str
-    agency_id: str | None
-    created_by_id: str
+    id: uuid.UUID
+    owner_id: uuid.UUID
+    agency_id: uuid.UUID | None
+    created_by_id: uuid.UUID
     type: str
     status: str
     address: str
