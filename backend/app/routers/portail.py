@@ -33,7 +33,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 router = APIRouter()
 
 DbDep       = Annotated[AsyncSession, Depends(get_db)]
-AgencyDep   = Annotated[User, Depends(require_roles(ROLE_AGENCE, ROLE_SUPER_ADMIN))]
+AgencyDep   = Annotated[User, require_roles(ROLE_AGENCE, ROLE_SUPER_ADMIN)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
