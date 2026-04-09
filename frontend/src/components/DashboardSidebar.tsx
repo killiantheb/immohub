@@ -21,6 +21,10 @@ import {
   ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
+  Megaphone,
+  Calculator,
+  Target,
+  CreditCard,
 } from "lucide-react";
 import { CathySphere } from "@/components/CathySphere";
 
@@ -56,10 +60,14 @@ const NAV: NavItem[] = [
       { label: "Paiements",  href: "/app/artisans/paiements" },
       { label: "Historique", href: "/app/artisans/historique" },
     ]},
-  { label: "Publications",    href: "/app/publications/new", icon: <SendHorizonal {...ICON} />, section: "publications" },
-  { label: "Althy IA",        href: "/app/advisor",     icon: <Sparkles {...ICON} />,          section: "althy" },
-  { label: "Paramètres",      href: "/app/settings",    icon: <SlidersHorizontal {...ICON} />, section: "settings",
+  { label: "Annonces",         href: "/app/listings",    icon: <Megaphone {...ICON} />,         section: "listings" },
+  { label: "Comptabilité",     href: "/app/comptabilite",icon: <Calculator {...ICON} />,        section: "comptabilite" },
+  { label: "Hunters",          href: "/app/hunters",     icon: <Target {...ICON} />,            section: "hunters" },
+  { label: "Publications",     href: "/app/publications/new", icon: <SendHorizonal {...ICON} />, section: "publications" },
+  { label: "Althy IA",         href: "/app/advisor",     icon: <Sparkles {...ICON} />,          section: "althy" },
+  { label: "Paramètres",       href: "/app/settings",    icon: <SlidersHorizontal {...ICON} />, section: "settings",
     children: [
+      { label: "Abonnement",     href: "/app/abonnement" },
       { label: "Zone",           href: "/app/settings/zone" },
       { label: "Préférences",    href: "/app/settings/preferences" },
       { label: "Paiement",       href: "/app/settings/paiement" },

@@ -1,0 +1,228 @@
+"use client";
+
+import { useState } from "react";
+import { Plus, MapPin, Phone, Mail, TrendingUp, Clock } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+
+const S = {
+  bg:       "var(--althy-bg)",
+  surface:  "var(--althy-surface)",
+  surface2: "var(--althy-surface-2)",
+  border:   "var(--althy-border)",
+  text:     "var(--althy-text)",
+  text2:    "var(--althy-text-2)",
+  text3:    "var(--althy-text-3)",
+  orange:   "var(--althy-orange)",
+  orangeBg: "var(--althy-orange-bg)",
+  green:    "var(--althy-green)",
+  greenBg:  "var(--althy-green-bg)",
+  amber:    "var(--althy-amber)",
+  amberBg:  "var(--althy-amber-bg)",
+  red:      "var(--althy-red)",
+  redBg:    "var(--althy-red-bg)",
+  shadow:   "var(--althy-shadow)",
+} as const;
+
+const STATUS_CFG = {
+  new:          { label: "Nouveau",          color: S.orange, bg: S.orangeBg },
+  contacted:    { label: "Contacté",          color: S.amber,  bg: S.amberBg  },
+  under_offer:  { label: "Offre en cours",    color: "var(--althy-blue)", bg: "var(--althy-blue-bg)" },
+  closed:       { label: "Transaction faite", color: S.green,  bg: S.greenBg  },
+  lost:         { label: "Perdu",             color: S.text3,  bg: S.surface2 },
+};
+
+interface Hunter {
+  id: string;
+  address: string;
+  city: string;
+  description: string | null;
+  estimated_price: number | null;
+  contact_name: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
+  status: keyof typeof STATUS_CFG;
+  referral_amount: number | null;
+  referral_paid: boolean;
+  created_at: string;
+}
+
+function fmt(n: number | null) {
+  if (!n) return "—";
+  return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }).format(n);
+}
+
+function NewHunterModal({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient();
+  const [f, setF] = useState({ address: "", city: "", description: "", estimated_price: "", contact_name: "", contact_phone: "", contact_email: "", referral_amount: "" });
+
+  const mutation = useMutation({
+    mutationFn: (data: object) => api.post("/hunters", data).then(r => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["hunters"] }); onClose(); },
+  });
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 60, backgroundColor: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ backgroundColor: S.surface, borderRadius: 20, padding: 28, width: "100%", maxWidth: 560, boxShadow: "0 20px 60px rgba(0,0,0,0.15)", maxHeight: "90vh", overflowY: "auto" }}>
+        <h2 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 700, color: S.text }}>Soumettre un lead off-market</h2>
+        <p style={{ margin: "0 0 20px", fontSize: 13, color: S.text3 }}>Gagnez CHF 50–500 si la transaction aboutit.</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {[
+            { key: "address",    label: "Adresse du bien",     placeholder: "Rue de Rive 12" },
+            { key: "city",       label: "Ville",               placeholder: "Genève" },
+          ].map(({ key, label, placeholder }) => (
+            <div key={key}>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: S.text3, marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</label>
+              <input value={(f as Record<string,string>)[key]} onChange={e => setF(p => ({ ...p, [key]: e.target.value }))}
+                placeholder={placeholder}
+                style={{ width: "100%", padding: "9px 12px", border: `1px solid ${S.border}`, borderRadius: 9, fontSize: 13.5, backgroundColor: S.surface2, color: S.text, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+          ))}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: S.text3, marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.06em" }}>Prix estimé (CHF)</label>
+              <input type="number" value={f.estimated_price} onChange={e => setF(p => ({ ...p, estimated_price: e.target.value }))}
+                placeholder="800 000"
+                style={{ width: "100%", padding: "9px 12px", border: `1px solid ${S.border}`, borderRadius: 9, fontSize: 13.5, backgroundColor: S.surface2, color: S.text, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: S.text3, marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.06em" }}>Referral fee demandé (CHF)</label>
+              <input type="number" value={f.referral_amount} onChange={e => setF(p => ({ ...p, referral_amount: e.target.value }))}
+                placeholder="250"
+                style={{ width: "100%", padding: "9px 12px", border: `1px solid ${S.border}`, borderRadius: 9, fontSize: 13.5, backgroundColor: S.surface2, color: S.text, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: S.text3, marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.06em" }}>Description</label>
+            <textarea value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))}
+              rows={3} placeholder="Appartement 4 pièces, propriétaire souhaite vendre discrètement, pas encore sur le marché…"
+              style={{ width: "100%", padding: "9px 12px", border: `1px solid ${S.border}`, borderRadius: 9, fontSize: 13.5, backgroundColor: S.surface2, color: S.text, outline: "none", resize: "vertical", boxSizing: "border-box" }}
+            />
+          </div>
+          <div style={{ padding: "14px 16px", backgroundColor: S.surface2, borderRadius: 10 }}>
+            <p style={{ margin: "0 0 10px", fontSize: 12, fontWeight: 600, color: S.text2 }}>Contact du vendeur (optionnel)</p>
+            {[
+              { key: "contact_name",  placeholder: "Jean Dupont",    icon: "👤" },
+              { key: "contact_phone", placeholder: "+41 79 123 45 67", icon: "📞" },
+              { key: "contact_email", placeholder: "vendeur@email.ch", icon: "✉️" },
+            ].map(({ key, placeholder, icon }) => (
+              <input key={key} value={(f as Record<string,string>)[key]} onChange={e => setF(p => ({ ...p, [key]: e.target.value }))}
+                placeholder={`${icon}  ${placeholder}`}
+                style={{ width: "100%", padding: "8px 12px", border: `1px solid ${S.border}`, borderRadius: 8, fontSize: 13, backgroundColor: S.surface, color: S.text, outline: "none", marginBottom: 6, boxSizing: "border-box" }}
+              />
+            ))}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: "10px 0", border: `1px solid ${S.border}`, borderRadius: 9, backgroundColor: "transparent", color: S.text2, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Annuler</button>
+          <button
+            disabled={!f.address || !f.city || mutation.isPending}
+            onClick={() => mutation.mutate({ address: f.address, city: f.city, description: f.description || null, estimated_price: f.estimated_price ? parseFloat(f.estimated_price) : null, contact_name: f.contact_name || null, contact_phone: f.contact_phone || null, contact_email: f.contact_email || null, referral_amount: f.referral_amount ? parseFloat(f.referral_amount) : null })}
+            style={{ flex: 2, padding: "10px 0", border: "none", borderRadius: 9, backgroundColor: S.orange, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+          >
+            {mutation.isPending ? "Envoi…" : "Soumettre le lead"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function HuntersPage() {
+  const [showNew, setShowNew] = useState(false);
+  const { data, isLoading } = useQuery({
+    queryKey: ["hunters"],
+    queryFn: () => api.get<{ items: Hunter[] }>("/hunters").then(r => r.data),
+  });
+
+  const items = data?.items ?? [];
+  const earned = items.filter(h => h.referral_paid).reduce((a, h) => a + (h.referral_amount ?? 0), 0);
+  const pending = items.filter(h => !h.referral_paid && h.status === "closed").reduce((a, h) => a + (h.referral_amount ?? 0), 0);
+
+  return (
+    <div style={{ padding: "28px 24px", maxWidth: 1000, margin: "0 auto" }}>
+      {showNew && <NewHunterModal onClose={() => setShowNew(false)} />}
+
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
+        <div>
+          <h1 style={{ margin: "0 0 6px", fontSize: 26, fontWeight: 700, color: S.text, letterSpacing: "-0.02em" }}>Hunters — Leads off-market</h1>
+          <p style={{ margin: 0, color: S.text3, fontSize: 13.5 }}>Soumettez des biens pas encore sur le marché. Gagnez CHF 50–500 si la transaction aboutit.</p>
+        </div>
+        <button onClick={() => setShowNew(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", backgroundColor: S.orange, color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
+          <Plus size={15} /> Soumettre un lead
+        </button>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 28 }}>
+        {[
+          { label: "Leads soumis",   value: items.length, color: S.text },
+          { label: "En cours",       value: items.filter(h => ["new","contacted","under_offer"].includes(h.status)).length, color: S.orange },
+          { label: "Gagné (payé)",   value: fmt(earned), color: S.green },
+          { label: "En attente",     value: fmt(pending), color: S.amber },
+        ].map(k => (
+          <div key={k.label} style={{ backgroundColor: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: "14px 16px" }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: k.color }}>{k.value}</div>
+            <div style={{ fontSize: 11.5, color: S.text3, marginTop: 2 }}>{k.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Info banner */}
+      <div style={{ backgroundColor: S.orangeBg, border: "1px solid rgba(232,96,44,0.22)", borderRadius: 12, padding: "14px 18px", marginBottom: 24, display: "flex", gap: 10 }}>
+        <TrendingUp size={18} color={S.orange} style={{ flexShrink: 0, marginTop: 1 }} />
+        <div>
+          <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: 600, color: S.text }}>Comment ça marche</p>
+          <p style={{ margin: 0, fontSize: 12.5, color: S.text3 }}>Vous connaissez un bien pas encore sur le marché ? Soumettez l'adresse + contact. Si Althy conclut la transaction, vous touchez automatiquement CHF 50–500 via Stripe. Aucune licence requise.</p>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div style={{ textAlign: "center", padding: 60, color: S.text3 }}>Chargement…</div>
+      ) : items.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 20px", backgroundColor: S.surface, border: `1px solid ${S.border}`, borderRadius: 16 }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🏹</div>
+          <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600, color: S.text }}>Aucun lead soumis</h3>
+          <p style={{ color: S.text3, fontSize: 13, margin: "0 0 20px" }}>Vous connaissez un propriétaire qui veut vendre discrètement ? Soumettez le lead et gagnez jusqu'à CHF 500.</p>
+          <button onClick={() => setShowNew(true)} style={{ padding: "10px 24px", backgroundColor: S.orange, color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+            Soumettre mon premier lead
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {items.map(h => {
+            const sc = STATUS_CFG[h.status] ?? STATUS_CFG.new;
+            return (
+              <div key={h.id} style={{ backgroundColor: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: "16px 20px", boxShadow: S.shadow }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <MapPin size={14} color={S.text3} />
+                      <span style={{ fontSize: 14, fontWeight: 700, color: S.text }}>{h.address}, {h.city}</span>
+                      <span style={{ padding: "2px 8px", borderRadius: 20, fontSize: 10.5, fontWeight: 600, backgroundColor: sc.bg, color: sc.color }}>{sc.label}</span>
+                    </div>
+                    {h.description && <p style={{ margin: "0 0 8px", fontSize: 12.5, color: S.text3, lineHeight: 1.5 }}>{h.description}</p>}
+                    <div style={{ display: "flex", gap: 14, fontSize: 12.5 }}>
+                      {h.estimated_price && <span style={{ color: S.text2 }}>Estimé : <strong style={{ color: S.text }}>{fmt(h.estimated_price)}</strong></span>}
+                      {h.contact_name && <span style={{ color: S.text3, display: "flex", alignItems: "center", gap: 4 }}>👤 {h.contact_name}</span>}
+                      {h.contact_phone && <span style={{ color: S.text3, display: "flex", alignItems: "center", gap: 4 }}><Phone size={11} /> {h.contact_phone}</span>}
+                      <span style={{ color: S.text3, display: "flex", alignItems: "center", gap: 4 }}>
+                        <Clock size={11} /> {new Date(h.created_at).toLocaleDateString("fr-CH")}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: h.referral_paid ? S.green : S.orange }}>{fmt(h.referral_amount)}</div>
+                    <div style={{ fontSize: 11, color: h.referral_paid ? S.green : S.text3 }}>{h.referral_paid ? "Payé ✓" : "Referral fee"}</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

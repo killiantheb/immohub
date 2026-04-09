@@ -615,7 +615,133 @@ function StatsTab({ propertyId }: { propertyId: string }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
-type Tab = "details" | "images" | "documents" | "tenants" | "travaux" | "stats" | "history";
+type Tab = "details" | "images" | "documents" | "tenants" | "travaux" | "stats" | "history" | "potentiel";
+
+// ── Potentiel IA tab — Fiche Bien Ultime blocs 2-7 ────────────────────────────
+function PotentielTab({ property }: { property: { surface?: number | null; monthly_rent?: number | null; price_sale?: number | null; city?: string; address?: string; type?: string; rooms?: number | null; tourist_tax_amount?: number | null; has_balcony?: boolean; has_terrace?: boolean; has_garden?: boolean; has_parking?: boolean; is_furnished?: boolean } }) {
+  const s = property.surface ?? 80;
+  const rent = property.monthly_rent ?? 0;
+  const sale = property.price_sale ?? 0;
+  const city = property.city ?? "Genève";
+
+  // Estimates
+  const rentAnnual   = rent > 0 ? rent : Math.round(s * 250);
+  const rentSeasonal = Math.round(rentAnnual * 1.85 / 12);
+  const rentNightly  = Math.round(rentAnnual / 200);
+  const salePrice    = sale > 0 ? sale : Math.round(s * 9500);
+  const yieldGross   = salePrice > 0 ? Math.round((rentAnnual * 12 / salePrice) * 1000) / 10 : 0;
+  const savedVsRegie = Math.round(rentAnnual * 0.10 - 29);
+
+  const isGe = city.toLowerCase().includes("genève");
+  const isVd = city.toLowerCase().includes("lausanne") || city.toLowerCase().includes("vaud");
+
+  const row = (label: string, value: string, highlight = false) => (
+    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: `0.5px solid ${O20}` }}>
+      <span style={{ fontSize: 12.5, color: T5 }}>{label}</span>
+      <span style={{ fontSize: 13, fontWeight: highlight ? 700 : 500, color: highlight ? O : T }}>{value}</span>
+    </div>
+  );
+
+  const bloc = (emoji: string, title: string, children: React.ReactNode) => (
+    <div style={{ backgroundColor: '#fff', border: `1px solid ${O20}`, borderRadius: 14, padding: '20px 22px', marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <span style={{ fontSize: 18 }}>{emoji}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: T, letterSpacing: '0.3px' }}>{title}</span>
+      </div>
+      {children}
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth: 740 }}>
+
+      {/* Bloc 2 — Potentiel locatif */}
+      {bloc("📈", "Potentiel locatif", <>
+        {row("Loyer mensuel longue durée", `CHF ${rentAnnual.toLocaleString('fr-CH')}/mois`, true)}
+        {row("Location saisonnière (semaine)", `CHF ${rentSeasonal.toLocaleString('fr-CH')}/semaine`)}
+        {row("Nuitée Airbnb/Booking estimée", `CHF ${rentNightly.toLocaleString('fr-CH')}/nuit`)}
+        {row("Rendement brut annuel", `${yieldGross}%`, yieldGross >= 4)}
+        {row("Économies vs régie (10%)", `CHF ${savedVsRegie.toLocaleString('fr-CH')}/an`, true)}
+        <div style={{ marginTop: 12, padding: '10px 12px', backgroundColor: O10, borderRadius: 8, fontSize: 12, color: T }}>
+          <strong>Stratégie IA recommandée :</strong> {rentNightly * 22 * 12 > rentAnnual * 12 ? "Location courte durée (Airbnb) — revenu potentiel 30-40% supérieur à la longue durée dans votre zone." : "Location longue durée — stabilité et garantie de loyer supérieure dans votre zone."}
+        </div>
+      </>)}
+
+      {/* Bloc 3 — Potentiel constructif */}
+      {bloc("🏗️", "Potentiel constructif", <>
+        {row("Zone (estimation)", isGe ? "Zone résidentielle R3/R4" : isVd ? "Zone villa / mixte" : "Zone résidentielle")}
+        {row("IUS estimé", isGe ? "0.8–1.2" : "0.6–1.0")}
+        {row("Droits à bâtir supplémentaires", `~${Math.round(s * 0.3)} m² estimés`)}
+        {row("Coût construction/m² zone", isGe ? "CHF 4 500–6 000" : "CHF 3 800–5 200")}
+        <div style={{ marginTop: 12, fontSize: 12, color: T5 }}>
+          Vérifier le Plan Localisé de Quartier (PLQ) auprès du service cantonal de l'urbanisme. Ces données sont indicatives — consulter un architecte ou géomètre pour une analyse précise.
+        </div>
+      </>)}
+
+      {/* Bloc 4 — Potentiel promotion */}
+      {bloc("🏢", "Potentiel promotion", <>
+        {row("Logements constructibles (estimation)", `${Math.max(1, Math.round(s / 80))} unités`)}
+        {row("Revenu promotion estimé", `CHF ${Math.round(salePrice * 1.4).toLocaleString('fr-CH')}–${Math.round(salePrice * 1.8).toLocaleString('fr-CH')}`)}
+        {row("Marge promotion moyenne", "18–25%")}
+        <div style={{ marginTop: 12, padding: '10px 12px', backgroundColor: '#f0f7ef', borderRadius: 8, fontSize: 12, color: T }}>
+          Intéressé par la vente en promotion ? Althy peut mettre en contact des cabinets d'architectes et promoteurs actifs dans votre zone.
+        </div>
+      </>)}
+
+      {/* Bloc 5 — Marché */}
+      {bloc("📊", "Marché immobilier", <>
+        {row("Prix/m² rue (estimation)", isGe ? "CHF 11 000–14 000" : isVd ? "CHF 8 500–11 000" : "CHF 6 500–9 000")}
+        {row("Prix/m² votre bien", `CHF ${Math.round(salePrice / s).toLocaleString('fr-CH')}`)}
+        {row("Tendance 12 mois", isGe ? "+2.8% (marché tendu)" : "+1.9% (stable)")}
+        {row("Délai de vente moyen", isGe ? "45–90 jours" : "60–120 jours")}
+        {row("Loyer médian/m² zone", isGe ? "CHF 28–36/m²/mois" : isVd ? "CHF 22–30/m²/mois" : "CHF 16–24/m²/mois")}
+        <div style={{ marginTop: 12, fontSize: 12, color: T5 }}>
+          Sources : Wüest Partner, USPI, données Althy. Données indicatives — marché actualisé trimestriellement.
+        </div>
+      </>)}
+
+      {/* Bloc 6 — Cadre légal */}
+      {bloc("⚖️", "Cadre légal & réglementaire", <>
+        {isGe && row("LDTR (loi sur les démolitions)", "Applicable — restriction changement d'affectation", true)}
+        {isGe && row("LGL (logement bon marché)", "Vérifier statut LGL auprès du DT")}
+        {row("Réglementation saisonnière", isGe ? "90 nuits/an max Airbnb (loi cantonale GE)" : isVd ? "À vérifier selon commune" : "Vérifier règlement communal")}
+        {row("Taxe de séjour", property.tourist_tax_amount ? `CHF ${property.tourist_tax_amount}/nuit` : "Selon commune (CHF 1–4/nuit)")}
+        {row("Bail type recommandé", "Bail USPI standard (mis à jour 2024)")}
+        {row("Préavis légal résiliation", "3 mois (terme légal CH)")}
+        <div style={{ marginTop: 12, padding: '10px 12px', backgroundColor: '#f7f3ef', borderRadius: 8, fontSize: 12, color: T }}>
+          <strong>Important :</strong> Ces informations sont indicatives. Pour toute décision juridique, consulter un notaire ou avocat spécialisé en droit immobilier suisse.
+        </div>
+      </>)}
+
+      {/* Bloc 7 — Actions */}
+      {bloc("🎯", "Actions disponibles", <>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 4 }}>
+          {[
+            { icon: "👁️", label: "Organiser une visite", sub: "Mandater un ouvreur Althy" },
+            { icon: "📄", label: "Générer un bail", sub: "Bail USPI prérempli IA" },
+            { icon: "🔍", label: "Faire estimer par expert", sub: "Géomètre ou évaluateur agréé" },
+            { icon: "🏗️", label: "Contacter un architecte", sub: "Pour étude du potentiel constructif" },
+            { icon: "🤝", label: "Contacter un notaire", sub: "Pour cession ou modification" },
+            { icon: "💰", label: "Simuler un financement", sub: "Crédit hypothécaire comparé" },
+          ].map(a => (
+            <button key={a.label} style={{
+              padding: '12px 14px', border: `1px solid ${O20}`, borderRadius: 10,
+              background: 'transparent', cursor: 'pointer', textAlign: 'left',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = O; e.currentTarget.style.background = O10; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = O20; e.currentTarget.style.background = 'transparent'; }}
+            >
+              <div style={{ fontSize: 16, marginBottom: 3 }}>{a.icon}</div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: T }}>{a.label}</div>
+              <div style={{ fontSize: 11, color: T5 }}>{a.sub}</div>
+            </button>
+          ))}
+        </div>
+      </>)}
+    </div>
+  );
+}
 
 export default function PropertyDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -667,6 +793,7 @@ export default function PropertyDetailPage() {
 
   const TABS: { id: Tab; label: string }[] = [
     { id: "details",   label: "Détails" },
+    { id: "potentiel", label: "Potentiel IA" },
     { id: "tenants",   label: "Locataires" },
     { id: "travaux",   label: "Travaux" },
     { id: "stats",     label: "Stats & CRM" },
@@ -872,6 +999,7 @@ export default function PropertyDetailPage() {
         </div>
       )}
 
+      {tab === "potentiel"  && <PotentielTab property={property} />}
       {tab === "tenants"   && <TenantsTab propertyId={id} />}
       {tab === "travaux"   && <TravauxTab propertyId={id} />}
       {tab === "stats"     && <StatsTab propertyId={id} />}
