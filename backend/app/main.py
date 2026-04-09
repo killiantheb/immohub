@@ -37,6 +37,7 @@ from app.routers.tenants import router as tenants_router
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 # ── Sentry ────────────────────────────────────────────────────────────────────
 
@@ -83,6 +84,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ── Proxy headers (Railway terminates TLS; trust X-Forwarded-Proto) ───────────
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # ── Security headers ──────────────────────────────────────────────────────────
 @app.middleware("http")
