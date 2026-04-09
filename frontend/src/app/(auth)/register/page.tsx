@@ -30,6 +30,8 @@ const REGISTER_ROLES = [
 
 type RegisterRole = typeof REGISTER_ROLES[number];
 
+const CGU_VERSION = "2026-04";
+
 const schema = z
   .object({
     first_name: z.string().min(1, "Prénom requis").max(100),
@@ -42,6 +44,10 @@ const schema = z
       .regex(/[A-Z]/, "Au moins une majuscule")
       .regex(/[0-9]/, "Au moins un chiffre"),
     confirm_password: z.string(),
+    cgu_accepted: z.literal(true, {
+      errorMap: () => ({ message: "Vous devez accepter les CGU pour continuer" }),
+    }),
+    marketing_consent: z.boolean(),
   })
   .refine((d) => d.password === d.confirm_password, {
     message: "Les mots de passe ne correspondent pas",
@@ -97,7 +103,7 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { role: "proprio_solo" },
+    defaultValues: { role: "proprio_solo", marketing_consent: false },
   });
 
   const password = watch("password", "");
@@ -109,6 +115,9 @@ export default function RegisterPage() {
         first_name: data.first_name,
         last_name: data.last_name,
         role: data.role,
+        cgu_accepted_at: new Date().toISOString(),
+        cgu_version: CGU_VERSION,
+        marketing_consent: data.marketing_consent,
       });
       router.push("/onboarding");
     } catch (err: unknown) {
@@ -311,6 +320,49 @@ export default function RegisterPage() {
               </div>
             )}
 
+            {/* Consent checkboxes */}
+            <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              {/* CGU — required */}
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register("cgu_accepted")}
+                  className="mt-0.5 h-4 w-4 accent-primary-600 shrink-0"
+                />
+                <span className="text-xs text-gray-600 leading-relaxed">
+                  <span className="font-medium text-gray-800">Obligatoire —</span>{" "}
+                  J&apos;ai lu et j&apos;accepte les{" "}
+                  <Link href="/legal/cgu" target="_blank" className="text-primary-600 hover:underline font-medium">
+                    Conditions Générales d&apos;Utilisation
+                  </Link>{" "}
+                  et la{" "}
+                  <Link href="/legal/confidentialite" target="_blank" className="text-primary-600 hover:underline font-medium">
+                    Politique de confidentialité
+                  </Link>
+                  .
+                </span>
+              </label>
+              {errors.cgu_accepted && (
+                <p className="flex items-center gap-1 text-xs text-red-500 pl-7">
+                  <AlertCircle className="h-3 w-3 shrink-0" />
+                  {errors.cgu_accepted.message}
+                </p>
+              )}
+
+              {/* Marketing — optional */}
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register("marketing_consent")}
+                  className="mt-0.5 h-4 w-4 accent-primary-600 shrink-0"
+                />
+                <span className="text-xs text-gray-500 leading-relaxed">
+                  <span className="font-medium text-gray-700">Optionnel —</span>{" "}
+                  J&apos;accepte de recevoir les communications commerciales d&apos;Althy (nouveautés, offres, conseils immobiliers). Désinscription possible à tout moment.
+                </span>
+              </label>
+            </div>
+
             {/* Submit */}
             <button
               type="submit"
@@ -326,18 +378,6 @@ export default function RegisterPage() {
                 "Créer mon compte"
               )}
             </button>
-
-            <p className="text-center text-xs text-gray-500">
-              En créant un compte, vous acceptez nos{" "}
-              <Link href="/terms" className="text-primary-600 hover:underline">
-                CGU
-              </Link>{" "}
-              et notre{" "}
-              <Link href="/privacy" className="text-primary-600 hover:underline">
-                Politique de confidentialité
-              </Link>
-              .
-            </p>
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-500">
