@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, CreditCard, MapPin, Sliders, User } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Bell, CreditCard, Link2, Loader2, MapPin, Sliders, User, X } from "lucide-react";
 import { api } from "@/lib/api";
 import { useRole } from "@/lib/hooks/useRole";
 
@@ -601,15 +601,181 @@ function TabNotifications({ role }: { role: string | null }) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// TabIntegrations
+// ══════════════════════════════════════════════════════════════════════════════
+
+interface IntegrationStatus {
+  provider: string;
+  connected: boolean;
+  email?: string | null;
+  expires_at?: string | null;
+}
+
+interface ClassifyResult {
+  provider: string;
+  email_id: string;
+  subject: string;
+  from: string;
+  categorie: string;
+  priorite: string;
+  bien_suggestion: string | null;
+  resume: string;
+}
+
+const PROVIDER_LABELS: Record<string, { label: string; icon: string; color: string }> = {
+  gmail:              { label: "Gmail",            icon: "✉️",  color: "#EA4335" },
+  outlook:            { label: "Outlook",          icon: "📧",  color: "#0078D4" },
+  google_calendar:    { label: "Google Calendar",  icon: "📅",  color: "#1A73E8" },
+  outlook_calendar:   { label: "Outlook Calendar", icon: "🗓️",  color: "#0078D4" },
+};
+
+function TabIntegrations() {
+  const queryClient = useQueryClient();
+  const [classifyResults, setClassifyResults] = useState<ClassifyResult[]>([]);
+  const [classifyOpen, setClassifyOpen] = useState(false);
+
+  const { data: statuses = [], isLoading } = useQuery<IntegrationStatus[]>({
+    queryKey: ["integrations-status"],
+    queryFn: () => api.get<IntegrationStatus[]>("/integrations/status").then(r => r.data),
+  });
+
+  const connectMutation = useMutation({
+    mutationFn: (provider: string) =>
+      api.get<{ url: string }>(`/integrations/${provider}/connect`).then(r => r.data),
+    onSuccess: (data) => { window.location.href = data.url; },
+  });
+
+  const disconnectMutation = useMutation({
+    mutationFn: (provider: string) => api.delete(`/integrations/${provider}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["integrations-status"] }),
+  });
+
+  const classifyMutation = useMutation({
+    mutationFn: () => api.post<ClassifyResult[]>("/integrations/email/classify").then(r => r.data),
+    onSuccess: (data) => { setClassifyResults(data); setClassifyOpen(true); },
+  });
+
+  const providers = ["gmail", "outlook", "google_calendar", "outlook_calendar"];
+  const statusMap = Object.fromEntries(statuses.map(s => [s.provider, s]));
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div>
+        <h3 style={{ margin: "0 0 4px", fontSize: 15, fontWeight: 700, color: S.text }}>Intégrations</h3>
+        <p style={{ margin: "0 0 20px", fontSize: 13, color: S.text3 }}>Connectez Gmail, Outlook et vos calendriers pour synchroniser votre activité locative.</p>
+      </div>
+
+      {isLoading ? (
+        <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
+          <Loader2 size={20} style={{ animation: "spin 1s linear infinite", color: S.text3 }} />
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {providers.map(provider => {
+            const meta = PROVIDER_LABELS[provider];
+            const status = statusMap[provider];
+            const connected = status?.connected ?? false;
+            const isConnecting = connectMutation.isPending && connectMutation.variables === provider;
+            const isDisconnecting = disconnectMutation.isPending && disconnectMutation.variables === provider;
+
+            return (
+              <div key={provider} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", backgroundColor: S.surface, border: `1px solid ${S.border}`, borderRadius: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ fontSize: 22, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: S.surface2, borderRadius: 8 }}>{meta.icon}</div>
+                  <div>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: S.text }}>{meta.label}</div>
+                    {connected && status?.email && (
+                      <div style={{ fontSize: 11.5, color: S.text3 }}>{status.email}</div>
+                    )}
+                    {!connected && (
+                      <div style={{ fontSize: 11.5, color: S.text3 }}>Non connecté</div>
+                    )}
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {connected && (
+                    <span style={{ padding: "2px 8px", borderRadius: 20, fontSize: 10.5, fontWeight: 600, backgroundColor: S.greenBg, color: S.green }}>Connecté</span>
+                  )}
+                  {connected ? (
+                    <button
+                      onClick={() => disconnectMutation.mutate(provider)}
+                      disabled={isDisconnecting}
+                      style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", border: `1px solid ${S.border}`, borderRadius: 8, backgroundColor: S.surface2, color: S.text3, fontSize: 12, fontWeight: 600, cursor: isDisconnecting ? "default" : "pointer" }}
+                    >
+                      {isDisconnecting ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : <X size={12} />}
+                      Déconnecter
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => connectMutation.mutate(provider)}
+                      disabled={isConnecting}
+                      style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", border: `1px solid ${S.orange}`, borderRadius: 8, backgroundColor: S.orangeBg, color: S.orange, fontSize: 12, fontWeight: 600, cursor: isConnecting ? "default" : "pointer" }}
+                    >
+                      {isConnecting ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : <Link2 size={12} />}
+                      Connecter
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Email classification */}
+      {statuses.some(s => (s.provider === "gmail" || s.provider === "outlook") && s.connected) && (
+        <div style={{ padding: "16px 18px", backgroundColor: S.surface, border: `1px solid ${S.border}`, borderRadius: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <div>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: S.text }}>Classifier mes emails</div>
+              <div style={{ fontSize: 11.5, color: S.text3 }}>IA analyse vos emails non lus et les associe à vos biens</div>
+            </div>
+            <button
+              onClick={() => classifyMutation.mutate()}
+              disabled={classifyMutation.isPending}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", border: `1px solid ${S.orange}`, borderRadius: 8, backgroundColor: S.orangeBg, color: S.orange, fontSize: 12, fontWeight: 600, cursor: classifyMutation.isPending ? "default" : "pointer" }}
+            >
+              {classifyMutation.isPending ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} /> : "✨"}
+              Analyser
+            </button>
+          </div>
+
+          {classifyOpen && classifyResults.length > 0 && (
+            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+              {classifyResults.map((r, i) => (
+                <div key={i} style={{ padding: "10px 12px", backgroundColor: S.surface2, borderRadius: 8, fontSize: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                    <span style={{ padding: "1px 6px", borderRadius: 10, fontSize: 10, fontWeight: 700, backgroundColor: r.priorite === "haute" ? S.redBg : S.amberBg, color: r.priorite === "haute" ? S.red : S.amber }}>{r.priorite}</span>
+                    <span style={{ padding: "1px 6px", borderRadius: 10, fontSize: 10, fontWeight: 600, backgroundColor: S.orangeBg, color: S.orange }}>{r.categorie}</span>
+                    <span style={{ color: S.text, fontWeight: 600, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.subject}</span>
+                  </div>
+                  <div style={{ color: S.text3 }}>{r.resume}</div>
+                  {r.bien_suggestion && <div style={{ color: S.text2, marginTop: 2 }}>→ {r.bien_suggestion}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div style={{ padding: "12px 16px", backgroundColor: S.amberBg, border: `1px solid ${S.amber}`, borderRadius: 10, fontSize: 12, color: S.amber }}>
+        <strong>Note :</strong> Les tokens OAuth sont chiffrés et stockés de manière sécurisée. Althy ne lit jamais vos emails sans votre demande explicite.
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // SettingsPage
 // ══════════════════════════════════════════════════════════════════════════════
-type TabId = "identite" | "zone" | "preferences" | "paiement" | "notifications";
+type TabId = "identite" | "zone" | "preferences" | "paiement" | "notifications" | "integrations";
 const ALL_TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "identite",      label: "Identité",      icon: User },
   { id: "zone",          label: "Zone & dispo",  icon: MapPin },
   { id: "preferences",   label: "Préférences",   icon: Sliders },
   { id: "paiement",      label: "Paiement",      icon: CreditCard },
   { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "integrations",  label: "Intégrations",  icon: Link2 },
 ];
 
 export default function SettingsPage() {
@@ -640,6 +806,7 @@ export default function SettingsPage() {
       {tab === "preferences"   && <TabPreferences role={role} />}
       {tab === "paiement"      && <TabPaiement role={role} />}
       {tab === "notifications" && <TabNotifications role={role} />}
+      {tab === "integrations"  && <TabIntegrations />}
     </div>
   );
 }

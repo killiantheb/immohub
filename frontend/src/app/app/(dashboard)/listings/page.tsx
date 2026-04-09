@@ -30,11 +30,12 @@ const STATUS_CONFIG = {
   closed: { label: "Fermée",     color: S.text3,  bg: S.surface2 },
 };
 
+// Prix portails : tarif passthrough + 15% marge Althy
 const PORTALS = [
-  { key: "on_homegate",   name: "Homegate",  logo: "🏠", price: "CHF 49/mois" },
-  { key: "on_immoscout",  name: "ImmoScout", logo: "🔍", price: "CHF 49/mois" },
-  { key: "on_booking",    name: "Booking",   logo: "📅", price: "CHF 29/mois" },
-  { key: "on_airbnb",     name: "Airbnb",    logo: "🌟", price: "3% commission" },
+  { key: "on_homegate",   name: "Homegate",  logo: "🏠", price: "CHF 56/mois",  note: "CHF 49 portail + 15% Althy" },
+  { key: "on_immoscout",  name: "ImmoScout", logo: "🔍", price: "CHF 56/mois",  note: "CHF 49 portail + 15% Althy" },
+  { key: "on_booking",    name: "Booking",   logo: "📅", price: "CHF 33/mois",  note: "CHF 29 portail + 15% Althy" },
+  { key: "on_airbnb",     name: "Airbnb",    logo: "🌟", price: "3% + 15%",     note: "Commission portail + marge Althy" },
 ];
 
 interface Listing {
@@ -295,7 +296,8 @@ export default function ListingsPage() {
               <span style={{ fontSize: 22 }}>{p.logo}</span>
               <div>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: S.text }}>{p.name}</div>
-                <div style={{ fontSize: 11.5, color: S.text3 }}>{p.price}</div>
+                <div style={{ fontSize: 12, color: S.orange, fontWeight: 600 }}>{p.price}</div>
+                <div style={{ fontSize: 10.5, color: S.text3 }}>{p.note}</div>
               </div>
             </div>
           ))}

@@ -65,6 +65,18 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     EMAILS_FROM: str = "noreply@immohub.fr"
 
+    # Google OAuth2 (Gmail + Google Calendar)
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+
+    # Microsoft OAuth2 (Outlook + Outlook Calendar)
+    MICROSOFT_CLIENT_ID: str = ""
+    MICROSOFT_CLIENT_SECRET: str = ""
+    MICROSOFT_TENANT_ID: str = "common"
+
+    # Portal syndication — Althy marge 15%
+    PORTAL_MARGIN_PCT: float = 15.0
+
     @property
     def is_production(self) -> bool:
         return self.APP_ENV == "production"
