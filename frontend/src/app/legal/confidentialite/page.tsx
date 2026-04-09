@@ -97,7 +97,7 @@ export default function ConfidentialitePage() {
         ["Sentry Inc.", "Monitoring erreurs", "USA — SCCs", "Logs d'erreurs anonymisés"],
         ["PostHog Inc.", "Analytics (opt-in)", "USA/EU — SCCs", "Comportement utilisateur (si consentement)"],
       ]} />
-      <P style={{ fontSize: 12, color: "#7A7469", fontStyle: "italic" }}>* Les questions posées à l'IA sont minimisées avant envoi à Anthropic : les noms propres, adresses et données financières sont remplacés par des pseudonymes. Les données ne sont jamais utilisées pour entraîner les modèles d'Anthropic.</P>
+      <p style={{ fontSize: 12, color: "#7A7469", fontStyle: "italic", margin: "0.5rem 0" }}>* Les questions posées à l&apos;IA sont minimisées avant envoi à Anthropic : les noms propres, adresses et données financières sont remplacés par des pseudonymes. Les données ne sont jamais utilisées pour entraîner les modèles d&apos;Anthropic.</p>
       <P><strong>Althy ne vend jamais vos données à des tiers à des fins commerciales.</strong></P>
 
       <H2>5. Transferts hors Suisse / UE</H2>
