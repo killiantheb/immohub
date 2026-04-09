@@ -23,7 +23,6 @@ down_revision = "0012"
 branch_labels = None
 depends_on = None
 
-# New role values to add (PostgreSQL can only add, not rename enum values)
 NEW_VALUES = [
     "proprio_solo",
     "agence",
@@ -37,9 +36,15 @@ NEW_VALUES = [
 
 
 def upgrade() -> None:
-    # 1. Add new enum values (idempotent via DO block)
+    # 1. Add new enum values — each in its own statement.
+    #    PostgreSQL requires ADD VALUE to be committed before the new value
+    #    can be used (UnsafeNewEnumValueUsageError).
+    #    We run the adds, then issue an explicit COMMIT so the enum labels
+    #    are visible to the subsequent UPDATE statements.
+    bind = op.get_bind()
+
     for val in NEW_VALUES:
-        op.execute(f"""
+        bind.execute(sa.text(f"""
             DO $$
             BEGIN
                 IF NOT EXISTS (
@@ -50,36 +55,25 @@ def upgrade() -> None:
                     ALTER TYPE user_role_enum ADD VALUE '{val}';
                 END IF;
             END $$;
-        """)
+        """))
 
-    # 2. Migrate existing rows to new canonical names
-    op.execute("""
-        UPDATE users SET role = 'proprio_solo'
-        WHERE role = 'owner';
-    """)
-    op.execute("""
-        UPDATE users SET role = 'agence'
-        WHERE role = 'agency';
-    """)
-    op.execute("""
-        UPDATE users SET role = 'locataire'
-        WHERE role = 'tenant';
-    """)
-    op.execute("""
-        UPDATE users SET role = 'artisan'
-        WHERE role = 'company';
-    """)
+    # 2. Commit so the new enum labels are safe to use.
+    bind.execute(sa.text("COMMIT"))
 
-    # 3. Update the column default
-    op.execute("""
-        ALTER TABLE users ALTER COLUMN role SET DEFAULT 'proprio_solo';
-    """)
+    # 3. Migrate existing rows to new canonical names.
+    bind.execute(sa.text("UPDATE users SET role = 'proprio_solo' WHERE role = 'owner'"))
+    bind.execute(sa.text("UPDATE users SET role = 'agence'       WHERE role = 'agency'"))
+    bind.execute(sa.text("UPDATE users SET role = 'locataire'    WHERE role = 'tenant'"))
+    bind.execute(sa.text("UPDATE users SET role = 'artisan'      WHERE role = 'company'"))
+
+    # 4. Update column default.
+    bind.execute(sa.text("ALTER TABLE users ALTER COLUMN role SET DEFAULT 'proprio_solo'"))
 
 
 def downgrade() -> None:
-    # Revert data migration (can't remove enum values in PostgreSQL)
-    op.execute("UPDATE users SET role = 'owner'    WHERE role = 'proprio_solo'")
-    op.execute("UPDATE users SET role = 'agency'   WHERE role = 'agence'")
-    op.execute("UPDATE users SET role = 'tenant'   WHERE role = 'locataire'")
-    op.execute("UPDATE users SET role = 'company'  WHERE role = 'artisan'")
-    op.execute("ALTER TABLE users ALTER COLUMN role SET DEFAULT 'owner'")
+    bind = op.get_bind()
+    bind.execute(sa.text("UPDATE users SET role = 'owner'   WHERE role = 'proprio_solo'"))
+    bind.execute(sa.text("UPDATE users SET role = 'agency'  WHERE role = 'agence'"))
+    bind.execute(sa.text("UPDATE users SET role = 'tenant'  WHERE role = 'locataire'"))
+    bind.execute(sa.text("UPDATE users SET role = 'company' WHERE role = 'artisan'"))
+    bind.execute(sa.text("ALTER TABLE users ALTER COLUMN role SET DEFAULT 'owner'"))
