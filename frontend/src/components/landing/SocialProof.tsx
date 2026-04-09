@@ -1,7 +1,9 @@
 "use client"
 
-import Marquee from "react-fast-marquee"
+import dynamic from "next/dynamic"
 import { MARQUEE_ITEMS } from "@/lib/data/landing"
+
+const Marquee = dynamic(() => import("react-fast-marquee"), { ssr: false })
 
 const C = {
   orange: "#E8602C",

@@ -205,7 +205,7 @@ export default function AccountingPage() {
       const supabase = createClient()
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token ?? ''
-      const url = `${baseURL}/api/v1/agency/accounting/export?month=${month}&format=csv`
+      const url = `${baseURL}/agency/accounting/export?month=${month}&format=csv`
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       const blob = await res.blob()
       const a = document.createElement('a')

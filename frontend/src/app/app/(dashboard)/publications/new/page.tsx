@@ -9,7 +9,7 @@ import {
   ChevronRight, Clock, Euro, FileText, Loader2, MapPin,
   Sparkles, Star, Upload, Wrench, X,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, baseURL } from "@/lib/api";
 import { createClient } from "@/lib/supabase";
 import type { Bien } from "@/lib/hooks/useBiens";
 
@@ -313,7 +313,7 @@ function Step2Devis({ form, setForm, errors, bienId, bienAdresse }: {
     set("description", "");
     descRef.current = "";
     try {
-      const resp = await fetch("/api/v1/ai/rediger-description", {
+      const resp = await fetch(`${baseURL}/ai/rediger-description`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${(await createClient().auth.getSession()).data.session?.access_token}` },
         body: JSON.stringify({
