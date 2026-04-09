@@ -129,7 +129,7 @@ function PropertyCard({ property }: { property: import("@/lib/types").Property }
 
   return (
     <Link
-      href={`/properties/${property.id}`}
+      href={`/app/properties/${property.id}`}
       className="group flex flex-col transition-all p-0 overflow-hidden rounded-xl"
       style={{
         background: S.surface,
