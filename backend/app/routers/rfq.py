@@ -52,7 +52,7 @@ async def qualify_rfq(
 # ── RFQ CRUD ───────────────────────────────────────────────────────────────────
 
 
-@router.post("/", response_model=RFQRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=RFQRead, status_code=status.HTTP_201_CREATED)
 async def create_rfq(
     payload: RFQCreate,
     db: AsyncSession = Depends(get_db),
@@ -67,7 +67,7 @@ async def create_rfq(
     return result
 
 
-@router.get("/", response_model=PaginatedRFQs)
+@router.get("", response_model=PaginatedRFQs)
 async def list_rfqs(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),

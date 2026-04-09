@@ -20,7 +20,7 @@ DbDep = Annotated[AsyncSession, Depends(get_db)]
 AuthDep = Annotated[User, Depends(get_current_user)]
 
 
-@router.get("/", response_model=list[PaiementRead])
+@router.get("", response_model=list[PaiementRead])
 async def list_paiements(
     current_user: AuthDep,
     db: DbDep,
@@ -45,7 +45,7 @@ async def list_paiements(
     return [PaiementRead.model_validate(r) for r in rows.scalars()]
 
 
-@router.post("/", response_model=PaiementRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=PaiementRead, status_code=status.HTTP_201_CREATED)
 async def create_paiement(
     payload: PaiementCreate,
     current_user: AuthDep,

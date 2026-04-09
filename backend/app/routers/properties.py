@@ -28,7 +28,7 @@ AuthUserDep = Annotated[User, Depends(get_current_user)]
 # ── List & Create ──────────────────────────────────────────────────────────────
 
 
-@router.get("/", response_model=PaginatedProperties)
+@router.get("", response_model=PaginatedProperties)
 async def list_properties(
     current_user: AuthUserDep,
     db: DbDep,
@@ -52,7 +52,7 @@ async def list_properties(
     )
 
 
-@router.post("/", response_model=PropertyRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=PropertyRead, status_code=status.HTTP_201_CREATED)
 async def create_property(
     payload: PropertyCreate,
     current_user: AuthUserDep,

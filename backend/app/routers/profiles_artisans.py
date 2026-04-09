@@ -21,7 +21,7 @@ DbDep = Annotated[AsyncSession, Depends(get_db)]
 AuthDep = Annotated[User, Depends(get_current_user)]
 
 
-@router.get("/", response_model=list[ProfileArtisanRead])
+@router.get("", response_model=list[ProfileArtisanRead])
 async def list_profiles(
     current_user: AuthDep,
     db: DbDep,
@@ -33,7 +33,7 @@ async def list_profiles(
     return [ProfileArtisanRead.model_validate(r) for r in rows.scalars()]
 
 
-@router.post("/", response_model=ProfileArtisanRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ProfileArtisanRead, status_code=status.HTTP_201_CREATED)
 async def create_profile(
     payload: ProfileArtisanCreate,
     current_user: AuthDep,

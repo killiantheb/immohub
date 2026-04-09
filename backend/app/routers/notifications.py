@@ -20,7 +20,7 @@ DbDep = Annotated[AsyncSession, Depends(get_db)]
 AuthDep = Annotated[User, Depends(get_current_user)]
 
 
-@router.get("/", response_model=list[NotificationRead])
+@router.get("", response_model=list[NotificationRead])
 async def list_notifications(
     current_user: AuthDep,
     db: DbDep,
@@ -36,7 +36,7 @@ async def list_notifications(
     return [NotificationRead.model_validate(r) for r in rows.scalars()]
 
 
-@router.post("/", response_model=NotificationRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=NotificationRead, status_code=status.HTTP_201_CREATED)
 async def create_notification(
     payload: NotificationCreate,
     current_user: AuthDep,

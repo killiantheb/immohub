@@ -49,7 +49,7 @@ async def get_scoring(
     return ScoringLocataireRead.model_validate(s)
 
 
-@router.post("/", response_model=ScoringLocataireRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ScoringLocataireRead, status_code=status.HTTP_201_CREATED)
 async def create_scoring(
     payload: ScoringLocataireCreate,
     current_user: AuthDep,

@@ -16,7 +16,7 @@ DbDep = Annotated[AsyncSession, Depends(get_db)]
 AuthUserDep = Annotated[User, Depends(get_current_user)]
 
 
-@router.get("/", response_model=PaginatedContracts)
+@router.get("", response_model=PaginatedContracts)
 async def list_contracts(
     current_user: AuthUserDep,
     db: DbDep,
@@ -36,7 +36,7 @@ async def list_contracts(
     )
 
 
-@router.post("/", response_model=ContractRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ContractRead, status_code=status.HTTP_201_CREATED)
 async def create_contract(
     payload: ContractCreate,
     current_user: AuthUserDep,

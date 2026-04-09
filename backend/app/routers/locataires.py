@@ -36,7 +36,7 @@ def _check_admin(user: User) -> None:
 # Locataires
 # ══════════════════════════════════════════════════════════════════════════════
 
-@router.get("/", response_model=list[LocataireRead])
+@router.get("", response_model=list[LocataireRead])
 async def list_locataires(
     current_user: AuthDep,
     db: DbDep,
@@ -56,7 +56,7 @@ async def list_locataires(
     return [LocataireRead.model_validate(r) for r in rows.scalars()]
 
 
-@router.post("/", response_model=LocataireRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=LocataireRead, status_code=status.HTTP_201_CREATED)
 async def create_locataire(
     payload: LocataireCreate,
     current_user: AuthDep,

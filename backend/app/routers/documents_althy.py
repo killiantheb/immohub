@@ -20,7 +20,7 @@ DbDep = Annotated[AsyncSession, Depends(get_db)]
 AuthDep = Annotated[User, Depends(get_current_user)]
 
 
-@router.get("/", response_model=list[DocumentAlthyRead])
+@router.get("", response_model=list[DocumentAlthyRead])
 async def list_documents(
     current_user: AuthDep,
     db: DbDep,
@@ -42,7 +42,7 @@ async def list_documents(
     return [DocumentAlthyRead.model_validate(r) for r in rows.scalars()]
 
 
-@router.post("/", response_model=DocumentAlthyRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=DocumentAlthyRead, status_code=status.HTTP_201_CREATED)
 async def create_document(
     payload: DocumentAlthyCreate,
     current_user: AuthDep,

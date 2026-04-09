@@ -31,7 +31,7 @@ AuthDep = Annotated[User, Depends(get_current_user)]
 # Interventions
 # ══════════════════════════════════════════════════════════════════════════════
 
-@router.get("/", response_model=list[InterventionRead])
+@router.get("", response_model=list[InterventionRead])
 async def list_interventions(
     current_user: AuthDep,
     db: DbDep,
@@ -53,7 +53,7 @@ async def list_interventions(
     return [InterventionRead.model_validate(r) for r in rows.scalars()]
 
 
-@router.post("/", response_model=InterventionRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=InterventionRead, status_code=status.HTTP_201_CREATED)
 async def create_intervention(
     payload: InterventionCreate,
     current_user: AuthDep,

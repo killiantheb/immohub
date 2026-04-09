@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 router = APIRouter()
 
 
-@router.get("/", response_model=list[CompanyRead])
+@router.get("", response_model=list[CompanyRead])
 async def list_companies(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
@@ -19,7 +19,7 @@ async def list_companies(
     return await service.list(owner_id=user_id, page=page, size=size)
 
 
-@router.post("/", response_model=CompanyRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=CompanyRead, status_code=status.HTTP_201_CREATED)
 async def create_company(
     payload: CompanyCreate,
     db: AsyncSession = Depends(get_db),

@@ -41,7 +41,7 @@ class FavoriteRead(BaseModel):
     property_status: str | None = None
 
 
-@router.get("/", response_model=list[FavoriteRead])
+@router.get("", response_model=list[FavoriteRead])
 async def list_favorites(
     db: DbDep,
     current_user: AuthUserDep,
@@ -76,7 +76,7 @@ async def list_favorites(
     return out
 
 
-@router.post("/", response_model=FavoriteRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=FavoriteRead, status_code=status.HTTP_201_CREATED)
 async def add_favorite(
     payload: FavoriteCreate,
     db: DbDep,

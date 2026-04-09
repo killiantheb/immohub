@@ -38,7 +38,7 @@ def _assert_can_write_bien(bien: Bien, user: User) -> None:
 
 # ── List ──────────────────────────────────────────────────────────────────────
 
-@router.get("/", response_model=list[BienRead])
+@router.get("", response_model=list[BienRead])
 async def list_biens(
     current_user: AuthDep,
     db: DbDep,
@@ -61,7 +61,7 @@ async def list_biens(
 
 # ── Create ────────────────────────────────────────────────────────────────────
 
-@router.post("/", response_model=BienRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=BienRead, status_code=status.HTTP_201_CREATED)
 async def create_bien(
     payload: BienCreate,
     current_user: AuthDep,
