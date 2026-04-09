@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
-import { Inter, Cormorant_Garamond, DM_Sans } from "next/font/google";
+import { Fraunces, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const inter = Inter({ subsets: ["latin"] });
-
-const cormorant = Cormorant_Garamond({
+const fraunces = Fraunces({
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
+  weight: ["300", "400"],
   style: ["normal", "italic"],
   variable: "--font-serif",
   display: "swap",
@@ -15,7 +13,7 @@ const cormorant = Cormorant_Garamond({
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
+  weight: ["400", "500"],
   variable: "--font-sans",
   display: "swap",
 });
@@ -53,8 +51,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={`${cormorant.variable} ${dmSans.variable}`}>
-      <body className={inter.className}>
+    <html lang="fr" className={`${fraunces.variable} ${dmSans.variable}`}>
+      <body className={`${dmSans.variable} font-sans`}>
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -33,9 +33,22 @@ class Settings(BaseSettings):
     # Stripe
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_CONNECT_CLIENT_ID: str = ""
+    # Stripe Connect — frais plateforme
+    STRIPE_PLATFORM_FEE_PCT: float = 4.0        # 4% loyers (affiché "loyer net reçu")
+    STRIPE_OPENER_FEE_PCT: float = 15.0          # 15% openers (10% Pro)
+    STRIPE_ARTISAN_FEE_PCT: float = 10.0         # 10% artisans
+    STRIPE_APPLICATION_FEE_CHF: int = 90         # CHF 90 frais dossier locataire
+    # Stripe Billing — prix des plans (IDs Stripe Price)
+    STRIPE_PRICE_PROPRIO_MONTHLY: str = ""       # CHF 29/mois
+    STRIPE_PRICE_PRO_MONTHLY: str = ""           # CHF 19/mois
+    STRIPE_PRICE_AGENCY_MONTHLY: str = ""        # CHF 29/agent/mois
+    STRIPE_PRICE_PORTAL_MONTHLY: str = ""        # CHF 9/mois portail proprio
 
     # AI
     ANTHROPIC_API_KEY: str = ""
+    AI_RATE_LIMIT_STANDARD: int = 30    # interactions/jour standard
+    AI_RATE_LIMIT_PRO: int = 100         # interactions/jour Pro
 
     # Commission rates (immutable — do not change)
     COMMISSION_FRONT_PCT: float = 3.0

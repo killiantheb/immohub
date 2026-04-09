@@ -2,6 +2,8 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal, engine
+from app.core.rate_limit import limiter, rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from app.routers import (
     admin,
     ai,
@@ -36,6 +38,7 @@ from app.routers.smart_onboarding import router as smart_onboarding_router
 from app.routers.tenants import router as tenants_router
 from app.routers.listings import router as listings_router
 from app.routers.hunters import router as hunters_router
+from app.routers.stripe_webhooks import router as stripe_router
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -77,6 +80,10 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
     lifespan=lifespan,
 )
+
+# ── Rate limiting ─────────────────────────────────────────────────────────────
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 app.add_middleware(
@@ -157,6 +164,7 @@ app.include_router(matching_router, prefix="/api/v1/matching", tags=["matching"]
 app.include_router(geocode_router, prefix="/api/v1/geocode", tags=["geocode"])
 app.include_router(listings_router, prefix="/api/v1/listings", tags=["listings"])
 app.include_router(hunters_router, prefix="/api/v1/hunters", tags=["hunters"])
+app.include_router(stripe_router, prefix="/api/v1/webhooks", tags=["stripe"])
 
 
 # ── Health check ──────────────────────────────────────────────────────────────
