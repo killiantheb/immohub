@@ -83,6 +83,26 @@ class Property(BaseModel):
         Boolean, nullable=False, default=False, server_default="false"
     )
 
+    # ── Extended fields (added by migration 0005) ─────────────────────────────
+    reference_number: Mapped[str | None] = mapped_column(String(50))
+    building_name: Mapped[str | None] = mapped_column(String(200))
+    unit_number: Mapped[str | None] = mapped_column(String(20))
+    bedrooms: Mapped[int | None] = mapped_column(Integer)
+    bathrooms: Mapped[int | None] = mapped_column(Integer)
+    canton: Mapped[str | None] = mapped_column(String(10), server_default="VS")
+    nearby_landmarks: Mapped[str | None] = mapped_column(String(500))
+    has_balcony: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    has_terrace: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    has_garden: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    has_storage: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    has_fireplace: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    has_laundry: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    linen_provided: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    smoking_allowed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    is_for_sale: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    tourist_tax_amount: Mapped[float | None] = mapped_column(Numeric(8, 2))
+    keys_count: Mapped[int | None] = mapped_column(Integer, server_default="3")
+
     __table_args__ = (
         Index("ix_properties_owner_id", "owner_id"),
         Index("ix_properties_agency_id", "agency_id"),
