@@ -120,7 +120,7 @@ export function ActionConfirmDialog({ action, onConfirm, onCancel }: ConfirmProp
 
   function confirm() {
     onConfirm();
-    router.push(action.path);
+    if (action.path) router.push(action.path);
   }
 
   return (
