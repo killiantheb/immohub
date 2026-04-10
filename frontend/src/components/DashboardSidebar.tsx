@@ -57,6 +57,12 @@ const NAV: NavItem[] = [
   { label: "Messagerie",      href: "/app/messagerie",  icon: <Mail {...ICON} />,              section: "messages" },
   { label: "Agenda",          href: "/app/agenda",      icon: <CalendarDays {...ICON} />,      section: "agenda" },
   { label: "WhatsApp",        href: "/app/whatsapp",    icon: <MessageCircle {...ICON} />,     section: "whatsapp" },
+  { label: "Mes missions",    href: "/app/ouvreurs/missions", icon: <Navigation2 {...ICON} />, section: "missions",
+    children: [
+      { label: "Missions",   href: "/app/ouvreurs/missions" },
+      { label: "Revenus",    href: "/app/ouvreurs/revenus" },
+      { label: "Historique", href: "/app/ouvreurs/historique" },
+    ]},
   { label: "Ouvreurs",        href: "/app/ouvreurs",    icon: <Navigation2 {...ICON} />,       section: "ouvreurs",
     children: [
       { label: "Missions",   href: "/app/ouvreurs/missions" },
@@ -76,7 +82,6 @@ const NAV: NavItem[] = [
   { label: "Hunters",          href: "/app/hunters",     icon: <Target {...ICON} />,            section: "hunters" },
   { label: "Intégration clients", href: "/app/admin/integration", icon: <UserPlus {...ICON} />, section: "onboarding" },
   { label: "Accès Propriétaires", href: "/app/portail",  icon: <Users2 {...ICON} />,            section: "portail" },
-  { label: "Publications",     href: "/app/publications", icon: <SendHorizonal {...ICON} />,    section: "publications" },
   { label: "Paramètres",       href: "/app/settings",    icon: <SlidersHorizontal {...ICON} />, section: "settings" },
 ];
 
