@@ -55,7 +55,7 @@ export const ROLE_SECTIONS: Record<AppRole, string[]> = {
   proprio_solo:     ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "ouvreurs", "vente", "settings", "messages", "agenda", "whatsapp"],
   agence:           ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail", "ouvreurs", "vente", "settings", "messages", "agenda", "whatsapp", "artisans", "onboarding"],
   portail_proprio:  ["dashboard", "biens", "finances", "documents", "settings"],
-  opener:           ["dashboard", "sphere", "missions", "interventions", "finances", "abonnement", "settings", "messages", "agenda", "whatsapp"],
+  opener:           ["dashboard", "sphere", "ouvreurs", "interventions", "finances", "abonnement", "settings", "messages", "agenda", "whatsapp"],
   artisan:          ["dashboard", "sphere", "interventions", "finances", "abonnement", "artisans", "settings", "messages", "agenda", "whatsapp"],
   expert:           ["dashboard", "sphere", "biens", "finances", "abonnement", "settings", "messages", "agenda"],
   hunter:           ["dashboard", "sphere", "hunters", "abonnement", "vente", "settings", "messages"],

@@ -57,12 +57,6 @@ const NAV: NavItem[] = [
   { label: "Messagerie",      href: "/app/messagerie",  icon: <Mail {...ICON} />,              section: "messages" },
   { label: "Agenda",          href: "/app/agenda",      icon: <CalendarDays {...ICON} />,      section: "agenda" },
   { label: "WhatsApp",        href: "/app/whatsapp",    icon: <MessageCircle {...ICON} />,     section: "whatsapp" },
-  { label: "Mes missions",    href: "/app/ouvreurs/missions", icon: <Navigation2 {...ICON} />, section: "missions",
-    children: [
-      { label: "Missions",   href: "/app/ouvreurs/missions" },
-      { label: "Revenus",    href: "/app/ouvreurs/revenus" },
-      { label: "Historique", href: "/app/ouvreurs/historique" },
-    ]},
   { label: "Ouvreurs",        href: "/app/ouvreurs",    icon: <Navigation2 {...ICON} />,       section: "ouvreurs",
     children: [
       { label: "Missions",   href: "/app/ouvreurs/missions" },
