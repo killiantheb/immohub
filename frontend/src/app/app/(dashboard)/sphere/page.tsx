@@ -341,7 +341,7 @@ function ActionCardItem({ action, onDismiss, onRegenerate }: ActionCardProps) {
       {/* ── Document modal ── */}
       {modal === "document" && (
         <Modal title={action.titre ?? "Document"} onClose={() => setModal(null)}>
-          {action.payload?.url && (
+          {!!action.payload?.url && (
             <div style={{ background: "var(--althy-bg)", borderRadius: 10, padding: 16, marginBottom: 16, minHeight: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <iframe src={String(action.payload.url)} style={{ width: "100%", height: 400, border: "none", borderRadius: 8 }} title="Document preview" />
             </div>
