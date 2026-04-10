@@ -103,6 +103,9 @@ def upgrade() -> None:
             created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
         )
     """)
+    # Add columns if table already existed without them
+    _exec("ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS contexte_type VARCHAR(50)")
+    _exec("ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS contexte_id UUID")
     _exec("""
         CREATE INDEX IF NOT EXISTS idx_calendar_events_user
             ON calendar_events (user_id, start_at)
@@ -128,6 +131,9 @@ def upgrade() -> None:
             UNIQUE (user_id, contact_phone)
         )
     """)
+    # Add columns if table already existed without them
+    _exec("ALTER TABLE whatsapp_conversations ADD COLUMN IF NOT EXISTS contexte_type VARCHAR(50)")
+    _exec("ALTER TABLE whatsapp_conversations ADD COLUMN IF NOT EXISTS contexte_id UUID")
     _exec("""
         CREATE INDEX IF NOT EXISTS idx_wa_conv_user
             ON whatsapp_conversations (user_id, last_message_at DESC)
