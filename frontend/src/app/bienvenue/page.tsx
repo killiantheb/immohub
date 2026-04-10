@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle2 } from 'lucide-react'
@@ -402,7 +402,7 @@ function AutoVerification({ data, agentChecks, setAgentChecks, onConfirm, saving
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-export default function BienvenuePage() {
+function BienvenueContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: profile } = useUser()
@@ -558,5 +558,13 @@ export default function BienvenuePage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function BienvenuePage() {
+  return (
+    <Suspense>
+      <BienvenueContent />
+    </Suspense>
   )
 }
