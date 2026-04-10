@@ -336,7 +336,7 @@ export function DashboardManager({ firstName, role }: Props) {
           <Building2 size={32} style={{ margin: "0 auto 0.75rem", color: S.text3, opacity: 0.4 }} />
           <p style={{ fontWeight: 600, color: S.text2, marginBottom: 4 }}>Aucun bien enregistré</p>
           <p style={{ fontSize: 13, color: S.text3 }}>Commencez par ajouter votre premier bien.</p>
-          <Link href="/app/properties/new" style={{
+          <Link href="/app/biens/nouveau" style={{
             display: "inline-flex", alignItems: "center", gap: 6, marginTop: "1rem",
             padding: "8px 18px", borderRadius: 10, background: S.orange, color: "#fff",
             fontSize: 13, fontWeight: 700, textDecoration: "none",

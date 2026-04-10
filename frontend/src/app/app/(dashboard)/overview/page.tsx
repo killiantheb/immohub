@@ -296,7 +296,7 @@ export default function DashboardPage() {
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide" style={{ color: S.text3 }}>Actions rapides</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { href: "/app/properties/new", icon: Building2, label: "Ajouter un bien", iconColor: S.orange, bg: S.orangeBg },
+            { href: "/app/biens/nouveau", icon: Building2, label: "Ajouter un bien", iconColor: S.orange, bg: S.orangeBg },
             { href: "/app/contracts",      icon: FileText,   label: "Voir les contrats", iconColor: S.blue,   bg: S.blueBg },
             { href: "/app/rfqs/new",       icon: Plus,       label: "Appel d'offre",  iconColor: S.orange, bg: S.orangeBg },
             { href: "/app/transactions?status=late", icon: AlertTriangle, label: "Gérer les impayés", iconColor: S.red, bg: S.redBg },

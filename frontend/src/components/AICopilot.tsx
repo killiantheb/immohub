@@ -48,7 +48,7 @@ const ROLE_SUGGESTIONS: Record<UserRole, string[]> = {
 };
 
 const PAGE_SUGGESTIONS: Record<string, string[]> = {
-  "/app/properties":   ["Rédiger une annonce pour ce bien", "Générer un EDL d'entrée", "Historique complet"],
+  "/app/biens":        ["Rédiger une annonce pour ce bien", "Générer un EDL d'entrée", "Historique complet"],
   "/app/contracts":    ["Rédiger un bail", "Explique ce bail", "Quand résilier ?"],
   "/app/transactions": ["Analyser mes impayés", "Relancer un locataire"],
   "/app/rfqs":         ["Rédiger un appel d'offre", "Comparer les devis"],

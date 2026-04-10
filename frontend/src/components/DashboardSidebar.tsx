@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useRole } from "@/lib/hooks/useRole";
 import { useAuth } from "@/lib/auth";
 import { useAuthStore } from "@/lib/store/authStore";
+import { api } from "@/lib/api";
 import {
   LayoutGrid,
   Building2,
@@ -26,8 +27,12 @@ import {
   Target,
   CreditCard,
   TrendingUp,
+  Mail,
+  CalendarDays,
+  MessageCircle,
+  UserPlus,
 } from "lucide-react";
-import { CathySphere } from "@/components/CathySphere";
+import { AlthySphere } from "@/components/AlthySphere";
 
 // ── Nav items ─────────────────────────────────────────────────────────────────
 
@@ -49,6 +54,9 @@ const NAV: NavItem[] = [
   { label: "Finances",        href: "/app/finances",    icon: <LineChart {...ICON} />,         section: "finances" },
   { label: "Interventions",   href: "/app/interventions",icon: <Wrench {...ICON} />,           section: "interventions" },
   { label: "CRM",             href: "/app/crm",         icon: <Users2 {...ICON} />,            section: "crm" },
+  { label: "Messagerie",      href: "/app/messagerie",  icon: <Mail {...ICON} />,              section: "messages" },
+  { label: "Agenda",          href: "/app/agenda",      icon: <CalendarDays {...ICON} />,      section: "agenda" },
+  { label: "WhatsApp",        href: "/app/whatsapp",    icon: <MessageCircle {...ICON} />,     section: "whatsapp" },
   { label: "Ouvreurs",        href: "/app/ouvreurs",    icon: <Navigation2 {...ICON} />,       section: "ouvreurs",
     children: [
       { label: "Missions",   href: "/app/ouvreurs/missions" },
@@ -66,17 +74,10 @@ const NAV: NavItem[] = [
   { label: "Comptabilité",     href: "/app/comptabilite",icon: <Calculator {...ICON} />,        section: "comptabilite" },
   { label: "Vente",            href: "/app/vente",       icon: <TrendingUp {...ICON} />,        section: "vente" },
   { label: "Hunters",          href: "/app/hunters",     icon: <Target {...ICON} />,            section: "hunters" },
-  { label: "Portail Proprio", href: "/app/portail",     icon: <Users2 {...ICON} />,            section: "portail" },
-  { label: "Publications",     href: "/app/publications/new", icon: <SendHorizonal {...ICON} />, section: "publications" },
-  { label: "Althy IA",         href: "/app/advisor",     icon: <Sparkles {...ICON} />,          section: "althy" },
-  { label: "Paramètres",       href: "/app/settings",    icon: <SlidersHorizontal {...ICON} />, section: "settings",
-    children: [
-      { label: "Abonnement",     href: "/app/abonnement" },
-      { label: "Zone",           href: "/app/settings/zone" },
-      { label: "Préférences",    href: "/app/settings/preferences" },
-      { label: "Paiement",       href: "/app/settings/paiement" },
-      { label: "Notifications",  href: "/app/settings/notifs" },
-    ]},
+  { label: "Intégration clients", href: "/app/admin/integration", icon: <UserPlus {...ICON} />, section: "onboarding" },
+  { label: "Accès Propriétaires", href: "/app/portail",  icon: <Users2 {...ICON} />,            section: "portail" },
+  { label: "Publications",     href: "/app/publications", icon: <SendHorizonal {...ICON} />,    section: "publications" },
+  { label: "Paramètres",       href: "/app/settings",    icon: <SlidersHorizontal {...ICON} />, section: "settings" },
 ];
 
 // ── Styles ────────────────────────────────────────────────────────────────────
@@ -205,6 +206,25 @@ export function DashboardSidebar() {
 
   const [open, setOpen]         = useState<Record<string, boolean>>({});
   const [collapsed, setCollapsed] = useState(false);
+  const [unreadMsg, setUnreadMsg] = useState(0);
+  const [unreadWa,  setUnreadWa]  = useState(0);
+
+  // Poll unread counts every 60s
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [msg, wa] = await Promise.all([
+          api.get<{ non_lus: number }>("/messagerie/non-lus").catch(() => ({ data: { non_lus: 0 } })),
+          api.get<{ non_lus: number }>("/whatsapp/non-lus").catch(() => ({ data: { non_lus: 0 } })),
+        ]);
+        setUnreadMsg(msg.data.non_lus ?? 0);
+        setUnreadWa(wa.data.non_lus ?? 0);
+      } catch { /* ignore */ }
+    };
+    load();
+    const t = setInterval(load, 60_000);
+    return () => clearInterval(t);
+  }, []);
 
   const visibleItems = NAV.filter(item => can(item.section));
 
@@ -228,11 +248,11 @@ export function DashboardSidebar() {
       <div style={S.brand(collapsed)}>
         {!collapsed ? (
           <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-            <CathySphere size={30} />
+            <AlthySphere size={30} />
             <span style={S.wordmark}>Althy</span>
           </Link>
         ) : (
-          <CathySphere size={30} />
+          <AlthySphere size={30} />
         )}
         <button
           onClick={() => setCollapsed(c => !c)}
@@ -276,12 +296,24 @@ export function DashboardSidebar() {
                 {!collapsed && (
                   <>
                     <span style={S.navLabel(active)}>{item.label}</span>
+                    {/* Unread badges */}
+                    {item.section === "messages" && unreadMsg > 0 && (
+                      <span style={{ marginLeft: "auto", minWidth: 17, height: 17, borderRadius: 9, background: "var(--althy-orange)", color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>
+                        {unreadMsg > 99 ? "99+" : unreadMsg}
+                      </span>
+                    )}
+                    {item.section === "whatsapp" && unreadWa > 0 && (
+                      <span style={{ marginLeft: "auto", minWidth: 17, height: 17, borderRadius: 9, background: "#25D366", color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>
+                        {unreadWa > 99 ? "99+" : unreadWa}
+                      </span>
+                    )}
                     {hasChildren && (
                       <ChevronDown
                         size={11}
                         strokeWidth={1.5}
                         style={{
                           ...S.chevron(active),
+                          marginLeft: item.section === "messages" || item.section === "whatsapp" ? 0 : "auto",
                           transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
                           transition: "transform 0.18s",
                         }}
