@@ -21,6 +21,23 @@ DbDep   = Annotated[AsyncSession, Depends(get_db)]
 AuthDep = Annotated[User, Depends(get_current_user)]
 
 
+@router.get("/non-lus")
+async def count_unread(current_user: AuthDep, db: DbDep) -> dict:
+    """Retourne le nombre d'emails non traités dans email_cache."""
+    try:
+        row = await db.execute(
+            text("""
+                SELECT COUNT(*) FROM email_cache
+                WHERE user_id = :uid AND is_processed = FALSE
+            """),
+            {"uid": current_user.id},
+        )
+        total = row.scalar() or 0
+        return {"count": int(total)}
+    except Exception:
+        return {"count": 0}
+
+
 @router.get("/")
 async def list_emails(current_user: AuthDep, db: DbDep, limit: int = 50) -> list[dict]:
     """Retourne les emails importés depuis email_cache (par date décroissante)."""

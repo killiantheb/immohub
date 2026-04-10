@@ -23,6 +23,26 @@ DbDep   = Annotated[AsyncSession, Depends(get_db)]
 AuthDep = Annotated[User, Depends(get_current_user)]
 
 
+# ── Unread count ──────────────────────────────────────────────────────────────
+
+@router.get("/non-lus")
+async def count_unread(current_user: AuthDep, db: DbDep) -> dict:
+    """Retourne le total de messages WhatsApp non lus pour l'utilisateur."""
+    try:
+        row = await db.execute(
+            text("""
+                SELECT COALESCE(SUM(unread_count), 0) AS total
+                FROM whatsapp_conversations
+                WHERE user_id = :uid
+            """),
+            {"uid": current_user.id},
+        )
+        total = row.scalar() or 0
+        return {"count": int(total)}
+    except Exception:
+        return {"count": 0}
+
+
 # ── Conversations ─────────────────────────────────────────────────────────────
 
 @router.get("/conversations")

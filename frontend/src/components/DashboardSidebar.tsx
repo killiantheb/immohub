@@ -214,11 +214,11 @@ export function DashboardSidebar() {
     const load = async () => {
       try {
         const [msg, wa] = await Promise.all([
-          api.get<{ non_lus: number }>("/messagerie/non-lus").catch(() => ({ data: { non_lus: 0 } })),
-          api.get<{ non_lus: number }>("/whatsapp/non-lus").catch(() => ({ data: { non_lus: 0 } })),
+          api.get<{ count: number }>("/messagerie/non-lus").catch(() => ({ data: { count: 0 } })),
+          api.get<{ count: number }>("/whatsapp/non-lus").catch(() => ({ data: { count: 0 } })),
         ]);
-        setUnreadMsg(msg.data.non_lus ?? 0);
-        setUnreadWa(wa.data.non_lus ?? 0);
+        setUnreadMsg(msg.data.count ?? 0);
+        setUnreadWa(wa.data.count ?? 0);
       } catch { /* ignore */ }
     };
     load();

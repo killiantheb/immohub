@@ -251,7 +251,25 @@ async def get_briefing(
         pass
 
     ctx = await _fetch_context(current_user, db)
-    result = await _generate_sphere_actions(current_user, ctx, db)
+    try:
+        result = await _generate_sphere_actions(current_user, ctx, db)
+    except Exception as exc:
+        first_name = current_user.first_name or (current_user.email or "").split("@")[0]
+        return {
+            "summary": f"Bonjour {first_name}",
+            "actions": [
+                {
+                    "id": str(_uuid.uuid4()),
+                    "type": "info",
+                    "urgence": "info",
+                    "titre": "Bienvenue sur Althy",
+                    "description": "Votre assistant immobilier est prêt. Posez-lui une question ou explorez vos biens.",
+                    "cta_principal": "Voir mes biens",
+                    "payload": {"path": "/app/biens"},
+                }
+            ],
+            "_error": str(exc),
+        }
 
     # Cache for today
     try:
