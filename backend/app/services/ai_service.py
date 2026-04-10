@@ -52,7 +52,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-MODEL = "claude-sonnet-4-20250514"
+MODEL = "claude-sonnet-4-5-20251001"
 MAX_TOKENS = 1000
 RATE_LIMIT = 10          # calls per minute per user
 RATE_WINDOW = 60         # seconds

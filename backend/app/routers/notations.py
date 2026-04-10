@@ -397,8 +397,8 @@ async def get_classement(
         text(f"""
             SELECT
                 u.id,
-                u.prenom,
-                u.nom,
+                u.first_name,
+                u.last_name,
                 u.role,
                 u.photo_url,
                 ns.note_moyenne,
@@ -420,8 +420,8 @@ async def get_classement(
     return [
         {
             "acteur_id":     str(r.id),
-            "prenom":        r.prenom,
-            "nom":           r.nom,
+            "prenom":        r.first_name,
+            "nom":           r.last_name,
             "role":          r.role,
             "photo_url":     r.photo_url,
             "note_moyenne":  round(float(r.note_moyenne), 2),

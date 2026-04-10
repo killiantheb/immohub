@@ -148,6 +148,7 @@ export default function OuvreursPage() {
       return api.get("/notations/classement", { params }).then(r => r.data);
     },
     staleTime: 60_000,
+    retry: false,
   });
 
   const filtered = ouvreurs.filter(o => {
