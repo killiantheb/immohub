@@ -88,7 +88,7 @@ export default function DashboardMap({ height = 500, onBienClick }: DashboardMap
     retry: false,
   });
 
-  const biens = data?.items ?? [];
+  const biens = useMemo(() => data?.items ?? [], [data]);
 
   // Default center: weighted average or Geneva
   const defaultCenter = useMemo((): [number, number] => {

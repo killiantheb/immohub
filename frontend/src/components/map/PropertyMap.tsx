@@ -145,7 +145,10 @@ export default function PropertyMap({
   const [loadingPOI, setLoadingPOI] = useState(false);
   const hasFetched = useRef<string>("");
 
-  // Geocode address on mount / change
+  // Geocode address on mount / change.
+  // Intentionally omits initialLat/initialLng/onPositionChange — we only want
+  // to geocode when the address string itself changes, not when parent re-renders.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!address || (initialLat && initialLng)) return;
     setGeocoding(true);

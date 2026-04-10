@@ -110,9 +110,8 @@ export default function MapMissionProposal({
     retry: false,
   });
 
-  const openers = data?.items ?? [];
-
   const sorted = useMemo(() => {
+    const openers = data?.items ?? [];
     const withDist = openers
       .filter(o => o.latitude && o.longitude)
       .map(o => ({ ...o, dist: haversine(missionLat, missionLng, o.latitude, o.longitude) }));
@@ -121,7 +120,7 @@ export default function MapMissionProposal({
     if (sortBy === "rating") return withDist.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     if (sortBy === "tarif") return withDist.sort((a, b) => (a.hourly_rate ?? 999) - (b.hourly_rate ?? 999));
     return withDist;
-  }, [openers, sortBy, missionLat, missionLng]);
+  }, [data, sortBy, missionLat, missionLng]);
 
   // Show top 10 on map, highlight top 3 in list
   const mapOpeners = sorted.slice(0, 10);

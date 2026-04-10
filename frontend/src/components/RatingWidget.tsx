@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 
 const S = {
@@ -83,7 +83,7 @@ export function RatingWidget({ entityType, entityId, title, compact = false }: P
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const r = await api.get(`/ratings/${entityType}/${entityId}`)
       setSummary(r.data)
@@ -92,9 +92,9 @@ export function RatingWidget({ entityType, entityId, title, compact = false }: P
     } finally {
       setLoading(false)
     }
-  }
+  }, [entityType, entityId])
 
-  useEffect(() => { load() }, [entityType, entityId])
+  useEffect(() => { load() }, [load])
 
   async function submit() {
     if (!myScore) return
