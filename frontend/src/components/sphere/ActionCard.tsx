@@ -31,7 +31,7 @@ export function ActionCard({ actions, onConfirm, onDismiss }: Props) {
     if (action.requires_validation && onConfirm) {
       onConfirm(action);
     } else {
-      router.push(action.path);
+      if (action.path) router.push(action.path);
     }
   }
 
