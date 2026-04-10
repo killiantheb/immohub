@@ -1,2 +1,2 @@
 "use client";
-export { default } from "../properties/page";
+export { default } from "../listings/page";
