@@ -196,7 +196,12 @@ const S = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function DashboardSidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname   = usePathname();
   const router     = useRouter();
   const { signOut } = useAuth();
@@ -240,8 +245,17 @@ export function DashboardSidebar() {
 
   const w = collapsed ? 62 : 252;
 
+  // Close mobile sidebar on navigation
+  function handleNav(href: string) {
+    router.push(href);
+    onMobileClose?.();
+  }
+
   return (
-    <aside style={S.sidebar(w)}>
+    <aside
+      style={S.sidebar(w)}
+      className={`althy-sidebar${mobileOpen ? " althy-sidebar--open" : ""}`}
+    >
 
       {/* ── Brand ── */}
       <div style={S.brand(collapsed)}>
@@ -286,7 +300,7 @@ export function DashboardSidebar() {
               <button
                 onClick={() => {
                   if (hasChildren && !collapsed) toggle(item.href);
-                  else router.push(item.href);
+                  else handleNav(item.href);
                 }}
                 style={S.navItem(active, collapsed)}
                 title={collapsed ? item.label : undefined}
@@ -333,7 +347,7 @@ export function DashboardSidebar() {
                   {item.children!.map(child => {
                     const ca = pathname === child.href || pathname.startsWith(child.href + "/");
                     return (
-                      <Link key={child.href} href={child.href} style={S.subItem(ca)}>
+                      <Link key={child.href} href={child.href} style={S.subItem(ca)} onClick={() => onMobileClose?.()}>
                         {child.label}
                       </Link>
                     );

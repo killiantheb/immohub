@@ -190,3 +190,178 @@
   background: rgba(181,90,48,0.20);
   border-radius: 2px;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE LAYOUT — Dashboard
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Layout shell ──────────────────────────────────────────────────────── */
+.althy-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--althy-bg);
+}
+
+/* ── Mobile top bar (hidden on desktop) ────────────────────────────────── */
+.althy-topbar {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 54px;
+  background: var(--althy-surface);
+  border-bottom: 1px solid var(--althy-border);
+  z-index: 50;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+.althy-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: 4px;
+  color: var(--althy-orange);
+  text-decoration: none;
+}
+.althy-topbar-menu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px; height: 36px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--althy-text);
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.althy-topbar-menu:hover { background: var(--althy-surface-2); }
+
+/* ── Backdrop (mobile only) ─────────────────────────────────────────────── */
+.althy-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(26,22,18,0.45);
+  z-index: 45;
+  backdrop-filter: blur(1px);
+}
+
+/* ── Sidebar ────────────────────────────────────────────────────────────── */
+.althy-sidebar {
+  /* Desktop: normal flow */
+  flex-shrink: 0;
+}
+
+/* ── Main content ───────────────────────────────────────────────────────── */
+.althy-main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 2.5rem 2.5rem 4rem;
+}
+
+/* ── Responsive grid utilities (use in pages) ───────────────────────────── */
+.responsive-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.responsive-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+.responsive-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+.responsive-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BREAKPOINTS
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Tablet (≤ 1024px) ──────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .althy-main {
+    padding: 2rem 1.5rem 3rem;
+  }
+  .responsive-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Mobile (≤ 768px) ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+
+  /* Show mobile top bar */
+  .althy-topbar { display: flex; }
+
+  /* Show backdrop when sidebar open */
+  .althy-backdrop { display: block; }
+
+  /* Sidebar becomes a fixed drawer */
+  .althy-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    height: 100vh !important;
+    z-index: 46 !important;
+    transform: translateX(-100%);
+    transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    width: 260px !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
+    box-shadow: 4px 0 32px rgba(26,22,18,0.18);
+  }
+  .althy-sidebar--open {
+    transform: translateX(0) !important;
+  }
+
+  /* Main content full width, offset for top bar */
+  .althy-main {
+    padding: 70px 16px 3rem;
+    width: 100%;
+  }
+
+  /* Grids collapse to 1 column */
+  .responsive-grid-4,
+  .responsive-grid-3,
+  .responsive-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  .responsive-cards {
+    grid-template-columns: 1fr;
+  }
+
+  /* Landing */
+  .nav-links { display: none; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .steps-grid { grid-template-columns: 1fr; }
+  .pricing-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Small mobile (≤ 480px) ──────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  html { font-size: 14px; }
+
+  .althy-main {
+    padding: 66px 12px 2.5rem;
+  }
+
+  /* Stats KPI cards: 2 columns on small */
+  .responsive-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ql-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
