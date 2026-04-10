@@ -29,10 +29,6 @@ export function SphereWidget() {
   const [reply, setReply] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Don't render on sphere page
-  if (pathname === '/app/sphere') return null;
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     api.get<PendingCountResponse>('/sphere/pending-count')
       .then(r => {
@@ -42,10 +38,12 @@ export function SphereWidget() {
       .catch(() => {});
   }, []);
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 100);
   }, [open]);
+
+  // Don't render on sphere page — AFTER all hooks
+  if (pathname === '/app/sphere') return null;
 
   async function handleSend() {
     if (!input.trim() || sending) return;
