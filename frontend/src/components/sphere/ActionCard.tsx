@@ -95,7 +95,7 @@ export function ActionCard({ actions, onConfirm, onDismiss }: Props) {
               whiteSpace: "nowrap",
             }}
           >
-            {ICON_MAP[action.icon] ?? <CheckCircle size={15} />}
+            {(action.icon ? ICON_MAP[action.icon] : null) ?? <CheckCircle size={15} />}
             {action.label}
             {action.requires_validation && (
               <span style={{ fontSize: 10, opacity: 0.7 }}>• validation requise</span>
