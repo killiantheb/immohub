@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Plus, Building2, Home, MapPin, Search } from "lucide-react";
 import { useProperties } from "@/lib/hooks/useProperties";
-import type { Property } from "@/lib/types";
+import type { Property, PropertyStatus } from "@/lib/types";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -26,36 +26,31 @@ const S = {
 };
 
 const TYPE_LABEL: Record<string, string> = {
-  appartement: "Appartement", maison: "Maison", studio: "Studio",
-  villa: "Villa", commercial: "Commercial", garage: "Garage", autre: "Autre",
-  apartment: "Appartement", house: "Maison", commercial_space: "Commercial",
+  apartment:  "Appartement",
+  villa:      "Villa",
+  parking:    "Parking",
+  garage:     "Garage",
+  box:        "Box",
+  cave:       "Cave",
+  depot:      "Dépôt",
+  office:     "Bureau",
+  commercial: "Commercial",
+  hotel:      "Hôtel",
 };
 
-const STATUT_MAP: Record<string, { label: string; bg: string; fg: string }> = {
-  libre:     { label: "Libre",      bg: S.greenBg,  fg: S.green  },
-  loue:      { label: "Loué",       bg: S.blueBg,   fg: S.blue   },
-  a_vendre:  { label: "À vendre",   bg: S.amberBg,  fg: S.amber  },
-  vendu:     { label: "Vendu",      bg: "var(--althy-border)", fg: S.text3 },
-  renovation:{ label: "Rénovation", bg: S.redBg,    fg: S.red    },
-  occupied:  { label: "Loué",       bg: S.blueBg,   fg: S.blue   },
-  available: { label: "Libre",      bg: S.greenBg,  fg: S.green  },
-  for_sale:  { label: "À vendre",   bg: S.amberBg,  fg: S.amber  },
+const STATUS_STYLE: Record<PropertyStatus, { label: string; bg: string; fg: string }> = {
+  available:   { label: "Libre",      bg: S.greenBg, fg: S.green  },
+  rented:      { label: "Loué",       bg: S.blueBg,  fg: S.blue   },
+  for_sale:    { label: "À vendre",   bg: S.amberBg, fg: S.amber  },
+  sold:        { label: "Vendu",      bg: "var(--althy-border)", fg: S.text3 },
+  maintenance: { label: "Rénovation", bg: S.redBg,   fg: S.red    },
 };
-
-function statutStyle(s?: string) {
-  return s ? (STATUT_MAP[s] ?? { label: s, bg: "var(--althy-border)", fg: S.text3 }) : null;
-}
 
 // ── BienCard ──────────────────────────────────────────────────────────────────
 
 function BienCard({ bien }: { bien: Property }) {
-  const st = statutStyle(bien.statut ?? (bien as Record<string, unknown>).status as string);
+  const st = STATUS_STYLE[bien.status] ?? { label: bien.status, bg: "var(--althy-border)", fg: S.text3 };
   const cover = bien.images?.find(i => i.is_cover)?.url ?? bien.images?.[0]?.url;
-  const adresse = bien.adresse ?? (bien as Record<string, unknown>).address as string ?? "";
-  const ville = bien.ville ?? (bien as Record<string, unknown>).city as string ?? "";
-  const surface = bien.surface_m2 ?? (bien as Record<string, unknown>).surface as number ?? null;
-  const pieces = bien.nb_pieces ?? (bien as Record<string, unknown>).rooms as number ?? null;
-  const loyer = bien.loyer_net ?? (bien as Record<string, unknown>).monthly_rent as number ?? null;
 
   return (
     <Link href={`/app/biens/${bien.id}`} style={{ textDecoration: "none", color: "inherit" }}>
@@ -80,42 +75,40 @@ function BienCard({ bien }: { bien: Property }) {
         <div style={{ height: 140, background: "var(--althy-bg)", position: "relative", overflow: "hidden" }}>
           {cover ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={cover} alt={adresse} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <img src={cover} alt={bien.address} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
             <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Home size={32} color="var(--althy-border)" />
             </div>
           )}
-          {st && (
-            <span style={{
-              position: "absolute", top: 10, right: 10,
-              padding: "3px 10px", borderRadius: 20,
-              background: st.bg, color: st.fg,
-              fontSize: 10, fontWeight: 700,
-            }}>
-              {st.label}
-            </span>
-          )}
+          <span style={{
+            position: "absolute", top: 10, right: 10,
+            padding: "3px 10px", borderRadius: 20,
+            background: st.bg, color: st.fg,
+            fontSize: 10, fontWeight: 700,
+          }}>
+            {st.label}
+          </span>
         </div>
 
         {/* Content */}
         <div style={{ padding: "14px 16px" }}>
           <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: S.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {adresse || "Adresse non renseignée"}
+            {bien.address || "Adresse non renseignée"}
           </p>
-          {ville && (
+          {bien.city && (
             <p style={{ margin: "3px 0 0", fontSize: 12, color: S.text3, display: "flex", alignItems: "center", gap: 4 }}>
-              <MapPin size={10} /> {ville}
+              <MapPin size={10} /> {bien.city}
             </p>
           )}
           <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-            {bien.type && <span style={{ fontSize: 11, color: S.text3 }}>{TYPE_LABEL[bien.type] ?? bien.type}</span>}
-            {surface != null && <span style={{ fontSize: 11, color: S.text3 }}>· {surface} m²</span>}
-            {pieces != null && <span style={{ fontSize: 11, color: S.text3 }}>· {pieces} p.</span>}
+            <span style={{ fontSize: 11, color: S.text3 }}>{TYPE_LABEL[bien.type] ?? bien.type}</span>
+            {bien.surface != null && <span style={{ fontSize: 11, color: S.text3 }}>· {bien.surface} m²</span>}
+            {bien.rooms != null && <span style={{ fontSize: 11, color: S.text3 }}>· {bien.rooms} p.</span>}
           </div>
-          {loyer != null && (
+          {bien.monthly_rent != null && (
             <p style={{ margin: "8px 0 0", fontSize: 15, fontWeight: 700, color: S.orange }}>
-              CHF {(loyer as number).toLocaleString("fr-CH")} / mois
+              CHF {bien.monthly_rent.toLocaleString("fr-CH")} / mois
             </p>
           )}
         </div>
@@ -126,34 +119,26 @@ function BienCard({ bien }: { bien: Property }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-type Filtre = "" | "libre" | "loue" | "a_vendre" | "renovation";
-
-const FILTRES: { key: Filtre; label: string }[] = [
-  { key: "",           label: "Tous"        },
-  { key: "libre",      label: "Libres"      },
-  { key: "loue",       label: "Loués"       },
-  { key: "a_vendre",   label: "À vendre"    },
-  { key: "renovation", label: "Rénovation"  },
+const FILTRES: { key: PropertyStatus | ""; label: string }[] = [
+  { key: "",            label: "Tous"        },
+  { key: "available",   label: "Libres"      },
+  { key: "rented",      label: "Loués"       },
+  { key: "for_sale",    label: "À vendre"    },
+  { key: "maintenance", label: "Rénovation"  },
 ];
 
 export default function BiensPage() {
-  const [filtre,  setFiltre]  = useState<Filtre>("");
-  const [search,  setSearch]  = useState("");
+  const [filtre, setFiltre] = useState<PropertyStatus | "">("");
+  const [search, setSearch] = useState("");
 
-  const { data, isLoading } = useProperties(filtre ? { statut: filtre } : {});
+  const { data, isLoading } = useProperties(filtre ? { status: filtre } : {});
 
-  // Support paginated { items } or flat array responses
-  const biens: Property[] = Array.isArray(data)
-    ? data
-    : (data as { items?: Property[]; results?: Property[] } | undefined)?.items
-      ?? (data as { items?: Property[]; results?: Property[] } | undefined)?.results
-      ?? [];
+  const biens: Property[] = data?.items ?? data?.results ?? (Array.isArray(data) ? data as Property[] : []);
 
   const filtered = biens.filter(b => {
     if (!search) return true;
-    const addr  = ((b.adresse ?? (b as Record<string, unknown>).address as string) ?? "").toLowerCase();
-    const ville = ((b.ville  ?? (b as Record<string, unknown>).city   as string) ?? "").toLowerCase();
-    return addr.includes(search.toLowerCase()) || ville.includes(search.toLowerCase());
+    const q = search.toLowerCase();
+    return b.address.toLowerCase().includes(q) || b.city.toLowerCase().includes(q);
   });
 
   return (
