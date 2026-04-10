@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 const STORAGE_KEY = "althy_cookie_consent";
@@ -44,6 +45,7 @@ function activatePostHog() {
 }
 
 export function CookieBanner() {
+  const pathname = usePathname();
   const [visible, setVisible] = useState(false);
   const [mode, setMode] = useState<Mode>("banner");
   const [analyticsChecked, setAnalyticsChecked] = useState(false);
@@ -70,6 +72,7 @@ export function CookieBanner() {
     setVisible(false);
   }
 
+  if (pathname.startsWith('/app')) return null;
   if (!visible) return null;
 
   if (mode === "customize") {

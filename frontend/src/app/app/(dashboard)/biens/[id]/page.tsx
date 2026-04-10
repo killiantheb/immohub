@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
-  AlertTriangle, ArrowLeft, CheckCircle2, ChevronRight,
+  AlertTriangle, CheckCircle2, ChevronRight,
   Clock, Download, Eye, FileText, Lightbulb, Loader2, MapPin,
   PiggyBank, Plus, RefreshCw, Sparkles, TrendingUp, User, Wrench, XCircle,
 } from "lucide-react";
@@ -13,6 +13,7 @@ import {
   useLocataires, usePaiements, useScoring, useCreateIntervention,
   type DocumentAlthy, type Locataire, type Paiement,
 } from "@/lib/hooks/useBiens";
+import { FilAriane } from "@/components/FilAriane";
 import { usePotentielIA } from "@/lib/hooks/useDashboardData";
 
 // ── Design tokens via CSS vars (light + dark auto) ────────────────────────────
@@ -809,18 +810,16 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
 
 export default function BienDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabId>("locataire");
 
   return (
     <div style={{ background: S.bg, minHeight: "100vh" }}>
-      {/* Back */}
-      <button
-        onClick={() => router.back()}
-        style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: S.text3, fontSize: 13, cursor: "pointer", marginBottom: "1rem", padding: 0 }}
-      >
-        <ArrowLeft size={14} /> Retour
-      </button>
+      {/* Fil d'Ariane */}
+      <FilAriane items={[
+        { label: 'Tableau de bord', href: '/app' },
+        { label: 'Biens', href: '/app/biens' },
+        { label: id },
+      ]} />
 
       {/* Header */}
       <BienHeader bienId={id} />

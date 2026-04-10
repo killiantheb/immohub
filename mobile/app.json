@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "Althy",
+    "slug": "althy-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "althy",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAF8F5"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "ch.althy.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Althy utilise la caméra pour scanner vos factures et documents.",
+        "NSPhotoLibraryUsageDescription": "Althy accède à vos photos pour importer des documents.",
+        "NSMicrophoneUsageDescription": "Althy utilise le micro pour la saisie vocale."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FAF8F5"
+      },
+      "package": "ch.althy.app",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#E8602C",
+          "sounds": []
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Althy accède à vos photos pour importer des documents.",
+          "cameraPermission": "Althy utilise la caméra pour scanner vos factures."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

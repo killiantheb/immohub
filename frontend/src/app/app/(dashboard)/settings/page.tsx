@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   Bell, Building2, Calculator, CreditCard, Download, Eye, EyeOff,
   Globe, Link2, Loader2, Lock, MapPin, Plus, Shield, Trash2, User, Users, X,
@@ -653,40 +654,12 @@ function TabPaiement() {
       {/* Abonnement */}
       <Card>
         <SectionTitle>Mon abonnement</SectionTitle>
-        <FormStack>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-            <div>
-              <p style={{ fontSize: 13, color: S.text3, marginBottom: 4 }}>Plan actuel</p>
-              <Badge color={planColor[sub?.plan ?? "free"] ?? S.orange}>{sub?.plan_label ?? "Standard"}</Badge>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <p style={{ fontSize: 11, color: S.text3 }}>Prochaine facturation</p>
-              <p style={{ fontSize: 14, fontWeight: 700, color: S.text }}>{sub?.next_billing ? new Date(sub.next_billing).toLocaleDateString("fr-CH") : "—"}</p>
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-            <button onClick={async () => { try { const { data } = await api.post("/abonnement/portal"); if (data?.url) window.open(data.url, "_blank"); } catch { /* noop */ } }} style={{ flex: 1, padding: "10px 16px", borderRadius: 10, background: S.orangeBg, border: `1px solid ${S.orange}`, color: S.orange, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              Gérer l'abonnement (Stripe)
-            </button>
-            <button style={{ flex: 1, padding: "10px 16px", borderRadius: 10, background: S.surface2, border: `1px solid ${S.border}`, color: S.text2, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              Changer de plan
-            </button>
-          </div>
-          {/* Options actives */}
-          <div style={{ padding: "1rem", background: S.surface2, borderRadius: 12 }}>
-            <p style={{ fontSize: 11, fontWeight: 600, color: S.text3, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8 }}>Options actives</p>
-            {[
-              { key: "social", label: "Réseaux sociaux", price: "+CHF 39/mois" },
-              { key: "portails", label: "Portails immobiliers", price: "+CHF 99/mois" },
-              { key: "compta", label: "Comptabilité avancée", price: "+CHF 19/mois" },
-            ].map(opt => (
-              <div key={opt.key} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${S.border}` }}>
-                <span style={{ fontSize: 13, color: S.text }}>{opt.label}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: S.orange }}>{opt.price}</span>
-              </div>
-            ))}
-          </div>
-        </FormStack>
+        <p style={{ fontSize: 13, color: S.text3, marginBottom: "1rem" }}>
+          Consultez votre plan actuel, changez d'offre et gérez vos factures depuis la page dédiée.
+        </p>
+        <Link href="/app/abonnement" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 10, background: S.orangeBg, border: `1px solid ${S.orange}`, color: S.orange, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+          Gérer mon abonnement →
+        </Link>
       </Card>
 
       {/* Factures */}
@@ -1152,12 +1125,12 @@ function TabEquipe() {
 // TAB 7 — INTÉGRATIONS
 // ──────────────────────────────────────────────────────────────────────────────
 const PORTALS = [
-  { key: "on_homegate", name: "Homegate", price: "CHF 49/mois", note: "CHF 49 portail + 15% marge Althy" },
-  { key: "on_immoscout", name: "ImmoScout24", price: "CHF 59/mois", note: "CHF 59 portail + 15% marge Althy" },
-  { key: "on_comparis", name: "Comparis", price: "Variable", note: "Tarif selon volume + 15% marge Althy" },
-  { key: "on_anibis", name: "Anibis", price: "CHF 9/mois", note: "CHF 9 portail + 15% marge Althy" },
-  { key: "on_airbnb", name: "Airbnb", price: "Commission 3%", note: "Court séjour + 15% marge Althy" },
-  { key: "on_booking", name: "Booking.com", price: "Commission 15%", note: "Court séjour + 15% marge Althy" },
+  { key: "on_homegate",  name: "Homegate",    price: "Tarif Homegate",    note: "4% Althy si flux via plateforme" },
+  { key: "on_immoscout", name: "ImmoScout24", price: "Tarif ImmoScout",   note: "4% Althy si flux via plateforme" },
+  { key: "on_comparis",  name: "Comparis",    price: "Tarif Comparis",    note: "4% Althy si flux via plateforme" },
+  { key: "on_anibis",    name: "Anibis",      price: "Tarif Anibis",      note: "4% Althy si flux via plateforme" },
+  { key: "on_airbnb",    name: "Airbnb",      price: "Commission Airbnb", note: "4% Althy sur réservations reçues" },
+  { key: "on_booking",   name: "Booking.com", price: "Commission Booking",note: "4% Althy sur réservations reçues" },
 ];
 const SOCIAL_PROVIDERS = [
   { key: "instagram", name: "Instagram", icon: "📸" },
@@ -1242,7 +1215,7 @@ function TabIntegrations() {
       {/* Portails */}
       <Card>
         <SectionTitle>Portails immobiliers</SectionTitle>
-        <p style={{ fontSize: 11, color: S.text3, marginBottom: "0.75rem" }}>Tarif selon volume d'annonces actives — passthrough + 15% marge Althy</p>
+        <p style={{ fontSize: 11, color: S.text3, marginBottom: "0.75rem" }}>Althy prélève 4% sur les paiements reçus via la plateforme. Paiement direct au portail : facturation séparée des 4%.</p>
         <FormStack>
           {PORTALS.map(p => (
             <div key={p.key} style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>

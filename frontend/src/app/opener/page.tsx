@@ -99,10 +99,11 @@ export default function OpenerPage() {
   return (
     <div style={S.root}>
       {/* Header */}
-      <div style={{ width: '100%', maxWidth: 420, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <Link href="/" style={{ fontFamily: 'var(--font-serif)', fontSize: 11, letterSpacing: '6px', color: 'rgba(180,80,20,0.45)', textTransform: 'uppercase', margin: 0, textDecoration: 'none' }}>Althy</Link>
-        <span style={{ fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(80,35,8,0.45)', padding: '4px 10px', borderRadius: 20, border: '0.5px solid rgba(212,96,26,0.2)', background: 'rgba(212,96,26,0.05)' }}>Ouvreur</span>
-      </div>
+      <header style={{ height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', background: '#fff', borderBottom: '1px solid #EAE3D9', width: '100%', position: 'fixed', top: 0, left: 0, zIndex: 100 }}>
+        <Link href="/" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '20px', fontWeight: 300, letterSpacing: '4px', color: '#1A1612', textDecoration: 'none' }}>ALTHY</Link>
+        <Link href="/login" style={{ fontSize: '13px', color: '#8A7A6A', textDecoration: 'none', padding: '7px 16px', border: '1px solid #EAE3D9', borderRadius: '8px' }}>Se connecter</Link>
+      </header>
+      <div style={{ height: '56px' }} />
 
       {/* Sphere */}
       <div style={{ marginBottom: '1rem', filter: 'drop-shadow(0 12px 36px rgba(212,96,26,0.18))' }}>

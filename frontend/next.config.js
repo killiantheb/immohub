@@ -3,6 +3,20 @@ const { withSentryConfig } = require("@sentry/nextjs");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // ── Redirects routes anglaises → françaises ──────────────────────────────────
+  async redirects() {
+    return [
+      { source: "/app/properties/:path*",  destination: "/app/biens/:path*",           permanent: true },
+      { source: "/app/openers/:path*",     destination: "/app/ouvreurs/:path*",         permanent: true },
+      { source: "/app/tenant",             destination: "/app/locataire",               permanent: true },
+      { source: "/app/accounting",         destination: "/app/comptabilite",            permanent: true },
+      { source: "/app/advisor",            destination: "/app/sphere",                  permanent: true },
+      { source: "/app/dashboard",          destination: "/app/sphere",                  permanent: true },
+      { source: "/app/rfqs/:path*",        destination: "/app/artisans/devis/:path*",   permanent: true },
+      { source: "/onboarding",             destination: "/bienvenue",                   permanent: true },
+    ];
+  },
+
   // ── Performance ─────────────────────────────────────────────────────────────
   compress: true,
   poweredByHeader: false,

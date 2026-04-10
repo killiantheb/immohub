@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import Link from "next/link"
-import { CathySphere } from "@/components/CathySphere"
+import { AlthySphere } from "@/components/AlthySphere"
 
 const C = {
   bg: "#FAF8F4",
@@ -82,7 +82,7 @@ export function Hero() {
         >
           {/* Sphère + badge */}
           <motion.div variants={fadeUp} style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-            <CathySphere size={56} />
+            <AlthySphere size={56} />
             <span
               style={{
                 color: C.orange,
@@ -200,7 +200,7 @@ export function Hero() {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                <CathySphere size={20} />
+                <AlthySphere size={20} />
                 <span style={{ fontFamily: "var(--font-serif)", color: C.orange, fontSize: "1rem", fontWeight: 500, letterSpacing: "0.12em" }}>
                   Althy
                 </span>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -91,6 +91,8 @@ function PasswordStrength({ password }: { password: string }) {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const prefillEmail = searchParams.get("email") ?? "";
   const { signUp } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -103,7 +105,7 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { role: "proprio_solo", marketing_consent: false },
+    defaultValues: { role: "proprio_solo", marketing_consent: false, email: prefillEmail },
   });
 
   const password = watch("password", "");
@@ -119,7 +121,7 @@ export default function RegisterPage() {
         cgu_version: CGU_VERSION,
         marketing_consent: data.marketing_consent,
       });
-      router.push("/onboarding");
+      router.push("/bienvenue");
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message ?? "Erreur lors de l'inscription";
       setServerError(
@@ -131,13 +133,20 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen" style={{ position: "relative" }}>
+      {/* ── Bouton retour ── */}
+      <div style={{ position: "absolute", top: "20px", left: "24px", zIndex: 10 }}>
+        <Link href="/" style={{ fontSize: "13px", color: "var(--althy-text-3, #8A7A6A)", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}>
+          ← Retour à althy.ch
+        </Link>
+      </div>
+
       {/* ── Left branding panel ── */}
       <div className="hidden lg:flex lg:w-5/12 flex-col items-center justify-center bg-primary-600 p-12 text-white">
-        <div className="mb-6 flex items-center gap-4">
+        <Link href="/" className="mb-6 flex items-center gap-4" style={{ textDecoration: "none", color: "inherit" }}>
           <AlthyLogo size={52} />
           <span className="text-4xl font-bold tracking-tight">ALTHY</span>
-        </div>
+        </Link>
         <p className="max-w-xs text-center text-primary-100">
           Gérez vos biens, contrats et locataires en Suisse — simplement, en français.
         </p>
@@ -147,10 +156,10 @@ export default function RegisterPage() {
       <div className="flex w-full items-start justify-center overflow-y-auto bg-beige-100 px-6 py-10 lg:w-7/12">
         <div className="w-full max-w-lg">
           {/* Mobile logo */}
-          <div className="mb-8 flex items-center justify-center gap-2 lg:hidden">
+          <Link href="/" className="mb-8 flex items-center justify-center gap-2 lg:hidden" style={{ textDecoration: "none", color: "inherit" }}>
             <AlthyLogo size={32} />
             <span className="text-2xl font-bold text-gray-900">ALTHY</span>
-          </div>
+          </Link>
 
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900">Créer un compte</h1>

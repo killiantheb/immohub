@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     )
 
     # App
-    APP_NAME: str = "CATHY"
+    APP_NAME: str = "ALTHY"
     APP_ENV: str = "development"
     DEBUG: bool = False
     SECRET_KEY: str
@@ -63,7 +63,21 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
-    EMAILS_FROM: str = "noreply@immohub.fr"
+    EMAILS_FROM: str = "noreply@althy.ch"
+
+    # Resend (email transactionnel)
+    RESEND_API_KEY: str = ""
+
+    # Twilio (SMS)
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_FROM_NUMBER: str = ""
+
+    # Google Maps / Places (scraping agences)
+    GOOGLE_MAPS_API_KEY: str = ""
+
+    # Frontend public URL (magic links)
+    FRONTEND_URL: str = "https://althy.ch"
 
     # Google OAuth2 (Gmail + Google Calendar)
     GOOGLE_CLIENT_ID: str = ""
@@ -73,6 +87,12 @@ class Settings(BaseSettings):
     MICROSOFT_CLIENT_ID: str = ""
     MICROSOFT_CLIENT_SECRET: str = ""
     MICROSOFT_TENANT_ID: str = "common"
+
+    # WhatsApp Business API (Meta)
+    WHATSAPP_VERIFY_TOKEN: str = ""
+    WHATSAPP_API_TOKEN: str = ""
+    WHATSAPP_PHONE_ID: str = ""
+    META_APP_SECRET: str = ""
 
     # Portal syndication — Althy marge 15%
     PORTAL_MARGIN_PCT: float = 15.0

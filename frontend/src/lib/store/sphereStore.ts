@@ -3,12 +3,39 @@ import { persist } from "zustand/middleware";
 
 export type SphereState = "idle" | "listening" | "thinking" | "speaking";
 
+export type ActionType =
+  | 'document_action'
+  | 'messagerie_action'
+  | 'whatsapp_action'
+  | 'paiement_action'
+  | 'ocr_action'
+  | 'intervention_action'
+  | 'agenda_action'
+  | 'validation_action'
+  | 'notation_action'
+  | 'integration_action';
+
+export type Urgence = 'haute' | 'normale' | 'info';
+
 export interface SphereAction {
   id: string;
-  label: string;
-  icon: string;
-  path: string;
-  requires_validation: boolean;
+  // New structured fields
+  type?: ActionType;
+  titre?: string;
+  description?: string;
+  urgence?: Urgence;
+  cta_principal?: string;
+  cta_secondaire?: string;
+  payload?: Record<string, unknown>;
+  // Notation fields
+  acteur_id?: string;
+  acteur_nom?: string;
+  acteur_role?: string;
+  // Legacy (kept for compat)
+  label?: string;
+  icon?: string;
+  path?: string;
+  requires_validation?: boolean;
 }
 
 export interface SphereMessage {

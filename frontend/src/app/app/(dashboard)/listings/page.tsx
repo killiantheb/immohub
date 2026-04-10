@@ -30,12 +30,13 @@ const STATUS_CONFIG = {
   closed: { label: "Fermée",     color: S.text3,  bg: S.surface2 },
 };
 
-// Prix portails : tarif passthrough + 15% marge Althy
+// Commission Althy : 4% sur tous les flux financiers transitant par la plateforme
+// Si paiement direct au portail : Althy facture ses 4% séparément au client
 const PORTALS = [
-  { key: "on_homegate",   name: "Homegate",  logo: "🏠", price: "CHF 56/mois",  note: "CHF 49 portail + 15% Althy" },
-  { key: "on_immoscout",  name: "ImmoScout", logo: "🔍", price: "CHF 56/mois",  note: "CHF 49 portail + 15% Althy" },
-  { key: "on_booking",    name: "Booking",   logo: "📅", price: "CHF 33/mois",  note: "CHF 29 portail + 15% Althy" },
-  { key: "on_airbnb",     name: "Airbnb",    logo: "🌟", price: "3% + 15%",     note: "Commission portail + marge Althy" },
+  { key: "on_homegate",  name: "Homegate",  logo: "🏠", price: "Tarif Homegate",    note: "4% Althy si paiement via plateforme" },
+  { key: "on_immoscout", name: "ImmoScout", logo: "🔍", price: "Tarif ImmoScout",   note: "4% Althy si paiement via plateforme" },
+  { key: "on_booking",   name: "Booking",   logo: "📅", price: "Commission Booking", note: "4% Althy sur réservations reçues" },
+  { key: "on_airbnb",    name: "Airbnb",    logo: "🌟", price: "Commission Airbnb",  note: "4% Althy sur réservations reçues" },
 ];
 
 interface Listing {

@@ -42,6 +42,11 @@ stripe>=10.0.0
 # Rate limiting
 slowapi>=0.1.9
 
+# Scraping & QR
+beautifulsoup4>=4.12.0
+qrcode[pil]>=7.4.2
+Pillow>=10.0.0
+
 # Utilities
 python-dotenv==1.0.1
 tenacity==9.0.0

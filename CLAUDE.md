@@ -1,159 +1,231 @@
-# Althy — Instructions pour Claude Code
+# ALTHY — L'assistant immobilier suisse
 
-> Business plan complet : `docs/althy_business_plan_definitif.pdf`
+## L'esprit du projet
 
-## Vision centrale
-"Le grand-père qui veut gérer ses biens seul et qui comprend rien au monde moderne arrive sur Althy.
-Il voit une sphère. Il parle. Althy comprend, agit, et lui demande de valider. C'est tout."
+Althy n'est pas un logiciel de gestion. C'est un assistant immobilier disponible 24h/24, 7j/7, au service de tous les acteurs de l'immobilier suisse — propriétaires, agences, artisans, ouvreurs, locataires, hunters, experts.
 
-Le tableau de bord existe — mais il est **optionnel**. La sphère IA est le point d'entrée principal.
+Il ne remplace personne. Il simplifie ce qui est complexe, connecte ceux qui ont besoin de se trouver, et génère ce qui prend du temps. L'humain décide toujours. Althy propose, l'humain valide.
 
-## Règles absolues (jamais déroger)
+**Le maître mot : simplicité.** Deux clics maximum pour toute action courante. Une personne de 60 ans doit pouvoir utiliser Althy sans formation.
 
-1. Althy ne prend **JAMAIS** de décision — il suggère, l'humain valide
-2. Althy n'est **JAMAIS** responsable — disclaimer sur tous les docs générés
-3. Frais dossier CHF 90 **UNIQUEMENT** si locataire retenu — jamais avant (carte enregistrée à l'inscription)
-4. 4 % loyers affiché comme **"loyer net reçu"** — jamais comme "commission"
-5. Rate limiting IA : **30 interactions/jour standard · 100/jour Pro**
-6. Row Level Security Supabase sur **TOUTES** les tables — aucune exception
-7. TypeScript strict — **pas de `any`** — **pas de `as Record<string, unknown>`** direct
-8. Toujours **mobile-first**
-9. **Jamais de publicité dans l'app** — incompatible avec le positionnement premium
-10. Commission énergie/internet **seulement si accord de distribution formel signé**
+---
 
-## Design system
+## L'identité visuelle
 
-| Token | Valeur |
-|-------|--------|
-| Primaire (terre cuite) | `#B55A30` |
-| Primaire light | `#FAE4D6` |
-| Fond | `#FAFAF8` (stone) |
-| Surface | `#FFFFFF` |
-| Bordure | `#E8E4DC` |
-| Texte | `#3D3830` |
-| Muted | `#7A7469` |
-| Succès (sage) | `#5A7D54` · light `#EBF2EA` |
-| Border-radius cards | `12px` · éléments `8px` |
+- **Orange** : `#E8602C` — `var(--althy-orange)`
+- **Fond** : `#FAF8F5` — `var(--althy-bg)`
+- **Surface cards** : `#FFFFFF` — `var(--althy-surface)`
+- **Bordures** : `#EAE3D9` — `var(--althy-border)`
+- **Texte principal** : `#1A1612` — `var(--althy-text)`
+- **Texte secondaire** : `#8A7A6A` — `var(--althy-text-3)`
+- **Police titres** : Cormorant Garamond, serif
+- **Police corps** : Inter ou DM Sans
+- **Border-radius** : 14-16px sur les cards
+- **Toujours** utiliser les variables CSS `--althy-*` — jamais de couleurs codées en dur
 
-**Fonts** : titres → **Fraunces** (300, 400 italic) · corps → **DM Sans** (400, 500)
+Le design de toutes les pages doit être cohérent avec la marketplace interne (listings) : fond crème, cards blanches avec bordure légère, orange comme seul accent fort.
 
-## Stack technique
+---
 
-- **Frontend** : Next.js 14 App Router · TypeScript · Tailwind — déployé sur Vercel
-- **Mobile** : React Native / Expo (iOS + Android)
-- **Backend** : FastAPI (Python) · Celery · Redis — déployé sur Railway
-- **DB** : Supabase (PostgreSQL + Auth + Storage + Realtime)
-- **IA** : Anthropic Claude Sonnet — streaming SSE pour la sphère
-- **Paiements** : Stripe (abonnements) + Stripe Connect (transactions entre users)
-- **Emails** : Resend · **SMS** : Twilio · **Push** : Firebase Cloud Messaging
-- **Maps** : Leaflet + OpenStreetMap + Nominatim (gratuit)
-- **CDN** : Cloudflare Pro (DNS + WAF + anti-DDoS)
-- **Monitoring** : Sentry + BetterStack
+## Le stack technique
 
-## Les 9 profils utilisateurs
+- **Frontend** : Next.js 14 App Router + TypeScript — Vercel
+- **Backend** : FastAPI Python + Celery + Redis — Railway
+- **Base de données** : Supabase (PostgreSQL + Auth + Storage + Realtime)
+- **IA** : Anthropic Claude Sonnet — streaming SSE pour la Sphère
+- **Paiements** : Stripe + Stripe Connect
+- **Emails** : Resend | **SMS** : Twilio | **Push** : Firebase
+- **Repo** : github.com/killiantheb/immohub
+- **Site** : althy.ch
 
-| Profil | Prix | Phase |
-|--------|------|-------|
-| `proprio_solo` | CHF 29/mois | M1 |
-| `agence` | CHF 29/agent/mois | M1 |
-| `portail_proprio` | CHF 9/mois | M1 |
-| `opener` | CHF 0 base / CHF 19 Pro | M1 |
-| `artisan` | CHF 0 base / CHF 19 Pro | M1 |
-| `expert` | CHF 0 / CHF 19 Pro | M3 |
-| `hunter` | Referral fee | M6 |
-| `locataire` | Gratuit | M1 |
-| `acheteur_premium` | CHF 9/mois | An 2 |
+---
 
-## Les 22 tables DB (§8.2 du BP)
+## Les 9 rôles utilisateurs
 
-`users` · `profiles` · `properties` · `leases` · `tenants` · `payments` · `documents` · `expenses` · `interventions` · `quotes` · `missions` · `listings` · `offers` · `partners` · `hunters` · `subscriptions` · `ai_sessions` · `messages` · `user_settings` · `zones` · `consents` · `integrations`
+| Rôle | Description | Prix |
+|------|-------------|------|
+| `proprio_solo` | Propriétaire indépendant | CHF 29/mois |
+| `agence` | Agence immobilière | CHF 29/agent/mois |
+| `portail_proprio` | Proprio connecté par son agence | CHF 9/mois |
+| `opener` | Ouvreur — visites et états des lieux | Gratuit / CHF 19 Pro |
+| `artisan` | Artisan — devis et chantiers | Gratuit / CHF 19 Pro |
+| `expert` | Expert immobilier | Gratuit / CHF 19 Pro |
+| `hunter` | Apporteur de leads off-market | Referral fee |
+| `locataire` | Locataire — documents et signalements | Gratuit |
+| `acheteur_premium` | Acheteur — alertes et avant-premières | CHF 9/mois |
 
-Migrations Supabase : `supabase/migrations/` (004–007)
-- `004_settings.sql` — user_settings + trigger auto-création + RLS
-- `005_zones.sql` — zones + PostGIS + index GIST + `find_openers_in_zone()`
-- `006_consents.sql` — consents (insert-only, immuable) + vue `consents_latest` + `record_consent()`
-- `007_integrations.sql` — integrations + chiffrement pgcrypto + `upsert_integration()` + vue `integrations_safe`
+---
 
-## Sources de revenus (§3.4)
+## Le modèle économique
 
-- **CHF 29/user/mois** abonnement
-- **4 % des loyers** via Stripe Connect (affiché "loyer net reçu")
-- **CHF 90** frais dossier locataire à la réussite uniquement
-- **15 %** commission openers (10 % Pro)
-- **10 %** commission artisans sur devis comparés
-- **8–15 %** experts
-- **10 %** commission caution (Firstcaution/SwissCaution)
-- **CHF 40** commission assurance RC ménage
-- **CHF 9/mois** portail proprio (facturé agence)
-- **CHF 50–500** referral hunters off-market
+- **4% sur tous les flux financiers** transitant par Althy (loyers, réservations Airbnb, Booking...)
+- Si le client paie directement un portail : Althy facture ses 4% séparément
+- **Zéro marge cachée** sur les portails — le client paie le tarif du portail directement
+- Frais dossier locataire : **CHF 90 uniquement si candidat retenu** — jamais avant
 
-## Architecture du projet
+---
+
+## Le parcours utilisateur
 
 ```
-immohub/
-  docs/                # Business plan PDF
-  frontend/            # Next.js 14, Vercel
-    src/
-      app/
-        (landing)/     # /, /estimation, /register, /login
-        app/(dashboard)/
-      components/
-      lib/             # hooks, store Zustand, api.ts, auth.ts
-  backend/             # FastAPI, Railway
-    app/
-      routers/         # Un fichier par domaine
-      models/          # SQLAlchemy (héritent de BaseModel)
-      services/        # ai_service.py et autres
-      core/            # config, database, security
-    alembic/           # Migrations 0001 → 0012+
+/ (landing) → /login → /bienvenue → /app/sphere (hub central) → /app (tableau de bord optionnel)
 ```
 
-## Conventions backend
+La **Sphère IA** est le point d'entrée principal après connexion. Le tableau de bord est un complément optionnel pour ceux qui veulent une vue gestionnaire détaillée.
 
-- Tous les modèles héritent de `BaseModel` (id UUID, created_at, updated_at, is_active)
-- Migrations numérotées `00XX_description.py` · **idempotentes** (`IF NOT EXISTS`)
-- Endpoints préfixés `/api/v1/`
-- Auth : `Annotated[User, Depends(get_current_user)]` via Supabase JWT
-- Pydantic schemas : `model_config = {"from_attributes": True}`
-- **Vérifier `0001_initial_schema.py` avant toute nouvelle migration** — ne jamais recréer une table existante
-- RLS sur toutes les tables — les policies listings passent par `properties.owner_id` (jointure)
+---
 
-## Conventions frontend
+## La Sphère IA — le cœur d'Althy
 
-- CSS tokens : `var(--althy-orange)` = `#B55A30`, `var(--althy-bg)`, `var(--althy-surface)`, etc.
-- Styles inline (objet `S` en haut de chaque fichier) dans le dashboard
-- `import { api } from "@/lib/api"` — base URL = `NEXT_PUBLIC_API_URL` (inclut `/api/v1`)
-- Auth : `useAuthStore()` (Zustand) + `useAuth()` pour signOut
-- Rôles : `useRole()` → `can(section: string)`
-- `RevenueChart` attend `data: MonthlyRevenue[]` — **pas** `year`
-- Cast dynamique : `(obj as unknown as Record<string, T>)` pour éviter l'erreur TS
+La Sphère est un agent IA autonome. Chaque matin elle analyse le contexte complet de l'utilisateur et propose des actions prioritaires. Elle attend la validation humaine avant d'exécuter quoi que ce soit.
 
-## Pages existantes
+Elle comprend le langage naturel. Un propriétaire dit "ma chaudière est cassée" — la Sphère trouve trois artisans notés, compare les devis, attend la confirmation.
 
-| Route | Description |
-|-------|-------------|
-| `/app` | Tableau de bord |
-| `/app/biens` | Liste biens |
-| `/app/biens/[id]` | Fiche bien + onglet Potentiel IA (7 blocs) |
-| `/app/finances` | Revenus/dépenses |
-| `/app/interventions` | Travaux |
-| `/app/crm` | Contacts |
-| `/app/listings` | Annonces portails |
-| `/app/comptabilite` | État locatif + exports |
-| `/app/hunters` | Leads off-market |
-| `/app/abonnement` | Plans tarifaires |
-| `/app/advisor` | Althy IA chat (sphère) |
-| `/estimation` | Estimation IA publique (lead magnet §6.2) |
+Elle apprend. Chaque modification apportée avant validation est mémorisée comme préférence.
 
-## Routes backend existantes (`/api/v1`)
+Elle note. Après chaque transaction terminée, elle demande une évaluation de l'acteur concerné. Cela génère une base de confiance vérifiée dans chaque secteur de l'immobilier suisse.
 
-`/auth` · `/properties` · `/contracts` · `/transactions` · `/openers` · `/missions` · `/companies` · `/dashboard` · `/ai` (inclut `/ai/estimate`) · `/rfqs` · `/admin` · `/tenants` · `/ratings` · `/favorites` · `/agency` · `/insurance` · `/crm` · `/documents` · `/biens` · `/locataires` · `/docs-althy` · `/paiements` · `/interventions-althy` · `/ouvreurs` · `/profiles-artisans` · `/scoring` · `/notifications` · `/matching` · `/geocode` · `/listings` · `/hunters`
+---
 
-## Points d'attention critiques
+## Le système de notation
 
-- Table `listings` (migration 0001) : colonnes `property_id`, `portals` JSONB — **sans** `owner_id` ni `monthly_rent`
-- Router `/listings` stocke `listing_type`, `monthly_rent`, `sale_price`, `on_*` dans JSONB `portals`
-- Table `hunters` (migration 0012) : colonne `hunter_id` (pas `submitter_id`), **pas de `is_active`**
-- RLS `listings` : passe par `properties.owner_id` via JOIN
-- Frais dossier CHF 90 : carte CB enregistrée à l'inscription, prélevée **uniquement à la réussite**
-- 4 % loyers : ne jamais appeler ça une "commission" — c'est affiché comme "loyer net reçu"
+Tous les acteurs sont notés après chaque interaction réelle. Les bons acteurs remontent dans les résultats de la Sphère. Le badge "Vérifié Althy" s'affiche à partir de 4.5/5 avec 10 avis ou plus.
+
+| Acteur noté | Ce qui est noté | Affichage | Bénéfice |
+|-------------|-----------------|-----------|----------|
+| Artisan | Qualité, délais, propreté, communication | Étoiles 1–5 + avis texte vérifié | Remonte dans les résultats Sphère |
+| Ouvreur | Ponctualité, professionnalisme, rapport, photos | Étoiles + badge "Vérifié Althy" | Reçoit plus de missions automatiquement |
+| Expert | Précision estimations, qualité rapports, délais | Note + spécialités vérifiées | Profil premium visible marketplace |
+| Agence | Réactivité, satisfaction proprios, taux mise en location | Score global agence | Visibilité auprès des proprios |
+| Proprio | Sérieux des paiements, communication locataires | Note interne (visible artisans/ouvreurs) | Attire les meilleurs prestataires |
+| Hunter | Qualité des leads, taux de transformation | Taux de succès visible | Honoraires plus élevés si bon track record |
+| Locataire | Paiement à temps, état logement, communication | Note interne (visible proprios) | Accès prioritaire aux bons logements |
+
+---
+
+## Messages clés par audience
+
+| Pour qui | Message marketing |
+|----------|------------------|
+| Proprio solo | Gérez vos biens vous-même, simplement. Althy s'occupe des documents, des relances, des artisans. Vous gardez le contrôle. |
+| Agence immobilière | Althy est l'outil de votre équipe. Moins de tâches répétitives, plus de temps pour vos clients. Et vos proprios clients ont leur portail dédié. |
+| Artisan | Trouvez des chantiers qualifiés. Recevez les devis, facturez directement. Votre profil vérifié parle pour vous. |
+| Ouvreur | Des missions de visite planifiées automatiquement. Votre zone, vos disponibilités, vos revenus en temps réel. |
+| Locataire | Vos documents, vos quittances, signaler un problème. Tout en un. Simple et gratuit. |
+| Hunter | Apportez des leads. Soyez rémunéré à chaque transaction réussie. Le réseau Althy travaille pour vous. |
+
+---
+
+## La stratégie réseau
+
+Althy grandit par effet réseau naturel — les uns appellent les autres :
+
+| Canal / Mécanisme | Comment ça fonctionne | Impact prévu |
+|-------------------|-----------------------|--------------|
+| Proprio → artisan | Le proprio ajoute un artisan à un chantier, l'artisan reçoit une invitation | 1 proprio = 2–3 artisans |
+| Agence → proprios | L'agence envoie le portail CHF 9 à tous ses clients | 1 agence = 50–300 utilisateurs |
+| Artisan → proprios | L'artisan recommande Althy à ses clients proprios | 1 artisan = 5–15 proprios |
+| Ouvreur → proprios | Le proprio voit la qualité du service et s'inscrit | 1 ouvreur = 3–8 proprios |
+| Estimation gratuite | Capture email → 14 jours gratuits | Tunnel principal |
+| Démo Sphère | Intégration agence en 30 secondes — l'effet WOW = meilleur commercial | 1 démo = 1 agence signée |
+
+---
+
+## Règles de développement
+
+**Langue** : tout en français — URLs, labels, boutons, messages. Aucun mot anglais visible par l'utilisateur final.
+
+**Navigation** :
+- Logo ALTHY cliquable = retour vers `/` sur toutes les pages
+- Bouton `← Retour à althy.ch` sur /login, /register, /forgot-password, /reset-password
+- Header minimal (logo + "Se connecter") sur /tenant/*, /portail/[token], /opener
+- Fil d'ariane sur toutes les sous-pages /app/biens/[id]/*
+- Widget Sphère flottant sur toutes les pages /app/* sauf /app/sphere
+- Bouton "Tableau de bord" en haut droite de /app/sphere
+- Bouton "← Sphère IA" en haut de /app
+
+**Code** :
+- Composants `Althy*` uniquement — jamais `Cathy*`
+- Plans tarifaires centralisés dans `frontend/src/lib/plans.config.ts`
+- Une seule URL par page, toujours en français
+- Une seule entrée "Althy IA" dans la sidebar → /app/sphere
+- Sidebar Paramètres : une seule entrée vers /app/settings, sans sous-liens
+- Variables CSS `--althy-*` partout, jamais de couleurs en dur
+
+**Comportement** :
+- L'humain valide toujours avant exécution
+- Chaque action irréversible a un écran de confirmation
+- Les prix et commissions sont toujours affichés clairement — zéro opacité
+- Maximum 2 clics pour toute action courante
+
+---
+
+## Ce qu'Althy n'est PAS
+
+- Pas un concurrent des agences — il les aide à être meilleures
+- Pas responsable des actions exécutées — l'utilisateur valide et prend la responsabilité
+- Pas opaque — 4% visible, rien d'autre
+- Pas complexe — si ça prend plus de 2 clics, c'est à simplifier
+
+---
+
+## Parcours utilisateur — de A à Z
+
+| # | URL | Expérience utilisateur |
+|---|-----|----------------------|
+| 1 | `/` | Landing : message "Votre assistant immobilier". Boutons : "Se connecter" (haut droite) + "Commencer gratuitement" (CTA orange). Tunnel estimation en accroche. |
+| 2 | `/estimation` | Estimation IA gratuite. Capture email après le résultat. Redirect `/register?email=...&source=estimation`. |
+| 3 | `/login` | Logo ALTHY = lien vers `/`. Bouton `← Retour à althy.ch`. Email + mot de passe. Liens : S'inscrire \| Mot de passe oublié. |
+| 4 | `/register` | Bouton retour. Choix rôle en cards. Redirect `/bienvenue` après inscription. |
+| 5 | `/bienvenue` | 5 étapes max. Pré-rempli si invitation. Sphère s'anime. 2 clics pour être prêt. |
+| 6 | `/app/sphere` | **HUB CENTRAL.** Briefing du jour. Cards actions à valider. Bouton "Tableau de bord" en haut droite. Widget flottant sur les autres pages. |
+| 7 | `/app` | Tableau de bord optionnel. Bouton "← Sphère IA" en haut. Sidebar selon le rôle. |
+| 8 | `/app/*` | Pages spécifiques. Fil d'Ariane. Widget Sphère flottant. |
+| 9 | Portails publics | `/tenant/*` `/portail/[token]` `/opener` : header minimal logo ALTHY + "Se connecter". |
+
+---
+
+## Modèle économique
+
+| Source | Mécanisme |
+|--------|-----------|
+| Abonnement CHF 29/mois | Par utilisateur proprio ou agent d'agence (CHF 23 si annuel) |
+| 4% sur flux financiers | Loyer ou réservation transite par Althy via Stripe Connect |
+| 4% facturé séparément | Client paie portail directement → Althy facture ses 4% au client |
+| Frais dossier CHF 90 | Locataire retenu **uniquement** — jamais prélevé avant la réussite |
+| Commission ouvreurs 15% | Mission planifiée et payée via Althy → 15% pour Althy |
+| Caution locative 10% | Commission versée par Firstcaution/SwissCaution |
+| Portail proprio CHF 9 | Accès portail pour proprios des agences clientes |
+| Expert/Artisan Pro CHF 19 | Abonnement pro pour profil premium + accès missions |
+
+---
+
+## Règles absolues — chaque développement doit les respecter
+
+**TOUJOURS**
+- Tout en **français** — URLs, labels, boutons, messages. Zéro mot anglais visible.
+- Logo ALTHY = retour vers `/` sur toutes les pages
+- Bouton `← Retour à althy.ch` sur `/login` `/register` `/forgot-password` `/reset-password`
+- Header minimal (logo + "Se connecter") sur `/tenant/*` `/portail/[token]` `/opener`
+- Fil d'Ariane sur toutes les sous-pages `/app/biens/[id]/*`
+- Widget Sphère flottant sur toutes les pages `/app/*` sauf `/app/sphere`
+- Bouton "Tableau de bord" en haut droite de `/app/sphere`
+- Bouton "← Sphère IA" en haut de `/app`
+- Variables CSS `--althy-*` partout — jamais de couleurs codées en dur
+- Plans tarifaires depuis `plans.config.ts` — une seule source de vérité
+- 4% transparent sur tous les flux — zéro marge cachée
+- L'humain valide **toujours** avant exécution
+- Système de notation sur chaque transaction/interaction
+- Ton bienveillant — Althy aide tous les acteurs, ne remplace personne
+
+**NE JAMAIS**
+- URLs en anglais (`/properties` `/openers` `/accounting` `/advisor`)
+- Composants nommés `Cathy*` — tout renommer en `Althy*`
+- Marge cachée sur les portails
+- Message comparatif agressif contre les régies ou agences
+- Deux entrées "Althy IA" dans la sidebar
+- Sous-liens Settings dans la sidebar (1 seule entrée → `/app/settings`)
+- Section abonnement dupliquée dans Settings ET `/abonnement`
+- Actions irréversibles sans confirmation utilisateur
+- Doublon de routes — une seule URL française par page
+- Oublier le `CookieBanner` sur les pages publiques (LPD suisse)

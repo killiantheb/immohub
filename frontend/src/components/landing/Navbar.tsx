@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { CathySphere } from "@/components/CathySphere"
+import { AlthySphere } from "@/components/AlthySphere"
 
 const C = {
   bg: "rgba(250,248,244,0.92)",
@@ -53,7 +53,7 @@ export function Navbar() {
       >
         {/* Logo — Sphère + Althy */}
         <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.6rem" }}>
-          <CathySphere size={30} />
+          <AlthySphere size={30} />
           <span
             style={{
               fontFamily: "var(--font-serif), 'Cormorant Garamond', serif",

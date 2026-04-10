@@ -130,16 +130,14 @@ export default function PortailProprioPage({ params }: { params: Promise<{ token
   return (
     <div style={{ minHeight: "100vh", backgroundColor: S.bg, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       {/* Header */}
-      <div style={{ backgroundColor: S.surface, borderBottom: `1px solid ${S.border}`, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: S.orange }}>Althy</div>
-          <div style={{ fontSize: 12, color: S.text3 }}>Portail Propriétaire</div>
-        </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: S.text }}>{data.proprio_name ?? data.proprio_email}</div>
-          {bien && <div style={{ fontSize: 12, color: S.text3 }}>{bien.adresse}, {bien.ville}</div>}
-        </div>
-      </div>
+      <header style={{ height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', background: '#fff', borderBottom: '1px solid #EAE3D9' }}>
+        <a href="/" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '20px', fontWeight: 300, letterSpacing: '4px', color: '#1A1612', textDecoration: 'none' }}>
+          ALTHY
+        </a>
+        <a href="/login" style={{ fontSize: '13px', color: '#8A7A6A', textDecoration: 'none', padding: '7px 16px', border: '1px solid #EAE3D9', borderRadius: '8px' }}>
+          Se connecter
+        </a>
+      </header>
 
       {/* Tabs */}
       <div style={{ backgroundColor: S.surface, borderBottom: `1px solid ${S.border}`, display: "flex", overflowX: "auto", padding: "0 4px" }}>

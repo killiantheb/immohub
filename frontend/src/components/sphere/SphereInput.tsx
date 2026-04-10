@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Send } from "lucide-react";
+import { Camera, Mic, MicOff, Send } from "lucide-react";
+import { api } from "@/lib/api";
+
+interface OcrResult {
+  montant: number | null;
+  date_iso: string | null;
+  fournisseur: string | null;
+  description: string | null;
+  type: string;
+  affectation: string;
+}
 
 interface Props {
   onSend: (message: string) => void;
@@ -23,7 +33,9 @@ export function SphereInput({
   const [value, setValue] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef     = useRef<HTMLInputElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<AnySpeechRecognition>(null);
 
@@ -52,6 +64,39 @@ export function SphereInput({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  }
+
+  async function gererPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset input so same file can be re-selected
+    e.target.value = "";
+    setScanning(true);
+    try {
+      const formData = new FormData();
+      formData.append("fichier", file);
+      const res = await api.post<OcrResult>("/factures/analyser", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const d = res.data;
+      const montantStr = d.montant != null ? `CHF ${d.montant}` : "";
+      const fournisseur = d.fournisseur ?? "Fournisseur inconnu";
+      await api.post("/sphere/actions", {
+        type_action:   "ocr_action",
+        urgence:       "normal",
+        titre:         `Facture ${fournisseur}${montantStr ? " " + montantStr : ""}`,
+        description:   d.description ?? "Facture scannée via Althy",
+        payload:       { ...d, path: "/app/comptabilite" },
+        libelle_cta:   "Affecter au bien",
+        libelle_cta2:  "Voir la comptabilité",
+      });
+      // Notify user in the chat
+      onSend(`📸 Facture analysée — ${fournisseur}${montantStr ? ", " + montantStr : ""}. Elle est dans votre Sphère pour affectation.`);
+    } catch {
+      onSend("📸 Impossible d'analyser cette facture. Réessayez ou utilisez la section Comptabilité.");
+    } finally {
+      setScanning(false);
     }
   }
 
@@ -163,6 +208,40 @@ export function SphereInput({
             padding: 0,
           }}
         />
+
+        {/* Hidden file input — camera + PDF */}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*,application/pdf"
+          capture="environment"
+          style={{ display: "none" }}
+          onChange={gererPhoto}
+        />
+
+        {/* Camera button */}
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={disabled || scanning || remainingToday === 0}
+          title="Scanner une facture"
+          style={{
+            flexShrink: 0,
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            border: "none",
+            background: scanning ? "var(--althy-orange-bg)" : "transparent",
+            color: scanning ? "var(--althy-orange)" : "var(--althy-text-3)",
+            cursor: disabled || scanning ? "not-allowed" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.2s",
+            animation: scanning ? "althyPulse 1s ease-in-out infinite" : "none",
+          }}
+        >
+          <Camera size={16} />
+        </button>
 
         {/* Voice button */}
         {voiceSupported && (

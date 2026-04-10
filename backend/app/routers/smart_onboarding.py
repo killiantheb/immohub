@@ -132,3 +132,49 @@ async def onboard_from_manual(data: ManualInput, _=rate_limit(5, 60)) -> Streami
             yield chunk
 
     return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+# ── Session endpoint (used by /bienvenue?auto=true) ───────────────────────────
+
+from fastapi import HTTPException
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.database import get_db
+from typing import Annotated
+
+_DbDep = Annotated[AsyncSession, Depends(get_db)]
+
+
+@router.get("/session/{session_id}")
+async def get_onboarding_session(session_id: str, db: _DbDep) -> dict:
+    """Récupère les données d'une session d'onboarding (mode auto-invitation)."""
+    try:
+        row = await db.execute(
+            text("""
+                SELECT id, role, email, scraped_data, status, created_at
+                FROM onboarding_sessions
+                WHERE id = :sid
+                LIMIT 1
+            """),
+            {"sid": session_id},
+        )
+        r = row.one_or_none()
+    except Exception:
+        raise HTTPException(404, "Session introuvable")
+
+    if not r:
+        raise HTTPException(404, "Session introuvable")
+
+    scraped = r.scraped_data or {}
+    if isinstance(scraped, str):
+        import json as _j
+        scraped = _j.loads(scraped)
+
+    return {
+        "session_id": str(r.id),
+        "role": r.role,
+        "email": r.email,
+        "status": r.status,
+        "scraped_data": scraped,
+        "created_at": r.created_at.isoformat() if r.created_at else None,
+    }

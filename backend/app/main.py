@@ -43,6 +43,14 @@ from app.routers.portail import router as portail_router
 from app.routers.integrations import router as integrations_router
 from app.routers.vente import router as vente_router
 from app.routers.rgpd import router as rgpd_router
+from app.routers.sphere_agent import router as sphere_router
+from app.routers.notations import router as notations_router
+from app.routers.oauth import router as oauth_router
+from app.routers.factures import router as factures_router
+from app.routers.messagerie import router as messagerie_router
+from app.routers.agenda import router as agenda_router
+from app.routers.whatsapp import router as whatsapp_router
+from app.routers.onboarding import router as onboarding_router
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -173,6 +181,14 @@ app.include_router(portail_router, prefix="/api/v1/portail", tags=["portail"])
 app.include_router(integrations_router, prefix="/api/v1/integrations", tags=["integrations"])
 app.include_router(vente_router, prefix="/api/v1/vente", tags=["vente"])
 app.include_router(rgpd_router, prefix="/api/v1/rgpd", tags=["rgpd"])
+app.include_router(sphere_router, prefix="/api/v1", tags=["sphere"])
+app.include_router(notations_router, prefix="/api/v1", tags=["notations"])
+app.include_router(oauth_router, prefix="/api/v1", tags=["oauth"])
+app.include_router(factures_router, prefix="/api/v1", tags=["factures"])
+app.include_router(messagerie_router, prefix="/api/v1", tags=["messagerie"])
+app.include_router(agenda_router, prefix="/api/v1", tags=["agenda"])
+app.include_router(whatsapp_router, prefix="/api/v1", tags=["whatsapp"])
+app.include_router(onboarding_router, prefix="/api/v1", tags=["onboarding"])
 
 
 # ── Health check ──────────────────────────────────────────────────────────────

@@ -65,13 +65,20 @@ function LoginContent() {
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen" style={{ position: "relative" }}>
+      {/* ── Bouton retour ── */}
+      <div style={{ position: "absolute", top: "20px", left: "24px", zIndex: 10 }}>
+        <Link href="/" style={{ fontSize: "13px", color: "var(--althy-text-3, #8A7A6A)", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}>
+          ← Retour à althy.ch
+        </Link>
+      </div>
+
       {/* ── Left branding panel ── */}
       <div className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center bg-primary-600 p-12 text-white">
-        <div className="mb-8 flex items-center gap-4">
+        <Link href="/" className="mb-8 flex items-center gap-4" style={{ textDecoration: "none", color: "inherit" }}>
           <AlthyLogo size={52} />
           <span className="text-4xl font-bold tracking-tight">ALTHY</span>
-        </div>
+        </Link>
         <p className="max-w-sm text-center text-lg text-primary-100">
           La plateforme tout-en-un pour gérer vos biens, contrats et transactions
           immobilières.
@@ -95,10 +102,10 @@ function LoginContent() {
       <div className="flex w-full items-center justify-center bg-beige-100 px-6 lg:w-1/2">
         <div className="w-full max-w-md">
           {/* Mobile logo */}
-          <div className="mb-8 flex items-center justify-center gap-2 lg:hidden">
+          <Link href="/" className="mb-8 flex items-center justify-center gap-2 lg:hidden" style={{ textDecoration: "none", color: "inherit" }}>
             <AlthyLogo size={32} />
             <span className="text-2xl font-bold text-gray-900">ALTHY</span>
-          </div>
+          </Link>
 
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900">Connexion</h1>

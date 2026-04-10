@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { CathySphere } from '@/components/CathySphere'
+import { AlthySphere } from '@/components/AlthySphere'
 import { baseURL } from '@/lib/api'
 
 const S = {
@@ -189,7 +189,7 @@ export function SmartOnboarding({ onComplete }: Props) {
               @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
               @keyframes pulse{0%{transform:scale(1)}100%{transform:scale(1.05)}}
             `}</style>
-            <CathySphere size={100} speaking={speaking} />
+            <AlthySphere size={100} speaking={speaking} />
           </div>
           <span style={{ fontFamily: 'var(--font-serif)', fontSize: '10px', letterSpacing: '6px', color: S.orange, textTransform: 'uppercase', marginTop: '0.6rem' }}>Althy</span>
         </div>

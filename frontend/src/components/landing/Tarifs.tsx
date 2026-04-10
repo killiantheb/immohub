@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { PLANS } from "@/lib/data/landing"
+import { PLANS } from "@/lib/plans.config"
 import Link from "next/link"
 
 const C = {
@@ -62,20 +62,20 @@ export function Tarifs() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem", alignItems: "start" }}>
           {PLANS.map((plan, i) => (
             <motion.div
-              key={plan.name}
+              key={plan.id}
               initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ duration: 0.6, delay: i * 0.12 }}
               style={{
-                background: plan.featured ? C.orangeBg : C.surface,
-                border: plan.featured ? `1px solid ${C.orangeBorder}` : `1px solid ${C.border}`,
+                background: plan.vedette ? C.orangeBg : C.surface,
+                border: plan.vedette ? `1px solid ${C.orangeBorder}` : `1px solid ${C.border}`,
                 borderRadius: "1.25rem",
                 padding: "2.25rem",
                 position: "relative",
-                transform: plan.featured ? "scale(1.02)" : "scale(1)",
-                boxShadow: plan.featured ? "0 8px 32px rgba(232,96,44,0.12)" : "0 2px 12px rgba(40,18,8,0.06)",
+                transform: plan.vedette ? "scale(1.02)" : "scale(1)",
+                boxShadow: plan.vedette ? "0 8px 32px rgba(232,96,44,0.12)" : "0 2px 12px rgba(40,18,8,0.06)",
               }}
             >
-              {plan.badge && (
+              {plan.vedette && (
                 <div style={{
                   position: "absolute", top: "-1px", left: "50%",
                   transform: "translateX(-50%) translateY(-50%)",
@@ -84,32 +84,32 @@ export function Tarifs() {
                   padding: "0.3rem 0.9rem", borderRadius: "100px",
                   letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap",
                 }}>
-                  {plan.badge}
+                  Le plus populaire
                 </div>
               )}
 
               <div style={{ color: C.orange, fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: "1.25rem" }}>
-                {plan.name}
+                {plan.nom}
               </div>
 
               <div style={{ marginBottom: "0.5rem" }}>
                 <span style={{ color: C.text, fontSize: "3rem", fontWeight: 700, lineHeight: 1, letterSpacing: "-0.03em" }}>
-                  {plan.currency} {plan.price}
+                  {plan.prix === 0 ? "Gratuit" : `CHF ${plan.prix}`}
                 </span>
               </div>
               <div style={{ color: C.textMuted, fontSize: "0.8125rem", marginBottom: "2rem" }}>
-                {plan.period}
+                {plan.periode}
               </div>
 
               <Link
-                href="/app"
+                href="/register"
                 style={{
                   display: "block", textAlign: "center",
-                  background: plan.featured ? C.orange : "transparent",
-                  color: plan.featured ? "#FFFFFF" : C.text,
-                  border: plan.featured ? "none" : `1px solid ${C.border}`,
+                  background: plan.vedette ? C.orange : "transparent",
+                  color: plan.vedette ? "#FFFFFF" : C.text,
+                  border: plan.vedette ? "none" : `1px solid ${C.border}`,
                   borderRadius: "100px", padding: "0.75rem 1.5rem",
-                  fontSize: "0.9375rem", fontWeight: plan.featured ? 700 : 500,
+                  fontSize: "0.9375rem", fontWeight: plan.vedette ? 700 : 500,
                   textDecoration: "none", marginBottom: "2rem", transition: "opacity 0.2s",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
@@ -121,7 +121,7 @@ export function Tarifs() {
               <div style={{ height: 1, background: C.border, marginBottom: "1.5rem" }} />
 
               <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
-                {plan.features.map((feat) => (
+                {plan.fonctionnalites.map((feat) => (
                   <div key={feat} style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem" }}>
                     <CheckIcon />
                     <span style={{ color: C.textMid, fontSize: "0.875rem", lineHeight: 1.5 }}>{feat}</span>

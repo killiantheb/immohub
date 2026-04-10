@@ -52,20 +52,20 @@ const LEGACY_MAP: Partial<Record<AppRole, AppRole>> = {
 /** Sections accessibles par rôle (mirrors backend ROLE_SECTIONS) */
 export const ROLE_SECTIONS: Record<AppRole, string[]> = {
   super_admin:      ["*"],
-  proprio_solo:     ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents"],
-  agence:           ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail"],
-  portail_proprio:  ["dashboard", "biens", "finances", "documents"],
-  opener:           ["dashboard", "sphere", "missions", "interventions", "finances", "abonnement"],
-  artisan:          ["dashboard", "sphere", "interventions", "finances", "abonnement"],
-  expert:           ["dashboard", "sphere", "biens", "finances", "abonnement"],
-  hunter:           ["dashboard", "sphere", "hunters", "abonnement"],
-  locataire:        ["dashboard", "sphere", "biens", "finances", "documents"],
-  acheteur_premium: ["dashboard", "sphere", "listings"],
+  proprio_solo:     ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "ouvreurs", "vente", "settings", "publications", "messages", "agenda", "whatsapp"],
+  agence:           ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail", "ouvreurs", "vente", "settings", "publications", "messages", "agenda", "whatsapp", "artisans", "onboarding"],
+  portail_proprio:  ["dashboard", "biens", "finances", "documents", "settings"],
+  opener:           ["dashboard", "sphere", "missions", "interventions", "finances", "abonnement", "ouvreurs", "settings", "messages", "agenda", "whatsapp"],
+  artisan:          ["dashboard", "sphere", "interventions", "finances", "abonnement", "artisans", "settings", "messages", "agenda", "whatsapp"],
+  expert:           ["dashboard", "sphere", "biens", "finances", "abonnement", "settings", "messages", "agenda"],
+  hunter:           ["dashboard", "sphere", "hunters", "abonnement", "vente", "settings", "messages"],
+  locataire:        ["dashboard", "sphere", "biens", "finances", "documents", "settings", "messages"],
+  acheteur_premium: ["dashboard", "sphere", "listings", "settings", "vente", "messages"],
   // Legacy aliases (same sections as canonical)
-  owner:    ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents"],
-  agency:   ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail"],
-  tenant:   ["dashboard", "sphere", "biens", "finances", "documents"],
-  company:  ["dashboard", "sphere", "interventions", "finances", "abonnement"],
+  owner:    ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "ouvreurs", "vente", "settings", "publications", "messages", "agenda", "whatsapp"],
+  agency:   ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail", "ouvreurs", "vente", "settings", "publications", "messages", "agenda", "whatsapp", "artisans", "onboarding"],
+  tenant:   ["dashboard", "sphere", "biens", "finances", "documents", "settings", "messages"],
+  company:  ["dashboard", "sphere", "interventions", "finances", "abonnement", "artisans", "settings", "messages", "agenda", "whatsapp"],
 };
 
 /** Plan tarifaire par rôle */

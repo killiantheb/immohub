@@ -23,7 +23,12 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-beige-100 px-6">
+    <div className="flex min-h-screen items-center justify-center bg-beige-100 px-6" style={{ position: "relative" }}>
+      <div style={{ position: "absolute", top: "20px", left: "24px" }}>
+        <Link href="/" style={{ fontSize: "13px", color: "var(--althy-text-3, #8A7A6A)", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}>
+          ← Retour à althy.ch
+        </Link>
+      </div>
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <Link href="/" style={{ fontFamily: 'var(--font-serif)', fontSize: 28, fontWeight: 300, color: '#D4601A', letterSpacing: '3px', textDecoration: 'none', display: 'block' }}>Althy</Link>

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Sparkles, Zap, Building2, Crown, ArrowRight, Shield, Loader2 } from "lucide-react";
+import { Check, Sparkles, Zap, Building2, Crown, Shield, Loader2 } from "lucide-react";
 import { useUser } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { PLANS } from "@/lib/plans.config";
 
 const S = {
   bg:        "var(--althy-bg)",
@@ -22,89 +23,13 @@ const S = {
   shadowMd:  "var(--althy-shadow-md)",
 } as const;
 
-const PLANS = [
-  {
-    id:    "starter",
-    name:  "Starter",
-    price: 0,
-    period: "Gratuit 14 jours",
-    icon:  <Sparkles size={20} />,
-    color: S.text2,
-    features: [
-      "Jusqu'à 2 biens",
-      "Documents IA illimités",
-      "Bail, EDL, quittances",
-      "1 utilisateur",
-      "Support email",
-    ],
-    cta:   "Commencer gratuitement",
-    note:  "Sans carte de crédit",
-    highlight: false,
-  },
-  {
-    id:    "proprio",
-    name:  "Proprio",
-    price: 29,
-    period: "/mois · CHF 23 si annuel",
-    icon:  <Zap size={20} />,
-    color: "var(--althy-orange)",
-    features: [
-      "Jusqu'à 15 biens",
-      "Documents IA illimités",
-      "Sphère IA : 30 interactions/jour",
-      "Marketplace ouvreurs & artisans",
-      "Gestion locataires complète",
-      "Paiements via Stripe (4% commission)",
-      "Annonces Homegate / Immoscout",
-      "Rapport financier mensuel",
-      "Support prioritaire",
-    ],
-    cta:   "Choisir Proprio",
-    note:  "Économisez CHF 72/an avec l'annuel",
-    highlight: true,
-  },
-  {
-    id:    "agence",
-    name:  "Agence",
-    price: 29,
-    period: "/agent/mois",
-    icon:  <Building2 size={20} />,
-    color: S.text,
-    features: [
-      "Biens illimités",
-      "Multi-agents (2–50)",
-      "Documents IA illimités",
-      "Sphère IA : 100 interactions/jour",
-      "Dashboard agence centralisé",
-      "Comptabilité avancée (PPE inclus)",
-      "API accès données marché",
-      "Intégration CRM agence",
-      "Account manager dédié",
-    ],
-    cta:   "Démo agence",
-    note:  "Tarif dégressif dès 5 agents",
-    highlight: false,
-  },
-  {
-    id:    "expert",
-    name:  "Pro Expert",
-    price: 19,
-    period: "/mois",
-    icon:  <Crown size={20} />,
-    color: "var(--althy-amber)",
-    features: [
-      "Profil expert vérifié",
-      "Géomètre, archi, photographe, évaluateur",
-      "Accès aux missions Althy",
-      "Facturation automatique",
-      "Note et avis vérifiés",
-      "Accès rapport de marché",
-    ],
-    cta:   "Devenir Expert",
-    note:  "Profil de base gratuit",
-    highlight: false,
-  },
-];
+// Icônes et couleurs par plan (non sérialisables → rester dans le composant)
+const PLAN_META: Record<string, { icon: React.ReactNode; color: string }> = {
+  decouverte: { icon: <Sparkles size={20} />, color: S.text2 },
+  proprio:    { icon: <Zap size={20} />,      color: "var(--althy-orange)" },
+  agence:     { icon: <Building2 size={20} />, color: S.text },
+  expert:     { icon: <Crown size={20} />,    color: "var(--althy-amber)" },
+};
 
 const FEATURES_COMPARE = [
   { name: "Biens gérés",                starter: "2",           proprio: "15",          agence: "Illimité" },
@@ -140,7 +65,7 @@ export default function AbonnementPage() {
   const subStatus = subscription?.status ?? "no_subscription";
 
   async function handleSubscribe(planId: string) {
-    if (planId === "starter") return;
+    if (planId === "decouverte") return;
     setSubscribing(planId);
     try {
       const res = await api.post("/stripe/checkout", { plan: planId });
@@ -220,19 +145,20 @@ export default function AbonnementPage() {
       {/* Plan cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20, marginBottom: 48 }}>
         {PLANS.map(plan => {
-          const price = annual && plan.price > 0 ? Math.round(plan.price * 0.8) : plan.price;
+          const prix = annual && plan.prix > 0 ? Math.round(plan.prix * 0.8) : plan.prix;
           const isCurrent = plan.id === currentPlan;
+          const meta = PLAN_META[plan.id] ?? { icon: <Sparkles size={20} />, color: S.text2 };
           return (
             <div
               key={plan.id}
               style={{
                 backgroundColor: S.surface,
-                border: plan.highlight ? `2px solid var(--althy-orange)` : `1px solid ${S.border}`,
+                border: plan.vedette ? `2px solid var(--althy-orange)` : `1px solid ${S.border}`,
                 borderRadius: 20, padding: 24, position: "relative",
-                boxShadow: plan.highlight ? "0 8px 32px rgba(232,96,44,0.15)" : S.shadow,
+                boxShadow: plan.vedette ? "0 8px 32px rgba(232,96,44,0.15)" : S.shadow,
               }}
             >
-              {plan.highlight && (
+              {plan.vedette && (
                 <div style={{
                   position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
                   backgroundColor: "var(--althy-orange)", color: "#fff",
@@ -243,18 +169,18 @@ export default function AbonnementPage() {
                 </div>
               )}
 
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, color: plan.color }}>
-                {plan.icon}
-                <span style={{ fontWeight: 700, fontSize: 16 }}>{plan.name}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, color: meta.color }}>
+                {meta.icon}
+                <span style={{ fontWeight: 700, fontSize: 16 }}>{plan.nom}</span>
               </div>
 
               <div style={{ marginBottom: 20 }}>
-                <span style={{ fontSize: 36, fontWeight: 800, color: S.text }}>{price > 0 ? `CHF ${price}` : "Gratuit"}</span>
-                <span style={{ fontSize: 12, color: S.text3, marginLeft: 4 }}>{annual && plan.price > 0 ? "/mois · facturé annuellement" : plan.period}</span>
+                <span style={{ fontSize: 36, fontWeight: 800, color: S.text }}>{prix > 0 ? `CHF ${prix}` : "Gratuit"}</span>
+                <span style={{ fontSize: 12, color: S.text3, marginLeft: 4 }}>{annual && plan.prix > 0 ? "/mois · facturé annuellement" : plan.periode}</span>
               </div>
 
               <ul style={{ listStyle: "none", padding: 0, margin: "0 0 20px", display: "flex", flexDirection: "column", gap: 8 }}>
-                {plan.features.map(f => (
+                {plan.fonctionnalites.map(f => (
                   <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: S.text2 }}>
                     <Check size={14} color="var(--althy-orange)" style={{ flexShrink: 0, marginTop: 2 }} />
                     {f}
@@ -264,14 +190,14 @@ export default function AbonnementPage() {
 
               <button
                 disabled={isCurrent || subscribing === plan.id}
-                onClick={() => !isCurrent && plan.id !== "starter" ? handleSubscribe(plan.id) : undefined}
+                onClick={() => !isCurrent && plan.id !== "decouverte" ? handleSubscribe(plan.id) : undefined}
                 style={{
                   width: "100%", padding: "10px 0",
-                  backgroundColor: isCurrent ? S.surface2 : plan.highlight ? "var(--althy-orange)" : S.surface2,
-                  color: isCurrent ? S.text3 : plan.highlight ? "#fff" : S.text,
-                  border: isCurrent ? `1px solid ${S.border}` : plan.highlight ? "none" : `1px solid ${S.border}`,
+                  backgroundColor: isCurrent ? S.surface2 : plan.vedette ? "var(--althy-orange)" : S.surface2,
+                  color: isCurrent ? S.text3 : plan.vedette ? "#fff" : S.text,
+                  border: isCurrent ? `1px solid ${S.border}` : plan.vedette ? "none" : `1px solid ${S.border}`,
                   borderRadius: 10, fontSize: 13, fontWeight: 600,
-                  cursor: isCurrent || plan.id === "starter" ? "default" : "pointer",
+                  cursor: isCurrent || plan.id === "decouverte" ? "default" : "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                   opacity: subscribing && subscribing !== plan.id ? 0.6 : 1,
                 }}
@@ -279,7 +205,6 @@ export default function AbonnementPage() {
                 {subscribing === plan.id
                   ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Redirection…</>
                   : isCurrent ? "Plan actuel" : plan.cta}
-                {!isCurrent && subscribing !== plan.id && <ArrowRight size={14} />}
               </button>
               {!isCurrent && <p style={{ textAlign: "center", fontSize: 11, color: S.text3, margin: "6px 0 0" }}>{plan.note}</p>}
             </div>
