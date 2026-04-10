@@ -133,7 +133,7 @@ export default function BiensPage() {
 
   const { data, isLoading } = useProperties(filtre ? { status: filtre } : {});
 
-  const biens: Property[] = data?.items ?? data?.results ?? (Array.isArray(data) ? data as Property[] : []);
+  const biens: Property[] = data?.items ?? [];
 
   const filtered = biens.filter(b => {
     if (!search) return true;
