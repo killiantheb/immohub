@@ -4,8 +4,9 @@ Les endpoints GET /messagerie/non-lus et /whatsapp/non-lus sont appelés
 toutes les 60s par le DashboardSidebar. Ces index partiels garantissent
 une réponse < 10ms même sur de grandes tables.
 
-CREATE INDEX CONCURRENTLY ne peut pas s'exécuter dans une transaction Alembic.
-On utilise AUTOCOMMIT sur la connexion pour les créer hors transaction.
+Note : CREATE INDEX sans CONCURRENTLY pose un verrou bref en écriture.
+Pour une migration sur une table très volumineuse en production, créer
+l'index manuellement avec CONCURRENTLY AVANT de lancer alembic upgrade.
 
 Revision ID: 0025
 Revises: 0024
@@ -23,33 +24,25 @@ depends_on = None
 
 
 def upgrade() -> None:
-    conn = op.get_bind()
-    # CONCURRENTLY exige l'absence de transaction — on passe en autocommit
-    conn.execution_options(isolation_level="AUTOCOMMIT")
-
     # ── email_cache : index partiel (user_id) WHERE is_processed = FALSE ──────
-    # Query cible :
-    #   SELECT COUNT(*) FROM email_cache
-    #   WHERE user_id = :uid AND is_processed = FALSE
-    conn.execute(text("""
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_email_cache_nonlus
+    # Cible : SELECT COUNT(*) FROM email_cache
+    #         WHERE user_id = :uid AND is_processed = FALSE
+    op.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_email_cache_nonlus
             ON email_cache (user_id)
             WHERE is_processed = FALSE
     """))
 
     # ── whatsapp_conversations : index partiel sur unread_count > 0 ──────────
-    # Query cible :
-    #   SELECT SUM(unread_count) FROM whatsapp_conversations
-    #   WHERE user_id = :uid
-    conn.execute(text("""
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_whatsapp_conv_unread
+    # Cible : SELECT SUM(unread_count) FROM whatsapp_conversations
+    #         WHERE user_id = :uid
+    op.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_whatsapp_conv_unread
             ON whatsapp_conversations (user_id, unread_count)
             WHERE unread_count > 0
     """))
 
 
 def downgrade() -> None:
-    conn = op.get_bind()
-    conn.execution_options(isolation_level="AUTOCOMMIT")
-    conn.execute(text("DROP INDEX CONCURRENTLY IF EXISTS idx_email_cache_nonlus"))
-    conn.execute(text("DROP INDEX CONCURRENTLY IF EXISTS idx_whatsapp_conv_unread"))
+    op.execute(text("DROP INDEX IF EXISTS idx_email_cache_nonlus"))
+    op.execute(text("DROP INDEX IF EXISTS idx_whatsapp_conv_unread"))
