@@ -1,0 +1,302 @@
+// src/components/dashboards/DashBoardShared.tsx
+"use client";
+
+import Link from "next/link";
+import type { ReactNode, CSSProperties } from "react";
+
+// ── Design constants ──────────────────────────────────────────────────────────
+export const DC = {
+  bg:      "#F4F1EC",
+  surface: "#FFFFFF",
+  orange:  "#E8602C",
+  text:    "#1A1612",
+  muted:   "#6B5E52",
+  border:  "rgba(26,22,18,0.07)",
+  shadow:  "0 2px 12px rgba(26,22,18,0.06)",
+  serif:   "var(--font-serif, Fraunces, Georgia, serif)",
+} as const;
+
+// ── Role colors ───────────────────────────────────────────────────────────────
+export const ROLE_COLORS: Record<string, { badge: string; bg: string }> = {
+  proprio_solo:     { badge: "#E8602C", bg: "rgba(232,96,44,0.10)" },
+  agence:           { badge: "#2563EB", bg: "rgba(37,99,235,0.10)" },
+  opener:           { badge: "#0891B2", bg: "rgba(8,145,178,0.10)" },
+  artisan:          { badge: "#16A34A", bg: "rgba(22,163,74,0.10)" },
+  expert:           { badge: "#7C3AED", bg: "rgba(124,58,237,0.10)" },
+  hunter:           { badge: "#D97706", bg: "rgba(217,119,6,0.10)" },
+  locataire:        { badge: "#64748B", bg: "rgba(100,116,139,0.10)" },
+  acheteur_premium: { badge: "#0E7490", bg: "rgba(14,116,144,0.10)" },
+};
+
+export const ROLE_LABEL: Record<string, string> = {
+  proprio_solo:     "Propriétaire",
+  agence:           "Agence",
+  opener:           "Ouvreur",
+  artisan:          "Artisan",
+  expert:           "Expert",
+  hunter:           "Hunter",
+  locataire:        "Locataire",
+  acheteur_premium: "Acheteur",
+};
+
+// ── DCard ─────────────────────────────────────────────────────────────────────
+interface DCardProps {
+  children: ReactNode;
+  style?: CSSProperties;
+}
+export function DCard({ children, style }: DCardProps) {
+  return (
+    <div
+      style={{
+        background: DC.surface,
+        borderRadius: 14,
+        border: `1px solid ${DC.border}`,
+        boxShadow: DC.shadow,
+        padding: "1.25rem",
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ── DKpi ──────────────────────────────────────────────────────────────────────
+interface DKpiProps {
+  icon: React.ElementType;
+  iconColor: string;
+  iconBg: string;
+  value: string;
+  label: string;
+  sub?: string;
+  trend?: "up" | "down" | "neutral";
+}
+export function DKpi({ icon: Icon, iconColor, iconBg, value, label, sub, trend }: DKpiProps) {
+  return (
+    <DCard>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          marginBottom: "0.75rem",
+        }}
+      >
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            background: iconBg,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Icon size={18} style={{ color: iconColor }} />
+        </div>
+        {trend && trend !== "neutral" && (
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: trend === "up" ? "#16A34A" : "#DC2626",
+            }}
+          >
+            {trend === "up" ? "▲" : "▼"}
+          </span>
+        )}
+      </div>
+      <p
+        style={{
+          fontSize: 22,
+          fontWeight: 800,
+          color: DC.text,
+          marginBottom: 2,
+          letterSpacing: "-0.02em",
+          fontFamily: DC.serif,
+        }}
+      >
+        {value}
+      </p>
+      <p style={{ fontSize: 13, color: DC.muted, fontWeight: 500 }}>{label}</p>
+      {sub && <p style={{ fontSize: 11, color: DC.muted, marginTop: 2, opacity: 0.8 }}>{sub}</p>}
+    </DCard>
+  );
+}
+
+// ── DRoleHeader ───────────────────────────────────────────────────────────────
+interface DRoleHeaderProps {
+  role: string;
+  badge?: string;
+  badgeBg?: string;
+  initials?: string;
+}
+export function DRoleHeader({ role, badge, badgeBg, initials }: DRoleHeaderProps) {
+  const colors = ROLE_COLORS[role] ?? { badge: DC.orange, bg: "rgba(232,96,44,0.10)" };
+  const badgeColor = badge ?? colors.badge;
+  const badgeBgColor = badgeBg ?? colors.bg;
+  const roleLabel = ROLE_LABEL[role] ?? role;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: "2rem",
+        flexWrap: "wrap",
+        gap: 12,
+      }}
+    >
+      {/* Left: Logo */}
+      <Link
+        href="/"
+        style={{
+          fontFamily: DC.serif,
+          fontSize: 22,
+          fontWeight: 700,
+          color: DC.text,
+          textDecoration: "none",
+          letterSpacing: "0.04em",
+        }}
+      >
+        ALTHY
+      </Link>
+
+      {/* Center: role badge */}
+      <span
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          padding: "4px 14px",
+          borderRadius: 20,
+          color: badgeColor,
+          background: badgeBgColor,
+          letterSpacing: "0.04em",
+        }}
+      >
+        {roleLabel}
+      </span>
+
+      {/* Right: Sphère link + avatar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <Link
+          href="/app/sphere"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "7px 16px",
+            borderRadius: 10,
+            background: DC.orange,
+            color: "#fff",
+            fontSize: 12,
+            fontWeight: 700,
+            textDecoration: "none",
+          }}
+        >
+          Sphère IA
+        </Link>
+        {initials && (
+          <div
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: "50%",
+              background: "rgba(26,22,18,0.08)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 13,
+              fontWeight: 700,
+              color: DC.muted,
+            }}
+          >
+            {initials.slice(0, 2).toUpperCase()}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── DSectionTitle ─────────────────────────────────────────────────────────────
+interface DSectionTitleProps {
+  children: ReactNode;
+  style?: CSSProperties;
+}
+export function DSectionTitle({ children, style }: DSectionTitleProps) {
+  return (
+    <h2
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        fontSize: 15,
+        fontWeight: 600,
+        color: DC.text,
+        marginBottom: "1rem",
+        ...style,
+      }}
+    >
+      <span
+        style={{
+          display: "inline-block",
+          width: 3,
+          height: 18,
+          borderRadius: 2,
+          background: DC.orange,
+          flexShrink: 0,
+        }}
+      />
+      {children}
+    </h2>
+  );
+}
+
+// ── DEmptyState ───────────────────────────────────────────────────────────────
+interface DEmptyStateProps {
+  icon: React.ElementType;
+  title: string;
+  subtitle?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+}
+export function DEmptyState({ icon: Icon, title, subtitle, ctaLabel, ctaHref }: DEmptyStateProps) {
+  return (
+    <div
+      style={{
+        textAlign: "center",
+        padding: "2.5rem 1rem",
+        color: DC.muted,
+      }}
+    >
+      <Icon size={32} style={{ margin: "0 auto 0.75rem", opacity: 0.35, color: DC.muted }} />
+      <p style={{ fontWeight: 600, color: DC.text, marginBottom: 4, fontSize: 15 }}>{title}</p>
+      {subtitle && (
+        <p style={{ fontSize: 13, color: DC.muted, marginBottom: ctaLabel ? "1rem" : 0 }}>
+          {subtitle}
+        </p>
+      )}
+      {ctaLabel && ctaHref && (
+        <Link
+          href={ctaHref}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            padding: "8px 20px",
+            borderRadius: 10,
+            background: DC.orange,
+            color: "#fff",
+            fontSize: 13,
+            fontWeight: 700,
+            textDecoration: "none",
+          }}
+        >
+          {ctaLabel}
+        </Link>
+      )}
+    </div>
+  );
+}

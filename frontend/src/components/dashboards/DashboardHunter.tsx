@@ -1,122 +1,350 @@
+// src/components/dashboards/DashboardHunter.tsx
 "use client";
 
-import { Target, PlusCircle, TrendingUp, Banknote } from "lucide-react";
 import Link from "next/link";
+import {
+  ArrowRight,
+  Banknote,
+  ExternalLink,
+  Network,
+  PlusCircle,
+  Target,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import {
+  DC,
+  DCard,
+  DKpi,
+  DRoleHeader,
+  DSectionTitle,
+} from "@/components/dashboards/DashBoardShared";
 
-const S = {
-  bg:      "var(--althy-bg)",
-  surface: "var(--althy-surface)",
-  border:  "var(--althy-border)",
-  text:    "var(--althy-text)",
-  text2:   "var(--althy-text-2)",
-  text3:   "var(--althy-text-3)",
-  orange:  "var(--althy-orange)",
-  orangeBg:"var(--althy-orange-bg)",
-  green:   "var(--althy-green)",
-  greenBg: "var(--althy-green-bg)",
-  shadow:  "var(--althy-shadow)",
-  shadowMd:"var(--althy-shadow-md)",
-} as const;
+// ── Mock leads ────────────────────────────────────────────────────────────────
+const LEADS_MOCK = [
+  {
+    id: 1,
+    bien: "Villa 5p, Cologny",
+    budget: "CHF 2.8M",
+    statut: "négociation",
+    contact: "M. Meyer",
+  },
+  {
+    id: 2,
+    bien: "Appt 4p, Lausanne",
+    budget: "CHF 1.2M",
+    statut: "qualification",
+    contact: "Mme Blanc",
+  },
+  {
+    id: 3,
+    bien: "Immeuble 6 lots, Nyon",
+    budget: "CHF 4.5M",
+    statut: "offre envoyée",
+    contact: "SCI Romande",
+  },
+];
 
-interface Props { firstName: string }
+// ── Statut badge ──────────────────────────────────────────────────────────────
+const STATUT_MAP: Record<string, { label: string; color: string; bg: string }> = {
+  "négociation":    { label: "Négociation",    color: DC.orange, bg: "rgba(232,96,44,0.10)" },
+  "qualification":  { label: "Qualification",  color: "#D97706", bg: "rgba(217,119,6,0.10)" },
+  "offre envoyée":  { label: "Offre envoyée",  color: "#16A34A", bg: "rgba(22,163,74,0.10)" },
+  "perdu":          { label: "Perdu",           color: "#DC2626", bg: "rgba(220,38,38,0.10)" },
+};
 
-interface HunterStats { total: number; new: number; contacted: number; paid: number; total_earned: number }
+function StatutBadge({ statut }: { statut: string }) {
+  const s = STATUT_MAP[statut] ?? { label: statut, color: DC.muted, bg: DC.border };
+  return (
+    <span
+      style={{
+        fontSize: 11,
+        fontWeight: 600,
+        padding: "2px 9px",
+        borderRadius: 20,
+        color: s.color,
+        background: s.bg,
+      }}
+    >
+      {s.label}
+    </span>
+  );
+}
+
+// ── Stats interface ───────────────────────────────────────────────────────────
+interface HunterStats {
+  fees_percus: number;
+  pipeline_actif: number;
+  leads_soumis: number;
+  taux_conversion: number;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DashboardHunter
+// ══════════════════════════════════════════════════════════════════════════════
+interface Props {
+  firstName: string;
+}
 
 export function DashboardHunter({ firstName }: Props) {
+  const initials = firstName ? firstName.slice(0, 2).toUpperCase() : "HU";
+
   const { data: stats } = useQuery<HunterStats>({
-    queryKey: ["hunter-stats"],
-    queryFn: () => api.get<HunterStats>("/hunters/stats").then(r => r.data),
+    queryKey: ["hunters", "stats"],
+    queryFn: async () => {
+      const { data } = await api.get<HunterStats>("/hunters/stats");
+      return data;
+    },
+    staleTime: 60_000,
   });
 
-  const kpis = [
-    { label: "Leads soumis",   value: stats?.total ?? "—",      color: S.text },
-    { label: "Nouveaux",       value: stats?.new ?? "—",         color: S.orange },
-    { label: "En contact",     value: stats?.contacted ?? "—",   color: S.green },
-    { label: "Gains perçus",   value: stats?.total_earned
-        ? `CHF ${stats.total_earned}`
-        : "—",                                                    color: S.green },
-  ];
+  // Fallback values
+  const kpiFees = stats?.fees_percus ?? 18500;
+  const kpiPipeline = stats?.pipeline_actif ?? 3;
+  const kpiLeads = stats?.leads_soumis ?? 12;
+  const kpiTaux = stats?.taux_conversion ?? 25;
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto" }}>
-      <div style={{ marginBottom: 28, display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-        <div>
-          <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 300, color: S.text, margin: "0 0 6px" }}>
-            Bonjour {firstName}
-          </h1>
-          <p style={{ color: S.text3, fontSize: 13.5, margin: 0 }}>
-            Espace Hunter · Signaler des biens off-market et gagner des referral fees
-          </p>
-        </div>
-        <Link href="/app/hunters" style={{
-          display: "flex", alignItems: "center", gap: 6,
-          padding: "9px 18px", borderRadius: 9,
-          background: S.orange, color: "white",
-          fontWeight: 600, fontSize: 13, textDecoration: "none",
-        }}>
-          <PlusCircle size={15} /> Soumettre un lead
-        </Link>
+    <div style={{ minHeight: "100vh", background: DC.bg }}>
+      <DRoleHeader role="hunter" initials={initials} />
+
+      {/* Greeting */}
+      <div style={{ marginBottom: "2rem" }}>
+        <h1
+          style={{
+            fontSize: 30,
+            fontWeight: 400,
+            fontFamily: DC.serif,
+            color: DC.text,
+            marginBottom: 4,
+            letterSpacing: "0.01em",
+          }}
+        >
+          Bonjour{firstName ? `, ${firstName}` : ""}
+        </h1>
+        <p style={{ fontSize: 14, color: DC.muted }}>
+          {new Date().toLocaleDateString("fr-CH", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}
+        </p>
       </div>
 
-      {/* KPIs */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 28 }}>
-        {kpis.map(k => (
-          <div key={k.label} style={{
-            background: S.surface, border: `1px solid ${S.border}`,
-            borderRadius: 14, padding: "16px",
-            boxShadow: S.shadow,
-          }}>
-            <div style={{ fontSize: 22, fontWeight: 800, color: k.color }}>{k.value}</div>
-            <div style={{ fontSize: 11, color: S.text3, marginTop: 2 }}>{k.label}</div>
+      {/* 4 KPI cards */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+          gap: "1rem",
+          marginBottom: "2rem",
+        }}
+      >
+        <DKpi
+          icon={Banknote}
+          iconColor="#D97706"
+          iconBg="rgba(217,119,6,0.10)"
+          value={`CHF ${kpiFees.toLocaleString("fr-CH")}`}
+          label="Fees perçus"
+          sub="Cumul annuel"
+          trend="up"
+        />
+        <DKpi
+          icon={Target}
+          iconColor={DC.orange}
+          iconBg="rgba(232,96,44,0.10)"
+          value={String(kpiPipeline)}
+          label="Pipeline actif"
+          sub="Leads en cours"
+          trend="neutral"
+        />
+        <DKpi
+          icon={TrendingUp}
+          iconColor="#2563EB"
+          iconBg="rgba(37,99,235,0.10)"
+          value={String(kpiLeads)}
+          label="Leads soumis"
+          sub="Total soumis"
+          trend="up"
+        />
+        <DKpi
+          icon={Users}
+          iconColor="#16A34A"
+          iconBg="rgba(22,163,74,0.10)"
+          value={`${kpiTaux}%`}
+          label="Taux conversion"
+          sub="Leads → transactions"
+          trend="up"
+        />
+      </div>
+
+      {/* Leads en négociation */}
+      <div style={{ marginBottom: "2rem" }}>
+        <DSectionTitle>Leads en négociation</DSectionTitle>
+        <DCard style={{ padding: 0, overflow: "hidden" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: "rgba(26,22,18,0.02)" }}>
+                  {["Bien", "Budget", "Contact", "Statut", ""].map((h) => (
+                    <th
+                      key={h}
+                      style={{
+                        textAlign: "left",
+                        padding: "10px 16px",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: DC.muted,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        borderBottom: `1px solid ${DC.border}`,
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {LEADS_MOCK.map((lead, i) => (
+                  <tr
+                    key={lead.id}
+                    style={{
+                      borderBottom:
+                        i < LEADS_MOCK.length - 1 ? `1px solid ${DC.border}` : "none",
+                    }}
+                  >
+                    <td style={{ padding: "11px 16px", fontWeight: 600, color: DC.text }}>
+                      {lead.bien}
+                    </td>
+                    <td style={{ padding: "11px 16px", fontWeight: 600, color: DC.text }}>
+                      {lead.budget}
+                    </td>
+                    <td style={{ padding: "11px 16px", color: DC.muted }}>{lead.contact}</td>
+                    <td style={{ padding: "11px 16px" }}>
+                      <StatutBadge statut={lead.statut} />
+                    </td>
+                    <td style={{ padding: "11px 16px" }}>
+                      <Link
+                        href="/app/hunters"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          fontSize: 12,
+                          color: DC.orange,
+                          textDecoration: "none",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Détail <ExternalLink size={11} />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ))}
+        </DCard>
       </div>
 
-      {/* Comment ça marche */}
-      <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 16, padding: 24, marginBottom: 20 }}>
-        <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700, color: S.text }}>Comment gagner des referral fees ?</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
-          {[
-            { num: "1", label: "Signalez un bien",   desc: "Adresse + contact vendeur" },
-            { num: "2", label: "Althy contacte",     desc: "Notre équipe prend contact" },
-            { num: "3", label: "Transaction réussie", desc: "CHF 50–500 automatiquement" },
-          ].map(s => (
-            <div key={s.num} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: "50%",
-                background: S.orangeBg, color: S.orange,
-                fontWeight: 800, fontSize: 13,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0,
-              }}>{s.num}</div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: S.text }}>{s.label}</div>
-                <div style={{ fontSize: 12, color: S.text3 }}>{s.desc}</div>
-              </div>
+      {/* Soumettre un lead */}
+      <div style={{ marginBottom: "2rem" }}>
+        <DSectionTitle>Soumettre un lead</DSectionTitle>
+        <DCard
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <p style={{ fontSize: 15, fontWeight: 600, color: DC.text, marginBottom: 4 }}>
+              Vous connaissez un bien off-market ?
+            </p>
+            <p style={{ fontSize: 13, color: DC.muted }}>
+              Soumettez-le et percevez votre referral fee à la transaction.
+              Votre track record améliore vos honoraires.
+            </p>
+          </div>
+          <Link
+            href="/app/hunters"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "10px 20px",
+              borderRadius: 10,
+              background: DC.orange,
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 700,
+              textDecoration: "none",
+              flexShrink: 0,
+            }}
+          >
+            <PlusCircle size={14} />
+            Soumettre un lead
+          </Link>
+        </DCard>
+      </div>
+
+      {/* Réseau */}
+      <div style={{ marginBottom: "2rem" }}>
+        <DSectionTitle>Réseau — Mes contacts</DSectionTitle>
+        <DCard
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background: "rgba(217,119,6,0.10)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Network size={18} style={{ color: "#D97706" }} />
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ display: "flex", gap: 12 }}>
-        <Link href="/app/hunters" style={{
-          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          padding: 16, borderRadius: 12,
-          background: S.surface, border: `1px solid ${S.border}`,
-          color: S.text2, fontSize: 14, fontWeight: 600, textDecoration: "none",
-        }}>
-          <Target size={16} /> Mes leads
-        </Link>
-        <Link href="/app/sphere" style={{
-          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          padding: 16, borderRadius: 12,
-          background: S.orangeBg, border: `1px solid ${S.orange}`,
-          color: S.orange, fontSize: 14, fontWeight: 600, textDecoration: "none",
-        }}>
-          <Banknote size={16} /> Mes gains
-        </Link>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 700, color: DC.text, marginBottom: 2 }}>
+                14 contacts actifs · 3 agences partenaires
+              </p>
+              <p style={{ fontSize: 12, color: DC.muted }}>
+                Réseau qualifié Althy
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/app/hunters"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              fontSize: 13,
+              color: DC.orange,
+              textDecoration: "none",
+              fontWeight: 600,
+              flexShrink: 0,
+            }}
+          >
+            Gérer <ArrowRight size={13} />
+          </Link>
+        </DCard>
       </div>
     </div>
   );

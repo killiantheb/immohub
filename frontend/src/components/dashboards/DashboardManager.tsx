@@ -1,232 +1,91 @@
+// src/components/dashboards/DashboardManager.tsx
 "use client";
 
 import Link from "next/link";
 import {
-  AlertTriangle, ArrowRight, Building2, CheckCircle2,
-  Clock, PiggyBank, Sparkles, TrendingDown, TrendingUp, Wrench,
+  AlertTriangle,
+  ArrowRight,
+  Building2,
+  CheckCircle2,
+  Clock,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+  Wrench,
 } from "lucide-react";
-import { useManagerDashboard, useSavings, useBriefing, type BienWithLocataire } from "@/lib/hooks/useDashboardData";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import {
+  useManagerDashboard,
+  useBriefing,
+} from "@/lib/hooks/useDashboardData";
 import type { AppRole } from "@/lib/hooks/useRole";
-
-// ── Design tokens ─────────────────────────────────────────────────────────────
-const S = {
-  bg:       "var(--althy-bg)",
-  surface:  "var(--althy-surface)",
-  surface2: "var(--althy-surface-2)",
-  border:   "var(--althy-border)",
-  text:     "var(--althy-text)",
-  text2:    "var(--althy-text-2)",
-  text3:    "var(--althy-text-3)",
-  orange:   "var(--althy-orange)",
-  orangeBg: "var(--althy-orange-bg)",
-  green:    "var(--althy-green)",
-  greenBg:  "var(--althy-green-bg)",
-  red:      "var(--althy-red)",
-  redBg:    "var(--althy-red-bg)",
-  amber:    "var(--althy-amber)",
-  amberBg:  "var(--althy-amber-bg)",
-  blue:     "var(--althy-blue)",
-  blueBg:   "var(--althy-blue-bg)",
-  shadow:   "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const;
+import {
+  DC,
+  DCard,
+  DKpi,
+  DRoleHeader,
+  DSectionTitle,
+  DEmptyState,
+} from "@/components/dashboards/DashBoardShared";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtCHF(n: number) {
   return `CHF ${n.toLocaleString("fr-CH")}`;
 }
 
-// ── Atoms ─────────────────────────────────────────────────────────────────────
-function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return (
-    <div style={{ background: S.surface, borderRadius: 16, border: `1px solid ${S.border}`, boxShadow: S.shadow, padding: "1.25rem", ...style }}>
-      {children}
-    </div>
-  );
+function initials(firstName: string) {
+  return firstName ? firstName.slice(0, 2).toUpperCase() : "–";
 }
-function Skel({ h = 16, w = "100%" }: { h?: number; w?: string | number }) {
-  return <div style={{ height: h, width: w, borderRadius: 8, background: S.border, opacity: 0.5 }} />;
-}
-function Badge({ label, color, bg }: { label: string; color: string; bg: string }) {
+
+// ── Mock revenue data ─────────────────────────────────────────────────────────
+const REVENUE_MOCK = [
+  { mois: "Nov", revenus: 8400 },
+  { mois: "Déc", revenus: 9100 },
+  { mois: "Jan", revenus: 7800 },
+  { mois: "Fév", revenus: 9600 },
+  { mois: "Mar", revenus: 10200 },
+  { mois: "Avr", revenus: 9800 },
+];
+
+// ── Statut badge helper ───────────────────────────────────────────────────────
+const STATUT_MAP: Record<string, { label: string; color: string; bg: string }> = {
+  loue:       { label: "Loué",       color: "#16A34A", bg: "rgba(22,163,74,0.10)" },
+  vacant:     { label: "Vacant",     color: "#D97706", bg: "rgba(217,119,6,0.10)" },
+  en_vente:   { label: "En vente",   color: "#2563EB", bg: "rgba(37,99,235,0.10)" },
+  en_travaux: { label: "En travaux", color: "#0891B2", bg: "rgba(8,145,178,0.10)" },
+};
+
+function StatusBadge({ statut }: { statut: string }) {
+  const s = STATUT_MAP[statut] ?? { label: statut, color: DC.muted, bg: DC.border };
   return (
-    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 9px", borderRadius: 20, color, background: bg }}>
-      {label}
+    <span
+      style={{
+        fontSize: 11,
+        fontWeight: 600,
+        padding: "2px 9px",
+        borderRadius: 20,
+        color: s.color,
+        background: s.bg,
+      }}
+    >
+      {s.label}
     </span>
   );
 }
 
-// ── Metric card ───────────────────────────────────────────────────────────────
-interface MetricProps {
-  label: string;
-  value: string;
-  sub?: string;
-  icon: React.ElementType;
-  color: string;
-  bg: string;
-  trend?: "up" | "down" | "neutral";
-}
-function MetricCard({ label, value, sub, icon: Icon, color, bg, trend }: MetricProps) {
-  return (
-    <Card>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "0.75rem" }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Icon size={18} style={{ color }} />
-        </div>
-        {trend && trend !== "neutral" && (
-          trend === "up"
-            ? <TrendingUp size={14} style={{ color: S.green }} />
-            : <TrendingDown size={14} style={{ color: S.red }} />
-        )}
-      </div>
-      <p style={{ fontSize: 22, fontWeight: 800, color: S.text, marginBottom: 2, letterSpacing: "-0.02em" }}>{value}</p>
-      <p style={{ fontSize: 13, color: S.text2, fontWeight: 500 }}>{label}</p>
-      {sub && <p style={{ fontSize: 12, color: S.text3, marginTop: 2 }}>{sub}</p>}
-    </Card>
-  );
-}
-
-// ── Savings banner ────────────────────────────────────────────────────────────
-function SavingsBanner({ savedMonth }: { savedMonth: number }) {
-  return (
-    <div style={{
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "0.85rem 1.25rem",
-      background: `linear-gradient(135deg, ${S.greenBg} 0%, #F0FAF0 100%)`,
-      border: `1px solid ${S.green}40`,
-      borderRadius: 14, marginBottom: "1rem",
-      flexWrap: "wrap", gap: 8,
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 34, height: 34, borderRadius: 9, background: S.green, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <PiggyBank size={16} style={{ color: "#fff" }} />
-        </div>
-        <div>
-          <p style={{ fontSize: 11, fontWeight: 700, color: S.green, letterSpacing: "0.05em", textTransform: "uppercase", margin: 0 }}>
-            Économisé ce mois vs régie
-          </p>
-          <p style={{ fontSize: 12, color: S.text3, margin: 0 }}>
-            Commission 8 % + frais admin · Althy = CHF 0 commission
-          </p>
-        </div>
-      </div>
-      <p style={{
-        fontFamily: "var(--font-serif)", fontSize: 26, fontWeight: 300,
-        color: S.green, margin: 0, letterSpacing: "-0.01em",
-      }}>
-        {fmtCHF(savedMonth)}
-      </p>
-    </div>
-  );
-}
-
-// ── Briefing IA ───────────────────────────────────────────────────────────────
-function BriefingIA({ biensVacants, loyersAttente, interOuvertes, storedMessage }: {
-  biensVacants: number;
-  loyersAttente: number;
-  interOuvertes: number;
-  storedMessage?: string;
-}) {
-  const summary = storedMessage ?? (() => {
-    const items: string[] = [];
-    if (biensVacants > 0) items.push(`${biensVacants} bien${biensVacants > 1 ? "s" : ""} vacant${biensVacants > 1 ? "s" : ""} — publication recommandée`);
-    if (loyersAttente > 0) items.push(`${fmtCHF(loyersAttente)} de loyers en attente de réception`);
-    if (interOuvertes > 0) items.push(`${interOuvertes} intervention${interOuvertes > 1 ? "s" : ""} ouverte${interOuvertes > 1 ? "s" : ""} à suivre`);
-    return items.length === 0
-      ? "Tout est en ordre — aucune action urgente aujourd'hui."
-      : items.join(" · ");
-  })();
-
-  return (
-    <div style={{
-      display: "flex", alignItems: "flex-start", gap: 14,
-      padding: "1rem 1.25rem",
-      background: `linear-gradient(135deg, ${S.orangeBg} 0%, ${S.surface2} 100%)`,
-      border: `1px solid ${S.orange}30`,
-      borderRadius: 16, marginBottom: "1.5rem",
-    }}>
-      <div style={{ width: 36, height: 36, borderRadius: 10, background: S.orange, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Sparkles size={16} style={{ color: "#fff" }} />
-      </div>
-      <div>
-        <p style={{ fontSize: 12, fontWeight: 700, color: S.orange, marginBottom: 3, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-          Briefing Althy · {new Date().toLocaleDateString("fr-CH", { weekday: "long", day: "numeric", month: "long" })}
-        </p>
-        <p style={{ fontSize: 14, color: S.text2, lineHeight: 1.55 }}>{summary}</p>
-      </div>
-    </div>
-  );
-}
-
-// ── Bien card ─────────────────────────────────────────────────────────────────
-const STATUT_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  loue:       { label: "Loué",       color: S.green,  bg: S.greenBg },
-  vacant:     { label: "Vacant",     color: S.amber,  bg: S.amberBg },
-  en_travaux: { label: "En travaux", color: S.blue,   bg: S.blueBg },
+// ── Urgence dot ───────────────────────────────────────────────────────────────
+const URGENCE_COLOR: Record<string, string> = {
+  haute: "#DC2626",
+  moyenne: "#D97706",
+  basse: "#16A34A",
 };
-const TYPE_MAP: Record<string, string> = {
-  appartement: "Apt", villa: "Villa", studio: "Studio", maison: "Maison",
-  commerce: "Commerce", bureau: "Bureau", parking: "Parking", garage: "Garage",
-  cave: "Cave", autre: "Autre",
-};
-
-function BienCard({ bien }: { bien: BienWithLocataire }) {
-  const s = STATUT_MAP[bien.statut] ?? { label: bien.statut, color: S.text3, bg: S.border };
-  const loc = bien.locataire_actif;
-  return (
-    <Card style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
-            <Badge label={TYPE_MAP[bien.type] ?? bien.type} color={S.orange} bg={S.orangeBg} />
-            <Badge label={s.label} color={s.color} bg={s.bg} />
-          </div>
-          <p style={{ fontSize: 14, fontWeight: 700, color: S.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {bien.adresse}
-          </p>
-          <p style={{ fontSize: 11, color: S.text3 }}>{bien.cp} {bien.ville}{bien.surface ? ` · ${bien.surface} m²` : ""}</p>
-        </div>
-      </div>
-
-      {/* Locataire info */}
-      <div style={{ padding: "0.65rem 0.85rem", borderRadius: 10, background: S.surface2, border: `1px solid ${S.border}` }}>
-        {loc ? (
-          <div>
-            <p style={{ fontSize: 12, color: S.text2, fontWeight: 600 }}>
-              Loyer · {bien.loyer ? `CHF ${Number(bien.loyer).toLocaleString("fr-CH")}` : "—"}/mois
-            </p>
-            {loc.date_sortie && (() => {
-              const d = Math.round((new Date(loc.date_sortie).getTime() - Date.now()) / 86_400_000);
-              return d <= 60 ? (
-                <p style={{ fontSize: 11, color: S.red, display: "flex", alignItems: "center", gap: 3, marginTop: 2 }}>
-                  <AlertTriangle size={10} /> Bail expire dans {d}j
-                </p>
-              ) : null;
-            })()}
-          </div>
-        ) : (
-          <p style={{ fontSize: 12, color: S.amber, fontWeight: 600 }}>
-            Vacant
-          </p>
-        )}
-      </div>
-
-      {/* CTA */}
-      <Link
-        href={`/app/biens/${bien.id}`}
-        style={{
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-          padding: "8px 0", borderRadius: 10,
-          border: `1px solid ${S.orange}30`, background: S.orangeBg,
-          color: S.orange, fontSize: 12, fontWeight: 700, textDecoration: "none",
-          transition: "background 0.15s",
-        }}
-      >
-        Ouvrir fiche bien <ArrowRight size={12} />
-      </Link>
-    </Card>
-  );
-}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // DashboardManager
@@ -238,117 +97,335 @@ interface Props {
 
 export function DashboardManager({ firstName, role }: Props) {
   const { isLoading, metrics, biens } = useManagerDashboard();
-  const { data: savings } = useSavings();
   const { data: briefing } = useBriefing();
 
-  const roleLabel = role === "super_admin" ? "Administrateur" : role === "agence" || role === "agency" ? "Agence" : "Propriétaire";
+  const kpiRevenu = metrics.loyersMois;
+  const kpiOccupation =
+    biens.length > 0
+      ? Math.round(
+          (biens.filter((b) => b.statut === "loue").length / biens.length) * 100
+        )
+      : 0;
+  const kpiAttente = metrics.loyersAttente;
+  const kpiUrgentes = metrics.interOuvertes;
+
+  // Briefing actions (from API or synthesised)
+  const briefingActions: Array<{ urgence: string; texte: string }> = briefing?.is_today
+    ? [{ urgence: "moyenne", texte: briefing.message }]
+    : [
+        ...(metrics.biensVacants > 0
+          ? [{ urgence: "haute", texte: `${metrics.biensVacants} bien(s) vacant(s) — publication recommandée` }]
+          : []),
+        ...(kpiAttente > 0
+          ? [{ urgence: "moyenne", texte: `${fmtCHF(kpiAttente)} de loyers en attente` }]
+          : []),
+        ...(kpiUrgentes > 0
+          ? [{ urgence: "basse", texte: `${kpiUrgentes} intervention(s) ouverte(s) à suivre` }]
+          : []),
+      ];
 
   return (
-    <div>
+    <div style={{ minHeight: "100vh", background: DC.bg, padding: "0" }}>
+      {/* Role header */}
+      <DRoleHeader role={role === "agence" || role === "agency" ? "agence" : "proprio_solo"} initials={initials(firstName)} />
+
       {/* Greeting */}
-      <div style={{ marginBottom: "1.75rem" }}>
-        <p style={{ fontSize: 12, letterSpacing: "2px", textTransform: "uppercase", color: S.text3, marginBottom: 6 }}>
-          {roleLabel}
-        </p>
-        <h1 style={{ fontSize: 32, fontWeight: 400, fontFamily: "var(--font-serif),'Cormorant Garamond',serif", color: S.text, marginBottom: 4, letterSpacing: "0.01em" }}>
+      <div style={{ marginBottom: "2rem" }}>
+        <h1
+          style={{
+            fontSize: 30,
+            fontWeight: 400,
+            fontFamily: DC.serif,
+            color: DC.text,
+            marginBottom: 4,
+            letterSpacing: "0.01em",
+          }}
+        >
           Bonjour{firstName ? `, ${firstName}` : ""}
         </h1>
-        <p style={{ fontSize: 14, color: S.text3 }}>
-          {new Date().toLocaleDateString("fr-CH", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+        <p style={{ fontSize: 14, color: DC.muted }}>
+          {new Date().toLocaleDateString("fr-CH", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}
         </p>
       </div>
 
-      {/* Savings banner */}
-      {savings && savings.saved_this_month > 0 && (
-        <SavingsBanner savedMonth={savings.saved_this_month} />
-      )}
-
-      {/* Briefing IA */}
-      {!isLoading && (
-        <BriefingIA
-          biensVacants={metrics.biensVacants}
-          loyersAttente={metrics.loyersAttente}
-          interOuvertes={metrics.interOuvertes}
-          storedMessage={briefing?.is_today ? briefing.message : undefined}
-        />
-      )}
-
-      {/* Metrics */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
+      {/* 4 KPI Cards */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+          gap: "1rem",
+          marginBottom: "2rem",
+        }}
+      >
         {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <Card key={i}><Skel h={80} /></Card>)
+          Array.from({ length: 4 }).map((_, i) => (
+            <DCard key={i}>
+              <div
+                style={{
+                  height: 80,
+                  borderRadius: 8,
+                  background: DC.border,
+                  opacity: 0.5,
+                }}
+              />
+            </DCard>
+          ))
         ) : (
           <>
-            <MetricCard
-              label="Loyers encaissés"
-              value={fmtCHF(metrics.loyersMois)}
-              sub="Ce mois-ci"
+            <DKpi
               icon={CheckCircle2}
-              color={S.green}
-              bg={S.greenBg}
-              trend="up"
+              iconColor="#16A34A"
+              iconBg="rgba(22,163,74,0.10)"
+              value={fmtCHF(kpiRevenu)}
+              label="Revenus du mois"
+              sub="Loyers encaissés"
+              trend={kpiRevenu > 0 ? "up" : "neutral"}
             />
-            <MetricCard
-              label="Loyers en attente"
-              value={fmtCHF(metrics.loyersAttente)}
-              sub="À recevoir"
-              icon={Clock}
-              color={metrics.loyersAttente > 0 ? S.amber : S.green}
-              bg={metrics.loyersAttente > 0 ? S.amberBg : S.greenBg}
-              trend={metrics.loyersAttente > 0 ? "down" : "neutral"}
-            />
-            <MetricCard
-              label="Interventions ouvertes"
-              value={String(metrics.interOuvertes)}
-              sub="Travaux & incidents"
-              icon={Wrench}
-              color={metrics.interOuvertes > 0 ? S.orange : S.green}
-              bg={metrics.interOuvertes > 0 ? S.orangeBg : S.greenBg}
-              trend={metrics.interOuvertes > 0 ? "down" : "neutral"}
-            />
-            <MetricCard
-              label="Biens vacants"
-              value={String(metrics.biensVacants)}
-              sub={`sur ${biens.length} bien${biens.length !== 1 ? "s" : ""}`}
+            <DKpi
               icon={Building2}
-              color={metrics.biensVacants > 0 ? S.red : S.green}
-              bg={metrics.biensVacants > 0 ? S.redBg : S.greenBg}
-              trend={metrics.biensVacants > 0 ? "down" : "neutral"}
+              iconColor={kpiOccupation >= 80 ? "#16A34A" : "#DC2626"}
+              iconBg={kpiOccupation >= 80 ? "rgba(22,163,74,0.10)" : "rgba(220,38,38,0.10)"}
+              value={`${kpiOccupation}%`}
+              label="Taux d'occupation"
+              sub={`${biens.length} bien(s) au total`}
+              trend={kpiOccupation >= 80 ? "up" : "down"}
+            />
+            <DKpi
+              icon={Clock}
+              iconColor={kpiAttente > 0 ? "#D97706" : "#16A34A"}
+              iconBg={kpiAttente > 0 ? "rgba(217,119,6,0.10)" : "rgba(22,163,74,0.10)"}
+              value={fmtCHF(kpiAttente)}
+              label="Loyers en attente"
+              sub="À recevoir"
+              trend={kpiAttente > 0 ? "down" : "neutral"}
+            />
+            <DKpi
+              icon={AlertTriangle}
+              iconColor={kpiUrgentes > 0 ? "#DC2626" : "#16A34A"}
+              iconBg={kpiUrgentes > 0 ? "rgba(220,38,38,0.10)" : "rgba(22,163,74,0.10)"}
+              value={String(kpiUrgentes)}
+              label="Actions urgentes"
+              sub="Interventions ouvertes"
+              trend={kpiUrgentes > 0 ? "down" : "neutral"}
             />
           </>
         )}
       </div>
 
-      {/* Biens list */}
-      <div style={{ marginBottom: "0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <h2 style={{ fontSize: 15, fontWeight: 700, color: S.text }}>Mes biens</h2>
-        <Link href="/app/biens" style={{ fontSize: 12, color: S.orange, textDecoration: "none", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
-          Voir tous <ArrowRight size={12} />
-        </Link>
+      {/* Briefing actions */}
+      <div style={{ marginBottom: "2rem" }}>
+        <DSectionTitle>Actions urgentes Sphère</DSectionTitle>
+        {briefingActions.length === 0 ? (
+          <DEmptyState
+            icon={Sparkles}
+            title="Aucune action urgente"
+            subtitle="Tout est en ordre — profitez de votre journée !"
+          />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {briefingActions.slice(0, 3).map((action, i) => (
+              <DCard
+                key={i}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: URGENCE_COLOR[action.urgence] ?? DC.muted,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <p style={{ fontSize: 14, color: DC.text }}>{action.texte}</p>
+                </div>
+                <Link
+                  href="/app/sphere"
+                  style={{
+                    flexShrink: 0,
+                    padding: "6px 14px",
+                    borderRadius: 8,
+                    background: DC.orange,
+                    color: "#fff",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    textDecoration: "none",
+                  }}
+                >
+                  Valider
+                </Link>
+              </DCard>
+            ))}
+          </div>
+        )}
       </div>
 
-      {isLoading ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "1rem" }}>
-          {Array.from({ length: 3 }).map((_, i) => <Card key={i}><Skel h={150} /></Card>)}
-        </div>
-      ) : biens.length === 0 ? (
-        <Card style={{ textAlign: "center", padding: "2.5rem" }}>
-          <Building2 size={32} style={{ margin: "0 auto 0.75rem", color: S.text3, opacity: 0.4 }} />
-          <p style={{ fontWeight: 600, color: S.text2, marginBottom: 4 }}>Aucun bien enregistré</p>
-          <p style={{ fontSize: 13, color: S.text3 }}>Commencez par ajouter votre premier bien.</p>
-          <Link href="/app/biens/nouveau" style={{
-            display: "inline-flex", alignItems: "center", gap: 6, marginTop: "1rem",
-            padding: "8px 18px", borderRadius: 10, background: S.orange, color: "#fff",
-            fontSize: 13, fontWeight: 700, textDecoration: "none",
-          }}>
-            Ajouter un bien
+      {/* Mes biens */}
+      <div style={{ marginBottom: "2rem" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: "1rem",
+          }}
+        >
+          <DSectionTitle style={{ marginBottom: 0 }}>Mes biens</DSectionTitle>
+          <Link
+            href="/app/biens"
+            style={{
+              fontSize: 12,
+              color: DC.orange,
+              textDecoration: "none",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            Voir tout <ArrowRight size={12} />
           </Link>
-        </Card>
-      ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "1rem" }}>
-          {biens.map(b => <BienCard key={b.id} bien={b} />)}
         </div>
-      )}
+
+        {isLoading ? (
+          <DCard>
+            <div style={{ height: 120, borderRadius: 8, background: DC.border, opacity: 0.5 }} />
+          </DCard>
+        ) : biens.length === 0 ? (
+          <DEmptyState
+            icon={Building2}
+            title="Aucun bien enregistré"
+            subtitle="Commencez par ajouter votre premier bien."
+            ctaLabel="Ajouter un bien"
+            ctaHref="/app/biens/nouveau"
+          />
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr>
+                  {["Bien", "Adresse", "Statut", "Loyer"].map((h) => (
+                    <th
+                      key={h}
+                      style={{
+                        textAlign: "left",
+                        padding: "8px 12px",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: DC.muted,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        borderBottom: `1px solid ${DC.border}`,
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {biens.slice(0, 5).map((b) => (
+                  <tr
+                    key={b.id}
+                    style={{ borderBottom: `1px solid ${DC.border}` }}
+                  >
+                    <td style={{ padding: "10px 12px", fontWeight: 600, color: DC.text }}>
+                      {b.type ?? "Bien"}
+                    </td>
+                    <td style={{ padding: "10px 12px", color: DC.muted }}>
+                      {b.adresse}, {b.ville}
+                    </td>
+                    <td style={{ padding: "10px 12px" }}>
+                      <StatusBadge statut={b.statut} />
+                    </td>
+                    <td style={{ padding: "10px 12px", color: DC.text, fontWeight: 600 }}>
+                      {b.loyer ? fmtCHF(Number(b.loyer)) : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Revenue chart */}
+      <div style={{ marginBottom: "2rem" }}>
+        <DSectionTitle>Revenus — 6 derniers mois</DSectionTitle>
+        <DCard>
+          <ResponsiveContainer width="100%" height={160}>
+            <AreaChart data={REVENUE_MOCK} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="revGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={DC.orange} stopOpacity={0.15} />
+                  <stop offset="95%" stopColor={DC.orange} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis
+                dataKey="mois"
+                tick={{ fontSize: 11, fill: DC.muted }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: DC.muted }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+              />
+              <Tooltip
+                contentStyle={{
+                  borderRadius: 10,
+                  border: `1px solid ${DC.border}`,
+                  fontSize: 12,
+                  background: DC.surface,
+                }}
+                formatter={(v) => [fmtCHF(Number(v)), "Revenus"]}
+              />
+              <Area
+                type="monotone"
+                dataKey="revenus"
+                stroke={DC.orange}
+                strokeWidth={2}
+                fill="url(#revGradient)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </DCard>
+      </div>
+
+      {/* Bottom CTA */}
+      <div style={{ textAlign: "center", paddingBottom: "2rem" }}>
+        <Link
+          href="/app/sphere"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "10px 24px",
+            borderRadius: 24,
+            background: DC.orange,
+            color: "#fff",
+            fontSize: 13,
+            fontWeight: 700,
+            textDecoration: "none",
+          }}
+        >
+          <TrendingUp size={14} />
+          ← Sphère IA
+        </Link>
+      </div>
     </div>
   );
 }
