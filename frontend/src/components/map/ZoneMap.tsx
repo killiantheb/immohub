@@ -14,10 +14,10 @@ const CARTO_TILES = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.
 const CARTO_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const ORANGE = "#B55A30";
+const ORANGE = "#E8602C";
 const ORANGE_FILL = "#FAE4D6";
 const ORANGE_FILL_TEMP = "rgba(181,90,48,0.08)";
-const ORANGE_DASH_BORDER = "#B55A30";
+const ORANGE_DASH_BORDER = "#E8602C";
 
 // ── Custom icons ──────────────────────────────────────────────────────────────
 function makePin(color: string, size = 36) {
@@ -340,7 +340,7 @@ export default function ZoneMap({
           {!showTempForm ? (
             <button
               onClick={() => setShowTempForm(true)}
-              style={{ padding: "9px 14px", borderRadius: 10, background: "none", border: "1px dashed #B55A30", color: ORANGE, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+              style={{ padding: "9px 14px", borderRadius: 10, background: "none", border: "1px dashed #E8602C", color: ORANGE, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
             >
               + Ajouter une zone temporaire
             </button>

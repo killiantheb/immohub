@@ -182,11 +182,11 @@ export default function AlthyHome() {
   };
 
   const homeByRole: Record<string, string> = {
-    owner: "/app/overview", agency: "/app/overview", super_admin: "/app/overview",
+    owner: "/app", agency: "/app", super_admin: "/app",
     opener: "/app/ouvreurs", tenant: "/app/locataire",
-    company: "/app/rfqs", insurance: "/app/insurance",
+    company: "/app/artisans/devis", insurance: "/app/insurance",
   };
-  const homePath = homeByRole[profile?.role ?? ""] ?? "/app/overview";
+  const homePath = homeByRole[profile?.role ?? ""] ?? "/app";
 
   return (
     <div style={{ background: "#F5EDE0", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", padding: "2.5rem 1.2rem 2rem", position: "relative", fontFamily: "'DM Sans', sans-serif" }}>

@@ -15,7 +15,7 @@ const S = {
   text:    "#3D3830",
   text2:   "#5A5248",
   text3:   "#7A7469",
-  orange:  "#B55A30",
+  orange:  "var(--althy-orange)",
   orangeBg:"#FAE4D6",
   green:   "#5A7D54",
   greenBg: "#EBF2EA",

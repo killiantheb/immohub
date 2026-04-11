@@ -76,11 +76,11 @@ function formatMonth(m: string) {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  owner: "#E8602C",
-  agency: "#E8602C",
+  owner: "var(--althy-orange)",
+  agency: "var(--althy-orange)",
   tenant: "#10b981",
   company: "#f59e0b",
-  opener: "#E8602C",
+  opener: "var(--althy-orange)",
   super_admin: "#ef4444",
 };
 

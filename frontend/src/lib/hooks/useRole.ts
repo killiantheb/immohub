@@ -52,20 +52,20 @@ const LEGACY_MAP: Partial<Record<AppRole, AppRole>> = {
 /** Sections accessibles par rôle (mirrors backend ROLE_SECTIONS) */
 export const ROLE_SECTIONS: Record<AppRole, string[]> = {
   super_admin:      ["*"],
-  proprio_solo:     ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "ouvreurs", "vente", "settings", "messages", "agenda", "whatsapp"],
-  agence:           ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail", "ouvreurs", "vente", "settings", "messages", "agenda", "whatsapp", "artisans", "onboarding"],
-  portail_proprio:  ["dashboard", "biens", "finances", "documents", "settings"],
-  opener:           ["dashboard", "sphere", "ouvreurs", "interventions", "finances", "abonnement", "settings", "messages", "agenda", "whatsapp"],
-  artisan:          ["dashboard", "sphere", "interventions", "finances", "abonnement", "artisans", "settings", "messages", "agenda", "whatsapp"],
-  expert:           ["dashboard", "sphere", "biens", "finances", "abonnement", "settings", "messages", "agenda"],
-  hunter:           ["dashboard", "sphere", "hunters", "abonnement", "vente", "settings", "messages"],
-  locataire:        ["dashboard", "sphere", "biens", "finances", "documents", "settings", "messages"],
-  acheteur_premium: ["dashboard", "sphere", "listings", "settings", "vente", "messages"],
+  proprio_solo:     ["dashboard", "sphere", "carte", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "ouvreurs", "vente", "settings", "messages", "agenda", "whatsapp", "profile"],
+  agence:           ["dashboard", "sphere", "carte", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail", "ouvreurs", "vente", "settings", "messages", "agenda", "whatsapp", "artisans", "onboarding", "profile"],
+  portail_proprio:  ["dashboard", "carte", "biens", "finances", "documents", "settings", "profile"],
+  opener:           ["dashboard", "sphere", "carte", "ouvreurs", "interventions", "finances", "abonnement", "settings", "messages", "agenda", "whatsapp", "profile"],
+  artisan:          ["dashboard", "sphere", "carte", "interventions", "finances", "abonnement", "artisans", "settings", "messages", "agenda", "whatsapp", "profile"],
+  expert:           ["dashboard", "sphere", "carte", "biens", "finances", "abonnement", "settings", "messages", "agenda", "profile"],
+  hunter:           ["dashboard", "sphere", "carte", "hunters", "abonnement", "vente", "settings", "messages", "profile"],
+  locataire:        ["dashboard", "sphere", "carte", "biens", "finances", "documents", "settings", "messages", "profile"],
+  acheteur_premium: ["dashboard", "sphere", "carte", "listings", "settings", "vente", "messages", "profile"],
   // Legacy aliases (same sections as canonical)
-  owner:    ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "ouvreurs", "vente", "settings", "messages", "agenda", "whatsapp"],
-  agency:   ["dashboard", "sphere", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail", "ouvreurs", "vente", "settings", "messages", "agenda", "whatsapp", "artisans", "onboarding"],
-  tenant:   ["dashboard", "sphere", "biens", "finances", "documents", "settings", "messages"],
-  company:  ["dashboard", "sphere", "interventions", "finances", "abonnement", "artisans", "settings", "messages", "agenda", "whatsapp"],
+  owner:    ["dashboard", "sphere", "carte", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "ouvreurs", "vente", "settings", "messages", "agenda", "whatsapp", "profile"],
+  agency:   ["dashboard", "sphere", "carte", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail", "ouvreurs", "vente", "settings", "messages", "agenda", "whatsapp", "artisans", "onboarding", "profile"],
+  tenant:   ["dashboard", "sphere", "carte", "biens", "finances", "documents", "settings", "messages", "profile"],
+  company:  ["dashboard", "sphere", "carte", "interventions", "finances", "abonnement", "artisans", "settings", "messages", "agenda", "whatsapp", "profile"],
 };
 
 /** Plan tarifaire par rôle */

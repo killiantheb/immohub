@@ -6,13 +6,13 @@ import type { ReactNode, CSSProperties } from "react";
 
 // ── Design constants ──────────────────────────────────────────────────────────
 export const DC = {
-  bg:      "#F4F1EC",
-  surface: "#FFFFFF",
-  orange:  "#E8602C",
-  text:    "#1A1612",
-  muted:   "#6B5E52",
-  border:  "rgba(26,22,18,0.07)",
-  shadow:  "0 2px 12px rgba(26,22,18,0.06)",
+  bg:      "var(--althy-bg)",
+  surface: "var(--althy-surface)",
+  orange:  "var(--althy-orange)",
+  text:    "var(--althy-text)",
+  muted:   "var(--althy-text-3)",
+  border:  "var(--althy-border)",
+  shadow:  "var(--althy-shadow)",
   serif:   "var(--font-serif, Fraunces, Georgia, serif)",
 } as const;
 
@@ -38,6 +38,23 @@ export const ROLE_LABEL: Record<string, string> = {
   locataire:        "Locataire",
   acheteur_premium: "Acheteur",
 };
+
+// ── DTopNav ───────────────────────────────────────────────────────────────────
+const NAV_PILL: React.CSSProperties = {
+  fontSize: 12, color: "var(--althy-text-2)",
+  padding: "6px 14px", borderRadius: 20,
+  border: "0.5px solid var(--althy-border)",
+  display: "flex", alignItems: "center", gap: 5,
+  textDecoration: "none", background: "transparent",
+};
+export function DTopNav() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24 }}>
+      <Link href="/app/sphere" style={NAV_PILL}>← Sphère IA</Link>
+      <Link href="/app/carte"  style={NAV_PILL}>Carte</Link>
+    </div>
+  );
+}
 
 // ── DCard ─────────────────────────────────────────────────────────────────────
 interface DCardProps {
@@ -100,7 +117,7 @@ export function DKpi({ icon: Icon, iconColor, iconBg, value, label, sub, trend }
             style={{
               fontSize: 11,
               fontWeight: 700,
-              color: trend === "up" ? "#16A34A" : "#DC2626",
+              color: trend === "up" ? "var(--althy-green)" : "var(--althy-red)",
             }}
           >
             {trend === "up" ? "▲" : "▼"}
@@ -186,17 +203,18 @@ export function DRoleHeader({ role, badge, badgeBg, initials }: DRoleHeaderProps
           style={{
             display: "inline-flex",
             alignItems: "center",
-            gap: 6,
-            padding: "7px 16px",
-            borderRadius: 10,
-            background: DC.orange,
-            color: "#fff",
+            gap: 5,
+            padding: "6px 14px",
+            borderRadius: 20,
+            background: "transparent",
+            border: "0.5px solid var(--althy-border)",
+            color: "var(--althy-text-2)",
             fontSize: 12,
-            fontWeight: 700,
+            fontWeight: 500,
             textDecoration: "none",
           }}
         >
-          Sphère IA
+          ← Sphère IA
         </Link>
         {initials && (
           <div

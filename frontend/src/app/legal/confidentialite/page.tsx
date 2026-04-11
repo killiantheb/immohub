@@ -59,7 +59,7 @@ export default function ConfidentialitePage() {
 
       <H2>1. Responsable du traitement</H2>
       <P><strong>Althy Sàrl</strong> (en cours de constitution), Genève, Suisse</P>
-      <P><strong>DPO (Délégué à la Protection des Données) :</strong> <a href="mailto:privacy@althy.ch" style={{ color: "#B55A30" }}>privacy@althy.ch</a></P>
+      <P><strong>DPO (Délégué à la Protection des Données) :</strong> <a href="mailto:privacy@althy.ch" style={{ color: "var(--althy-orange)" }}>privacy@althy.ch</a></P>
       <P>Base légale principale : LPD suisse (RS 235.1, en vigueur depuis le 1er septembre 2023) et RGPD européen (Règlement 2016/679) pour les utilisateurs résidant dans l'UE.</P>
 
       <H2>2. Données collectées</H2>
@@ -115,15 +115,15 @@ export default function ConfidentialitePage() {
           { droit: "Retrait du consentement", desc: "Retirer votre consentement à tout moment (analytics, marketing)" },
         ].map(r => (
           <div key={r.droit} style={{ padding: "0.75rem 1rem", background: "#fff", borderRadius: 10, border: "1px solid #E8E4DC", display: "flex", gap: "1rem", alignItems: "flex-start" }}>
-            <p style={{ fontSize: 13, fontWeight: 700, color: "#B55A30", minWidth: 200, flexShrink: 0 }}>{r.droit}</p>
+            <p style={{ fontSize: 13, fontWeight: 700, color: "var(--althy-orange)", minWidth: 200, flexShrink: 0 }}>{r.droit}</p>
             <p style={{ fontSize: 13, color: "#4A4440" }}>{r.desc}</p>
           </div>
         ))}
       </div>
-      <P>Exercice de vos droits : <a href="mailto:privacy@althy.ch" style={{ color: "#B55A30", fontWeight: 600 }}>privacy@althy.ch</a></P>
+      <P>Exercice de vos droits : <a href="mailto:privacy@althy.ch" style={{ color: "var(--althy-orange)", fontWeight: 600 }}>privacy@althy.ch</a></P>
       <P>Depuis votre espace client : Paramètres → Sécurité → Export de mes données</P>
       <P>Délai de réponse : <strong>30 jours maximum</strong> (prorogeable à 60 jours en cas de demande complexe, avec information préalable).</P>
-      <P>Vous avez également le droit de déposer une réclamation auprès du Préposé fédéral à la protection des données et à la transparence (PFPDT) : <a href="https://www.edoeb.admin.ch" style={{ color: "#B55A30" }} target="_blank" rel="noreferrer">edoeb.admin.ch</a></P>
+      <P>Vous avez également le droit de déposer une réclamation auprès du Préposé fédéral à la protection des données et à la transparence (PFPDT) : <a href="https://www.edoeb.admin.ch" style={{ color: "var(--althy-orange)" }} target="_blank" rel="noreferrer">edoeb.admin.ch</a></P>
 
       <H2>7. Sécurité des données</H2>
       <ul style={{ paddingLeft: "1.5rem", margin: "0.5rem 0" }}>
@@ -137,16 +137,16 @@ export default function ConfidentialitePage() {
       </ul>
 
       <H2>8. Cookies</H2>
-      <P>Pour les informations détaillées sur les cookies utilisés, consultez notre <a href="/legal/cookies" style={{ color: "#B55A30" }}>Politique cookies</a>.</P>
+      <P>Pour les informations détaillées sur les cookies utilisés, consultez notre <a href="/legal/cookies" style={{ color: "var(--althy-orange)" }}>Politique cookies</a>.</P>
 
       <H2>9. Mineurs</H2>
-      <P>Althy est réservé aux personnes de <strong>18 ans ou plus</strong>. Althy ne collecte pas sciemment de données de mineurs. Si vous avez connaissance qu'un mineur a créé un compte, contactez <a href="mailto:privacy@althy.ch" style={{ color: "#B55A30" }}>privacy@althy.ch</a> pour suppression immédiate.</P>
+      <P>Althy est réservé aux personnes de <strong>18 ans ou plus</strong>. Althy ne collecte pas sciemment de données de mineurs. Si vous avez connaissance qu'un mineur a créé un compte, contactez <a href="mailto:privacy@althy.ch" style={{ color: "var(--althy-orange)" }}>privacy@althy.ch</a> pour suppression immédiate.</P>
 
       <H2>10. Modifications</H2>
-      <P>Cette politique peut être mise à jour. Les modifications significatives sont notifiées par email avec un préavis de 30 jours. La version en vigueur est toujours consultable à l'adresse <a href="/legal/confidentialite" style={{ color: "#B55A30" }}>althy.ch/legal/confidentialite</a>.</P>
+      <P>Cette politique peut être mise à jour. Les modifications significatives sont notifiées par email avec un préavis de 30 jours. La version en vigueur est toujours consultable à l'adresse <a href="/legal/confidentialite" style={{ color: "var(--althy-orange)" }}>althy.ch/legal/confidentialite</a>.</P>
 
       <H2>11. Contact</H2>
-      <P>DPO Althy : <a href="mailto:privacy@althy.ch" style={{ color: "#B55A30", fontWeight: 600 }}>privacy@althy.ch</a></P>
+      <P>DPO Althy : <a href="mailto:privacy@althy.ch" style={{ color: "var(--althy-orange)", fontWeight: 600 }}>privacy@althy.ch</a></P>
     </>
   );
 }

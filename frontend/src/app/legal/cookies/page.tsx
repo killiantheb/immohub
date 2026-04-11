@@ -112,14 +112,14 @@ export default function CookiesPage() {
           <strong>Via votre navigateur :</strong> Vous pouvez bloquer tous les cookies dans les paramètres de votre navigateur (nota : certaines fonctionnalités peuvent ne plus fonctionner)
         </li>
         <li style={{ fontSize: 14, lineHeight: 1.75, color: "#4A4440", marginBottom: "0.25rem" }}>
-          <strong>Opt-out PostHog :</strong> <a href="https://posthog.com/privacy" style={{ color: "#B55A30" }} target="_blank" rel="noreferrer">posthog.com/privacy</a>
+          <strong>Opt-out PostHog :</strong> <a href="https://posthog.com/privacy" style={{ color: "var(--althy-orange)" }} target="_blank" rel="noreferrer">posthog.com/privacy</a>
         </li>
       </ul>
       <P>Le retrait de votre consentement ne porte pas atteinte à la licéité du traitement fondé sur le consentement effectué avant ce retrait.</P>
 
       <H2>5. Contact</H2>
-      <P>Pour toute question sur les cookies : <a href="mailto:privacy@althy.ch" style={{ color: "#B55A30" }}>privacy@althy.ch</a></P>
-      <P>Voir aussi : <Link href="/legal/confidentialite" style={{ color: "#B55A30" }}>Politique de confidentialité complète</Link></P>
+      <P>Pour toute question sur les cookies : <a href="mailto:privacy@althy.ch" style={{ color: "var(--althy-orange)" }}>privacy@althy.ch</a></P>
+      <P>Voir aussi : <Link href="/legal/confidentialite" style={{ color: "var(--althy-orange)" }}>Politique de confidentialité complète</Link></P>
     </>
   );
 }

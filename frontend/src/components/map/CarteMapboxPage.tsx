@@ -4,8 +4,10 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Link from "next/link";
-import { Loader2, Search, Sparkles, X } from "lucide-react";
+import { Loader2, Search, X } from "lucide-react";
 import { api } from "@/lib/api";
+import { AlthySphereCore } from "@/components/sphere/AlthySphereCore";
+import { useAuthStore } from "@/lib/store/authStore";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -113,12 +115,21 @@ function filtresToLabel(filtres: ParseResult["filtres"]): string[] {
 export default function CarteMapboxPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef       = useRef<mapboxgl.Map | null>(null);
-  const pinElsRef    = useRef<Map<string, HTMLElement>>(new Map()); // id → élément DOM
+  const pinElsRef    = useRef<Map<string, HTMLElement>>(new Map());
 
-  const [search, setSearch]     = useState("");
+  const [search, setSearch]       = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [apiError, setApiError]  = useState(false);
-  const [result, setResult]      = useState<ParseResult | null>(null);
+  const [apiError, setApiError]   = useState(false);
+  const [result, setResult]       = useState<ParseResult | null>(null);
+
+  const { user } = useAuthStore();
+  const initials = (user?.user_metadata?.full_name as string | undefined)
+    ?.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
+    ?? "?";
+
+  // Stats dérivées des données ACTIVE_CITIES
+  const totalBiens  = ACTIVE_CITIES.reduce((s, c) => s + c.biens, 0);
+  const nbVilles    = ACTIVE_CITIES.length;
 
   // ── Initialisation Mapbox ────────────────────────────────────────────────
   useEffect(() => {
@@ -225,7 +236,7 @@ export default function CarteMapboxPage() {
 
     try {
       const { data } = await api.post<ParseResult>(
-        "/sphere/carte/parse-location",
+        "/sphere/parse-location",
         { query }
       );
 
@@ -289,9 +300,9 @@ export default function CarteMapboxPage() {
           {/* Logo */}
           <Link href="/" style={{
             flexShrink: 0, textDecoration: "none",
-            fontFamily: "Cormorant Garamond, serif",
-            fontWeight: 700, fontSize: 22, letterSpacing: 2,
-            color: "var(--althy-text, #1A1612)",
+            fontFamily: "var(--font-serif, Cormorant Garamond, serif)",
+            fontWeight: 300, fontSize: 22, letterSpacing: "5px",
+            color: "var(--althy-orange)",
           }}>
             ALTHY
           </Link>
@@ -352,15 +363,28 @@ export default function CarteMapboxPage() {
 
           {/* Bouton Sphère IA */}
           <Link href="/app/sphere" style={{
-            flexShrink: 0, display: "flex", alignItems: "center", gap: 6,
-            padding: "8px 18px", borderRadius: 24,
-            background: "var(--althy-orange, #E8602C)",
-            color: "#fff", textDecoration: "none",
+            flexShrink: 0, display: "flex", alignItems: "center", gap: 8,
+            padding: "7px 16px", borderRadius: 20,
+            background: "var(--althy-orange-bg)",
+            color: "var(--althy-orange)",
+            border: "1px solid rgba(232,96,44,0.25)",
+            textDecoration: "none",
             fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
           }}>
-            <Sparkles size={14} />
+            <AlthySphereCore state="idle" size={16} />
             Sphère IA
           </Link>
+
+          {/* Avatar utilisateur */}
+          <div style={{
+            flexShrink: 0, width: 34, height: 34, borderRadius: "50%",
+            background: "var(--althy-orange)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 12, fontWeight: 700, color: "#fff",
+            cursor: "default",
+          }}>
+            {initials}
+          </div>
         </header>
 
         {/* ── Bandeau résultat IA ─────────────────────────────────────── */}
@@ -406,25 +430,31 @@ export default function CarteMapboxPage() {
           position: "absolute",
           top: result ? 100 : 74,
           left: 20, zIndex: 10,
-          display: "flex", flexDirection: "column", gap: 8,
           transition: "top 0.3s",
+          background: "rgba(255,255,255,0.92)",
+          backdropFilter: "blur(12px)",
+          border: "0.5px solid var(--althy-border)",
+          borderRadius: 12,
+          padding: "12px 16px",
+          display: "flex", alignItems: "center", gap: 20,
         }}>
           {[
-            { valeur: "204",  label: "Biens disponibles" },
-            { valeur: "5",    label: "Villes actives"    },
-            { valeur: "4.7 ★", label: "Note moyenne"    },
-          ].map(stat => (
-            <div key={stat.label} style={{
-              background: "rgba(255,255,255,0.92)", backdropFilter: "blur(8px)",
-              border: "1px solid var(--althy-border, #EAE3D9)", borderRadius: 12,
-              padding: "8px 16px", minWidth: 164,
-            }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: "var(--althy-orange, #E8602C)" }}>
-                {stat.valeur}
+            { valeur: String(totalBiens), label: "Biens" },
+            { valeur: String(nbVilles),   label: "Villes actives" },
+            { valeur: "4.7 ★",           label: "Note moyenne" },
+          ].map((stat, i) => (
+            <div key={stat.label} style={{ display: "flex", alignItems: "center", gap: i < 2 ? 20 : 0 }}>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "var(--althy-orange)", lineHeight: 1 }}>
+                  {stat.valeur}
+                </div>
+                <div style={{ fontSize: 10.5, color: "var(--althy-text-3)", marginTop: 2 }}>
+                  {stat.label}
+                </div>
               </div>
-              <div style={{ fontSize: 11, color: "#8A7A6A", marginTop: 1 }}>
-                {stat.label}
-              </div>
+              {i < 2 && (
+                <div style={{ width: 1, height: 28, background: "var(--althy-border)", flexShrink: 0 }} />
+              )}
             </div>
           ))}
         </div>
@@ -435,14 +465,17 @@ export default function CarteMapboxPage() {
           left: "50%", transform: "translateX(-50%)", zIndex: 10,
         }}>
           <Link href="/app/biens" style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            background: "var(--althy-orange, #E8602C)", color: "#fff",
-            padding: "12px 28px", borderRadius: 32,
-            fontSize: 14, fontWeight: 600, textDecoration: "none",
-            boxShadow: "0 4px 22px rgba(232,96,44,0.38)",
+            display: "inline-flex", flexDirection: "column", alignItems: "center",
+            background: "#1A1612", color: "#FAFAF8",
+            padding: "14px 32px", borderRadius: 32,
+            textDecoration: "none",
+            boxShadow: "0 8px 32px rgba(26,22,18,0.22)",
             whiteSpace: "nowrap",
           }}>
-            Voir les biens disponibles →
+            <span style={{ fontSize: 14, fontWeight: 600 }}>Voir les biens disponibles →</span>
+            <span style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>
+              {totalBiens} biens · Prix dès CHF 850/mois
+            </span>
           </Link>
         </div>
       </div>

@@ -5,19 +5,123 @@ from __future__ import annotations
 import uuid
 from typing import Annotated
 
+import stripe
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.paiement import Paiement
 from app.models.user import User
 from app.schemas.paiement import PaiementCreate, PaiementRead, PaiementUpdate
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from pydantic import BaseModel
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
+PLATFORM_FEE_PCT = settings.STRIPE_PLATFORM_FEE_PCT  # 4.0
 
 router = APIRouter()
 
 DbDep = Annotated[AsyncSession, Depends(get_db)]
 AuthDep = Annotated[User, Depends(get_current_user)]
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# POST /paiements/creer-intent — créer un PaymentIntent loyer avec 4% Althy
+# ═════════════════════════════════════════════════════════════════════════════
+
+
+class CreerIntentRequest(BaseModel):
+    bien_id: uuid.UUID
+    locataire_id: uuid.UUID
+    montant: float          # CHF, ex: 1800.00
+    mois: str | None = None # YYYY-MM, optionnel
+
+
+class CreerIntentResponse(BaseModel):
+    client_secret: str
+    payment_intent_id: str
+    loyer_brut: float
+    loyer_net: float        # affiché "Loyer net reçu" côté proprio
+    frais_althy: float      # 4% — JAMAIS affiché à l'utilisateur
+
+
+@router.post("/creer-intent", response_model=CreerIntentResponse, status_code=status.HTTP_201_CREATED)
+async def creer_payment_intent(
+    payload: CreerIntentRequest,
+    current_user: AuthDep,
+    db: DbDep,
+) -> CreerIntentResponse:
+    """
+    Crée un Stripe PaymentIntent pour un loyer avec :
+    - application_fee_amount = montant * 4% (en centimes)
+    - transfer_data.destination = compte Stripe Connect du proprio
+    - metadata: type='loyer', bien_id, locataire_id
+
+    Retourne le client_secret à passer à Stripe.js côté frontend.
+    Le frais_althy (4%) n'est JAMAIS affiché à l'utilisateur.
+    """
+    # Récupérer le compte Stripe Connect du propriétaire du bien
+    row = (await db.execute(
+        text("""
+            SELECT b.owner_id, pr.stripe_account_id
+            FROM biens b
+            JOIN profiles pr ON pr.user_id = b.owner_id
+            WHERE b.id = :bid
+        """),
+        {"bid": str(payload.bien_id)},
+    )).fetchone()
+
+    if not row:
+        raise HTTPException(404, "Bien introuvable")
+
+    owner_id, stripe_account_id = row
+
+    if not stripe_account_id:
+        raise HTTPException(
+            422,
+            "Le propriétaire n'a pas connecté son compte Stripe. "
+            "Il doit compléter l'onboarding Stripe depuis son espace Abonnement.",
+        )
+
+    loyer_brut = float(payload.montant)
+    frais_althy = round(loyer_brut * PLATFORM_FEE_PCT / 100, 2)
+    loyer_net = round(loyer_brut - frais_althy, 2)
+
+    # Stripe travaille en centimes
+    amount_centimes = int(loyer_brut * 100)
+    fee_centimes = int(frais_althy * 100)
+
+    pi = stripe.PaymentIntent.create(
+        amount=amount_centimes,
+        currency="chf",
+        application_fee_amount=fee_centimes,
+        transfer_data={"destination": stripe_account_id},
+        metadata={
+            "type": "loyer",
+            "bien_id": str(payload.bien_id),
+            "locataire_id": str(payload.locataire_id),
+            "owner_id": str(owner_id),
+            "loyer_net": str(loyer_net),
+            **({"mois": payload.mois} if payload.mois else {}),
+        },
+        description=f"Loyer net reçu : CHF {loyer_net}",
+        automatic_payment_methods={"enabled": True},
+    )
+
+    return CreerIntentResponse(
+        client_secret=pi.client_secret,
+        payment_intent_id=pi.id,
+        loyer_brut=loyer_brut,
+        loyer_net=loyer_net,
+        frais_althy=frais_althy,
+    )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# CRUD paiements
+# ═════════════════════════════════════════════════════════════════════════════
 
 
 @router.get("", response_model=list[PaiementRead])

@@ -25,7 +25,7 @@ const C = {
   bg:      "#FAFAF8",
   surface: "#FFFFFF",
   border:  "rgba(26,22,18,0.07)",
-  orange:  "#E8602C",
+  orange:  "var(--althy-orange)",
   text:    "#1A1612",
   muted:   "#6B5E52",
   dark:    "#1A1612",

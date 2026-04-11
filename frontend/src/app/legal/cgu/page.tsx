@@ -61,7 +61,7 @@ export default function CguPage() {
 
       <H2 num={3}>Statut d'Althy — point crucial</H2>
       <Important>
-        <p style={{ fontWeight: 700, color: "#B55A30", marginBottom: "0.5rem" }}>⚠️ Althy est un outil de facilitation — pas un professionnel réglementé</p>
+        <p style={{ fontWeight: 700, color: "var(--althy-orange)", marginBottom: "0.5rem" }}>⚠️ Althy est un outil de facilitation — pas un professionnel réglementé</p>
         <p>Althy <strong>n'est pas</strong> :</p>
         <ul style={{ paddingLeft: "1.25rem", margin: "0.25rem 0" }}>
           <li>Une régie immobilière au sens de la loi cantonale sur les activités immobilières</li>
@@ -76,7 +76,7 @@ export default function CguPage() {
 
       <H2 num={4}>Documents générés par intelligence artificielle</H2>
       <Important>
-        <p style={{ fontWeight: 700, color: "#B55A30", marginBottom: "0.5rem" }}>Disclaimer obligatoire sur tous les documents générés</p>
+        <p style={{ fontWeight: 700, color: "var(--althy-orange)", marginBottom: "0.5rem" }}>Disclaimer obligatoire sur tous les documents générés</p>
         <p>Les documents générés automatiquement par l'IA d'Althy (baux, états des lieux, quittances, relances, estimations, rapports) sont fournis <strong>à titre indicatif et de facilitation uniquement</strong>. Ils <strong>ne constituent pas un conseil juridique, fiscal ou professionnel</strong>.</p>
         <p style={{ marginTop: "0.5rem" }}>L'Utilisateur est seul responsable de la validation et de l'utilisation de ces documents. Althy recommande vivement de faire valider tout document ayant des conséquences juridiques par un professionnel du droit qualifié (avocat, notaire).</p>
       </Important>
@@ -113,7 +113,7 @@ export default function CguPage() {
       <P>Les données de l'Utilisateur sont conservées pendant 90 jours après résiliation, puis supprimées sauf obligation légale de conservation (données fiscales : 10 ans).</P>
 
       <H2 num={9}>Propriété des données</H2>
-      <P>L'Utilisateur reste propriétaire de ses données (informations sur ses biens, locataires, documents). Althy n'utilise ces données que pour fournir le service, conformément à la <Link href="/legal/confidentialite" style={{ color: "#B55A30" }}>Politique de confidentialité</Link>.</P>
+      <P>L'Utilisateur reste propriétaire de ses données (informations sur ses biens, locataires, documents). Althy n'utilise ces données que pour fournir le service, conformément à la <Link href="/legal/confidentialite" style={{ color: "var(--althy-orange)" }}>Politique de confidentialité</Link>.</P>
       <P>L'Utilisateur peut exporter l'intégralité de ses données à tout moment (Paramètres → Sécurité → Export). En cas de résiliation, une export peut être demandé pendant 90 jours.</P>
       <P>Althy peut utiliser des données agrégées et anonymisées pour améliorer ses services et ses modèles d'IA, sans identifier les utilisateurs individuellement.</P>
 
@@ -133,11 +133,11 @@ export default function CguPage() {
 
       <H2 num={12}>Modifications des CGU</H2>
       <P>Althy se réserve le droit de modifier les présentes CGU. Les modifications sont communiquées par email avec un <strong>préavis de 30 jours</strong>. En cas de refus des nouvelles CGU, l'Utilisateur peut résilier son abonnement sans frais.</P>
-      <P>La version en vigueur est toujours accessible à l'adresse <a href="/legal/cgu" style={{ color: "#B55A30" }}>althy.ch/legal/cgu</a> et datée de sa dernière modification.</P>
+      <P>La version en vigueur est toujours accessible à l'adresse <a href="/legal/cgu" style={{ color: "var(--althy-orange)" }}>althy.ch/legal/cgu</a> et datée de sa dernière modification.</P>
       <P>Version actuelle : <strong>{CGU_VERSION}</strong> — entrée en vigueur le {LAST_UPDATE}.</P>
 
       <H2 num={13}>Contact</H2>
-      <P>Pour toute question relative aux présentes CGU : <a href="mailto:legal@althy.ch" style={{ color: "#B55A30" }}>legal@althy.ch</a></P>
+      <P>Pour toute question relative aux présentes CGU : <a href="mailto:legal@althy.ch" style={{ color: "var(--althy-orange)" }}>legal@althy.ch</a></P>
     </>
   );
 }

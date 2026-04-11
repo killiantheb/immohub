@@ -16,7 +16,7 @@ const config: Config = {
           200: "#F4C9B0",
           300: "#ECAA88",
           400: "#E08860",
-          500: "#B55A30",   // ← terre cuite principale
+          500: "#E8602C",   // ← terre cuite principale
           600: "#9E4D28",
           700: "#7D3C1E",
           800: "#5C2C15",

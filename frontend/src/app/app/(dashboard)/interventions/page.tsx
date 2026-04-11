@@ -222,7 +222,7 @@ function OpenerTab() {
         </p>
         {!isOpener && (
           <Link
-            href="/app/rfqs/new"
+            href="/app/artisans/devis"
             style={{
               display: "flex", alignItems: "center", gap: 6,
               padding: "8px 16px", borderRadius: 8,
@@ -425,7 +425,7 @@ function ArtisanTab() {
           Décrivez vos travaux — Althy contacte 3-5 artisans et compare les devis
         </p>
         <Link
-          href="/app/rfqs/new"
+          href="/app/artisans/devis"
           style={{
             display: "flex", alignItems: "center", gap: 6,
             padding: "8px 16px", borderRadius: 8,
@@ -471,7 +471,7 @@ function ArtisanTab() {
             Décrivez vos travaux et Althy contacte les artisans de la zone
           </p>
           <Link
-            href="/app/rfqs/new"
+            href="/app/artisans/devis"
             style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               padding: "8px 18px", borderRadius: 8,
@@ -539,7 +539,7 @@ function ArtisanTab() {
                     </button>
                   )}
                   <Link
-                    href={`/app/rfqs/${rfq.id}`}
+                    href="/app/artisans/devis"
                     style={{
                       display: "flex", alignItems: "center", gap: 4,
                       fontSize: 12, color: S.text3, textDecoration: "none",

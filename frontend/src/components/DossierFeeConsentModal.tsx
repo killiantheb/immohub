@@ -48,7 +48,7 @@ export function DossierFeeConsentModal({ propertyName, landlordName, onConfirm, 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
             <div style={{ background: "#FAE4D6", borderRadius: 10, padding: 10, flexShrink: 0 }}>
-              <FileText style={{ color: "#B55A30", width: 20, height: 20 }} />
+              <FileText style={{ color: "var(--althy-orange)", width: 20, height: 20 }} />
             </div>
             <div>
               <p style={{ margin: "0 0 2px", fontSize: 16, fontWeight: 700, color: "#3D3830" }}>
@@ -73,7 +73,7 @@ export function DossierFeeConsentModal({ propertyName, landlordName, onConfirm, 
           background: "#FAE4D6", borderRadius: 12, padding: "14px 16px",
           border: "1px solid #EDCFBE", marginBottom: 16,
         }}>
-          <p style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 700, color: "#B55A30" }}>CHF 90</p>
+          <p style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 700, color: "var(--althy-orange)" }}>CHF 90</p>
           <p style={{ margin: 0, fontSize: 13, color: "#5C2E0E", lineHeight: 1.5 }}>
             <strong>Uniquement si votre candidature est retenue.</strong>{" "}
             Aucun montant ne sera débité tant que le propriétaire ne vous a pas choisi.
@@ -99,7 +99,7 @@ export function DossierFeeConsentModal({ propertyName, landlordName, onConfirm, 
         <label style={{
           display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer",
           padding: "12px 14px", borderRadius: 10,
-          border: `1px solid ${accepted ? "#B55A30" : "#E8E4DC"}`,
+          border: `1px solid ${accepted ? "var(--althy-orange)" : "#E8E4DC"}`,
           background: accepted ? "#FAE4D6" : "#FAFAF8",
           marginBottom: 16, transition: "all 0.15s",
         }}>
@@ -107,18 +107,18 @@ export function DossierFeeConsentModal({ propertyName, landlordName, onConfirm, 
             type="checkbox"
             checked={accepted}
             onChange={e => setAccepted(e.target.checked)}
-            style={{ marginTop: 2, accentColor: "#B55A30", width: 15, height: 15, flexShrink: 0, cursor: "pointer" }}
+            style={{ marginTop: 2, accentColor: "var(--althy-orange)", width: 15, height: 15, flexShrink: 0, cursor: "pointer" }}
           />
           <span style={{ fontSize: 12.5, color: "#3D3830", lineHeight: 1.55 }}>
             Je comprends que des frais de dossier de <strong>CHF 90</strong> me seront facturés{" "}
             <strong>uniquement si ma candidature est retenue</strong> par le propriétaire.{" "}
             J&apos;accepte les{" "}
-            <Link href="/legal/cgu" target="_blank" style={{ color: "#B55A30" }}>CGU Althy</Link>.
+            <Link href="/legal/cgu" target="_blank" style={{ color: "var(--althy-orange)" }}>CGU Althy</Link>.
           </span>
         </label>
 
         {!accepted && (
-          <p style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12, color: "#B55A30", marginBottom: 12 }}>
+          <p style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12, color: "var(--althy-orange)", marginBottom: 12 }}>
             <AlertCircle style={{ width: 13, height: 13, flexShrink: 0 }} />
             Veuillez accepter les conditions pour soumettre votre dossier.
           </p>
@@ -131,7 +131,7 @@ export function DossierFeeConsentModal({ propertyName, landlordName, onConfirm, 
             disabled={!accepted}
             style={{
               flex: 1, padding: "10px 16px",
-              background: accepted ? "#B55A30" : "#D1CBC4",
+              background: accepted ? "var(--althy-orange)" : "#D1CBC4",
               color: "#fff", border: "none", borderRadius: 10,
               fontSize: 14, fontWeight: 700, cursor: accepted ? "pointer" : "not-allowed",
               transition: "background 0.15s",

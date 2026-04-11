@@ -25,7 +25,7 @@ const propertyPin = L.divIcon({
   className: "",
   html: `<svg width="36" height="45" viewBox="0 0 36 45" xmlns="http://www.w3.org/2000/svg">
     <filter id="ps"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.25"/></filter>
-    <path filter="url(#ps)" d="M18 1C10.8 1 5 6.8 5 14c0 10.3 13 30 13 30S31 24.3 31 14C31 6.8 25.2 1 18 1z" fill="#B55A30" stroke="white" stroke-width="1.5"/>
+    <path filter="url(#ps)" d="M18 1C10.8 1 5 6.8 5 14c0 10.3 13 30 13 30S31 24.3 31 14C31 6.8 25.2 1 18 1z" fill="#E8602C" stroke="white" stroke-width="1.5"/>
     <path d="M13 17l5-5 5 5v7h-4v-4h-2v4h-4z" fill="white"/>
   </svg>`,
   iconSize: [36, 45],
@@ -198,7 +198,7 @@ export default function PropertyMap({
               <div style={{ fontSize: 12 }}>
                 <p style={{ fontWeight: 700, marginBottom: 4 }}>Votre bien</p>
                 <p style={{ color: "#7A7469" }}>{address ?? `${center[0].toFixed(5)}, ${center[1].toFixed(5)}`}</p>
-                {!readOnly && <p style={{ color: "#B55A30", marginTop: 4 }}>Glissez pour ajuster</p>}
+                {!readOnly && <p style={{ color: "#E8602C", marginTop: 4 }}>Glissez pour ajuster</p>}
               </div>
             </Popup>
           </Marker>
@@ -247,7 +247,7 @@ export default function PropertyMap({
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <span style={{ fontSize: 11, fontWeight: 600, color: "#7A7469", textTransform: "uppercase" as const, letterSpacing: "0.06em", minWidth: 80 }}>Points d'intérêt</span>
             {POI_RADIUS_OPTIONS.map(o => (
-              <button key={o.value} onClick={() => setPoiRadius(o.value)} style={{ padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${poiRadius === o.value ? "#B55A30" : "#E8E4DC"}`, background: poiRadius === o.value ? "#FAE4D6" : "#fff", color: poiRadius === o.value ? "#B55A30" : "#7A7469" }}>
+              <button key={o.value} onClick={() => setPoiRadius(o.value)} style={{ padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${poiRadius === o.value ? "#E8602C" : "#E8E4DC"}`, background: poiRadius === o.value ? "#FAE4D6" : "#fff", color: poiRadius === o.value ? "#E8602C" : "#7A7469" }}>
                 {o.label}
               </button>
             ))}

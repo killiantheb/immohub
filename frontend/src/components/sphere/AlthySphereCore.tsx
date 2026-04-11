@@ -54,7 +54,7 @@ export function AlthySphereCore({ state, size = 200 }: Props) {
           {/* Main gradient — terre cuite */}
           <radialGradient id="sg-main" cx="38%" cy="35%" r="65%">
             <stop offset="0%"   stopColor="#E8835A" />
-            <stop offset="45%"  stopColor="#B55A30" />
+            <stop offset="45%"  stopColor="var(--althy-orange)" />
             <stop offset="100%" stopColor="#6E3018" />
           </radialGradient>
 

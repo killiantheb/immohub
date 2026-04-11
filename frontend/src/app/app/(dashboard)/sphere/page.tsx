@@ -548,10 +548,27 @@ export default function SpherePage() {
 
       <div style={{ minHeight: "100vh", background: "var(--althy-bg)", display: "flex", flexDirection: "column", alignItems: "center", padding: "0 16px 120px", position: "relative" }}>
 
-        {/* ── Tableau de bord button ── */}
+        {/* ── Navigation haut ── */}
+        <div style={{ position: "absolute", top: 20, left: 24, zIndex: 10 }}>
+          <Link href="/app/carte" style={{
+            display: "flex", alignItems: "center", gap: 5,
+            padding: "6px 14px", borderRadius: 20,
+            background: "transparent", border: "0.5px solid var(--althy-border)",
+            color: "var(--althy-text-2)", fontSize: 12, fontWeight: 500,
+            textDecoration: "none",
+          }}>
+            ← Carte
+          </Link>
+        </div>
         <div style={{ position: "absolute", top: 20, right: 24, zIndex: 10 }}>
-          <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", background: "var(--althy-surface)", border: "1px solid var(--althy-border)", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "var(--althy-text)", textDecoration: "none" }}>
-            <LayoutGrid size={14} /> Tableau de bord
+          <Link href="/app" style={{
+            display: "flex", alignItems: "center", gap: 5,
+            padding: "6px 14px", borderRadius: 20,
+            background: "transparent", border: "0.5px solid var(--althy-border)",
+            color: "var(--althy-text-2)", fontSize: 12, fontWeight: 500,
+            textDecoration: "none",
+          }}>
+            Tableau de bord →
           </Link>
         </div>
 
@@ -601,6 +618,15 @@ export default function SpherePage() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Lien tableau de bord complet */}
+          {visibleActions.length > 0 && (
+            <div style={{ textAlign: "center", marginTop: 24, marginBottom: 8 }}>
+              <Link href="/app" style={{ fontSize: 12, color: "var(--althy-text-3)", textDecoration: "none" }}>
+                Voir le tableau de bord complet →
+              </Link>
             </div>
           )}
 

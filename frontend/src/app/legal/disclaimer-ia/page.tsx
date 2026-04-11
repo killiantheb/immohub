@@ -26,8 +26,8 @@ export default function DisclaimerIaPage() {
       </div>
 
       {/* Main disclaimer box — reproduction du footer PDF */}
-      <div style={{ padding: "1.25rem 1.5rem", background: "#FAE4D6", borderRadius: 12, border: "2px solid #B55A30", marginBottom: "2rem" }}>
-        <p style={{ fontFamily: "var(--font-serif)", fontSize: 13, fontWeight: 400, color: "#B55A30", marginBottom: "0.5rem", letterSpacing: "0.5px" }}>DISCLAIMER — apparaissant sur chaque document généré</p>
+      <div style={{ padding: "1.25rem 1.5rem", background: "#FAE4D6", borderRadius: 12, border: "2px solid var(--althy-orange)", marginBottom: "2rem" }}>
+        <p style={{ fontFamily: "var(--font-serif)", fontSize: 13, fontWeight: 400, color: "var(--althy-orange)", marginBottom: "0.5rem", letterSpacing: "0.5px" }}>DISCLAIMER — apparaissant sur chaque document généré</p>
         <p style={{ fontSize: 13, color: "#5C2E0E", lineHeight: 1.7, fontStyle: "italic" }}>
           "Document généré automatiquement par Althy IA le [DATE]. Ce document est fourni à titre indicatif et de facilitation uniquement. Il ne constitue pas un conseil juridique, fiscal ou professionnel. L'utilisateur est seul responsable de sa validation et de son utilisation. En cas de doute, consultez un professionnel qualifié. Althy Sàrl, Genève — althy.ch"
         </p>
@@ -115,15 +115,15 @@ export default function DisclaimerIaPage() {
           { name: "Conférence suisse des régies", role: "Répertoire des régies agréées", url: "https://www.svit.ch" },
         ].map(r => (
           <a key={r.name} href={r.url} target="_blank" rel="noreferrer" style={{ padding: "0.875rem 1rem", background: "#fff", borderRadius: 10, border: "1px solid #E8E4DC", textDecoration: "none", display: "block" }}>
-            <p style={{ fontSize: 13, fontWeight: 700, color: "#B55A30", marginBottom: 2 }}>{r.name}</p>
+            <p style={{ fontSize: 13, fontWeight: 700, color: "var(--althy-orange)", marginBottom: 2 }}>{r.name}</p>
             <p style={{ fontSize: 11, color: "#7A7469" }}>{r.role}</p>
           </a>
         ))}
       </div>
 
       <H2>7. Contact</H2>
-      <P>Questions sur les documents générés : <a href="mailto:support@althy.ch" style={{ color: "#B55A30" }}>support@althy.ch</a></P>
-      <P>Signalement d'une erreur dans un document : <a href="mailto:legal@althy.ch" style={{ color: "#B55A30" }}>legal@althy.ch</a></P>
+      <P>Questions sur les documents générés : <a href="mailto:support@althy.ch" style={{ color: "var(--althy-orange)" }}>support@althy.ch</a></P>
+      <P>Signalement d'une erreur dans un document : <a href="mailto:legal@althy.ch" style={{ color: "var(--althy-orange)" }}>legal@althy.ch</a></P>
     </>
   );
 }

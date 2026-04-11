@@ -37,7 +37,7 @@ export default function MentionsLegalesPage() {
       </p>
 
       <H2>2. Responsable de la publication</H2>
-      <P>Le responsable de la publication est le fondateur d'Althy, joignable à l'adresse <a href="mailto:contact@althy.ch" style={{ color: "#B55A30" }}>contact@althy.ch</a>.</P>
+      <P>Le responsable de la publication est le fondateur d'Althy, joignable à l'adresse <a href="mailto:contact@althy.ch" style={{ color: "var(--althy-orange)" }}>contact@althy.ch</a>.</P>
 
       <H2>3. Hébergement</H2>
       <div style={{ display: "grid", gap: "0.75rem", marginTop: "0.5rem" }}>
@@ -69,8 +69,8 @@ export default function MentionsLegalesPage() {
       <P>En cas de litige avec un consommateur résidant dans l'Union européenne, les dispositions impératives du droit de l'État membre de résidence du consommateur demeurent applicables dans la mesure où elles offrent une protection plus élevée.</P>
 
       <H2>7. Contact</H2>
-      <P>Pour toute question relative aux présentes mentions légales : <a href="mailto:contact@althy.ch" style={{ color: "#B55A30" }}>contact@althy.ch</a></P>
-      <P>Pour toute question relative à vos données personnelles : <a href="mailto:privacy@althy.ch" style={{ color: "#B55A30" }}>privacy@althy.ch</a></P>
+      <P>Pour toute question relative aux présentes mentions légales : <a href="mailto:contact@althy.ch" style={{ color: "var(--althy-orange)" }}>contact@althy.ch</a></P>
+      <P>Pour toute question relative à vos données personnelles : <a href="mailto:privacy@althy.ch" style={{ color: "var(--althy-orange)" }}>privacy@althy.ch</a></P>
     </>
   );
 }

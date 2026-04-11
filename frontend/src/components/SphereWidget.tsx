@@ -42,8 +42,8 @@ export function SphereWidget() {
     if (open) setTimeout(() => inputRef.current?.focus(), 100);
   }, [open]);
 
-  // Don't render on sphere page — AFTER all hooks
-  if (pathname === '/app/sphere') return null;
+  // Don't render on sphere page nor carte page — AFTER all hooks
+  if (pathname === '/app/sphere' || pathname === '/app/carte') return null;
 
   async function handleSend() {
     if (!input.trim() || sending) return;

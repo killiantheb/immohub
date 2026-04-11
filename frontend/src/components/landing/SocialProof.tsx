@@ -6,7 +6,7 @@ import { MARQUEE_ITEMS } from "@/lib/data/landing"
 const Marquee = dynamic(() => import("react-fast-marquee"), { ssr: false })
 
 const C = {
-  orange: "#E8602C",
+  orange: "var(--althy-orange)",
   textMuted: "rgba(26,18,8,0.40)",
   border: "rgba(40,18,8,0.06)",
   bg: "#F2EDE5",

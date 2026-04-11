@@ -83,7 +83,7 @@ export function CookieBanner() {
         style={{
           position: "fixed", bottom: 20, left: 20, right: 20, zIndex: 9999,
           maxWidth: 520, marginLeft: "auto", marginRight: "auto",
-          backgroundColor: "#FFFFFF", border: "2px solid #B55A30",
+          backgroundColor: "#FFFFFF", border: "2px solid var(--althy-orange)",
           borderRadius: 16, padding: "20px 24px",
           boxShadow: "0 8px 40px rgba(61,56,48,0.18)",
           fontFamily: "'DM Sans', system-ui, sans-serif",
@@ -94,7 +94,7 @@ export function CookieBanner() {
         </p>
         <p style={{ margin: "0 0 16px", fontSize: 12, color: "#7A7469", lineHeight: 1.5 }}>
           Choisissez les catégories de cookies que vous acceptez.{" "}
-          <Link href="/legal/cookies" style={{ color: "#B55A30" }}>Politique cookies</Link>
+          <Link href="/legal/cookies" style={{ color: "var(--althy-orange)" }}>Politique cookies</Link>
         </p>
 
         {/* Essential — always on */}
@@ -107,7 +107,7 @@ export function CookieBanner() {
         </div>
 
         {/* Analytics — toggleable */}
-        <div style={{ padding: "10px 12px", borderRadius: 10, border: `1px solid ${analyticsChecked ? "#B55A30" : "#E8E4DC"}`, marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ padding: "10px 12px", borderRadius: 10, border: `1px solid ${analyticsChecked ? "var(--althy-orange)" : "#E8E4DC"}`, marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#3D3830" }}>Analytiques</p>
             <p style={{ margin: 0, fontSize: 11, color: "#7A7469" }}>PostHog (anonymisé), Sentry erreurs, Vercel Web Vitals</p>
@@ -117,7 +117,7 @@ export function CookieBanner() {
             aria-pressed={analyticsChecked}
             style={{
               width: 44, height: 24, borderRadius: 12,
-              background: analyticsChecked ? "#B55A30" : "#D1CBC4",
+              background: analyticsChecked ? "var(--althy-orange)" : "#D1CBC4",
               border: "none", cursor: "pointer", position: "relative", flexShrink: 0,
               transition: "background 0.2s",
             }}
@@ -143,7 +143,7 @@ export function CookieBanner() {
           <button
             onClick={() => saveConsent(analyticsChecked)}
             style={{
-              padding: "9px 18px", backgroundColor: "#B55A30", color: "#fff",
+              padding: "9px 18px", backgroundColor: "var(--althy-orange)", color: "#fff",
               border: "none", borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer",
             }}
           >
@@ -181,14 +181,14 @@ export function CookieBanner() {
       </p>
       <p style={{ margin: "0 0 14px", fontSize: 12.5, color: "#7A7469", lineHeight: 1.55 }}>
         Cookies essentiels toujours actifs. Cookies analytiques avec votre accord.{" "}
-        <Link href="/legal/cookies" style={{ color: "#B55A30" }}>Politique cookies</Link>
+        <Link href="/legal/cookies" style={{ color: "var(--althy-orange)" }}>Politique cookies</Link>
       </p>
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <button
           onClick={() => saveConsent(true)}
           style={{
-            padding: "9px 18px", backgroundColor: "#B55A30", color: "#fff",
+            padding: "9px 18px", backgroundColor: "var(--althy-orange)", color: "#fff",
             border: "none", borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer",
           }}
         >
@@ -206,7 +206,7 @@ export function CookieBanner() {
         <button
           onClick={() => setMode("customize")}
           style={{
-            padding: "9px 14px", backgroundColor: "transparent", color: "#B55A30",
+            padding: "9px 14px", backgroundColor: "transparent", color: "var(--althy-orange)",
             border: "none", fontSize: 12.5, fontWeight: 600, cursor: "pointer", textDecoration: "underline",
           }}
         >

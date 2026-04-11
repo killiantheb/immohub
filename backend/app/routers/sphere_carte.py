@@ -1,13 +1,14 @@
-"""Sphere Carte — /api/v1/sphere/carte
+"""Sphere parse-location — POST /api/v1/sphere/parse-location
 
 Parse une requête en langage naturel (ville, type de bien, budget, pièces)
-via Claude Haiku et retourne coordonnées + filtres structurés.
+via Claude Sonnet et retourne coordonnées + filtres structurés.
 Endpoint léger et rapide — pas de contexte utilisateur requis.
 """
 
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 import anthropic
@@ -18,57 +19,68 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Annotated
 
-router = APIRouter(prefix="/sphere/carte", tags=["sphere-carte"])
+router = APIRouter(prefix="/sphere", tags=["sphere-carte"])
 
 AuthDep = Annotated[User, Depends(get_current_user)]
 
-# ── Villes connues ────────────────────────────────────────────────────────────
+# ── Fallback local ────────────────────────────────────────────────────────────
 
-VILLES: dict[str, dict[str, float]] = {
-    "Genève":    {"lng": 6.143,  "lat": 46.204},
-    "Lausanne":  {"lng": 6.632,  "lat": 46.519},
-    "Fribourg":  {"lng": 7.161,  "lat": 46.806},
-    "Neuchâtel": {"lng": 6.931,  "lat": 46.992},
-    "Sion":      {"lng": 7.359,  "lat": 46.233},
-    "Nyon":      {"lng": 6.239,  "lat": 46.383},
-    "Montreux":  {"lng": 6.911,  "lat": 46.433},
-    "Morges":    {"lng": 6.499,  "lat": 46.512},
-    "Vevey":     {"lng": 6.844,  "lat": 46.461},
-    "Yverdon":   {"lng": 6.641,  "lat": 46.778},
-    "Verbier":   {"lng": 7.225,  "lat": 46.097},
-    "Berne":     {"lng": 7.447,  "lat": 46.948},
-    "Zürich":    {"lng": 8.541,  "lat": 47.376},
-    "Bâle":      {"lng": 7.589,  "lat": 47.560},
-    "Lugano":    {"lng": 8.951,  "lat": 46.004},
-    "Lucerne":   {"lng": 8.307,  "lat": 47.050},
-    "Valais":    {"lng": 7.500,  "lat": 46.200},
-    "Vaud":      {"lng": 6.700,  "lat": 46.600},
-    "Jura":      {"lng": 7.200,  "lat": 47.340},
+CITY_FALLBACK: dict[str, tuple[float, float]] = {
+    "genève":    (6.143, 46.204),
+    "lausanne":  (6.632, 46.519),
+    "fribourg":  (7.161, 46.806),
+    "neuchâtel": (6.931, 46.992),
+    "sion":      (7.359, 46.233),
+    "nyon":      (6.239, 46.383),
+    "montreux":  (6.911, 46.433),
+    "yverdon":   (6.641, 46.778),
+    # Villes supplémentaires
+    "morges":    (6.499, 46.512),
+    "vevey":     (6.844, 46.461),
+    "verbier":   (7.225, 46.097),
+    "berne":     (7.447, 46.948),
+    "zürich":    (8.541, 47.376),
+    "zurich":    (8.541, 47.376),
+    "bâle":      (7.589, 47.560),
+    "bale":      (7.589, 47.560),
+    "lugano":    (8.951, 46.004),
+    "lucerne":   (8.307, 47.050),
+    "valais":    (7.500, 46.200),
+    "vaud":      (6.700, 46.600),
+    "jura":      (7.200, 47.340),
+}
+
+# Mapping minuscules → nom affiché avec casse correcte
+_CITY_DISPLAY: dict[str, str] = {
+    "genève": "Genève", "lausanne": "Lausanne", "fribourg": "Fribourg",
+    "neuchâtel": "Neuchâtel", "sion": "Sion", "nyon": "Nyon",
+    "montreux": "Montreux", "yverdon": "Yverdon", "morges": "Morges",
+    "vevey": "Vevey", "verbier": "Verbier", "berne": "Berne",
+    "zürich": "Zürich", "zurich": "Zürich", "bâle": "Bâle", "bale": "Bâle",
+    "lugano": "Lugano", "lucerne": "Lucerne", "valais": "Valais",
+    "vaud": "Vaud", "jura": "Jura",
 }
 
 # ── Prompt système ────────────────────────────────────────────────────────────
 
-_SYSTEM = """Tu es un parser de recherches immobilières pour Althy (Suisse romande).
-
-Analyse la requête et extrais ces champs au format JSON strict.
-Réponds UNIQUEMENT avec du JSON valide, sans markdown ni texte autour.
-
-{
-  "ville": "Ville suisse la plus pertinente (string, obligatoire)",
-  "type_bien": "studio|appartement|maison|villa|chalet|local|terrain ou null",
-  "budget_max": nombre_CHF_ou_null,
-  "nb_pieces": nombre_entier_ou_null,
-  "type_transaction": "location|vente|saisonnier ou null"
-}
-
-Règles :
-- Ville par défaut si non précisée : "Genève"
-- Villes disponibles : Genève, Lausanne, Fribourg, Neuchâtel, Sion, Nyon, Montreux, Morges, Vevey, Yverdon, Verbier, Berne, Zürich, Bâle, Lugano, Lucerne, Valais, Vaud, Jura
-- "studio" → nb_pieces=1, type_bien="studio"
-- "2 pièces" / "T2" / "F2" → nb_pieces=2
-- Budget en CHF : mensuel si location, total si vente
-- "moins de 2000" → budget_max=2000
-- Si ville inconnue, choisir la ville de la liste la plus proche géographiquement"""
+_SYSTEM = (
+    "Tu es un assistant qui extrait des informations de recherche immobilière.\n"
+    "Retourne UNIQUEMENT un JSON valide avec : ville (str), lng (float), lat (float),\n"
+    "filtres { type_bien, budget_max, nb_pieces, type_transaction }.\n"
+    "Si la ville n'est pas en Suisse romande, retourne Genève par défaut.\n\n"
+    "Règles supplémentaires :\n"
+    "- Ville par défaut si non précisée : \"Genève\"\n"
+    "- Villes disponibles : Genève, Lausanne, Fribourg, Neuchâtel, Sion, Nyon, "
+    "Montreux, Morges, Vevey, Yverdon, Verbier, Berne, Zürich, Bâle, Lugano, Lucerne\n"
+    "- type_bien : studio|appartement|maison|villa|chalet|local|terrain ou null\n"
+    "- type_transaction : location|vente|saisonnier ou null\n"
+    "- \"studio\" → nb_pieces=1, type_bien=\"studio\"\n"
+    "- \"2 pièces\" / \"T2\" / \"F2\" → nb_pieces=2\n"
+    "- Budget en CHF : mensuel si location, total si vente\n"
+    "- \"sous CHF 2000\" → budget_max=2000\n"
+    "- Pour lng/lat, utilise les coordonnées réelles de la ville identifiée.\n"
+    "- Réponds UNIQUEMENT avec du JSON valide, sans markdown ni texte autour."
+)
 
 
 # ── Schémas ───────────────────────────────────────────────────────────────────
@@ -84,6 +96,30 @@ class ParseLocationResponse(BaseModel):
     filtres: dict[str, Any]
 
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _resolve_city(ville_raw: str) -> tuple[str, float, float]:
+    """Résout un nom de ville → (nom affiché, lng, lat).
+    Priorité : correspondance exacte → partielle → fallback Genève.
+    """
+    key = ville_raw.strip().lower()
+
+    # Correspondance exacte (insensible à la casse)
+    if key in CITY_FALLBACK:
+        lng, lat = CITY_FALLBACK[key]
+        return _CITY_DISPLAY.get(key, ville_raw.title()), lng, lat
+
+    # Correspondance partielle
+    for city_key, coords in CITY_FALLBACK.items():
+        if key in city_key or city_key in key:
+            lng, lat = coords
+            return _CITY_DISPLAY.get(city_key, city_key.title()), lng, lat
+
+    # Fallback Genève
+    lng, lat = CITY_FALLBACK["genève"]
+    return "Genève", lng, lat
+
+
 # ── Endpoint ──────────────────────────────────────────────────────────────────
 
 @router.post("/parse-location", response_model=ParseLocationResponse)
@@ -96,70 +132,64 @@ async def parse_location(
     - La ville identifiée + ses coordonnées GPS
     - Les filtres extraits (type_bien, budget_max, nb_pieces, type_transaction)
 
-    Utilise Claude Haiku pour la rapidité.
-    Fallback sur Genève si la ville n'est pas reconnue.
+    Utilise Claude Sonnet. Fallback local sur CITY_FALLBACK si Claude échoue.
     """
     query = body.query.strip()
     if not query:
         raise HTTPException(status_code=422, detail="Requête vide")
 
-    if not settings.ANTHROPIC_API_KEY:
-        raise HTTPException(status_code=503, detail="Service IA non configuré")
+    parsed: dict[str, Any] = {}
 
-    # ── Appel Claude Haiku ────────────────────────────────────────────────────
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    # ── Appel Claude Sonnet ───────────────────────────────────────────────────
+    if settings.ANTHROPIC_API_KEY:
+        try:
+            client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+            msg = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=256,
+                temperature=0,
+                system=_SYSTEM,
+                messages=[{"role": "user", "content": query}],
+            )
+            raw = msg.content[0].text.strip()
 
-    try:
-        msg = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=256,
-            temperature=0,
-            system=_SYSTEM,
-            messages=[{"role": "user", "content": query}],
-        )
-    except anthropic.APIStatusError as exc:
-        raise HTTPException(status_code=502, detail=f"Erreur Claude : {exc.status_code}") from exc
-    except anthropic.APIError as exc:
-        raise HTTPException(status_code=502, detail="Service IA temporairement indisponible") from exc
+            # Strip markdown fences si présents
+            if raw.startswith("```"):
+                parts = raw.split("```")
+                raw = parts[1].lstrip("json").strip() if len(parts) > 1 else raw
 
-    raw = msg.content[0].text.strip()
-
-    # Strip markdown fences si présents
-    if raw.startswith("```"):
-        parts = raw.split("```")
-        raw = parts[1].lstrip("json").strip() if len(parts) > 1 else raw
-
-    # ── Parse JSON ────────────────────────────────────────────────────────────
-    try:
-        parsed: dict[str, Any] = json.loads(raw)
-    except json.JSONDecodeError:
-        # Claude a peut-être ajouté du texte — tentative d'extraction
-        import re
-        m = re.search(r"\{.*\}", raw, re.DOTALL)
-        if m:
             try:
-                parsed = json.loads(m.group())
+                parsed = json.loads(raw)
             except json.JSONDecodeError:
-                parsed = {}
-        else:
+                m = re.search(r"\{.*\}", raw, re.DOTALL)
+                if m:
+                    try:
+                        parsed = json.loads(m.group())
+                    except json.JSONDecodeError:
+                        parsed = {}
+
+        except (anthropic.APIStatusError, anthropic.APIError):
             parsed = {}
+    # Si pas de clé API ou échec → parsed reste {} → fallback local ci-dessous
 
-    # ── Résolution de la ville ────────────────────────────────────────────────
+    # ── Résolution ville (Claude ou fallback local) ───────────────────────────
     ville_raw: str = (parsed.get("ville") or "Genève").strip()
-    coords = VILLES.get(ville_raw)
 
-    if not coords:
-        # Recherche partielle insensible à la casse
-        ville_low = ville_raw.lower()
-        for v_name, v_coords in VILLES.items():
-            if ville_low in v_name.lower() or v_name.lower() in ville_low:
-                ville_raw = v_name
-                coords = v_coords
-                break
+    # Si Claude a fourni lng/lat directement et que la ville est reconnue,
+    # on peut utiliser ses coordonnées ; sinon on utilise CITY_FALLBACK.
+    ville_display, lng, lat = _resolve_city(ville_raw)
 
-    if not coords:
-        ville_raw = "Genève"
-        coords = VILLES["Genève"]
+    # Préférer les coordonnées du fallback local (fiables) sur celles de Claude
+    # sauf si la ville n'est pas dans notre dictionnaire (ville inconnue)
+    claude_lng = parsed.get("lng")
+    claude_lat = parsed.get("lat")
+    if claude_lng is None or claude_lat is None:
+        # Claude n'a pas retourné de coords → on garde celles du fallback
+        pass
+    elif ville_display == "Genève" and ville_raw.lower() not in ("genève", "geneve", "geneva"):
+        # Fallback forcé sur Genève car ville non reconnue : on garde nos coords
+        pass
+    # Sinon on garde CITY_FALLBACK qui est plus précis
 
     # ── Filtres (champs non nuls) ─────────────────────────────────────────────
     filtres: dict[str, Any] = {
@@ -173,9 +203,13 @@ async def parse_location(
         if v is not None
     }
 
+    # Extraire depuis filtres imbriqués si Claude a mis un sous-objet "filtres"
+    if not filtres and isinstance(parsed.get("filtres"), dict):
+        filtres = {k: v for k, v in parsed["filtres"].items() if v is not None}
+
     return ParseLocationResponse(
-        ville=ville_raw,
-        lng=coords["lng"],
-        lat=coords["lat"],
+        ville=ville_display,
+        lng=lng,
+        lat=lat,
         filtres=filtres,
     )

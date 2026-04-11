@@ -1,2 +1,4 @@
-"use client";
-export { default } from "../listings/page";
+import { redirect } from "next/navigation";
+export default function PublicationsPage() {
+  redirect("/app/listings");
+}

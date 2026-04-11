@@ -54,14 +54,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Utilisateur connecté sur page auth → home
+  // Utilisateur connecté sur page auth → carte (entrée immersive)
   if (user && (pathname === "/login" || pathname === "/register")) {
-    return NextResponse.redirect(new URL("/app", request.url));
+    return NextResponse.redirect(new URL("/app/carte", request.url));
   }
 
-  // Utilisateur connecté sur / → home
+  // Utilisateur connecté sur / → carte (entrée immersive)
   if (user && pathname === "/") {
-    return NextResponse.redirect(new URL("/app", request.url));
+    return NextResponse.redirect(new URL("/app/carte", request.url));
   }
 
   return response;

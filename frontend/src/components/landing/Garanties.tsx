@@ -6,7 +6,7 @@ const C = {
   border: "rgba(40,18,8,0.06)",
   text: "#1A1208",
   textMid: "rgba(26,18,8,0.65)",
-  orange: "#E8602C",
+  orange: "var(--althy-orange)",
 } as const
 
 const ICONS: Record<string, React.ReactNode> = {

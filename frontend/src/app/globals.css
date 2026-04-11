@@ -16,11 +16,11 @@
   --althy-text-2:      #5C5650;
   --althy-text-3:      #7A7469;   /* muted */
 
-  /* Terre cuite — couleur principale */
-  --althy-orange:      #B55A30;
-  --althy-orange-light:#FAE4D6;   /* primaire light */
-  --althy-orange-bg:   rgba(181,90,48,0.08);
-  --althy-orange-hover:#9E4D28;
+  /* Orange vif — couleur principale */
+  --althy-orange:      #E8602C;
+  --althy-orange-light:#FEF2EB;
+  --althy-orange-bg:   rgba(232,96,44,0.08);
+  --althy-orange-hover:#C84E1E;
 
   /* Sage — succès */
   --althy-green:       #5A7D54;
@@ -41,9 +41,9 @@
   --sidebar-border:    #E8E4DC;
   --sidebar-text:      #5C5650;
   --sidebar-text-on:   #3D3830;
-  --sidebar-active:    rgba(181,90,48,0.08);
-  --sidebar-hover:     rgba(181,90,48,0.04);
-  --sidebar-gold:      #B55A30;
+  --sidebar-active:    rgba(232,96,44,0.08);
+  --sidebar-hover:     rgba(232,96,44,0.04);
+  --sidebar-gold:      #E8602C;
 
   /* Ombres */
   --althy-shadow:      0 1px 3px rgba(61,56,48,0.06), 0 1px 2px rgba(61,56,48,0.04);

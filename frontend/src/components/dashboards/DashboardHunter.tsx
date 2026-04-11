@@ -19,6 +19,7 @@ import {
   DCard,
   DKpi,
   DRoleHeader,
+  DTopNav,
   DSectionTitle,
 } from "@/components/dashboards/DashBoardShared";
 
@@ -51,8 +52,8 @@ const LEADS_MOCK = [
 const STATUT_MAP: Record<string, { label: string; color: string; bg: string }> = {
   "négociation":    { label: "Négociation",    color: DC.orange, bg: "rgba(232,96,44,0.10)" },
   "qualification":  { label: "Qualification",  color: "#D97706", bg: "rgba(217,119,6,0.10)" },
-  "offre envoyée":  { label: "Offre envoyée",  color: "#16A34A", bg: "rgba(22,163,74,0.10)" },
-  "perdu":          { label: "Perdu",           color: "#DC2626", bg: "rgba(220,38,38,0.10)" },
+  "offre envoyée":  { label: "Offre envoyée",  color: "var(--althy-green)", bg: "var(--althy-green-bg)" },
+  "perdu":          { label: "Perdu",           color: "var(--althy-red)", bg: "var(--althy-red-bg)" },
 };
 
 function StatutBadge({ statut }: { statut: string }) {
@@ -108,7 +109,8 @@ export function DashboardHunter({ firstName }: Props) {
 
   return (
     <div style={{ minHeight: "100vh", background: DC.bg }}>
-      <DRoleHeader role="hunter" initials={initials} />
+      <DTopNav />
+          <DRoleHeader role="hunter" initials={initials} />
 
       {/* Greeting */}
       <div style={{ marginBottom: "2rem" }}>
@@ -172,8 +174,8 @@ export function DashboardHunter({ firstName }: Props) {
         />
         <DKpi
           icon={Users}
-          iconColor="#16A34A"
-          iconBg="rgba(22,163,74,0.10)"
+          iconColor="var(--althy-green)"
+          iconBg="var(--althy-green-bg)"
           value={`${kpiTaux}%`}
           label="Taux conversion"
           sub="Leads → transactions"

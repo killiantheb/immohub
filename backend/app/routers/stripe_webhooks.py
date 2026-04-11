@@ -1,12 +1,12 @@
 """Stripe — webhooks, Connect, Billing, loyer payments.
 
 Routes :
-  POST /stripe/connect/onboard          → Stripe Connect Express onboarding
-  GET  /stripe/connect/status           → vérifier le compte Connect
-  POST /stripe/checkout                 → créer une session Checkout abonnement
-  GET  /stripe/subscription             → abonnement actif de l'utilisateur
-  POST /stripe/loyer/{paiement_id}      → PaymentIntent loyer (4% Althy)
-  POST /stripe/webhook                  → événements Stripe asynchrones
+  POST /connect/onboard          → Stripe Connect Express onboarding
+  GET  /connect/status           → vérifier le compte Connect
+  POST /checkout                 → créer une session Checkout abonnement
+  GET  /subscription             → abonnement actif de l'utilisateur
+  POST /loyer/{paiement_id}      → PaymentIntent loyer (4% Althy)
+  POST /webhook                  → événements Stripe asynchrones
 
 Règle absolue CLAUDE.md :
   - 4 % Althy prélevé en application_fee (transfer_data.destination = compte proprio)
@@ -16,10 +16,12 @@ Règle absolue CLAUDE.md :
 
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import date
 from typing import Annotated, Literal
 
+import httpx
 import stripe
 from app.core.config import settings
 from app.core.database import get_db
@@ -207,10 +209,10 @@ async def initiate_loyer_payment(
     Le frontend affiche uniquement : "Loyer net reçu : CHF {loyer_net}"
     Le frais_althy n'est JAMAIS affiché.
     """
-    # Récupérer le paiement + le compte Connect du proprio
+    # Récupérer le paiement + le compte Connect du proprio + locataire
     row = (await db.execute(
         text("""
-            SELECT p.montant, p.bien_id, b.owner_id,
+            SELECT p.montant, p.bien_id, p.locataire_id, b.owner_id,
                    pr.stripe_account_id
             FROM paiements p
             JOIN biens b ON b.id = p.bien_id
@@ -223,7 +225,7 @@ async def initiate_loyer_payment(
     if not row:
         raise HTTPException(404, "Paiement introuvable ou déjà réglé")
 
-    montant, bien_id, owner_id, stripe_account_id = row
+    montant, bien_id, locataire_id, owner_id, stripe_account_id = row
 
     if not stripe_account_id:
         raise HTTPException(
@@ -246,8 +248,10 @@ async def initiate_loyer_payment(
         application_fee_amount=fee_centimes,
         transfer_data={"destination": stripe_account_id},
         metadata={
+            "type": "loyer",
             "paiement_id": str(paiement_id),
             "bien_id": str(bien_id),
+            "locataire_id": str(locataire_id) if locataire_id else "",
             "owner_id": str(owner_id),
             "loyer_net": str(loyer_net),
         },
@@ -361,48 +365,9 @@ async def stripe_webhook(
 
     # ── Loyer reçu ─────────────────────────────────────────────────────────
     elif etype == "payment_intent.succeeded":
-        pi_id = data.get("id")
-        amount = data.get("amount_received", 0) / 100
-        metadata = data.get("metadata", {})
-        paiement_id = metadata.get("paiement_id")
-        loyer_net_meta = metadata.get("loyer_net")
+        await _handle_payment_intent_succeeded(db, data)
 
-        platform_fee = round(amount * PLATFORM_FEE_PCT / 100, 2)
-        net_amount = float(loyer_net_meta) if loyer_net_meta else round(amount - platform_fee, 2)
-
-        if paiement_id:
-            # Mettre à jour la table paiements (Althy natif)
-            await db.execute(
-                text("""
-                    UPDATE paiements
-                    SET statut = 'recu',
-                        date_paiement = CURRENT_DATE,
-                        net_montant = :net,
-                        stripe_payment_intent_id = :pi,
-                        updated_at = now()
-                    WHERE id = :pid
-                """),
-                {"net": net_amount, "pi": pi_id, "pid": paiement_id},
-            )
-
-        # Mettre à jour aussi la table transactions (legacy)
-        lease_id = metadata.get("lease_id")
-        if lease_id:
-            await db.execute(
-                text("""
-                    UPDATE transactions
-                    SET status = 'paid', paid_date = now(),
-                        stripe_payment_intent_id = :pi,
-                        net_amount = :net, platform_fee = :fee,
-                        updated_at = now()
-                    WHERE stripe_payment_intent_id = :pi
-                       OR (lease_id = :lid AND status = 'pending')
-                """),
-                {"pi": pi_id, "net": net_amount, "fee": platform_fee, "lid": lease_id},
-            )
-        await db.commit()
-
-    # ── Loyer impayé ───────────────────────────────────────────────────────
+    # ── Loyer impayé (PaymentIntent manuel) ───────────────────────────────
     elif etype == "payment_intent.payment_failed":
         pi_id = data.get("id")
         reason = data.get("last_payment_error", {}).get("message", "Échec paiement")
@@ -426,6 +391,10 @@ async def stripe_webhook(
         )
         await db.commit()
 
+    # ── Loyer impayé (facture récurrente Stripe Billing) ──────────────────
+    elif etype == "invoice.payment_failed":
+        await _handle_invoice_payment_failed(db, data)
+
     # ── Compte Connect vérifié ─────────────────────────────────────────────
     elif etype == "account.updated":
         account_id = data.get("id")
@@ -437,6 +406,211 @@ async def stripe_webhook(
             await db.commit()
 
     return {"received": True}
+
+
+# ─── Handlers internes ────────────────────────────────────────────────────────
+
+
+async def _handle_payment_intent_succeeded(
+    db: AsyncSession,
+    data: dict,
+) -> None:
+    """
+    Traite un PaymentIntent réussi.
+    Seuls les PaymentIntents de type 'loyer' (metadata.type == 'loyer') sont traités.
+    """
+    pi_id = data.get("id")
+    metadata = data.get("metadata", {})
+
+    # Ne traiter que les paiements de loyer identifiés
+    if metadata.get("type") != "loyer":
+        return
+
+    amount = data.get("amount_received", 0) / 100
+    paiement_id = metadata.get("paiement_id")
+    bien_id = metadata.get("bien_id")
+    owner_id = metadata.get("owner_id")
+    loyer_net_meta = metadata.get("loyer_net")
+    locataire_id = metadata.get("locataire_id")
+
+    frais_althy = round(amount * PLATFORM_FEE_PCT / 100, 2)
+    net_amount = float(loyer_net_meta) if loyer_net_meta else round(amount - frais_althy, 2)
+
+    if paiement_id:
+        # Mettre à jour la table paiements (Althy natif)
+        # frais_althy stocké dans net_montant (loyer brut - frais = loyer net reçu)
+        await db.execute(
+            text("""
+                UPDATE paiements
+                SET statut = 'recu',
+                    date_paiement = CURRENT_DATE,
+                    net_montant = :net,
+                    stripe_payment_intent_id = :pi,
+                    updated_at = now()
+                WHERE id = :pid
+            """),
+            {"net": net_amount, "pi": pi_id, "pid": paiement_id},
+        )
+
+    # Mettre à jour la table transactions (avec platform_fee = frais Althy 4%)
+    lease_id = metadata.get("lease_id")
+    await db.execute(
+        text("""
+            UPDATE transactions
+            SET status = 'paid', paid_date = now(),
+                stripe_payment_intent_id = :pi,
+                net_amount = :net, platform_fee = :fee,
+                updated_at = now()
+            WHERE stripe_payment_intent_id = :pi
+               OR (lease_id = :lid AND status = 'pending' AND :lid IS NOT NULL)
+        """),
+        {"pi": pi_id, "net": net_amount, "fee": frais_althy, "lid": lease_id},
+    )
+
+    # Notification proprio : loyer reçu
+    if owner_id:
+        montant_fmt = f"CHF {net_amount:,.2f}".replace(",", " ")
+        await db.execute(
+            text("""
+                INSERT INTO notifications (user_id, type, titre, message, lien, created_at, updated_at)
+                VALUES (:uid, 'loyer_recu', 'Loyer reçu', :msg, :lien, now(), now())
+            """),
+            {
+                "uid": owner_id,
+                "msg": f"Loyer net reçu : {montant_fmt} (frais Althy 4% déduits).",
+                "lien": f"/app/biens/{bien_id}/finances" if bien_id else "/app/finances",
+            },
+        )
+
+    # Audit log
+    await db.execute(
+        text("""
+            INSERT INTO audit_logs
+                (id, user_id, action, resource_type, resource_id, new_values, created_at)
+            VALUES
+                (:id, :uid, 'loyer_recu', 'paiement', :rid, :nv::jsonb, now())
+        """),
+        {
+            "id": str(uuid.uuid4()),
+            "uid": owner_id,
+            "rid": paiement_id,
+            "nv": json.dumps({
+                "stripe_pi": pi_id,
+                "montant_brut": amount,
+                "frais_althy": frais_althy,
+                "loyer_net": net_amount,
+                "bien_id": bien_id,
+                "locataire_id": locataire_id,
+            }),
+        },
+    )
+
+    await db.commit()
+
+
+async def _handle_invoice_payment_failed(
+    db: AsyncSession,
+    data: dict,
+) -> None:
+    """
+    Traite l'échec d'une facture récurrente (invoice.payment_failed).
+    Crée une ai_action 'relancer_loyer' urgente et envoie un SMS au proprio.
+    """
+    customer_id = data.get("customer")
+    invoice_id = data.get("id")
+    amount_due = data.get("amount_due", 0) / 100
+    period_end = data.get("period_end")
+
+    if not customer_id:
+        return
+
+    # Trouver le proprio via son stripe_customer_id
+    row = (await db.execute(
+        text("""
+            SELECT p.user_id, u.email, p.phone
+            FROM profiles p
+            JOIN users u ON u.id = p.user_id
+            WHERE p.stripe_customer_id = :cid
+            LIMIT 1
+        """),
+        {"cid": customer_id},
+    )).fetchone()
+
+    if not row:
+        return
+
+    owner_id, owner_email, owner_phone = row
+
+    # Créer une ai_action 'relancer_loyer' avec urgence haute
+    await db.execute(
+        text("""
+            INSERT INTO ai_actions
+                (id, user_id, action_type, titre, description, urgence, payload, status, created_at)
+            VALUES
+                (:id, :uid, 'relancer_loyer',
+                 'Loyer impayé — relance requise',
+                 :desc,
+                 'haute',
+                 :payload::jsonb,
+                 'pending',
+                 now())
+        """),
+        {
+            "id": str(uuid.uuid4()),
+            "uid": str(owner_id),
+            "desc": (
+                f"La facture Stripe {invoice_id} de CHF {amount_due:.2f} "
+                "n'a pas pu être prélevée. Contactez votre locataire."
+            ),
+            "payload": json.dumps({
+                "invoice_id": invoice_id,
+                "customer_id": customer_id,
+                "amount_due": amount_due,
+                "period_end": period_end,
+                "type": "invoice_failed",
+            }),
+        },
+    )
+
+    # Notification in-app
+    await db.execute(
+        text("""
+            INSERT INTO notifications (user_id, type, titre, message, lien, created_at, updated_at)
+            VALUES (:uid, 'loyer_impaye', 'Loyer impayé', :msg, '/app/finances', now(), now())
+        """),
+        {
+            "uid": str(owner_id),
+            "msg": (
+                f"Le prélèvement du loyer (CHF {amount_due:.2f}) a échoué. "
+                "Une relance automatique a été créée."
+            ),
+        },
+    )
+
+    await db.commit()
+
+    # SMS Twilio au proprio (non-bloquant)
+    if owner_phone and settings.TWILIO_ACCOUNT_SID and settings.TWILIO_AUTH_TOKEN:
+        sms_body = (
+            f"[Althy] Loyer impayé — CHF {amount_due:.2f} n'a pas pu être prélevé. "
+            "Connectez-vous sur althy.ch pour relancer votre locataire."
+        )
+        try:
+            async with httpx.AsyncClient(
+                timeout=8,
+                auth=(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN),
+            ) as client:
+                await client.post(
+                    f"https://api.twilio.com/2010-04-01/Accounts/"
+                    f"{settings.TWILIO_ACCOUNT_SID}/Messages.json",
+                    data={
+                        "From": settings.TWILIO_FROM_NUMBER,
+                        "To":   owner_phone,
+                        "Body": sms_body,
+                    },
+                )
+        except Exception:
+            pass  # non-bloquant
 
 
 def _price_to_plan(price_id: str | None) -> str:

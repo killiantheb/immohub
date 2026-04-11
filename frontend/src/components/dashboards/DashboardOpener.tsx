@@ -24,6 +24,7 @@ import {
   DCard,
   DKpi,
   DRoleHeader,
+  DTopNav,
   DSectionTitle,
   DEmptyState,
 } from "@/components/dashboards/DashBoardShared";
@@ -46,11 +47,11 @@ const MISSIONS_MOCK = [
 
 // ── Statut badge ──────────────────────────────────────────────────────────────
 const STATUT_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  "confirmée":  { label: "Confirmée",  color: "#16A34A", bg: "rgba(22,163,74,0.10)" },
+  "confirmée":  { label: "Confirmée",  color: "var(--althy-green)", bg: "var(--althy-green-bg)" },
   "en cours":   { label: "En cours",   color: DC.orange, bg: "rgba(232,96,44,0.10)" },
   "terminée":   { label: "Terminée",   color: DC.muted,  bg: "rgba(107,94,82,0.10)" },
   "proposee":   { label: "Proposée",   color: "#2563EB", bg: "rgba(37,99,235,0.10)" },
-  "acceptee":   { label: "Acceptée",   color: "#16A34A", bg: "rgba(22,163,74,0.10)" },
+  "acceptee":   { label: "Acceptée",   color: "var(--althy-green)", bg: "var(--althy-green-bg)" },
   "effectuee":  { label: "Effectuée",  color: DC.muted,  bg: "rgba(107,94,82,0.10)" },
 };
 
@@ -115,7 +116,8 @@ export function DashboardOpener({ firstName }: Props) {
   return (
     <div style={{ minHeight: "100vh", background: DC.bg }}>
       {/* Role header */}
-      <DRoleHeader role="opener" initials={initials} />
+      <DTopNav />
+          <DRoleHeader role="opener" initials={initials} />
 
       {/* Greeting */}
       <div style={{ marginBottom: "2rem" }}>
@@ -160,8 +162,8 @@ export function DashboardOpener({ firstName }: Props) {
           <>
             <DKpi
               icon={Euro}
-              iconColor="#16A34A"
-              iconBg="rgba(22,163,74,0.10)"
+              iconColor="var(--althy-green)"
+              iconBg="var(--althy-green-bg)"
               value={fmtCHF(kpiRevenus)}
               label="Revenus ce mois"
               sub="Missions effectuées"
@@ -187,8 +189,8 @@ export function DashboardOpener({ firstName }: Props) {
             />
             <DKpi
               icon={Clock}
-              iconColor={kpiAttente > 0 ? "#D97706" : "#16A34A"}
-              iconBg={kpiAttente > 0 ? "rgba(217,119,6,0.10)" : "rgba(22,163,74,0.10)"}
+              iconColor={kpiAttente > 0 ? "#D97706" : "var(--althy-green)"}
+              iconBg={kpiAttente > 0 ? "rgba(217,119,6,0.10)" : "var(--althy-green-bg)"}
               value={fmtCHF(kpiAttente)}
               label="Paiements en attente"
               sub="À recevoir"

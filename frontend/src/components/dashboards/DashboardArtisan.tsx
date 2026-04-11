@@ -18,6 +18,7 @@ import {
   DCard,
   DKpi,
   DRoleHeader,
+  DTopNav,
   DSectionTitle,
   DEmptyState,
 } from "@/components/dashboards/DashBoardShared";
@@ -73,8 +74,8 @@ const DEVIS_MOCK = [
 // ── Statut badge ──────────────────────────────────────────────────────────────
 const STATUT_MAP: Record<string, { label: string; color: string; bg: string }> = {
   "en attente": { label: "En attente", color: "#D97706", bg: "rgba(217,119,6,0.10)" },
-  "accepté":    { label: "Accepté",    color: "#16A34A", bg: "rgba(22,163,74,0.10)" },
-  "refusé":     { label: "Refusé",     color: "#DC2626", bg: "rgba(220,38,38,0.10)" },
+  "accepté":    { label: "Accepté",    color: "var(--althy-green)", bg: "var(--althy-green-bg)" },
+  "refusé":     { label: "Refusé",     color: "var(--althy-red)", bg: "var(--althy-red-bg)" },
 };
 
 function StatutBadge({ statut }: { statut: string }) {
@@ -117,7 +118,8 @@ export function DashboardArtisan({ firstName }: Props) {
 
   return (
     <div style={{ minHeight: "100vh", background: DC.bg }}>
-      <DRoleHeader role="artisan" initials={initials} />
+      <DTopNav />
+          <DRoleHeader role="artisan" initials={initials} />
 
       <div style={{ marginBottom: "2rem" }}>
         <h1
@@ -153,8 +155,8 @@ export function DashboardArtisan({ firstName }: Props) {
       >
         <DKpi
           icon={Euro}
-          iconColor="#16A34A"
-          iconBg="rgba(22,163,74,0.10)"
+          iconColor="var(--althy-green)"
+          iconBg="var(--althy-green-bg)"
           value={fmtCHF(kpiCA)}
           label="CA ce mois"
           sub="Facturé et encaissé"
@@ -171,8 +173,8 @@ export function DashboardArtisan({ firstName }: Props) {
         />
         <DKpi
           icon={Wrench}
-          iconColor="#16A34A"
-          iconBg="rgba(22,163,74,0.10)"
+          iconColor="var(--althy-green)"
+          iconBg="var(--althy-green-bg)"
           value={String(kpiChantiers)}
           label="Chantiers actifs"
           sub="En cours"

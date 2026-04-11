@@ -10,7 +10,7 @@ const C = {
   text: "#1A1208",
   textMid: "rgba(26,18,8,0.60)",
   textMuted: "rgba(26,18,8,0.38)",
-  orange: "#E8602C",
+  orange: "var(--althy-orange)",
   orangeBg: "rgba(232,96,44,0.08)",
   orangeBorder: "rgba(232,96,44,0.22)",
 } as const

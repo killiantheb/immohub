@@ -26,9 +26,9 @@ const missionPin = L.divIcon({
   className: "",
   html: `<svg width="36" height="45" viewBox="0 0 36 45" xmlns="http://www.w3.org/2000/svg">
     <filter id="ms"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/></filter>
-    <path filter="url(#ms)" d="M18 1C10.8 1 5 6.8 5 14c0 10.3 13 30 13 30S31 24.3 31 14C31 6.8 25.2 1 18 1z" fill="#B55A30" stroke="white" stroke-width="1.5"/>
+    <path filter="url(#ms)" d="M18 1C10.8 1 5 6.8 5 14c0 10.3 13 30 13 30S31 24.3 31 14C31 6.8 25.2 1 18 1z" fill="#E8602C" stroke="white" stroke-width="1.5"/>
     <circle cx="18" cy="14" r="6" fill="white"/>
-    <text x="18" y="18" text-anchor="middle" font-size="9" fill="#B55A30" font-weight="bold">M</text>
+    <text x="18" y="18" text-anchor="middle" font-size="9" fill="#E8602C" font-weight="bold">M</text>
   </svg>`,
   iconSize: [36, 45],
   iconAnchor: [18, 45],
@@ -131,7 +131,7 @@ export default function MapMissionProposal({
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <span style={{ fontSize: 11, fontWeight: 600, color: "#7A7469", textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>Trier par</span>
         {([["distance", "Distance"], ["rating", "Note"], ["tarif", "Tarif"]] as [SortKey, string][]).map(([k, l]) => (
-          <button key={k} onClick={() => setSortBy(k)} style={{ padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${sortBy === k ? "#B55A30" : "#E8E4DC"}`, background: sortBy === k ? "#FAE4D6" : "#fff", color: sortBy === k ? "#B55A30" : "#7A7469" }}>
+          <button key={k} onClick={() => setSortBy(k)} style={{ padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: "pointer", border: `1px solid ${sortBy === k ? "#E8602C" : "#E8E4DC"}`, background: sortBy === k ? "#FAE4D6" : "#fff", color: sortBy === k ? "#E8602C" : "#7A7469" }}>
             {l}
           </button>
         ))}
@@ -146,7 +146,7 @@ export default function MapMissionProposal({
           <Marker position={center} icon={missionPin}>
             <Popup>
               <div style={{ fontSize: 12 }}>
-                <p style={{ fontWeight: 700, color: "#B55A30" }}>Point de mission</p>
+                <p style={{ fontWeight: 700, color: "#E8602C" }}>Point de mission</p>
                 {missionAddress && <p style={{ color: "#7A7469", marginTop: 4 }}>{missionAddress}</p>}
                 {missionDate && <p style={{ color: "#7A7469" }}>Le {missionDate}</p>}
               </div>
@@ -174,7 +174,7 @@ export default function MapMissionProposal({
                     {o.hourly_rate && <p style={{ color: "#7A7469" }}>Tarif : CHF {o.hourly_rate}/h</p>}
                     <p style={{ color: "#7A7469" }}>Missions : {o.total_missions}</p>
                     {onSelect && (
-                      <button onClick={() => onSelect(o.id)} style={{ marginTop: 8, width: "100%", padding: "6px 0", borderRadius: 8, background: "#B55A30", border: "none", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      <button onClick={() => onSelect(o.id)} style={{ marginTop: 8, width: "100%", padding: "6px 0", borderRadius: 8, background: "#E8602C", border: "none", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                         Proposer la mission
                       </button>
                     )}
@@ -186,7 +186,7 @@ export default function MapMissionProposal({
               <Polyline
                 positions={[[o.latitude, o.longitude], center]}
                 pathOptions={{
-                  color: o.id === selectedOpenerId ? "#B55A30" : o.is_available ? "#16A34A" : "#D1D5DB",
+                  color: o.id === selectedOpenerId ? "#E8602C" : o.is_available ? "#16A34A" : "#D1D5DB",
                   weight: o.id === selectedOpenerId ? 2 : 1,
                   dashArray: "5 6",
                   opacity: o.id === selectedOpenerId ? 0.9 : 0.4,
@@ -205,7 +205,7 @@ export default function MapMissionProposal({
         {/* Legend */}
         <div style={{ position: "absolute", bottom: 10, left: 10, zIndex: 999, background: "rgba(255,255,255,0.92)", borderRadius: 10, padding: "8px 12px", fontSize: 11, backdropFilter: "blur(4px)", border: "1px solid #E8E4DC" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-            <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#B55A30", display: "inline-block" }} />
+            <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#E8602C", display: "inline-block" }} />
             <span style={{ color: "#3D3830" }}>Point de mission</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
@@ -228,7 +228,7 @@ export default function MapMissionProposal({
         <button
           key={o.id}
           onClick={() => onSelect?.(o.id)}
-          style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "12px 14px", borderRadius: 12, background: selectedOpenerId === o.id ? "#FAE4D6" : "#FAFAF8", border: `1.5px solid ${selectedOpenerId === o.id ? "#B55A30" : "#E8E4DC"}`, cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}
+          style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "12px 14px", borderRadius: 12, background: selectedOpenerId === o.id ? "#FAE4D6" : "#FAFAF8", border: `1.5px solid ${selectedOpenerId === o.id ? "#E8602C" : "#E8E4DC"}`, cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}
         >
           <div style={{ width: 36, height: 36, borderRadius: "50%", background: o.is_available ? "#16A34A" : "#9CA3AF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>#{idx + 1}</span>

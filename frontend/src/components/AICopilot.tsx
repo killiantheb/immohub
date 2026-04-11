@@ -51,7 +51,7 @@ const PAGE_SUGGESTIONS: Record<string, string[]> = {
   "/app/biens":        ["Rédiger une annonce pour ce bien", "Générer un EDL d'entrée", "Historique complet"],
   "/app/contracts":    ["Rédiger un bail", "Explique ce bail", "Quand résilier ?"],
   "/app/transactions": ["Analyser mes impayés", "Relancer un locataire"],
-  "/app/rfqs":         ["Rédiger un appel d'offre", "Comparer les devis"],
+  "/app/artisans/devis": ["Rédiger un appel d'offre", "Comparer les devis"],
   "/app/interventions":["Relancer l'artisan", "Rédiger un rapport", "Prioriser les urgences"],
 };
 

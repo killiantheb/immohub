@@ -18,6 +18,7 @@ import {
   DCard,
   DKpi,
   DRoleHeader,
+  DTopNav,
   DSectionTitle,
   DEmptyState,
 } from "@/components/dashboards/DashBoardShared";
@@ -92,7 +93,8 @@ export function DashboardTenant({ firstName }: Props) {
 
   return (
     <div style={{ minHeight: "100vh", background: DC.bg }}>
-      <DRoleHeader role="locataire" initials={initials} />
+      <DTopNav />
+          <DRoleHeader role="locataire" initials={initials} />
 
       {/* Greeting */}
       <div style={{ marginBottom: "2rem" }}>
@@ -155,8 +157,8 @@ export function DashboardTenant({ firstName }: Props) {
             />
             <DKpi
               icon={Wrench}
-              iconColor={kpiInterventions > 0 ? "#D97706" : "#16A34A"}
-              iconBg={kpiInterventions > 0 ? "rgba(217,119,6,0.10)" : "rgba(22,163,74,0.10)"}
+              iconColor={kpiInterventions > 0 ? "#D97706" : "var(--althy-green)"}
+              iconBg={kpiInterventions > 0 ? "rgba(217,119,6,0.10)" : "var(--althy-green-bg)"}
               value={String(kpiInterventions)}
               label="Interventions actives"
               sub="En cours"
@@ -203,14 +205,14 @@ export function DashboardTenant({ firstName }: Props) {
                       width: 34,
                       height: 34,
                       borderRadius: 9,
-                      background: "rgba(220,38,38,0.08)",
+                      background: "var(--althy-red-bg)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       flexShrink: 0,
                     }}
                   >
-                    <FileText size={15} style={{ color: "#DC2626" }} />
+                    <FileText size={15} style={{ color: "var(--althy-red)" }} />
                   </div>
                   <div>
                     <p style={{ fontSize: 13, fontWeight: 600, color: DC.text, marginBottom: 1 }}>

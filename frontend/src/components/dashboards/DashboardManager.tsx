@@ -31,6 +31,7 @@ import {
   DCard,
   DKpi,
   DRoleHeader,
+  DTopNav,
   DSectionTitle,
   DEmptyState,
 } from "@/components/dashboards/DashBoardShared";
@@ -56,7 +57,7 @@ const REVENUE_MOCK = [
 
 // ── Statut badge helper ───────────────────────────────────────────────────────
 const STATUT_MAP: Record<string, { label: string; color: string; bg: string }> = {
-  loue:       { label: "Loué",       color: "#16A34A", bg: "rgba(22,163,74,0.10)" },
+  loue:       { label: "Loué",       color: "var(--althy-green)", bg: "var(--althy-green-bg)" },
   vacant:     { label: "Vacant",     color: "#D97706", bg: "rgba(217,119,6,0.10)" },
   en_vente:   { label: "En vente",   color: "#2563EB", bg: "rgba(37,99,235,0.10)" },
   en_travaux: { label: "En travaux", color: "#0891B2", bg: "rgba(8,145,178,0.10)" },
@@ -82,9 +83,9 @@ function StatusBadge({ statut }: { statut: string }) {
 
 // ── Urgence dot ───────────────────────────────────────────────────────────────
 const URGENCE_COLOR: Record<string, string> = {
-  haute: "#DC2626",
+  haute: "var(--althy-red)",
   moyenne: "#D97706",
-  basse: "#16A34A",
+  basse: "var(--althy-green)",
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -127,7 +128,8 @@ export function DashboardManager({ firstName, role }: Props) {
   return (
     <div style={{ minHeight: "100vh", background: DC.bg, padding: "0" }}>
       {/* Role header */}
-      <DRoleHeader role={role === "agence" || role === "agency" ? "agence" : "proprio_solo"} initials={initials(firstName)} />
+      <DTopNav />
+          <DRoleHeader role={role === "agence" || role === "agency" ? "agence" : "proprio_solo"} initials={initials(firstName)} />
 
       {/* Greeting */}
       <div style={{ marginBottom: "2rem" }}>
@@ -179,8 +181,8 @@ export function DashboardManager({ firstName, role }: Props) {
           <>
             <DKpi
               icon={CheckCircle2}
-              iconColor="#16A34A"
-              iconBg="rgba(22,163,74,0.10)"
+              iconColor="var(--althy-green)"
+              iconBg="var(--althy-green-bg)"
               value={fmtCHF(kpiRevenu)}
               label="Revenus du mois"
               sub="Loyers encaissés"
@@ -188,8 +190,8 @@ export function DashboardManager({ firstName, role }: Props) {
             />
             <DKpi
               icon={Building2}
-              iconColor={kpiOccupation >= 80 ? "#16A34A" : "#DC2626"}
-              iconBg={kpiOccupation >= 80 ? "rgba(22,163,74,0.10)" : "rgba(220,38,38,0.10)"}
+              iconColor={kpiOccupation >= 80 ? "var(--althy-green)" : "var(--althy-red)"}
+              iconBg={kpiOccupation >= 80 ? "var(--althy-green-bg)" : "var(--althy-red-bg)"}
               value={`${kpiOccupation}%`}
               label="Taux d'occupation"
               sub={`${biens.length} bien(s) au total`}
@@ -197,8 +199,8 @@ export function DashboardManager({ firstName, role }: Props) {
             />
             <DKpi
               icon={Clock}
-              iconColor={kpiAttente > 0 ? "#D97706" : "#16A34A"}
-              iconBg={kpiAttente > 0 ? "rgba(217,119,6,0.10)" : "rgba(22,163,74,0.10)"}
+              iconColor={kpiAttente > 0 ? "#D97706" : "var(--althy-green)"}
+              iconBg={kpiAttente > 0 ? "rgba(217,119,6,0.10)" : "var(--althy-green-bg)"}
               value={fmtCHF(kpiAttente)}
               label="Loyers en attente"
               sub="À recevoir"
@@ -206,8 +208,8 @@ export function DashboardManager({ firstName, role }: Props) {
             />
             <DKpi
               icon={AlertTriangle}
-              iconColor={kpiUrgentes > 0 ? "#DC2626" : "#16A34A"}
-              iconBg={kpiUrgentes > 0 ? "rgba(220,38,38,0.10)" : "rgba(22,163,74,0.10)"}
+              iconColor={kpiUrgentes > 0 ? "var(--althy-red)" : "var(--althy-green)"}
+              iconBg={kpiUrgentes > 0 ? "var(--althy-red-bg)" : "var(--althy-green-bg)"}
               value={String(kpiUrgentes)}
               label="Actions urgentes"
               sub="Interventions ouvertes"

@@ -15,7 +15,6 @@ import {
   Users2,
   Navigation2,
   HardHat,
-  SendHorizonal,
   Sparkles,
   SlidersHorizontal,
   LogOut,
@@ -25,12 +24,15 @@ import {
   Megaphone,
   Calculator,
   Target,
-  CreditCard,
   TrendingUp,
   Mail,
   CalendarDays,
   MessageCircle,
   UserPlus,
+  User,
+  Map,
+  FileText,
+  CreditCard,
 } from "lucide-react";
 import { AlthySphere } from "@/components/AlthySphere";
 
@@ -46,37 +48,63 @@ interface NavItem {
 
 const ICON = { size: 15, strokeWidth: 1.5 };
 
-const NAV: NavItem[] = [
-  { label: "Althy IA",        href: "/app/sphere",      icon: <Sparkles {...ICON} />,         section: "sphere" },
-  { label: "Tableau de bord", href: "/app",             icon: <LayoutGrid {...ICON} />,       section: "dashboard" },
-  { label: "Biens",           href: "/app/biens",       icon: <Building2 {...ICON} />,        section: "biens",
-    children: [{ label: "Tous les biens", href: "/app/biens" }] },
-  { label: "Finances",        href: "/app/finances",    icon: <LineChart {...ICON} />,         section: "finances" },
-  { label: "Interventions",   href: "/app/interventions",icon: <Wrench {...ICON} />,           section: "interventions" },
-  { label: "CRM",             href: "/app/crm",         icon: <Users2 {...ICON} />,            section: "crm" },
-  { label: "Messagerie",      href: "/app/messagerie",  icon: <Mail {...ICON} />,              section: "messages" },
-  { label: "Agenda",          href: "/app/agenda",      icon: <CalendarDays {...ICON} />,      section: "agenda" },
-  { label: "WhatsApp",        href: "/app/whatsapp",    icon: <MessageCircle {...ICON} />,     section: "whatsapp" },
-  { label: "Ouvreurs",        href: "/app/ouvreurs",    icon: <Navigation2 {...ICON} />,       section: "ouvreurs",
-    children: [
-      { label: "Missions",   href: "/app/ouvreurs/missions" },
-      { label: "Revenus",    href: "/app/ouvreurs/revenus" },
-      { label: "Historique", href: "/app/ouvreurs/historique" },
-    ]},
-  { label: "Artisans",        href: "/app/artisans",    icon: <HardHat {...ICON} />,           section: "artisans",
-    children: [
-      { label: "Chantiers",  href: "/app/artisans/chantiers" },
-      { label: "Devis",      href: "/app/artisans/devis" },
-      { label: "Paiements",  href: "/app/artisans/paiements" },
-      { label: "Historique", href: "/app/artisans/historique" },
-    ]},
-  { label: "Annonces",         href: "/app/listings",    icon: <Megaphone {...ICON} />,         section: "listings" },
-  { label: "Comptabilité",     href: "/app/comptabilite",icon: <Calculator {...ICON} />,        section: "comptabilite" },
-  { label: "Vente",            href: "/app/vente",       icon: <TrendingUp {...ICON} />,        section: "vente" },
-  { label: "Hunters",          href: "/app/hunters",     icon: <Target {...ICON} />,            section: "hunters" },
-  { label: "Intégration clients", href: "/app/admin/integration", icon: <UserPlus {...ICON} />, section: "onboarding" },
-  { label: "Accès Propriétaires", href: "/app/portail",  icon: <Users2 {...ICON} />,            section: "portail" },
-  { label: "Paramètres",       href: "/app/settings",    icon: <SlidersHorizontal {...ICON} />, section: "settings" },
+// ── Navigation groupée (scrollable, filtrée par can()) ────────────────────────
+
+const NAV_GROUPS: NavItem[][] = [
+  // Groupe 1 — Hub
+  [
+    { label: "Tableau de bord", href: "/app",        icon: <LayoutGrid {...ICON} />, section: "dashboard" },
+    { label: "Carte",           href: "/app/carte",  icon: <Map {...ICON} />,        section: "carte" },
+  ],
+  // Groupe 2 — Gestion
+  [
+    { label: "Biens",         href: "/app/biens",         icon: <Building2 {...ICON} />, section: "biens",
+      children: [{ label: "Tous les biens", href: "/app/biens" }] },
+    { label: "Finances",      href: "/app/finances",      icon: <LineChart {...ICON} />, section: "finances" },
+    { label: "Interventions", href: "/app/interventions", icon: <Wrench {...ICON} />,    section: "interventions" },
+    { label: "CRM",           href: "/app/crm",           icon: <Users2 {...ICON} />,    section: "crm" },
+    { label: "Documents",     href: "/app/documents",     icon: <FileText {...ICON} />,  section: "documents" },
+  ],
+  // Groupe 3 — Marketplace
+  [
+    { label: "Artisans", href: "/app/artisans", icon: <HardHat {...ICON} />, section: "artisans",
+      children: [
+        { label: "Chantiers",  href: "/app/artisans/chantiers" },
+        { label: "Devis",      href: "/app/artisans/devis" },
+        { label: "Paiements",  href: "/app/artisans/paiements" },
+        { label: "Historique", href: "/app/artisans/historique" },
+      ]},
+    { label: "Ouvreurs", href: "/app/ouvreurs", icon: <Navigation2 {...ICON} />, section: "ouvreurs",
+      children: [
+        { label: "Missions",   href: "/app/ouvreurs/missions" },
+        { label: "Revenus",    href: "/app/ouvreurs/revenus" },
+        { label: "Historique", href: "/app/ouvreurs/historique" },
+      ]},
+    { label: "Hunters",  href: "/app/hunters",  icon: <Target {...ICON} />,    section: "hunters" },
+    { label: "Vente",    href: "/app/vente",    icon: <TrendingUp {...ICON} />, section: "vente" },
+    { label: "Annonces", href: "/app/listings", icon: <Megaphone {...ICON} />, section: "listings" },
+  ],
+  // Groupe 4 — Communication
+  [
+    { label: "Messagerie", href: "/app/messagerie", icon: <Mail {...ICON} />,         section: "messages" },
+    { label: "Agenda",     href: "/app/agenda",     icon: <CalendarDays {...ICON} />, section: "agenda" },
+    { label: "WhatsApp",   href: "/app/whatsapp",   icon: <MessageCircle {...ICON} />,section: "whatsapp" },
+  ],
+  // Groupe 5 — Comptabilité & Admin
+  [
+    { label: "Comptabilité",          href: "/app/comptabilite",       icon: <Calculator {...ICON} />,  section: "comptabilite" },
+    { label: "Abonnement",            href: "/app/abonnement",         icon: <CreditCard {...ICON} />,  section: "abonnement" },
+    { label: "Accès Propriétaires",   href: "/app/portail",            icon: <Users2 {...ICON} />,      section: "portail" },
+    { label: "Intégration clients",   href: "/app/admin/integration",  icon: <UserPlus {...ICON} />,    section: "onboarding" },
+  ],
+];
+
+// ── Section bas — toujours visible pour tous les rôles ────────────────────────
+
+const NAV_BOTTOM: NavItem[] = [
+  { label: "Althy IA",   href: "/app/sphere",   icon: <Sparkles {...ICON} />,         section: "sphere" },
+  { label: "Mon profil", href: "/app/profile",  icon: <User {...ICON} />,             section: "profile" },
+  { label: "Paramètres", href: "/app/settings", icon: <SlidersHorizontal {...ICON} />, section: "settings" },
 ];
 
 // ── Styles ────────────────────────────────────────────────────────────────────
@@ -230,7 +258,8 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
     return () => clearInterval(t);
   }, []);
 
-  const visibleItems = NAV.filter(item => can(item.section));
+  const visibleGroups = NAV_GROUPS.map(g => g.filter(item => can(item.section))).filter(g => g.length > 0);
+  const visibleBottom = NAV_BOTTOM.filter(item => can(item.section));
 
   const isActive = (href: string) =>
     href === "/app" ? pathname === "/app" : pathname.startsWith(href);
@@ -285,90 +314,113 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
         </div>
       )}
 
-      {/* ── Navigation ── */}
+      {/* ── Navigation groupée (scrollable) ── */}
       <nav
         className="sidebar-scroll"
         style={{ flex: 1, overflowY: "auto", padding: "6px 0" }}
       >
-        {visibleItems.map(item => {
-          const active      = isActive(item.href);
-          const hasChildren = !!item.children?.length;
-          const expanded    = open[item.href] ?? active;
+        {visibleGroups.map((group, gi) => (
+          <div key={gi}>
+            {/* Séparateur entre groupes */}
+            {gi > 0 && (
+              <div style={{ height: 1, background: "var(--sidebar-border)", margin: "4px 0" }} />
+            )}
+            {group.map(item => {
+              const active      = isActive(item.href);
+              const hasChildren = !!item.children?.length;
+              const expanded    = open[item.href] ?? active;
 
-          return (
-            <div key={item.href}>
-              <button
-                onClick={() => {
-                  if (hasChildren && !collapsed) toggle(item.href);
-                  else handleNav(item.href);
-                }}
-                style={S.navItem(active, collapsed)}
-                title={collapsed ? item.label : undefined}
-              >
-                <span style={S.navIcon(active)}>{item.icon}</span>
-                {!collapsed && (
-                  <>
-                    <span style={S.navLabel(active)}>{item.label}</span>
-                    {/* Unread badges */}
-                    {item.section === "messages" && unreadMsg > 0 && (
-                      <span style={{ marginLeft: "auto", minWidth: 17, height: 17, borderRadius: 9, background: "var(--althy-orange)", color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>
-                        {unreadMsg > 99 ? "99+" : unreadMsg}
-                      </span>
+              return (
+                <div key={item.href}>
+                  <button
+                    onClick={() => {
+                      if (hasChildren && !collapsed) toggle(item.href);
+                      else handleNav(item.href);
+                    }}
+                    style={S.navItem(active, collapsed)}
+                    title={collapsed ? item.label : undefined}
+                  >
+                    <span style={S.navIcon(active)}>{item.icon}</span>
+                    {!collapsed && (
+                      <>
+                        <span style={S.navLabel(active)}>{item.label}</span>
+                        {item.section === "messages" && unreadMsg > 0 && (
+                          <span style={{ marginLeft: "auto", minWidth: 17, height: 17, borderRadius: 9, background: "var(--althy-orange)", color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>
+                            {unreadMsg > 99 ? "99+" : unreadMsg}
+                          </span>
+                        )}
+                        {item.section === "whatsapp" && unreadWa > 0 && (
+                          <span style={{ marginLeft: "auto", minWidth: 17, height: 17, borderRadius: 9, background: "#25D366", color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>
+                            {unreadWa > 99 ? "99+" : unreadWa}
+                          </span>
+                        )}
+                        {hasChildren && (
+                          <ChevronDown
+                            size={11}
+                            strokeWidth={1.5}
+                            style={{
+                              ...S.chevron(active),
+                              marginLeft: item.section === "messages" || item.section === "whatsapp" ? 0 : "auto",
+                              transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+                              transition: "transform 0.18s",
+                            }}
+                          />
+                        )}
+                      </>
                     )}
-                    {item.section === "whatsapp" && unreadWa > 0 && (
-                      <span style={{ marginLeft: "auto", minWidth: 17, height: 17, borderRadius: 9, background: "#25D366", color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>
-                        {unreadWa > 99 ? "99+" : unreadWa}
-                      </span>
-                    )}
-                    {hasChildren && (
-                      <ChevronDown
-                        size={11}
-                        strokeWidth={1.5}
-                        style={{
-                          ...S.chevron(active),
-                          marginLeft: item.section === "messages" || item.section === "whatsapp" ? 0 : "auto",
-                          transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
-                          transition: "transform 0.18s",
-                        }}
-                      />
-                    )}
-                  </>
-                )}
-              </button>
+                  </button>
 
-              {/* Sub-items */}
-              {!collapsed && hasChildren && expanded && (
-                <div style={{
-                  marginLeft: 32,
-                  borderLeft: "1px solid rgba(196,168,122,0.12)",
-                  marginBottom: 2,
-                  paddingLeft: 0,
-                }}>
-                  {item.children!.map(child => {
-                    const ca = pathname === child.href || pathname.startsWith(child.href + "/");
-                    return (
-                      <Link key={child.href} href={child.href} style={S.subItem(ca)} onClick={() => onMobileClose?.()}>
-                        {child.label}
-                      </Link>
-                    );
-                  })}
+                  {!collapsed && hasChildren && expanded && (
+                    <div style={{ marginLeft: 32, borderLeft: "1px solid rgba(196,168,122,0.12)", marginBottom: 2 }}>
+                      {item.children!.map(child => {
+                        const ca = pathname === child.href || pathname.startsWith(child.href + "/");
+                        return (
+                          <Link key={child.href} href={child.href} style={S.subItem(ca)} onClick={() => onMobileClose?.()}>
+                            {child.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
-      {/* ── Séparateur Althy IA ── */}
-      {!collapsed && (
-        <div style={{
-          margin: "0 20px 10px",
-          height: "1px",
-          background: "var(--sidebar-border)",
-        }} />
-      )}
+      {/* ── Section bas — Althy IA / Mon profil / Paramètres ── */}
+      <div style={{ borderTop: "1px solid var(--sidebar-border)", padding: "4px 0" }}>
+        {visibleBottom.map(item => {
+          const active = isActive(item.href);
+          return (
+            <button
+              key={item.href}
+              onClick={() => handleNav(item.href)}
+              style={S.navItem(active, collapsed)}
+              title={collapsed ? item.label : undefined}
+            >
+              <span style={S.navIcon(active)}>{item.icon}</span>
+              {!collapsed && (
+                <>
+                  <span style={S.navLabel(active)}>{item.label}</span>
+                  {/* Point animé orange sur Althy IA */}
+                  {item.section === "sphere" && (
+                    <span style={{
+                      width: 6, height: 6, borderRadius: "50%",
+                      background: "var(--althy-orange)",
+                      flexShrink: 0,
+                      animation: "sidebar-pulse 2s ease-in-out infinite",
+                    }} />
+                  )}
+                </>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-      {/* ── Footer ── */}
+      {/* ── Footer — email + déconnexion ── */}
       <div style={S.footer(collapsed)}>
         {!collapsed && user?.email && (
           <div style={S.email}>{user.email}</div>
@@ -382,6 +434,13 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
           {!collapsed && "Déconnexion"}
         </button>
       </div>
+
+      <style>{`
+        @keyframes sidebar-pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50%       { opacity: 0.5; transform: scale(0.7); }
+        }
+      `}</style>
     </aside>
   );
 }

@@ -16,6 +16,7 @@ import {
   DCard,
   DKpi,
   DRoleHeader,
+  DTopNav,
   DSectionTitle,
 } from "@/components/dashboards/DashBoardShared";
 
@@ -70,7 +71,8 @@ export function DashboardAcheteur({ firstName }: Props) {
 
   return (
     <div style={{ minHeight: "100vh", background: DC.bg }}>
-      <DRoleHeader role="acheteur_premium" initials={initials} />
+      <DTopNav />
+          <DRoleHeader role="acheteur_premium" initials={initials} />
 
       {/* Greeting */}
       <div style={{ marginBottom: "2rem" }}>
@@ -125,8 +127,8 @@ export function DashboardAcheteur({ firstName }: Props) {
         />
         <DKpi
           icon={Heart}
-          iconColor="#DC2626"
-          iconBg="rgba(220,38,38,0.10)"
+          iconColor="var(--althy-red)"
+          iconBg="var(--althy-red-bg)"
           value="8"
           label="Favoris"
           sub="Biens sauvegardés"
@@ -134,8 +136,8 @@ export function DashboardAcheteur({ firstName }: Props) {
         />
         <DKpi
           icon={Bell}
-          iconColor="#16A34A"
-          iconBg="rgba(22,163,74,0.10)"
+          iconColor="var(--althy-green)"
+          iconBg="var(--althy-green-bg)"
           value="1"
           label="Offres en cours"
           sub="En négociation"
@@ -173,7 +175,7 @@ export function DashboardAcheteur({ firstName }: Props) {
                     fontWeight: 700,
                     padding: "3px 10px",
                     borderRadius: 20,
-                    background: bien.exclusive ? "#DC2626" : "#16A34A",
+                    background: bien.exclusive ? "var(--althy-red)" : "var(--althy-green)",
                     color: "#fff",
                   }}
                 >
@@ -257,8 +259,8 @@ export function DashboardAcheteur({ firstName }: Props) {
                     fontWeight: 700,
                     padding: "2px 9px",
                     borderRadius: 20,
-                    color: "#16A34A",
-                    background: "rgba(22,163,74,0.10)",
+                    color: "var(--althy-green)",
+                    background: "var(--althy-green-bg)",
                   }}
                 >
                   {alerte.count} correspondance{alerte.count > 1 ? "s" : ""}

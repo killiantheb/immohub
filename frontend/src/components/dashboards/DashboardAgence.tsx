@@ -17,6 +17,7 @@ import {
   DCard,
   DKpi,
   DRoleHeader,
+  DTopNav,
   DSectionTitle,
 } from "@/components/dashboards/DashBoardShared";
 
@@ -35,8 +36,8 @@ const ALERTES_MOCK = [
 
 // ── Taux badge ────────────────────────────────────────────────────────────────
 function TauxBadge({ taux }: { taux: number }) {
-  const color = taux >= 90 ? "#16A34A" : taux >= 75 ? "#D97706" : "#DC2626";
-  const bg    = taux >= 90 ? "rgba(22,163,74,0.10)" : taux >= 75 ? "rgba(217,119,6,0.10)" : "rgba(220,38,38,0.10)";
+  const color = taux >= 90 ? "var(--althy-green)" : taux >= 75 ? "#D97706" : "var(--althy-red)";
+  const bg    = taux >= 90 ? "var(--althy-green-bg)" : taux >= 75 ? "rgba(217,119,6,0.10)" : "var(--althy-red-bg)";
   return (
     <span
       style={{
@@ -55,9 +56,9 @@ function TauxBadge({ taux }: { taux: number }) {
 
 // ── Alerte colors ─────────────────────────────────────────────────────────────
 const ALERTE_STYLE: Record<string, { border: string; icon: React.ElementType; iconColor: string }> = {
-  urgent: { border: "#DC2626", icon: Bell,         iconColor: "#DC2626" },
+  urgent: { border: "var(--althy-red)", icon: Bell,         iconColor: "var(--althy-red)" },
   info:   { border: "#2563EB", icon: Info,         iconColor: "#2563EB" },
-  ok:     { border: "#16A34A", icon: CheckCircle2, iconColor: "#16A34A" },
+  ok:     { border: "var(--althy-green)", icon: CheckCircle2, iconColor: "var(--althy-green)" },
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -75,7 +76,8 @@ export function DashboardAgence({ firstName }: Props) {
   return (
     <div style={{ minHeight: "100vh", background: DC.bg }}>
       {/* Role header */}
-      <DRoleHeader role="agence" initials={initials} />
+      <DTopNav />
+          <DRoleHeader role="agence" initials={initials} />
 
       {/* Greeting */}
       <div style={{ marginBottom: "2rem" }}>
@@ -112,8 +114,8 @@ export function DashboardAgence({ firstName }: Props) {
       >
         <DKpi
           icon={TrendingUp}
-          iconColor="#16A34A"
-          iconBg="rgba(22,163,74,0.10)"
+          iconColor="var(--althy-green)"
+          iconBg="var(--althy-green-bg)"
           value="CHF 26'400"
           label="CA mensuel"
           sub="Ce mois-ci"

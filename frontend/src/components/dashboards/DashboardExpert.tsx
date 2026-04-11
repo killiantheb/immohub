@@ -18,6 +18,7 @@ import {
   DCard,
   DKpi,
   DRoleHeader,
+  DTopNav,
   DSectionTitle,
 } from "@/components/dashboards/DashBoardShared";
 
@@ -60,7 +61,7 @@ const MARCHE_DATA = [
 const STATUT_MAP: Record<string, { label: string; color: string; bg: string }> = {
   "en cours":   { label: "En cours",   color: DC.orange, bg: "rgba(232,96,44,0.10)" },
   "en attente": { label: "En attente", color: "#D97706", bg: "rgba(217,119,6,0.10)" },
-  "terminé":    { label: "Terminé",    color: "#16A34A", bg: "rgba(22,163,74,0.10)" },
+  "terminé":    { label: "Terminé",    color: "var(--althy-green)", bg: "var(--althy-green-bg)" },
 };
 
 function StatutBadge({ statut }: { statut: string }) {
@@ -117,7 +118,8 @@ export function DashboardExpert({ firstName }: Props) {
 
   return (
     <div style={{ minHeight: "100vh", background: DC.bg }}>
-      <DRoleHeader role="expert" initials={initials} />
+      <DTopNav />
+          <DRoleHeader role="expert" initials={initials} />
 
       {/* Greeting */}
       <div style={{ marginBottom: "2rem" }}>
@@ -163,8 +165,8 @@ export function DashboardExpert({ firstName }: Props) {
         />
         <DKpi
           icon={FileText}
-          iconColor="#16A34A"
-          iconBg="rgba(22,163,74,0.10)"
+          iconColor="var(--althy-green)"
+          iconBg="var(--althy-green-bg)"
           value="7"
           label="Rapports rédigés"
           sub="Ce mois-ci"
@@ -318,7 +320,7 @@ export function DashboardExpert({ firstName }: Props) {
                         style={{
                           fontSize: 12,
                           fontWeight: 700,
-                          color: row.tendance.startsWith("+") ? "#16A34A" : "#DC2626",
+                          color: row.tendance.startsWith("+") ? "var(--althy-green)" : "var(--althy-red)",
                         }}
                       >
                         {row.tendance.startsWith("+") ? "▲" : "▼"} {row.tendance}
