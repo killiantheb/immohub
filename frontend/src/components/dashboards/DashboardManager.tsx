@@ -129,7 +129,7 @@ export function DashboardManager({ firstName, role }: Props) {
     <div style={{ minHeight: "100vh", background: DC.bg, padding: "0" }}>
       {/* Role header */}
       <DTopNav />
-          <DRoleHeader role={role === "agence" || role === "agency" ? "agence" : "proprio_solo"} initials={initials(firstName)} />
+          <DRoleHeader role={role === "agence" ? "agence" : "proprio_solo"} initials={initials(firstName)} />
 
       {/* Greeting */}
       <div style={{ marginBottom: "2rem" }}>
