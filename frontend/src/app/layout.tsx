@@ -4,10 +4,11 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { CookieBanner } from "@/components/CookieBanner";
 
-// Variable font — accès à tous les poids (100–900) + axes SOFT (arrondi) et WONK
+// Variable font — axes SOFT (arrondi) et WONK uniquement.
+// wght est l'axe standard géré implicitement — ne pas l'inclure dans axes.
 const fraunces = Fraunces({
   subsets: ["latin"],
-  axes:    ["wght", "SOFT", "WONK"],
+  axes:    ["SOFT", "WONK"],
   style:   ["normal", "italic"],
   variable: "--font-serif",
   display: "swap",
@@ -54,7 +55,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={`${fraunces.variable} ${dmSans.variable}`}>
+    <html lang="fr" suppressHydrationWarning className={`${fraunces.variable} ${dmSans.variable}`}>
       <body className={`${dmSans.variable} font-sans`}>
         <Providers>{children}</Providers>
         <CookieBanner />
