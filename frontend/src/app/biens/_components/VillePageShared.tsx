@@ -55,6 +55,36 @@ export const VILLES: Record<string, VilleConfig> = {
       "Location immobilière dans le canton de Vaud. Lausanne, Morges, Nyon, Yverdon — trouvez votre logement avec Althy, l'assistant immobilier suisse.",
     stats: { nb: 124, prixMoyen: 1800, typePrincipal: "Appartements & Maisons" },
   },
+  fribourg: {
+    slug: "fribourg",
+    label: "Fribourg",
+    labelLong: "Fribourg",
+    searchTerm: "Fribourg",
+    canton: "FR",
+    description:
+      "Appartements et maisons à louer à Fribourg. Canton bilingue, prix accessibles — trouvez votre logement avec Althy, l'assistant immobilier suisse.",
+    stats: { nb: 31, prixMoyen: 1450, typePrincipal: "Appartements" },
+  },
+  valais: {
+    slug: "valais",
+    label: "Valais",
+    labelLong: "Valais",
+    searchTerm: "Sion",
+    canton: "VS",
+    description:
+      "Location immobilière en Valais. Sion, Sierre, Martigny, Verbier — appartements et chalets disponibles sur Althy, votre assistant immobilier suisse.",
+    stats: { nb: 19, prixMoyen: 1300, typePrincipal: "Appartements & Chalets" },
+  },
+  neuchatel: {
+    slug: "neuchatel",
+    label: "Neuchâtel",
+    labelLong: "Neuchâtel",
+    searchTerm: "Neuchâtel",
+    canton: "NE",
+    description:
+      "Logements à louer dans le canton de Neuchâtel. Appartements, studios et maisons disponibles — trouvez votre prochain chez-vous avec Althy.",
+    stats: { nb: 24, prixMoyen: 1350, typePrincipal: "Appartements" },
+  },
 };
 
 // ── Metadata factory ──────────────────────────────────────────────────────────
