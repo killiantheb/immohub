@@ -25,7 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   // ── Biens actifs (dynamique) ─────────────────────────────────────────────────
-  let listingUrls: MetadataRoute.Sitemap = [];
+  const listingUrls: MetadataRoute.Sitemap = [];
   try {
     // Fetch several pages if needed (max 200 listings in sitemap)
     const pages = await Promise.all(
