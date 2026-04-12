@@ -1,5 +1,6 @@
 "use client";
 
+import "mapbox-gl/dist/mapbox-gl.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Search, Layers, List, ChevronDown, X } from "lucide-react";
@@ -235,7 +236,7 @@ export default function LandingPage() {
     (async () => {
       if (!mapContainer.current) return;
       const mapboxgl = (await import("mapbox-gl")).default;
-      await import("mapbox-gl/dist/mapbox-gl.css");
+
 
       mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
