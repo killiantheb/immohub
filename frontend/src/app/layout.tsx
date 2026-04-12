@@ -4,17 +4,19 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { CookieBanner } from "@/components/CookieBanner";
 
+// Variable font — accès à tous les poids (100–900) + axes SOFT (arrondi) et WONK
 const fraunces = Fraunces({
   subsets: ["latin"],
-  weight: ["300", "400"],
-  style: ["normal", "italic"],
+  axes:    ["wght", "SOFT", "WONK"],
+  style:   ["normal", "italic"],
   variable: "--font-serif",
   display: "swap",
 });
 
+// DM Sans — poids complets pour l'interface (labels, boutons, corps)
 const dmSans = DM_Sans({
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight:  ["400", "500", "600", "700"],
   variable: "--font-sans",
   display: "swap",
 });

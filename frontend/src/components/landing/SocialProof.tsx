@@ -2,21 +2,18 @@
 
 import dynamic from "next/dynamic"
 import { MARQUEE_ITEMS } from "@/lib/data/landing"
+import { C } from "@/lib/design-tokens"
 
 const Marquee = dynamic(() => import("react-fast-marquee"), { ssr: false })
 
-const C = {
-  orange: "var(--althy-orange)",
-  textMuted: "rgba(26,18,8,0.40)",
-  border: "rgba(40,18,8,0.06)",
-  bg: "#F2EDE5",
-} as const
+// Cette bannière a un fond légèrement plus sombre pour le contraste
+const sectionBg = C.surface2
 
 export function SocialProof() {
   return (
     <div
       style={{
-        background: C.bg,
+        background: sectionBg,
         borderTop: `1px solid ${C.border}`,
         borderBottom: `1px solid ${C.border}`,
         padding: "1.125rem 0",

@@ -2,20 +2,10 @@
 
 import { motion } from "framer-motion"
 import { PLANS } from "@/lib/plans.config"
+import { C } from "@/lib/design-tokens"
 import Link from "next/link"
 
-const C = {
-  bg: "#FAF8F4",
-  surface: "#FFFFFF",
-  surface2: "#F2EDE5",
-  border: "rgba(40,18,8,0.08)",
-  text: "#1A1208",
-  textMid: "rgba(26,18,8,0.65)",
-  textMuted: "rgba(26,18,8,0.38)",
-  orange: "var(--althy-orange)",
-  orangeBg: "rgba(232,96,44,0.08)",
-  orangeBorder: "rgba(232,96,44,0.22)",
-} as const
+const orangeBorder = "rgba(232,96,44,0.22)"
 
 function CheckIcon() {
   return (
@@ -67,12 +57,12 @@ export function Tarifs() {
               viewport={{ once: true }} transition={{ duration: 0.6, delay: i * 0.12 }}
               style={{
                 background: plan.vedette ? C.orangeBg : C.surface,
-                border: plan.vedette ? `1px solid ${C.orangeBorder}` : `1px solid ${C.border}`,
+                border: plan.vedette ? `1px solid ${orangeBorder}` : `1px solid ${C.border}`,
                 borderRadius: "1.25rem",
                 padding: "2.25rem",
                 position: "relative",
                 transform: plan.vedette ? "scale(1.02)" : "scale(1)",
-                boxShadow: plan.vedette ? "0 8px 32px rgba(232,96,44,0.12)" : "0 2px 12px rgba(40,18,8,0.06)",
+                boxShadow: plan.vedette ? "0 8px 32px rgba(232,96,44,0.12)" : C.shadow,
               }}
             >
               {plan.vedette && (

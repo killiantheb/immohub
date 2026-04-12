@@ -3,16 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { AlthySphere } from "@/components/AlthySphere"
-
-const C = {
-  bg: "rgba(250,248,244,0.92)",
-  bgSolid: "#FAF8F4",
-  border: "rgba(40,18,8,0.08)",
-  text: "#1A1208",
-  textMid: "rgba(26,18,8,0.58)",
-  orange: "var(--althy-orange)",
-  orangeBorder: "rgba(232,96,44,0.22)",
-} as const
+import { C } from "@/lib/design-tokens"
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false)
@@ -34,7 +25,7 @@ export function Navbar() {
         zIndex: 50,
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
-        background: C.bg,
+        background: "var(--althy-navbar-bg, var(--althy-bg))",
         borderBottom: `1px solid ${C.border}`,
         boxShadow: scrolled ? "0 4px 24px rgba(40,18,8,0.07)" : "none",
         transition: "box-shadow 0.3s ease",

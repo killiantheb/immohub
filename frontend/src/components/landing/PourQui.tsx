@@ -2,18 +2,7 @@
 
 import { motion } from "framer-motion"
 import { POUR_QUI } from "@/lib/data/landing"
-
-const C = {
-  bg: "#FAF8F4",
-  surface: "#FFFFFF",
-  border: "rgba(40,18,8,0.08)",
-  text: "#1A1208",
-  textMid: "rgba(26,18,8,0.60)",
-  textMuted: "rgba(26,18,8,0.38)",
-  orange: "var(--althy-orange)",
-  orangeBg: "rgba(232,96,44,0.08)",
-  orangeBorder: "rgba(232,96,44,0.22)",
-} as const
+import { C } from "@/lib/design-tokens"
 
 const containerVariants = {
   hidden: {},

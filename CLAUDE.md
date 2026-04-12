@@ -1,6 +1,6 @@
 # ALTHY — L'assistant immobilier suisse
 > github.com/killiantheb/immohub · althy.ch · Stack : Next.js 14 + FastAPI + Supabase
-> Dernière mise à jour : 2026-04-11 — toutes les corrections Phase 1–5 (P01–P16) appliquées
+> Dernière mise à jour : 2026-04-12 — plans mis à jour (VITRINE/SOLO/PRO/AGENCE)
 
 ---
 
@@ -118,16 +118,16 @@ FIREBASE_SERVER_KEY=
 
 ## Les 9 rôles — état dans useRole.ts
 
-| Rôle | Label affiché | Prix | Dashboard actif |
-|------|--------------|------|----------------|
-| `proprio_solo` | Propriétaire | CHF 29/mois | `DashboardManager` |
-| `agence` | Agence | CHF 29/agent/mois | `DashboardAgence` |
-| `portail_proprio` | Portail Proprio | CHF 9/mois | `DashboardPortail` |
+| Rôle | Label affiché | Plan / Prix | Dashboard actif |
+|------|--------------|-------------|----------------|
+| `proprio_solo` | Propriétaire | VITRINE (0) / SOLO (29) / PRO (59) CHF/mois | `DashboardManager` |
+| `agence` | Agence | AGENCE CHF 29/agent/mois | `DashboardAgence` |
+| `portail_proprio` | Portail Proprio | CHF 9/mois (add-on AGENCE) | `DashboardPortail` |
 | `opener` | Ouvreur | Gratuit / CHF 19 Pro | `DashboardOpener` |
 | `artisan` | Artisan | Gratuit / CHF 19 Pro | `DashboardArtisan` |
 | `expert` | Expert | Gratuit / CHF 19 Pro | `DashboardExpert` |
-| `hunter` | Hunter | Referral fee | `DashboardHunter` |
-| `locataire` | Locataire | Gratuit | `DashboardTenant` |
+| `hunter` | Hunter | Referral fee (0.5% vente) | `DashboardHunter` |
+| `locataire` | Locataire | Gratuit + CHF 90 si retenu | `DashboardTenant` |
 | `acheteur_premium` | Acheteur | CHF 9/mois | `DashboardAcheteur` |
 | `super_admin` | Admin | — | (admin pages) |
 
@@ -329,23 +329,38 @@ line-opacity: 0.5
 
 ## Modèle économique — source de vérité : plans.config.ts
 
+### Plans OFFRE — Propriétaires & Agences (récurrent)
+
+| Plan | Mensuel | Annuel | Ce qui est inclus |
+|------|---------|--------|-------------------|
+| **VITRINE** | CHF 0 | — | 1 bien marketplace, estimation IA, page bien + QR code |
+| **SOLO** | CHF 29 | CHF 23 | 10 biens, Sphère IA illimitée, docs légaux IA (bail/EDL/quittances), ouvreurs sur demande, dossiers locataires scorés, WhatsApp/SMS |
+| **PRO** | CHF 59 | CHF 49 | Biens illimités, 2 comptes utilisateurs, comptabilité basique (sans open banking), rapports mensuels auto, export PDF fiduciaire |
+| **AGENCE** | CHF 29/agent | — | Tout PRO + CRM propriétaires + portail proprio white-label (CHF 9/proprio/mois) + badge "Agence Certifiée Althy" |
+
+**Dégressif AGENCE :** -10% dès 5 agents, -20% dès 10 agents.
+
+### Plans DEMANDE — Acheteurs & Locataires
+
+| Profil | Prix | Détail |
+|--------|------|--------|
+| **Locataire** | Gratuit | Recherche + contact + dossier digital complet. CHF 90 frais dossier UNIQUEMENT si retenu (4% Althy = CHF 3.60) |
+| **Acheteur Premium** | CHF 9/mois | Alertes instantanées, matching IA, biens off-market, historique prix quartier |
+| **Vendeur particulier** | Gratuit 30j | Boost premium CHF 49/mois. Diffusion portails CHF 99/mois (Phase 2) |
+
+### Revenus sur flux (la vraie scalabilité)
+
 ```
-CHF 29/mois    proprio_solo, agence (par agent)
-CHF 23/mois    proprio_solo ou agence si annuel
-CHF 9/mois     portail_proprio, acheteur_premium
-CHF 19/mois    opener Pro, artisan Pro, expert Pro
-Gratuit        locataire, opener base, artisan base, expert base
-Referral fee   hunter (variable selon transaction)
-4%             sur TOUS les flux financiers via Stripe Connect
-CHF 90         frais dossier locataire (UNIQUEMENT si retenu)
-15%            commission missions ouvreurs
-10%            commission artisans sur devis comparés
-10%            commission caution (Firstcaution/SwissCaution)
-CHF 40         par police RC (Helvetia/AXA)
+4%     sur TOUS les flux Stripe (loyers, frais dossier, paiements artisans, missions ouvreurs...)
+15%    commission ouvreurs (par mission)
+10%    commission artisans (sur devis acceptés)
+10%    commission cautions (SwissCaution / Firstcaution)
+~CHF 40  referral assurances RC (Helvetia / AXA)
+0.5%   sur prix de vente si transaction immobilière via Althy
 ```
 
-**Règle absolue : zéro marge cachée sur les portails.**
-Le client paie le tarif du portail directement. Althy facture ses 4% séparément.
+**Règle absolue : zéro marge cachée.**
+Le client paie le tarif du service directement. Althy facture ses 4% séparément via Stripe Connect.
 
 **Clause fondateur (dans les statuts) :**
 L'agence du fondateur (130 biens annuels + 30 saisonniers + 20/semaine) → accès permanent gratuit.
@@ -459,6 +474,65 @@ POST /api/v1/paiements/creer-intent   → PaymentIntent avec 4% application_fee
 POST /api/v1/webhooks/loyer/{id}      → idem depuis fiche paiement existante
 POST /api/v1/webhooks/webhook         → Stripe webhook (payment_intent.succeeded,
                                         invoice.payment_failed, subscriptions...)
+```
+
+---
+
+## Priorités produit — Phase de lancement actuelle
+
+### FOCUS ACTUEL (Phase 1-2) — Location + All-in-one
+**Ce sur quoi on se concentre à fond :**
+- Gestion locative complète (biens, contrats, loyers, locataires)
+- Sphère IA comme assistant central
+- Documents légaux (bail, EDL, quittances)
+- Ouvreurs + artisans (services autour de la location)
+- Dossiers locataires scorés
+- Paiements loyers via Stripe
+
+### EN PAUSE — code gardé, modules cachés dans l'UI
+Ces fonctionnalités **existent dans le code** mais ne sont **pas mis en avant** pour l'instant.
+Ne pas les supprimer. Les garder en état mais ne pas les développer davantage.
+
+```
+⏸  Hunters          → /app/hunters     (viendra en Phase 3-4)
+⏸  Vente            → /app/vente       (viendra en Phase 3-4)
+⏸  Vendeur part.    → /app/listings    (viendra en Phase 3-4)
+⏸  Acheteur Premium → fonctionnel mais pas promu
+```
+
+**Règle :** si une nouvelle page/feature touche à la vente ou aux hunters, la mettre en place mais la masquer dans la sidebar avec `hidden: true` — ne pas la supprimer.
+
+### Stratégie lancement (phases)
+```
+Phase 1 (Mois 1) — Agence fondateur : 130 biens publiés en 1 semaine → marketplace peuplée Jour 1
+Phase 2 (Mois 2) — Early adopters solo Genève/Lausanne : 3 mois gratuits, objectif 20 biens externes
+Phase 3 (Mois 3) — 1ère agence partenaire : 20-30 biens supplémentaires
+Phase 4 (Mois 4-6) — SEO local (/biens/geneve, /biens/lausanne, /louer/vaud) + LinkedIn 1 post/semaine
+```
+
+---
+
+## Ce qui est déjà construit — NE PAS RECONSTRUIRE
+
+```
+✅ Auth Supabase (login / register / roles / magic link)
+✅ Dashboards multi-rôles (9 rôles, DashBoardShared.tsx)
+✅ Sphère IA (chat streaming SSE + briefing + widget flottant)
+✅ Génération documents (bail, EDL, quittances, devis — 10 types)
+✅ Scoring locataire IA
+✅ Ouvreurs géolocalisés + missions
+✅ Artisans + devis comparés
+✅ Paiements Stripe Connect + 4% application_fee
+✅ Carte Mapbox (landing + /app/carte)
+✅ Notifications WhatsApp / SMS (Twilio)
+✅ CRM locataires
+✅ Modèle Property + Listing en DB
+✅ Estimation IA (/estimation)
+✅ CI/CD GitHub Actions
+✅ Mobile React Native / Expo
+✅ Layout responsive (sidebar drawer mobile)
+✅ Endpoints non-lus messagerie + WhatsApp (badges sidebar)
+✅ 25 migrations Supabase actives (0001 → 0025)
 ```
 
 ---

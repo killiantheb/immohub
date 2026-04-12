@@ -1,5 +1,6 @@
 # Import all models so Base.metadata is fully populated for Alembic
 from app.models.agency_settings import AgencySettings
+from app.models.ai_log import AIUsageLog
 from app.models.audit_log import AuditLog
 from app.models.base import Base, BaseModel
 from app.models.bien import Bien
@@ -11,6 +12,8 @@ from app.models.document_althy import DocumentAlthy
 from app.models.favorite import Favorite
 from app.models.inspection import Inspection
 from app.models.intervention import Devis, Intervention
+from app.models.candidature import Candidature
+from app.models.interest import Interest
 from app.models.listing import Listing
 from app.models.locataire import DossierLocataire, Locataire
 from app.models.mission_ouvreur import MissionOuvreur, ProfileOuvreur
@@ -54,6 +57,9 @@ __all__ = [
     "Quote",
     "Inspection",
     "Listing",
+    "Interest",
+    "Candidature",
+    "AIUsageLog",
     "AuditLog",
     "ConversationMessage",
     "Rating",

@@ -1,14 +1,7 @@
 "use client"
 
 import Link from "next/link"
-
-const C = {
-  bg: "#FAF8F4",
-  border: "rgba(40,18,8,0.06)",
-  text: "#1A1208",
-  textMuted: "rgba(26,18,8,0.40)",
-  orange: "var(--althy-orange)",
-} as const
+import { C } from "@/lib/design-tokens"
 
 export function Footer() {
   return (

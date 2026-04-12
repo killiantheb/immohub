@@ -59,15 +59,15 @@ ROLES_ALL               = (
 # Sections accessible par rôle
 ROLE_SECTIONS: dict[str, list[str]] = {
     ROLE_SUPER_ADMIN:     ["*"],  # all
-    ROLE_PROPRIO_SOLO:    ["dashboard", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "sphere", "documents"],
-    ROLE_AGENCE:          ["dashboard", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "sphere", "documents", "portail"],
+    ROLE_PROPRIO_SOLO:    ["dashboard", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "sphere", "documents", "candidatures"],
+    ROLE_AGENCE:          ["dashboard", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "sphere", "documents", "portail", "candidatures"],
     ROLE_PORTAIL_PROPRIO: ["dashboard", "biens", "finances", "documents"],  # accès limité
     ROLE_OPENER:          ["dashboard", "missions", "finances", "abonnement", "sphere"],
     ROLE_ARTISAN:         ["dashboard", "interventions", "finances", "abonnement", "sphere"],
     ROLE_EXPERT:          ["dashboard", "biens", "finances", "abonnement", "sphere"],
     ROLE_HUNTER:          ["dashboard", "hunters", "abonnement", "sphere"],
-    ROLE_LOCATAIRE:       ["dashboard", "biens", "finances", "documents", "sphere"],
-    ROLE_ACHETEUR:        ["dashboard", "listings", "sphere"],
+    ROLE_LOCATAIRE:       ["dashboard", "biens", "finances", "documents", "sphere", "candidatures"],
+    ROLE_ACHETEUR:        ["dashboard", "listings", "sphere", "candidatures"],
 }
 
 bearer_scheme = HTTPBearer(auto_error=True)
@@ -188,6 +188,35 @@ async def get_current_user(
 
 # Short alias used across routers
 CurrentUser = Annotated[object, Depends(get_current_user)]
+
+# ── Auth optionnelle (swipe / routes publiques semi-authentifiées) ─────────────
+
+_optional_bearer = HTTPBearer(auto_error=False)
+
+
+async def get_optional_current_user(
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None,
+        Depends(_optional_bearer),
+    ],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> "User | None":
+    """
+    Comme get_current_user mais renvoie None si aucun token valide.
+    Usage : routes accessibles aux anonymes ET aux connectés.
+    """
+    if not credentials:
+        return None
+    try:
+        payload = _decode_token(credentials.credentials)
+        supabase_uid: str | None = payload.get("sub")
+        if not supabase_uid:
+            return None
+        from app.models.user import User
+        result = await db.execute(select(User).where(User.supabase_uid == supabase_uid))
+        return result.scalar_one_or_none()
+    except Exception:
+        return None
 
 
 async def get_current_user_id(user=Depends(get_current_user)) -> str:

@@ -1,5 +1,5 @@
 /**
- * Analytics wrapper — PostHog events for CATHY.
+ * Analytics wrapper — PostHog events for Althy.
  * Import `Analytics` anywhere in the app to fire typed events.
  *
  * Install: npm install posthog-js
@@ -87,4 +87,24 @@ export const Analytics = {
 
   userSignedOut: () =>
     trackEvent("user_signed_out"),
+
+  // ── Marketplace ───────────────────────────────────────────────────────────
+
+  listingViewed: (listingId: string, prix: number | null, ville: string) =>
+    trackEvent("listing_viewed", { listing_id: listingId, prix, ville }),
+
+  swipeRight: (listingId: string) =>
+    trackEvent("swipe_right", { listing_id: listingId }),
+
+  swipeLeft: (listingId: string) =>
+    trackEvent("swipe_left", { listing_id: listingId }),
+
+  candidatureSubmitted: (listingId: string) =>
+    trackEvent("candidature_submitted", { listing_id: listingId }),
+
+  bienPublie: (listingId: string, transactionType: string) =>
+    trackEvent("bien_publie", { listing_id: listingId, transaction_type: transactionType }),
+
+  interetExprime: (listingId: string) =>
+    trackEvent("interet_exprime", { listing_id: listingId }),
 };

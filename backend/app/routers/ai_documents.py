@@ -1,0 +1,597 @@
+"""ai_documents.py — Bail, EDL, quittances, notification, rapport, generer-document, export."""
+
+from __future__ import annotations
+
+import json as _json
+import uuid as _uuid
+from typing import Annotated
+
+from app.core.database import get_db
+from app.core.limiter import rate_limit
+from app.core.security import get_current_user
+from app.models.user import User
+from app.services.ai_service import (
+    draft_edl,
+    draft_lease,
+    draft_mission_report,
+    draft_company_quote,
+    explain_contract,
+    draft_notification,
+    generate_property_recap,
+)
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
+router = APIRouter(prefix="/ai", tags=["ai"])
+
+DbDep       = Annotated[AsyncSession, Depends(get_db)]
+AuthUserDep = Annotated[User, Depends(get_current_user)]
+
+
+# ── Schemas ───────────────────────────────────────────────────────────────────
+
+class DraftLeaseRequest(BaseModel):
+    property_id: str
+    tenant_data: dict
+    params: dict
+    requires_validation: bool = True
+
+
+class DraftEDLRequest(BaseModel):
+    property_id: str
+    edl_type: str = "entry"
+    inspection_date: str
+    previous_edl: dict | None = None
+    requires_validation: bool = True
+
+
+class MissionReportRequest(BaseModel):
+    mission_id: str
+    observations: str
+
+
+class DraftQuoteRequest(BaseModel):
+    rfq_id: str
+    work_description: str = ""
+
+
+class ExplainContractRequest(BaseModel):
+    contract_id: str
+
+
+class NotificationRequest(BaseModel):
+    channel: str = "email"
+    recipient_role: str
+    subject: str
+    context: dict = {}
+
+
+class PropertyRecapRequest(BaseModel):
+    property_id: str
+
+
+class GenererDocumentRequest(BaseModel):
+    type: str
+    bien_id: _uuid.UUID
+    locataire_id: _uuid.UUID | None = None
+    params: dict = {}
+
+
+class GenererDocumentResponse(BaseModel):
+    document_id: _uuid.UUID
+    url: str
+    type: str
+
+
+# ── Endpoints ─────────────────────────────────────────────────────────────────
+
+@router.post("/draft-lease")
+async def draft_lease_endpoint(
+    payload: DraftLeaseRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(5, 60),
+):
+    """Generate a complete Swiss-law compliant lease. Owners and agencies only."""
+    import uuid as _uuid_mod
+    from app.models.property import Property
+    from sqlalchemy import select as sa_sel
+
+    if current_user.role not in ("owner", "agency", "super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux propriétaires et agences")
+
+    try:
+        pid = _uuid_mod.UUID(payload.property_id)
+    except ValueError:
+        raise HTTPException(422, "property_id invalide")
+
+    result = await db.execute(sa_sel(Property).where(Property.id == pid))
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(404, "Bien introuvable")
+
+    property_data = {
+        "type": prop.type, "address": prop.address, "city": prop.city,
+        "zip_code": prop.zip_code,
+        "surface": float(prop.surface) if prop.surface else None,
+        "rooms": float(prop.rooms) if prop.rooms else None,
+        "floor": prop.floor, "is_furnished": prop.is_furnished,
+    }
+
+    try:
+        text = await draft_lease(property_data, payload.tenant_data, payload.params, db, str(current_user.id))
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    return {
+        "lease_text": text,
+        "requires_validation": payload.requires_validation,
+        "disclaimer": "Ce bail est fourni à titre indicatif. Faites-le valider par un juriste avant signature officielle.",
+    }
+
+
+@router.post("/draft-edl")
+async def draft_edl_endpoint(
+    payload: DraftEDLRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(5, 60),
+):
+    """Generate a structured entry/exit inspection form."""
+    import uuid as _uuid_mod
+    from app.models.property import Property
+    from sqlalchemy import select as sa_sel
+
+    if current_user.role not in ("owner", "agency", "opener", "super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès non autorisé")
+
+    if payload.edl_type not in ("entry", "exit"):
+        raise HTTPException(422, "edl_type doit être 'entry' ou 'exit'")
+
+    try:
+        pid = _uuid_mod.UUID(payload.property_id)
+    except ValueError:
+        raise HTTPException(422, "property_id invalide")
+
+    result = await db.execute(sa_sel(Property).where(Property.id == pid))
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(404, "Bien introuvable")
+
+    property_data = {
+        "type": prop.type, "address": prop.address, "city": prop.city,
+        "surface": float(prop.surface) if prop.surface else None,
+        "rooms": float(prop.rooms) if prop.rooms else None,
+        "floor": prop.floor, "is_furnished": prop.is_furnished,
+        "description": prop.description,
+    }
+
+    try:
+        edl = await draft_edl(
+            property_data, payload.edl_type, payload.inspection_date,
+            payload.previous_edl, db, str(current_user.id),
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    return {**edl, "requires_validation": payload.requires_validation}
+
+
+@router.post("/mission-report")
+async def mission_report_endpoint(
+    payload: MissionReportRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(10, 60),
+):
+    """Generate a professional mission report for an opener."""
+    import uuid as _uuid_mod
+    from app.models.opener import Mission
+    from sqlalchemy import select as sa_sel
+
+    if current_user.role not in ("opener", "super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux ouvreurs")
+
+    try:
+        mid = _uuid_mod.UUID(payload.mission_id)
+    except ValueError:
+        raise HTTPException(422, "mission_id invalide")
+
+    result = await db.execute(sa_sel(Mission).where(Mission.id == mid))
+    mission = result.scalar_one_or_none()
+    if not mission:
+        raise HTTPException(404, "Mission introuvable")
+
+    mission_data = {
+        "type": mission.type, "status": mission.status,
+        "scheduled_at": mission.scheduled_at.isoformat() if mission.scheduled_at else None,
+        "price": float(mission.price) if mission.price else None,
+    }
+
+    try:
+        report = await draft_mission_report(mission_data, payload.observations, db, str(current_user.id))
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    return {"report": report, "mission_id": payload.mission_id}
+
+
+@router.post("/draft-quote")
+async def draft_quote_endpoint(
+    payload: DraftQuoteRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(10, 60),
+):
+    """AI-assisted quote draft for a company responding to an RFQ."""
+    import uuid as _uuid_mod
+    from app.models.rfq import RFQ
+    from app.models.company import Company
+    from sqlalchemy import select as sa_sel
+
+    if current_user.role not in ("company", "super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux entreprises")
+
+    try:
+        rid = _uuid_mod.UUID(payload.rfq_id)
+    except ValueError:
+        raise HTTPException(422, "rfq_id invalide")
+
+    rfq_res = await db.execute(sa_sel(RFQ).where(RFQ.id == rid))
+    rfq = rfq_res.scalar_one_or_none()
+    if not rfq:
+        raise HTTPException(404, "Appel d'offre introuvable")
+
+    company_res = await db.execute(sa_sel(Company).where(Company.user_id == current_user.id))
+    company = company_res.scalar_one_or_none()
+
+    rfq_data = {
+        "title": rfq.title, "description": rfq.description, "category": rfq.category,
+        "urgency": rfq.urgency,
+        "budget_min": float(rfq.budget_min) if rfq.budget_min else None,
+        "budget_max": float(rfq.budget_max) if rfq.budget_max else None,
+        "city": rfq.city,
+    }
+    company_data = {
+        "type": company.type if company else "other",
+        "name": company.name if company else "",
+        "rating": float(company.rating) if company and company.rating else None,
+    }
+
+    try:
+        quote = await draft_company_quote(rfq_data, company_data, payload.work_description, db, str(current_user.id))
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    return quote
+
+
+@router.post("/explain-contract")
+async def explain_contract_endpoint(
+    payload: ExplainContractRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(10, 60),
+):
+    """Explain a lease contract in plain language for a tenant."""
+    import uuid as _uuid_mod
+    from app.models.contract import Contract
+    from sqlalchemy import select as sa_sel
+
+    try:
+        cid = _uuid_mod.UUID(payload.contract_id)
+    except ValueError:
+        raise HTTPException(422, "contract_id invalide")
+
+    result = await db.execute(sa_sel(Contract).where(Contract.id == cid))
+    contract = result.scalar_one_or_none()
+    if not contract:
+        raise HTTPException(404, "Contrat introuvable")
+
+    if current_user.role == "tenant" and contract.tenant_id != current_user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès non autorisé")
+
+    contract_data = {
+        "type": contract.type, "status": contract.status,
+        "start_date": contract.start_date.isoformat() if contract.start_date else None,
+        "end_date": contract.end_date.isoformat() if contract.end_date else None,
+        "monthly_rent": float(contract.monthly_rent) if contract.monthly_rent else None,
+        "charges": float(contract.charges) if contract.charges else None,
+        "deposit": float(contract.deposit) if contract.deposit else None,
+        "notice_months": getattr(contract, "notice_months", 3),
+        "is_furnished": getattr(contract, "is_furnished", False),
+        "pets_allowed": getattr(contract, "pets_allowed", None),
+        "special_clauses": getattr(contract, "special_clauses", None),
+    }
+
+    try:
+        explanation = await explain_contract(contract_data, db, str(current_user.id))
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    return explanation
+
+
+@router.post("/draft-notification")
+async def draft_notification_endpoint(
+    payload: NotificationRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(15, 60),
+):
+    """Draft a ready-to-send email or WhatsApp message."""
+    if payload.channel not in ("email", "whatsapp"):
+        raise HTTPException(422, "channel doit être 'email' ou 'whatsapp'")
+
+    try:
+        result = await draft_notification(
+            payload.channel, payload.recipient_role, payload.subject,
+            payload.context, db, str(current_user.id),
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    return result
+
+
+@router.post("/property-recap")
+async def property_recap_endpoint(
+    payload: PropertyRecapRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(5, 60),
+):
+    """Generate a complete property history recap (owner/agency only)."""
+    import uuid as _uuid_mod
+    from app.models.property import Property
+    from app.models.contract import Contract
+    from app.models.transaction import Transaction as Txn
+    from app.models.rfq import RFQ
+    from sqlalchemy import select as sa_sel, and_
+
+    if current_user.role not in ("owner", "agency", "super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux propriétaires et agences")
+
+    try:
+        pid = _uuid_mod.UUID(payload.property_id)
+    except ValueError:
+        raise HTTPException(422, "property_id invalide")
+
+    result = await db.execute(sa_sel(Property).where(Property.id == pid))
+    prop = result.scalar_one_or_none()
+    if not prop:
+        raise HTTPException(404, "Bien introuvable")
+
+    contracts = (await db.execute(
+        sa_sel(Contract).where(Contract.property_id == pid)
+        .order_by(Contract.start_date.desc()).limit(20)
+    )).scalars().all()
+
+    transactions = (await db.execute(
+        sa_sel(Txn).where(and_(Txn.property_id == pid, Txn.is_active.is_(True))).limit(100)
+    )).scalars().all()
+
+    rfqs = (await db.execute(
+        sa_sel(RFQ).where(RFQ.property_id == pid).order_by(RFQ.created_at.desc()).limit(20)
+    )).scalars().all()
+
+    property_data     = {"type": prop.type, "address": prop.address, "city": prop.city, "status": prop.status}
+    tenants_history   = [
+        {"id": str(c.id), "type": c.type, "status": c.status,
+         "start_date": c.start_date.isoformat() if c.start_date else None,
+         "end_date": c.end_date.isoformat() if c.end_date else None,
+         "monthly_rent": float(c.monthly_rent) if c.monthly_rent else 0}
+        for c in contracts
+    ]
+    total_revenue     = sum(float(t.amount) for t in transactions if t.status == "paid")
+    unpaid            = [t for t in transactions if t.status in ("pending", "late")]
+    transactions_summary = {
+        "total_revenue_chf": total_revenue,
+        "unpaid_count": len(unpaid),
+        "unpaid_total_chf": sum(float(t.amount) for t in unpaid),
+        "total_transactions": len(transactions),
+    }
+    interventions = [
+        {"id": str(r.id), "title": r.title, "category": r.category, "status": r.status,
+         "urgency": r.urgency, "created_at": r.created_at.isoformat() if r.created_at else None}
+        for r in rfqs
+    ]
+
+    try:
+        recap = await generate_property_recap(
+            property_data, tenants_history, transactions_summary, interventions, [], db, str(current_user.id)
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    return recap
+
+
+@router.post("/generer-document", response_model=GenererDocumentResponse)
+async def generer_document(
+    payload: GenererDocumentRequest,
+    current_user: AuthUserDep,
+    db: DbDep,
+    _=rate_limit(5, 60),
+) -> GenererDocumentResponse:
+    """Génère un document (bail, quittance, EDL, relance) via Claude, crée un PDF et le stocke."""
+    import io
+    from anthropic import AsyncAnthropic
+    from app.core.config import settings
+    from app.models.bien import Bien
+    from app.models.document_althy import DocumentAlthy
+    from app.models.locataire import DossierLocataire, Locataire
+    from datetime import date, datetime, timezone
+    from fpdf import FPDF
+    from sqlalchemy import select as sa_sel
+    import httpx
+
+    DOC_TYPES = {"bail", "quittance", "edl", "relance"}
+    if payload.type not in DOC_TYPES:
+        raise HTTPException(422, f"type doit être l'un de : {', '.join(DOC_TYPES)}")
+
+    bien_res = await db.execute(sa_sel(Bien).where(Bien.id == payload.bien_id))
+    bien = bien_res.scalar_one_or_none()
+    if not bien:
+        raise HTTPException(404, "Bien introuvable")
+
+    loc_data: dict = {}
+    if payload.locataire_id:
+        loc_res = await db.execute(sa_sel(Locataire).where(Locataire.id == payload.locataire_id))
+        loc = loc_res.scalar_one_or_none()
+        if loc:
+            loc_data = {
+                "loyer": float(loc.loyer or 0), "charges": float(loc.charges or 0),
+                "date_entree": loc.date_entree.isoformat() if loc.date_entree else None,
+                "date_sortie": loc.date_sortie.isoformat() if loc.date_sortie else None,
+            }
+            dos_res = await db.execute(
+                sa_sel(DossierLocataire).where(DossierLocataire.locataire_id == payload.locataire_id)
+            )
+            dossier = dos_res.scalar_one_or_none()
+            if dossier:
+                loc_data["employeur"]    = dossier.employeur
+                loc_data["type_contrat"] = dossier.type_contrat
+
+    bien_info  = f"{bien.adresse}, {bien.cp} {bien.ville} ({bien.type})"
+    today_str  = date.today().strftime("%d/%m/%Y")
+    params_str = _json.dumps(payload.params, ensure_ascii=False) if payload.params else "{}"
+
+    type_prompts = {
+        "bail": (
+            f"Génère un bail à loyer conforme au droit suisse (CO art. 253 ss) pour le bien : {bien_info}. "
+            f"Données locataire : {_json.dumps(loc_data, ensure_ascii=False)}. Paramètres : {params_str}. "
+            "Structure : parties, objet, loyer/charges, durée, résiliation, dépôt, clauses spéciales."
+        ),
+        "quittance": (
+            f"Génère une quittance de loyer pour : {bien_info}, date : {today_str}. "
+            f"Données : {_json.dumps(loc_data, ensure_ascii=False)}. Params : {params_str}. "
+            "Inclure : désignation du bien, montant loyer + charges, période, signature propriétaire."
+        ),
+        "edl": (
+            "Génère un état des lieux "
+            + ("d'entrée" if payload.params.get("type") == "entree" else "de sortie")
+            + f" pour : {bien_info}, date : {today_str}. Params : {params_str}. "
+            "Structure : pièces (entrée, séjour, cuisine, salle de bain, chambres, WC, extérieur), "
+            "état de chaque élément, compteurs, clés remises. Format structuré et professionnel."
+        ),
+        "relance": (
+            f"Rédige une lettre de relance pour loyer impayé : {bien_info}. Date : {today_str}. "
+            f"Données : {_json.dumps(loc_data, ensure_ascii=False)}. Params : {params_str}. "
+            "Ton professionnel mais ferme. Mentionner le montant dû, la date d'échéance, "
+            "et les conséquences légales suisses en cas de non-paiement (CO art. 257d)."
+        ),
+    }
+
+    try:
+        client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        response = await client.messages.create(
+            model="claude-sonnet-4-5",
+            max_tokens=4096,
+            system="Tu es Althy, assistante immobilière suisse experte en droit du bail. "
+                   "Génère des documents juridiques précis et conformes au droit suisse.",
+            messages=[{"role": "user", "content": type_prompts[payload.type]}],
+        )
+        doc_text = response.content[0].text.strip()
+    except RuntimeError as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    pdf = FPDF()
+    pdf.set_margins(20, 20, 20)
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 14)
+    pdf.cell(0, 10, f"Althy — {payload.type.upper()} — {today_str}", ln=True, align="C")
+    pdf.ln(5)
+    pdf.set_font("Helvetica", size=10)
+    for line in doc_text.split("\n"):
+        pdf.multi_cell(0, 6, line if line else " ")
+    pdf_bytes = pdf.output()
+
+    ts           = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    storage_path = f"documents/{payload.type}/{payload.bien_id}/{ts}.pdf"
+
+    async with httpx.AsyncClient(timeout=30.0) as http:
+        upload_resp = await http.post(
+            f"{settings.SUPABASE_URL}/storage/v1/object/althy-docs/{storage_path}",
+            content=bytes(pdf_bytes),
+            headers={
+                "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
+                "Content-Type": "application/pdf",
+            },
+        )
+        if upload_resp.status_code not in (200, 201):
+            raise HTTPException(500, f"Erreur upload Supabase: {upload_resp.text}")
+
+    public_url = f"{settings.SUPABASE_URL}/storage/v1/object/public/althy-docs/{storage_path}"
+
+    doc_type_map = {
+        "bail": "bail",
+        "quittance": "quittance",
+        "edl": "edl_entree" if payload.params.get("type") != "sortie" else "edl_sortie",
+        "relance": "autre",
+    }
+    doc = DocumentAlthy(
+        bien_id=payload.bien_id, locataire_id=payload.locataire_id,
+        type=doc_type_map[payload.type], url_storage=public_url,
+        date_document=date.today(), genere_par_ia=True,
+    )
+    db.add(doc)
+    await db.commit()
+    await db.refresh(doc)
+
+    return GenererDocumentResponse(document_id=doc.id, url=public_url, type=payload.type)
+
+
+@router.get("/export/etat-locatif")
+async def export_etat_locatif(
+    current_user: AuthUserDep,
+    db: DbDep,
+    year: int = 2025,
+):
+    """Export état locatif annuel au format CSV (fiduciaire suisse, UTF-8 BOM pour Excel)."""
+    import io
+    import csv
+    from sqlalchemy import text as sa_text
+
+    rows = (await db.execute(
+        sa_text("""
+            SELECT
+                to_char(p.date_echeance, 'YYYY-MM') AS mois,
+                b.adresse, b.ville,
+                COALESCE(u.email, 'N/A')           AS locataire,
+                p.montant                            AS loyer_attendu,
+                CASE WHEN p.statut = 'recu' THEN p.montant ELSE 0 END AS loyer_recu,
+                COALESCE(l.charges, 0)               AS charges,
+                CASE WHEN p.statut = 'recu' THEN COALESCE(p.net_montant, p.montant * 0.96) ELSE NULL END AS net,
+                p.statut
+            FROM paiements p
+            JOIN biens b ON b.id = p.bien_id
+            JOIN locataires l ON l.id = p.locataire_id
+            LEFT JOIN users u ON u.id = l.user_id
+            WHERE b.owner_id = :uid
+              AND EXTRACT(YEAR FROM p.date_echeance) = :year
+            ORDER BY p.date_echeance, b.adresse
+        """),
+        {"uid": str(current_user.id), "year": year},
+    )).fetchall()
+
+    buf = io.StringIO()
+    writer = csv.writer(buf, delimiter=";")
+    writer.writerow(["Mois", "Adresse", "Ville", "Locataire", "Loyer attendu CHF",
+                     "Loyer reçu CHF", "Charges CHF", "Net reçu CHF", "Statut"])
+    for r in rows:
+        writer.writerow([
+            r[0], r[1], r[2], r[3],
+            f"{float(r[4] or 0):.2f}", f"{float(r[5] or 0):.2f}",
+            f"{float(r[6] or 0):.2f}", f"{float(r[7] or 0):.2f}" if r[7] else "",
+            r[8],
+        ])
+    buf.seek(0)
+
+    return StreamingResponse(
+        iter([buf.getvalue().encode("utf-8-sig")]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=etat_locatif_{year}.csv"},
+    )

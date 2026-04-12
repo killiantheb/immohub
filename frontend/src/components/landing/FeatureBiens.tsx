@@ -2,19 +2,10 @@
 
 import { motion } from "framer-motion"
 import { FEATURES_BIENS } from "@/lib/data/landing"
+import { C } from "@/lib/design-tokens"
 
-const C = {
-  bg: "#F2EDE5",
-  surface: "#FFFFFF",
-  surface2: "#FAF8F4",
-  border: "rgba(40,18,8,0.08)",
-  text: "#1A1208",
-  textMid: "rgba(26,18,8,0.65)",
-  textMuted: "rgba(26,18,8,0.38)",
-  orange: "var(--althy-orange)",
-  orangeBg: "rgba(232,96,44,0.08)",
-  orangeBorder: "rgba(232,96,44,0.22)",
-} as const
+// Cette section a un fond légèrement plus sombre pour l'alternance visuelle
+const sectionBg = C.surface2
 
 const MOCK_BIENS = [
   { adresse: "Rue de Rive 12", ville: "Genève", loyer: "2 400", statut: "Loué", color: "#2E5E22" },
@@ -27,7 +18,7 @@ export function FeatureBiens() {
   return (
     <section
       id="features"
-      style={{ background: C.bg, padding: "7rem 1.5rem" }}
+      style={{ background: sectionBg, padding: "7rem 1.5rem" }}
     >
       <div
         style={{
@@ -148,7 +139,7 @@ export function FeatureBiens() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                background: C.surface2,
+                background: C.bg,
               }}
             >
               <span style={{ color: C.textMuted, fontSize: "0.75rem", fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase" }}>
@@ -209,7 +200,7 @@ export function FeatureBiens() {
                     padding: "0.75rem 0.875rem",
                     borderRadius: "0.625rem",
                     marginBottom: "0.375rem",
-                    background: C.surface2,
+                    background: C.bg,
                     border: `1px solid ${C.border}`,
                     gap: "0.75rem",
                   }}

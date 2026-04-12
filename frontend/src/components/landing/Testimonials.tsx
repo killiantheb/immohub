@@ -2,18 +2,7 @@
 
 import { motion } from "framer-motion"
 import { TESTIMONIALS } from "@/lib/data/landing"
-
-const C = {
-  bg: "#FAF8F4",
-  surface: "#FFFFFF",
-  surface2: "#F2EDE5",
-  border: "rgba(40,18,8,0.08)",
-  text: "#1A1208",
-  textMid: "rgba(26,18,8,0.75)",
-  textMuted: "rgba(26,18,8,0.45)",
-  orange: "var(--althy-orange)",
-  orangeBorder: "rgba(232,96,44,0.20)",
-} as const
+import { C } from "@/lib/design-tokens"
 
 export function Testimonials() {
   return (

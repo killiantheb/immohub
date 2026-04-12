@@ -120,6 +120,79 @@ async def creer_payment_intent(
 
 
 # ═════════════════════════════════════════════════════════════════════════════
+# POST /paiements/frais-dossier — CHF 90 si locataire retenu
+# ═════════════════════════════════════════════════════════════════════════════
+
+
+class FraisDossierRequest(BaseModel):
+    candidature_id: uuid.UUID
+
+
+class FraisDossierResponse(BaseModel):
+    client_secret: str
+    payment_intent_id: str
+    montant: float   # CHF 90
+
+
+FRAIS_DOSSIER_CHF = 90.0
+
+
+@router.post("/frais-dossier", response_model=FraisDossierResponse, status_code=status.HTTP_201_CREATED)
+async def creer_frais_dossier(
+    payload: FraisDossierRequest,
+    current_user: AuthDep,
+    db: DbDep,
+) -> FraisDossierResponse:
+    """
+    Crée un Stripe PaymentIntent de CHF 90 (frais de dossier Althy).
+    Déclenché uniquement si le candidat a été retenu (statut = 'acceptee').
+    Les CHF 90 vont directement à Althy — pas de transfer_data verso le proprio.
+    Le webhook payment_intent.succeeded (type=frais_dossier) met à jour frais_payes = true.
+    """
+    from app.models.candidature import Candidature
+
+    candidature = (
+        await db.execute(
+            select(Candidature).where(
+                Candidature.id == payload.candidature_id,
+                Candidature.user_id == current_user.id,
+            )
+        )
+    ).scalar_one_or_none()
+
+    if not candidature:
+        raise HTTPException(404, "Candidature introuvable")
+    if candidature.statut != "acceptee":
+        raise HTTPException(422, "Les frais de dossier ne sont dus que si votre candidature a été acceptée")
+    if candidature.frais_payes:
+        raise HTTPException(409, "Les frais de dossier ont déjà été réglés")
+
+    amount_centimes = int(FRAIS_DOSSIER_CHF * 100)
+
+    pi = stripe.PaymentIntent.create(
+        amount=amount_centimes,
+        currency="chf",
+        metadata={
+            "type": "frais_dossier",
+            "candidature_id": str(payload.candidature_id),
+            "user_id": str(current_user.id),
+        },
+        description="Frais de dossier Althy — CHF 90",
+        automatic_payment_methods={"enabled": True},
+    )
+
+    # Stocker le PI sur la candidature pour le reconcilier via webhook
+    candidature.stripe_pi_id = pi.id
+    await db.commit()
+
+    return FraisDossierResponse(
+        client_secret=pi.client_secret,
+        payment_intent_id=pi.id,
+        montant=FRAIS_DOSSIER_CHF,
+    )
+
+
+# ═════════════════════════════════════════════════════════════════════════════
 # CRUD paiements
 # ═════════════════════════════════════════════════════════════════════════════
 

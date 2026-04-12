@@ -17,10 +17,11 @@
   --althy-text-3:      #7A7469;   /* muted */
 
   /* Orange vif — couleur principale */
-  --althy-orange:      #E8602C;
-  --althy-orange-light:#FEF2EB;
-  --althy-orange-bg:   rgba(232,96,44,0.08);
-  --althy-orange-hover:#C84E1E;
+  --althy-orange:        #E8602C;
+  --althy-orange-light:  #FEF2EB;
+  --althy-orange-bg:     rgba(232,96,44,0.08);
+  --althy-orange-hover:  #C84E1E;
+  --althy-orange-border: rgba(232,96,44,0.22);
 
   /* Sage — succès */
   --althy-green:       #5A7D54;
@@ -44,6 +45,29 @@
   --sidebar-active:    rgba(232,96,44,0.08);
   --sidebar-hover:     rgba(232,96,44,0.04);
   --sidebar-gold:      #E8602C;
+
+  /* Night mode (futur dark mode) */
+  --althy-night:          #0F0E0D;
+  --althy-night-surface:  #1A1915;
+  --althy-night-border:   rgba(255,255,255,0.06);
+  --althy-night-text:     #F0EDE8;
+
+  /* Navbar (légèrement translucide sur fond clair) */
+  --althy-navbar-bg:      rgba(250,250,248,0.92);
+
+  /* Map overlay */
+  --althy-map-overlay:    rgba(15,14,13,0.72);
+  --althy-map-card:       rgba(255,255,255,0.95);
+
+  /* Swipe feedback */
+  --althy-swipe-yes:      #2D6A2D;
+  --althy-swipe-yes-bg:   rgba(45,106,45,0.12);
+  --althy-swipe-no:       #C0392B;
+  --althy-swipe-no-bg:    rgba(192,57,43,0.12);
+
+  /* Premium */
+  --althy-gold:           #B8860B;
+  --althy-gold-bg:        rgba(184,134,11,0.08);
 
   /* Ombres */
   --althy-shadow:      0 1px 3px rgba(61,56,48,0.06), 0 1px 2px rgba(61,56,48,0.04);
@@ -143,6 +167,56 @@
   .badge-amber  { background: var(--althy-amber-bg);  color: var(--althy-amber); }
   .badge-orange { background: var(--althy-orange-bg); color: var(--althy-orange); }
   .badge-blue   { background: var(--althy-blue-bg);   color: var(--althy-blue); }
+}
+
+/* ── Fraunces Variable — utilities ──────────────────────────────────────────
+   Axes disponibles :
+     wght  100–900   (poids)
+     SOFT  0–100     (arrondi des lettres — 0 = sharp, 100 = très rond)
+     WONK  0 | 1     (glyphes alternatifs "wonky")
+
+   Usage : font-variation-settings: 'wght' 300, 'SOFT' 40;
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Hero — titre émotionnel principal (landing, marketplace, onboarding) */
+.hero-title {
+  font-family: var(--font-serif), 'Fraunces', Georgia, serif;
+  font-weight: 300;
+  font-style: italic;
+  font-variation-settings: 'wght' 300, 'SOFT' 40, 'WONK' 0;
+  line-height: 1.06;
+  letter-spacing: -0.025em;
+  color: var(--althy-text);
+}
+
+/* Prix / valeurs grandes (dashboards, fiches biens) */
+.price-display {
+  font-family: var(--font-serif), 'Fraunces', Georgia, serif;
+  font-weight: 300;
+  font-style: normal;
+  font-variation-settings: 'wght' 300, 'SOFT' 20, 'WONK' 0;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+}
+
+/* Titre section standard */
+.section-title-serif {
+  font-family: var(--font-serif), 'Fraunces', Georgia, serif;
+  font-weight: 300;
+  font-style: normal;
+  font-variation-settings: 'wght' 300, 'SOFT' 10, 'WONK' 0;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+/* Tagline / quote italic */
+.quote-serif {
+  font-family: var(--font-serif), 'Fraunces', Georgia, serif;
+  font-weight: 300;
+  font-style: italic;
+  font-variation-settings: 'wght' 300, 'SOFT' 60, 'WONK' 0;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
 }
 
 /* ── Landing page ─────────────────────────────────────────────────────────── */
@@ -348,6 +422,74 @@
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .steps-grid { grid-template-columns: 1fr; }
   .pricing-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Dark mode (prefers-color-scheme) ──────────────────────────────────── */
+/* Prêt pour activation — ajouter class="dark" sur <html> via next-themes  */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --althy-bg:            #0F0E0D;
+    --althy-surface:       #1A1915;
+    --althy-surface-2:     #222019;
+    --althy-border:        rgba(255,255,255,0.08);
+    --althy-border-2:      rgba(255,255,255,0.04);
+
+    --althy-text:          #F0EDE8;
+    --althy-text-2:        #C8C4BC;
+    --althy-text-3:        #8A8680;
+
+    /* Orange reste le même — c'est l'identité */
+    --althy-orange:        #E8602C;
+    --althy-orange-light:  rgba(232,96,44,0.15);
+    --althy-orange-bg:     rgba(232,96,44,0.12);
+    --althy-orange-border: rgba(232,96,44,0.30);
+
+    --althy-navbar-bg:     rgba(15,14,13,0.88);
+
+    /* Sidebar */
+    --sidebar-bg:          #1A1915;
+    --sidebar-border:      rgba(255,255,255,0.08);
+    --sidebar-text:        #C8C4BC;
+    --sidebar-text-on:     #F0EDE8;
+    --sidebar-active:      rgba(232,96,44,0.14);
+    --sidebar-hover:       rgba(232,96,44,0.07);
+
+    /* Ombres plus sombres */
+    --althy-shadow:        0 1px 3px rgba(0,0,0,0.30), 0 1px 2px rgba(0,0,0,0.20);
+    --althy-shadow-md:     0 4px 18px rgba(0,0,0,0.40), 0 1px 4px rgba(0,0,0,0.20);
+    --althy-shadow-lg:     0 8px 36px rgba(0,0,0,0.50), 0 2px 8px rgba(0,0,0,0.25);
+  }
+}
+
+/* Classe .dark pour toggle manuel via next-themes (defaultTheme="system") */
+.dark {
+  --althy-bg:            #0F0E0D;
+  --althy-surface:       #1A1915;
+  --althy-surface-2:     #222019;
+  --althy-border:        rgba(255,255,255,0.08);
+  --althy-border-2:      rgba(255,255,255,0.04);
+
+  --althy-text:          #F0EDE8;
+  --althy-text-2:        #C8C4BC;
+  --althy-text-3:        #8A8680;
+
+  --althy-orange:        #E8602C;
+  --althy-orange-light:  rgba(232,96,44,0.15);
+  --althy-orange-bg:     rgba(232,96,44,0.12);
+  --althy-orange-border: rgba(232,96,44,0.30);
+
+  --althy-navbar-bg:     rgba(15,14,13,0.88);
+
+  --sidebar-bg:          #1A1915;
+  --sidebar-border:      rgba(255,255,255,0.08);
+  --sidebar-text:        #C8C4BC;
+  --sidebar-text-on:     #F0EDE8;
+  --sidebar-active:      rgba(232,96,44,0.14);
+  --sidebar-hover:       rgba(232,96,44,0.07);
+
+  --althy-shadow:        0 1px 3px rgba(0,0,0,0.30), 0 1px 2px rgba(0,0,0,0.20);
+  --althy-shadow-md:     0 4px 18px rgba(0,0,0,0.40), 0 1px 4px rgba(0,0,0,0.20);
+  --althy-shadow-lg:     0 8px 36px rgba(0,0,0,0.50), 0 2px 8px rgba(0,0,0,0.25);
 }
 
 /* ── Small mobile (≤ 480px) ──────────────────────────────────────────────── */

@@ -1,13 +1,37 @@
 // ─── User ───────────────────────────────────────────────────────────────────
 
 export type UserRole =
-  | "super_admin"
-  | "agency"
-  | "owner"
-  | "tenant"
+  | "proprio_solo"
+  | "agence"
+  | "portail_proprio"
   | "opener"
-  | "company"
-  | "insurance";
+  | "artisan"
+  | "expert"
+  | "hunter"
+  | "locataire"
+  | "acheteur_premium"
+  | "super_admin";
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  proprio_solo:     "Propriétaire",
+  agence:           "Agence",
+  portail_proprio:  "Portail Proprio",
+  opener:           "Ouvreur",
+  artisan:          "Artisan",
+  expert:           "Expert",
+  hunter:           "Hunter",
+  locataire:        "Locataire",
+  acheteur_premium: "Acheteur Premium",
+  super_admin:      "Admin",
+};
+
+/** Rôles legacy (DB ancienne) → rôles actuels. */
+export const LEGACY_ROLE_MAP: Record<string, UserRole> = {
+  owner:   "proprio_solo",
+  agency:  "agence",
+  tenant:  "locataire",
+  company: "artisan",
+};
 
 export interface UserProfile {
   id: string;

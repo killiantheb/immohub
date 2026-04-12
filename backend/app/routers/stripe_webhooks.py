@@ -421,9 +421,25 @@ async def _handle_payment_intent_succeeded(
     """
     pi_id = data.get("id")
     metadata = data.get("metadata", {})
+    ptype = metadata.get("type")
+
+    # ── Frais de dossier CHF 90 ───────────────────────────────────────────────
+    if ptype == "frais_dossier":
+        candidature_id = metadata.get("candidature_id")
+        if candidature_id:
+            await db.execute(
+                text("""
+                    UPDATE candidatures
+                    SET frais_payes = true, updated_at = now()
+                    WHERE id = :cid
+                """),
+                {"cid": candidature_id},
+            )
+            await db.commit()
+        return
 
     # Ne traiter que les paiements de loyer identifiés
-    if metadata.get("type") != "loyer":
+    if ptype != "loyer":
         return
 
     amount = data.get("amount_received", 0) / 100

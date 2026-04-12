@@ -6,7 +6,6 @@ from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from app.routers import (
     admin,
-    ai,
     auth,
     companies,
     contracts,
@@ -17,6 +16,10 @@ from app.routers import (
     rfq,
     transactions,
 )
+from app.routers.ai_sphere import router as ai_sphere_router
+from app.routers.ai_documents import router as ai_documents_router
+from app.routers.ai_scoring import router as ai_scoring_router
+from app.routers.ai_listings import router as ai_listings_router
 from app.routers.agency_settings import router as agency_settings_router
 from app.routers.biens import router as biens_router
 from app.routers.crm import router as crm_router
@@ -37,6 +40,7 @@ from app.routers.ratings import router as ratings_router
 from app.routers.smart_onboarding import router as smart_onboarding_router
 from app.routers.tenants import router as tenants_router
 from app.routers.listings import router as listings_router
+from app.routers.marketplace import router as marketplace_router
 from app.routers.hunters import router as hunters_router
 from app.routers.stripe_webhooks import router as stripe_router
 from app.routers.portail import router as portail_router
@@ -52,6 +56,7 @@ from app.routers.agenda import router as agenda_router
 from app.routers.whatsapp import router as whatsapp_router
 from app.routers.onboarding import router as onboarding_router
 from app.routers.sphere_carte import router as sphere_carte_router
+from app.routers.contact import router as contact_router
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -152,7 +157,10 @@ app.include_router(openers.router, prefix="/api/v1/openers", tags=["openers"])
 app.include_router(missions.router, prefix="/api/v1/missions", tags=["missions"])
 app.include_router(companies.router, prefix="/api/v1/companies", tags=["companies"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
-app.include_router(ai.router, prefix="/api/v1/ai", tags=["ai"])
+app.include_router(ai_sphere_router, prefix="/api/v1", tags=["ai"])
+app.include_router(ai_documents_router, prefix="/api/v1", tags=["ai"])
+app.include_router(ai_scoring_router, prefix="/api/v1", tags=["ai"])
+app.include_router(ai_listings_router, prefix="/api/v1", tags=["ai"])
 app.include_router(rfq.router, prefix="/api/v1/rfqs", tags=["rfqs"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(smart_onboarding_router, prefix="/api/v1")
@@ -176,6 +184,7 @@ app.include_router(notifications_router, prefix="/api/v1/notifications", tags=["
 app.include_router(matching_router, prefix="/api/v1/matching", tags=["matching"])
 app.include_router(geocode_router, prefix="/api/v1/geocode", tags=["geocode"])
 app.include_router(listings_router, prefix="/api/v1/listings", tags=["listings"])
+app.include_router(marketplace_router, prefix="/api/v1/marketplace", tags=["marketplace"])
 app.include_router(hunters_router, prefix="/api/v1/hunters", tags=["hunters"])
 app.include_router(stripe_router, prefix="/api/v1/webhooks", tags=["stripe"])
 app.include_router(portail_router, prefix="/api/v1/portail", tags=["portail"])
@@ -191,6 +200,7 @@ app.include_router(agenda_router, prefix="/api/v1", tags=["agenda"])
 app.include_router(whatsapp_router, prefix="/api/v1", tags=["whatsapp"])
 app.include_router(onboarding_router, prefix="/api/v1", tags=["onboarding"])
 app.include_router(sphere_carte_router, prefix="/api/v1", tags=["sphere-carte"])
+app.include_router(contact_router, prefix="/api/v1", tags=["contact"])
 
 
 # ── Health check ──────────────────────────────────────────────────────────────

@@ -14,6 +14,11 @@ const nextConfig = {
       { source: "/app/dashboard",          destination: "/app/sphere",                  permanent: true },
       { source: "/app/rfqs/:path*",        destination: "/app/artisans/devis/:path*",   permanent: true },
       { source: "/onboarding",             destination: "/bienvenue",                   permanent: true },
+      // SEO ville — les vraies pages statiques prennent priorité sur [id], mais on garde ces redirects
+      // au cas où le routing serait ambigu dans certains déploiements
+      { source: "/biens/fribourg",         destination: "/biens?ville=Fribourg",        permanent: false },
+      { source: "/biens/sion",             destination: "/biens?ville=Sion",            permanent: false },
+      { source: "/biens/neuchatel",        destination: "/biens?ville=Neuch%C3%A2tel",  permanent: false },
     ];
   },
 
@@ -57,6 +62,12 @@ const nextConfig = {
             leaflet: {
               name: "leaflet",
               test: /[\\/]node_modules[\\/](leaflet|react-leaflet)[\\/]/,
+              chunks: "async",
+              priority: 20,
+            },
+            mapbox: {
+              name: "mapbox",
+              test: /[\\/]node_modules[\\/](mapbox-gl)[\\/]/,
               chunks: "async",
               priority: 20,
             },

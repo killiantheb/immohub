@@ -2,17 +2,7 @@
 
 import { motion } from "framer-motion"
 import Link from "next/link"
-
-const C = {
-  bg: "#FAF8F4",
-  border: "rgba(40,18,8,0.08)",
-  borderOrange: "rgba(232,96,44,0.18)",
-  text: "#1A1208",
-  textMid: "rgba(26,18,8,0.65)",
-  textMuted: "rgba(26,18,8,0.45)",
-  orange: "var(--althy-orange)",
-  orangeBorder: "rgba(232,96,44,0.22)",
-} as const
+import { C } from "@/lib/design-tokens"
 
 export function CTAFinal() {
   return (
@@ -29,7 +19,7 @@ export function CTAFinal() {
         style={{
           position: "absolute",
           inset: "2rem",
-          border: `1px solid ${C.borderOrange}`,
+          border: `1px solid ${C.orangeBorder}`,
           borderRadius: "1.5rem",
           pointerEvents: "none",
         }}

@@ -3,19 +3,7 @@
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { AlthySphere } from "@/components/AlthySphere"
-
-const C = {
-  bg: "#FAF8F4",
-  surface: "#FFFFFF",
-  surface2: "#F2EDE5",
-  border: "rgba(40,18,8,0.08)",
-  text: "#1A1208",
-  textMid: "rgba(26,18,8,0.65)",
-  textMuted: "rgba(26,18,8,0.38)",
-  orange: "var(--althy-orange)",
-  orangeBg: "rgba(232,96,44,0.08)",
-  orangeBorder: "rgba(232,96,44,0.22)",
-} as const
+import { C } from "@/lib/design-tokens"
 
 const containerVariants = {
   hidden: {},

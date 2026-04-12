@@ -27,60 +27,6 @@ export const ARTISAN_FEATURES = [
   "Facturation automatique",
 ]
 
-export const PLANS = [
-  {
-    name: "Particulier",
-    price: "29",
-    currency: "CHF",
-    period: "/ mois",
-    featured: false,
-    features: [
-      "Biens illimités",
-      "Althy IA incluse",
-      "Documents gratuits",
-      "Relances automatiques",
-      "14j d'essai gratuit",
-    ],
-    cta: "Commencer gratuitement",
-    badge: undefined as string | undefined,
-    note: undefined as string | undefined,
-  },
-  {
-    name: "Agence",
-    price: "29",
-    currency: "CHF",
-    period: "/ utilisateur / mois",
-    featured: true,
-    badge: "Le plus utilisé",
-    features: [
-      "Biens illimités",
-      "Multi-agents",
-      "Ouvreurs & artisans intégrés",
-      "Briefing IA quotidien",
-      "Rapports automatiques",
-      "Support prioritaire",
-    ],
-    cta: "Démarrer maintenant",
-    note: "Une agence de 5 agents = CHF 145/mois",
-  },
-  {
-    name: "Ouvreur / Artisan",
-    price: "0",
-    currency: "CHF",
-    period: "de base",
-    featured: false,
-    features: [
-      "Dashboard complet",
-      "Althy IA incluse",
-      "Paiements automatiques",
-      "Option Pro : CHF 19/mois",
-    ],
-    cta: "Rejoindre gratuitement",
-    note: "Commission sur missions conclues uniquement",
-    badge: undefined as string | undefined,
-  },
-]
-
 export const TESTIMONIALS = [
   { quote: "On a migré nos 80 biens en une journée. Les proprios adorent le portail.", name: "Marc A.", role: "Gérant d'agence", city: "Genève" },
   { quote: "Je gère mes 6 appartements seul depuis Althy. Plus besoin d'appeler l'agence.", name: "Sophie L.", role: "Propriétaire", city: "Lausanne" },

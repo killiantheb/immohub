@@ -33,6 +33,7 @@ import {
   Map,
   FileText,
   CreditCard,
+  ClipboardList,
 } from "lucide-react";
 import { AlthySphere } from "@/components/AlthySphere";
 
@@ -59,7 +60,10 @@ const NAV_GROUPS: NavItem[][] = [
   // Groupe 2 — Gestion
   [
     { label: "Biens",         href: "/app/biens",         icon: <Building2 {...ICON} />, section: "biens",
-      children: [{ label: "Tous les biens", href: "/app/biens" }] },
+      children: [
+        { label: "Tous les biens",        href: "/app/biens" },
+        { label: "Candidatures reçues",   href: "/app/candidatures" },
+      ] },
     { label: "Finances",      href: "/app/finances",      icon: <LineChart {...ICON} />, section: "finances" },
     { label: "Interventions", href: "/app/interventions", icon: <Wrench {...ICON} />,    section: "interventions" },
     { label: "CRM",           href: "/app/crm",           icon: <Users2 {...ICON} />,    section: "crm" },
@@ -80,9 +84,10 @@ const NAV_GROUPS: NavItem[][] = [
         { label: "Revenus",    href: "/app/ouvreurs/revenus" },
         { label: "Historique", href: "/app/ouvreurs/historique" },
       ]},
-    { label: "Hunters",  href: "/app/hunters",  icon: <Target {...ICON} />,    section: "hunters" },
-    { label: "Vente",    href: "/app/vente",    icon: <TrendingUp {...ICON} />, section: "vente" },
-    { label: "Annonces", href: "/app/listings", icon: <Megaphone {...ICON} />, section: "listings" },
+    { label: "Hunters",            href: "/app/hunters",           icon: <Target {...ICON} />,       section: "hunters" },
+    { label: "Vente",              href: "/app/vente",             icon: <TrendingUp {...ICON} />,   section: "vente" },
+    { label: "Annonces",           href: "/app/listings",          icon: <Megaphone {...ICON} />,    section: "listings" },
+    { label: "Mes candidatures",   href: "/app/mes-candidatures",  icon: <ClipboardList {...ICON} />, section: "candidatures" },
   ],
   // Groupe 4 — Communication
   [

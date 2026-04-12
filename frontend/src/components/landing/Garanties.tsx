@@ -1,13 +1,9 @@
 import { GARANTIES } from "@/lib/data/landing"
 import { Shield, FileText, CalendarCheck, Headphones } from "lucide-react"
+import { C } from "@/lib/design-tokens"
 
-const C = {
-  bg: "#F2EDE5",
-  border: "rgba(40,18,8,0.06)",
-  text: "#1A1208",
-  textMid: "rgba(26,18,8,0.65)",
-  orange: "var(--althy-orange)",
-} as const
+// Cette bannière de garanties alterne sur un fond plus sombre
+const sectionBg = C.surface2
 
 const ICONS: Record<string, React.ReactNode> = {
   shield: <Shield size={20} color={C.orange} strokeWidth={1.5} />,
@@ -20,7 +16,7 @@ export function Garanties() {
   return (
     <div
       style={{
-        background: C.bg,
+        background: sectionBg,
         borderTop: `1px solid ${C.border}`,
         borderBottom: `1px solid ${C.border}`,
         padding: "2.5rem 1.5rem",
