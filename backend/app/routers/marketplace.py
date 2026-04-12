@@ -4,8 +4,6 @@ Routes publiques (aucune auth) :  GET /biens  GET /carte  GET /{id}
 Routes authentifiées :            POST /publier  PATCH /{id}  DELETE /{id}
 """
 
-from __future__ import annotations
-
 import uuid
 from datetime import datetime, timezone
 from typing import Annotated

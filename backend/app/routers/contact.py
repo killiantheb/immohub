@@ -4,8 +4,6 @@ Envoie un email via Resend à support@althy.ch.
 Rate-limited : 5 requêtes/minute par IP pour éviter le spam.
 """
 
-from __future__ import annotations
-
 import html as _html
 
 import httpx
