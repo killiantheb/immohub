@@ -505,7 +505,7 @@ export default function LandingPage() {
             <span className="lp-nav-tag" style={{
               fontFamily: "var(--font-sans, system-ui)",
               fontSize: 11, letterSpacing: "0.14em",
-              color: ORANGE,
+              color: "#FFFFFF",
             }}>
               Votre agent personnel
             </span>
