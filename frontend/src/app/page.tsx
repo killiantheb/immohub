@@ -560,9 +560,13 @@ export default function LandingPage() {
         }}>
           <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
             <span style={{
-              fontFamily: "var(--font-serif, 'Fraunces', Georgia, serif)",
-              fontSize: 15, fontWeight: 400, letterSpacing: "0.22em",
+              fontFamily: serif,
+              fontSize: 28,
+              fontWeight: 400,
+              letterSpacing: "0.22em",
               color: ORANGE,
+              textShadow: "0 2px 16px rgba(255,255,255,0.50)",
+              transition: "color 0.35s ease",
             }}>
               ALTHY
             </span>
