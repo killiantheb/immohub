@@ -595,16 +595,31 @@ export default function LandingPage() {
 
           {/* Stats card — top left */}
           <div className="lp-stats-card" style={{
-            position: "absolute", top: 80, left: 20, zIndex: 10,
-            background: "rgba(250,250,248,0.94)", backdropFilter: "blur(14px)",
-            borderRadius: 14, padding: "14px 18px",
-            border: "1px solid rgba(26,22,18,0.08)",
-            boxShadow: "0 4px 24px rgba(26,22,18,0.14)",
+            position: "absolute",
+            top: "4.25rem", left: "1.25rem",
+            zIndex: 20,
+            background: "rgba(255,255,255,0.75)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            border: "1px solid rgba(255,255,255,0.85)",
+            borderRadius: 14,
+            padding: "14px 18px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.07)",
+            minWidth: 140,
           }}>
-            <div style={{ fontFamily: serif, fontSize: 28, fontWeight: 400, color: DARK, lineHeight: 1 }}>
+            <div style={{
+              fontFamily: "var(--font-serif, Georgia, serif)",
+              fontSize: 30, fontWeight: 300,
+              color: "#1A1208", lineHeight: 1,
+            }}>
               {BIENS_MARKERS.length}
             </div>
-            <div style={{ fontSize: 11, color: MUTED, fontWeight: 500, marginTop: 3 }}>
+            <div style={{
+              fontSize: 10, letterSpacing: "0.06em",
+              color: "rgba(26,18,8,0.45)",
+              fontFamily: "var(--font-sans, system-ui)",
+              marginTop: 2,
+            }}>
               biens disponibles
             </div>
             <div style={{ fontSize: 11, color: ORANGE, fontWeight: 700, marginTop: 5 }}>
