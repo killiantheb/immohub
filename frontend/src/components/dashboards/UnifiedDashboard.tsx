@@ -1010,12 +1010,13 @@ export function UnifiedDashboard() {
 
   const firstName = profile?.first_name ?? user?.user_metadata?.first_name ?? "";
 
+  // Always call hooks unconditionally (React rules)
+  const data      = useUnifiedData(role);
+
   // Portail proprio has its own dedicated component
   if (role === "portail_proprio") {
     return <DashboardPortail firstName={firstName} />;
   }
-
-  const data      = useUnifiedData(role);
   const config    = DASHBOARD_CONFIGS[role ?? "proprio_solo"];
   const kpiValues = computeKpiValues(role, data);
 
