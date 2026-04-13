@@ -307,11 +307,37 @@ export default function LandingPage() {
 
       map.on("load", () => {
 
-        // Frontière suisse en orange
-        map.addSource("swiss-union", { type: "geojson", data: "/suisse-union.json" });
+        // Source cantons suisses
+        map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
+
+        // Fill orange semi-transparent sur la Suisse romande (effet flou translucide)
         map.addLayer({
-          id: "swiss-border", type: "line", source: "swiss-union",
-          paint: { "line-color": "#E8602C", "line-width": 2.5, "line-opacity": 0.90 },
+          id: "romande-fill", type: "fill", source: "cantons",
+          filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
+          paint: { "fill-color": "#E8602C", "fill-opacity": 0.10 },
+        });
+
+        // Halo/glow autour des contours romands (ligne large et floue)
+        map.addLayer({
+          id: "romande-border-glow", type: "line", source: "cantons",
+          filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
+          paint: {
+            "line-color": "#E8602C",
+            "line-width": 8,
+            "line-opacity": 0.18,
+            "line-blur": 6,
+          },
+        });
+
+        // Contour net des cantons romands
+        map.addLayer({
+          id: "romande-border", type: "line", source: "cantons",
+          filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
+          paint: {
+            "line-color": "#E8602C",
+            "line-width": 2,
+            "line-opacity": 0.85,
+          },
         });
 
         // Markers prix
