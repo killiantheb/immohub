@@ -339,6 +339,39 @@ export default function LandingPage() {
           paint:  { "line-color": ORANGE, "line-width": 2, "line-opacity": 0.6 },
         });
 
+        // Contour suisse entier — bordure orange
+        map.addSource("swiss-outline", {
+          type: "geojson",
+          data: {
+            type: "Feature",
+            geometry: {
+              type: "Polygon",
+              coordinates: [[
+                [5.96, 47.81], [6.02, 47.54], [6.37, 47.36], [6.94, 47.50],
+                [7.05, 47.34], [7.45, 47.48], [7.59, 47.59], [8.23, 47.61],
+                [8.52, 47.78], [9.01, 47.69], [9.52, 47.52], [10.49, 47.39],
+                [10.42, 46.89], [10.14, 46.85], [10.07, 46.56], [9.53, 46.50],
+                [9.18, 46.22], [8.99, 45.83], [8.45, 45.82], [8.08, 45.99],
+                [7.59, 45.93], [7.11, 45.93], [6.80, 45.92], [6.93, 46.35],
+                [6.50, 46.43], [6.23, 46.32], [5.97, 46.14], [5.96, 46.45],
+                [6.02, 46.73], [5.97, 47.04], [5.96, 47.27], [5.96, 47.81],
+              ]],
+            },
+            properties: {},
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          } as any,
+        });
+        map.addLayer({
+          id: "swiss-outline-fill", type: "fill", source: "swiss-outline",
+          slot: "bottom",
+          paint: { "fill-color": ORANGE, "fill-opacity": 0.03 },
+        });
+        map.addLayer({
+          id: "swiss-outline-line", type: "line", source: "swiss-outline",
+          slot: "middle",
+          paint: { "line-color": ORANGE, "line-width": 2.8, "line-opacity": 0.70 },
+        });
+
         // Price markers
         BIENS_MARKERS.forEach(bien => {
           const el = document.createElement("div");
@@ -457,6 +490,43 @@ export default function LandingPage() {
           slot: "bottom",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
           paint: { "line-color": "#E8602C", "line-width": 2, "line-opacity": 0.7 },
+        });
+      }
+
+      // Contour suisse entier
+      if (!map.getSource("swiss-outline")) {
+        map.addSource("swiss-outline", {
+          type: "geojson",
+          data: {
+            type: "Feature",
+            geometry: {
+              type: "Polygon",
+              coordinates: [[
+                [5.96, 47.81], [6.02, 47.54], [6.37, 47.36], [6.94, 47.50],
+                [7.05, 47.34], [7.45, 47.48], [7.59, 47.59], [8.23, 47.61],
+                [8.52, 47.78], [9.01, 47.69], [9.52, 47.52], [10.49, 47.39],
+                [10.42, 46.89], [10.14, 46.85], [10.07, 46.56], [9.53, 46.50],
+                [9.18, 46.22], [8.99, 45.83], [8.45, 45.82], [8.08, 45.99],
+                [7.59, 45.93], [7.11, 45.93], [6.80, 45.92], [6.93, 46.35],
+                [6.50, 46.43], [6.23, 46.32], [5.97, 46.14], [5.96, 46.45],
+                [6.02, 46.73], [5.97, 47.04], [5.96, 47.27], [5.96, 47.81],
+              ]],
+            },
+            properties: {},
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          } as any,
+        });
+      }
+      if (!map.getLayer("swiss-outline-fill")) {
+        map.addLayer({
+          id: "swiss-outline-fill", type: "fill", source: "swiss-outline",
+          slot: "bottom",
+          paint: { "fill-color": "#E8602C", "fill-opacity": 0.03 },
+        });
+        map.addLayer({
+          id: "swiss-outline-line", type: "line", source: "swiss-outline",
+          slot: "middle",
+          paint: { "line-color": "#E8602C", "line-width": 2.8, "line-opacity": 0.70 },
         });
       }
     });
