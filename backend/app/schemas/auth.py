@@ -14,12 +14,12 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., min_length=8)
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
-    phone: str | None = Field(None, max_length=20)
+    phone:      str = ""
     role: Literal["owner", "tenant", "agency", "opener", "company"] = "owner"
     # Contexte onboarding — optionnels, transmis au scanner
-    ville:      str | None = None
-    agence_nom: str | None = None
-    site_web:   str | None = None
+    ville:      str = ""   # "Crans-Montana"
+    agence_nom: str = ""   # "Sunimmo Riviera"
+    site_web:   str = ""   # "https://mysunimmo.ch"
 
 
 class LoginRequest(BaseModel):
