@@ -227,6 +227,7 @@ export default function LandingPage() {
   const [panelVisible,  setPanelVisible] = useState(false);
   const [query,         setQuery]        = useState("");
   const [mapMode,       setMapMode]      = useState<"standard" | "satellite">("standard");
+  const [mapInteracted, setMapInteracted] = useState(false);
 
   // Navbar scroll opacity
   useEffect(() => {
@@ -277,6 +278,12 @@ export default function LandingPage() {
       });
 
       mapRef.current = map;
+
+      const handleInteraction = () => setMapInteracted(true);
+      map.on("dragstart",   handleInteraction);
+      map.on("zoomstart",   handleInteraction);
+      map.on("pitchstart",  handleInteraction);
+      map.on("rotatestart", handleInteraction);
 
       map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "bottom-right");
 
@@ -550,6 +557,8 @@ export default function LandingPage() {
             zIndex: 10,
             pointerEvents: "none",
             width: "min(680px, calc(100vw - 48px))",
+            opacity: mapInteracted ? 0 : 1,
+            transition: "opacity 0.5s ease",
           }}>
             <h1 style={{
               fontFamily: serif,
