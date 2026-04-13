@@ -483,18 +483,17 @@ export default function LandingPage() {
           height: 62,
           display: "flex", alignItems: "center",
           padding: "0 24px", gap: 16,
-          background:    scrolled ? "rgba(250,250,248,0.96)" : "transparent",
-          backdropFilter: scrolled ? "blur(16px)" : "none",
-          borderBottom:  scrolled ? "1px solid rgba(26,22,18,0.07)" : "none",
-          transition: "background 0.35s ease, border-color 0.35s ease",
+          background: "rgba(255,255,255,0.08)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          borderBottom: "1px solid rgba(255,255,255,0.12)",
+          transition: "background 0.35s ease",
         }}>
           <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
             <span style={{
               fontFamily: serif,
               fontSize: 21, fontWeight: 400, letterSpacing: "0.18em",
-              color: scrolled ? ORANGE : "#fff",
-              textShadow: scrolled ? "none" : "0 1px 10px rgba(0,0,0,0.30)",
-              transition: "color 0.35s ease",
+              color: ORANGE,
             }}>
               ALTHY
             </span>
@@ -506,9 +505,8 @@ export default function LandingPage() {
           }}>
             <span className="lp-nav-tag" style={{
               fontFamily: sans, fontSize: 13, fontWeight: 500,
-              color: scrolled ? MUTED : "rgba(255,255,255,0.85)",
+              color: "#1A1208",
               letterSpacing: "0.04em",
-              transition: "color 0.35s ease",
             }}>
               Votre agent personnel
             </span>
@@ -518,20 +516,15 @@ export default function LandingPage() {
             <Link href="/login" style={{
               fontSize: 13, fontWeight: 500, textDecoration: "none",
               padding: "7px 14px",
-              color: scrolled ? MUTED : "rgba(255,255,255,0.90)",
-              transition: "color 0.35s ease",
+              color: "#1A1208",
             }}>
               Se connecter
             </Link>
             <Link href="/register" className="lp-nav-cta" style={{
               fontSize: 13, fontWeight: 600, textDecoration: "none",
               padding: "8px 18px", borderRadius: 10,
-              background: scrolled ? ORANGE : "rgba(255,255,255,0.16)",
-              color: "#fff",
-              border: scrolled ? "none" : "1px solid rgba(255,255,255,0.35)",
-              backdropFilter: scrolled ? "none" : "blur(8px)",
-              boxShadow: scrolled ? "0 2px 12px rgba(232,96,44,0.30)" : "none",
-              transition: "background 0.35s ease, box-shadow 0.35s ease",
+              background: ORANGE, color: "#fff",
+              boxShadow: "0 2px 12px rgba(232,96,44,0.30)",
             }}>
               Commencer gratuitement
             </Link>
