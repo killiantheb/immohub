@@ -34,6 +34,7 @@ interface BienMarker {
   gradient: string;
   verifie:  boolean;
   note:     number;
+  tags_ia?: string[];
 }
 
 // ── Mock data ──────────────────────────────────────────────────────────────────
@@ -46,7 +47,7 @@ const BIENS_MARKERS: BienMarker[] = [
     type: "Appartement", surface: 75, pieces: 3,
     statut: "À louer",
     gradient: "linear-gradient(135deg,#E8D8C4,#C8A880)",
-    verifie: true, note: 4.8,
+    verifie: true, note: 4.8, tags_ia: ["Rive gauche", "Vue lac", "Lumineux"],
   },
   {
     id: "l1", lng: 6.632, lat: 46.519,
@@ -55,7 +56,7 @@ const BIENS_MARKERS: BienMarker[] = [
     type: "Studio", surface: 32, pieces: 1,
     statut: "À louer",
     gradient: "linear-gradient(135deg,#C4D8C4,#90B890)",
-    verifie: true, note: 4.6,
+    verifie: true, note: 4.6, tags_ia: ["Centre-ville", "Transports", "Rénové"],
   },
   {
     id: "f1", lng: 7.161, lat: 46.806,
@@ -64,7 +65,7 @@ const BIENS_MARKERS: BienMarker[] = [
     type: "Appartement", surface: 55, pieces: 2,
     statut: "À louer",
     gradient: "linear-gradient(135deg,#E0D8C4,#C0A880)",
-    verifie: false, note: 4.5,
+    verifie: false, note: 4.5, tags_ia: ["Vieille ville", "Calme", "Charme"],
   },
   {
     id: "n1", lng: 6.931, lat: 46.992,
@@ -73,7 +74,7 @@ const BIENS_MARKERS: BienMarker[] = [
     type: "Appartement", surface: 80, pieces: 3,
     statut: "À louer",
     gradient: "linear-gradient(135deg,#C8C4E0,#9890B8)",
-    verifie: false, note: 4.4,
+    verifie: false, note: 4.4, tags_ia: ["Vue lac", "Espace", "Lumineux"],
   },
   {
     id: "s1", lng: 7.359, lat: 46.233,
@@ -82,7 +83,7 @@ const BIENS_MARKERS: BienMarker[] = [
     type: "Studio", surface: 38, pieces: 1,
     statut: "À louer",
     gradient: "linear-gradient(135deg,#C4D8C0,#90B080)",
-    verifie: true, note: 4.7,
+    verifie: true, note: 4.7, tags_ia: ["Valais", "Montagne", "Animé"],
   },
   {
     id: "g2", lng: 6.185, lat: 46.218,
@@ -91,7 +92,7 @@ const BIENS_MARKERS: BienMarker[] = [
     type: "Villa", surface: 180, pieces: 5,
     statut: "À louer",
     gradient: "linear-gradient(135deg,#D4C8B8,#A89880)",
-    verifie: true, note: 4.9,
+    verifie: true, note: 4.9, tags_ia: ["Villa", "Jardin", "Standing"],
   },
   {
     id: "l2", lng: 6.651, lat: 46.538,
@@ -100,7 +101,7 @@ const BIENS_MARKERS: BienMarker[] = [
     type: "Appartement", surface: 95, pieces: 4,
     statut: "À louer",
     gradient: "linear-gradient(135deg,#C0D0C0,#889880)",
-    verifie: true, note: 4.6,
+    verifie: true, note: 4.6, tags_ia: ["Famille", "Calme", "Spacieux"],
   },
 ];
 
@@ -220,6 +221,10 @@ const GLOBAL_CSS = `
   @keyframes lp-bounce {
     0%, 100% { transform: translateY(0); opacity: 0.6; }
     50%       { transform: translateY(5px); opacity: 1; }
+  }
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(12px); }
+    to   { opacity: 1; transform: translateX(0); }
   }
 `;
 
@@ -702,6 +707,93 @@ export default function LandingPage() {
             </div>
           </div>
 
+          {/* Panel détail — haut droite */}
+          {selected && (
+            <div style={{
+              position: "absolute",
+              top: "4.25rem", right: "1.25rem",
+              zIndex: 25,
+              width: 220,
+              background: "rgba(255,255,255,0.85)",
+              backdropFilter: "blur(24px)",
+              WebkitBackdropFilter: "blur(24px)",
+              border: "1px solid rgba(255,255,255,0.90)",
+              borderRadius: 16,
+              overflow: "hidden",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+              animation: "slideInRight 0.25s ease",
+            }}>
+              {/* Image */}
+              <div style={{
+                height: 110,
+                background: selected.gradient,
+                position: "relative",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <span style={{
+                  position: "absolute", top: 8, left: 8,
+                  background: "#E8602C", color: "#fff",
+                  fontSize: 8, fontWeight: 700,
+                  padding: "3px 8px", borderRadius: 4,
+                  fontFamily: "system-ui", letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                }}>{selected.statut}</span>
+                <button onClick={closePanel} style={{
+                  position: "absolute", top: 8, right: 8,
+                  background: "rgba(0,0,0,0.35)", border: "none",
+                  borderRadius: "50%", width: 24, height: 24,
+                  color: "#fff", cursor: "pointer", fontSize: 14,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  lineHeight: 1,
+                }}>×</button>
+              </div>
+
+              {/* Corps */}
+              <div style={{ padding: "14px 16px" }}>
+                <div>
+                  <span style={{
+                    fontFamily: "var(--font-serif, Georgia, serif)",
+                    fontSize: 22, fontWeight: 300, color: "#E8602C",
+                  }}>CHF {selected.prix}</span>
+                  <span style={{
+                    fontSize: 10, color: "rgba(26,18,8,0.40)",
+                    fontFamily: "system-ui", marginLeft: 3,
+                  }}>/mois</span>
+                </div>
+                <div style={{
+                  fontSize: 11, color: "#1A1208",
+                  fontFamily: "system-ui", lineHeight: 1.5, marginTop: 4,
+                }}>
+                  {selected.adresse}<br />
+                  {selected.ville} · {selected.pieces}p · {selected.surface}m²
+                </div>
+                {(selected.tags_ia?.length ?? 0) > 0 && (
+                  <div style={{ display: "flex", gap: 4, marginTop: 8, flexWrap: "wrap" }}>
+                    {selected.tags_ia!.slice(0, 3).map(tag => (
+                      <span key={tag} style={{
+                        fontSize: 8.5, padding: "2px 7px", borderRadius: 10,
+                        background: "rgba(232,96,44,0.09)", color: "#E8602C",
+                        fontFamily: "system-ui", letterSpacing: "0.04em",
+                      }}>{tag}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* CTA */}
+              <a href={`/biens/${selected.id}`} style={{
+                display: "block", margin: "0 16px 14px",
+                background: "#1A1208", color: "#fff",
+                borderRadius: 20, padding: "9px 0",
+                fontSize: 10, fontWeight: 600,
+                fontFamily: "system-ui", letterSpacing: "0.04em",
+                textAlign: "center", textDecoration: "none",
+              }}>
+                Je suis intéressé →
+              </a>
+            </div>
+          )}
+
           {/* Toggle carte — bas gauche */}
           <div
             onClick={toggleMapMode}
@@ -749,137 +841,6 @@ export default function LandingPage() {
             />
           </div>
         </section>
-
-        {/* ════════════════════════════════════════════════════════════════
-            DETAIL PANEL — bottom sheet (mobile) / right drawer (desktop)
-        ════════════════════════════════════════════════════════════════ */}
-        {selected && (
-          <>
-            {/* Backdrop */}
-            <div
-              onClick={closePanel}
-              style={{
-                position: "fixed", inset: 0, zIndex: 150,
-                background: "rgba(26,22,18,0.42)",
-                backdropFilter: "blur(2px)",
-                opacity: panelVisible ? 1 : 0,
-                transition: "opacity 0.25s ease",
-              }}
-            />
-
-            {/* Panel */}
-            <div style={{
-              position: "fixed", zIndex: 160,
-              ...(isMobile
-                ? { left: 0, right: 0, bottom: 0, borderRadius: "20px 20px 0 0", maxHeight: "82vh", overflowY: "auto", transform: panelVisible ? "translateY(0)" : "translateY(100%)" }
-                : { top: 0, right: 0, bottom: 0, width: 380, overflowY: "auto", transform: panelVisible ? "translateX(0)" : "translateX(100%)" }
-              ),
-              background: "#fff",
-              boxShadow: isMobile ? "0 -8px 40px rgba(26,22,18,0.20)" : "-8px 0 40px rgba(26,22,18,0.15)",
-              transition: "transform 0.30s cubic-bezier(0.25,0.46,0.45,0.94)",
-              fontFamily: sans,
-            }}>
-              {/* Pull handle (mobile) */}
-              {isMobile && (
-                <div style={{ display: "flex", justifyContent: "center", paddingTop: 12, paddingBottom: 4 }}>
-                  <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(26,22,18,0.15)" }} />
-                </div>
-              )}
-
-              {/* Header */}
-              <div style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "14px 20px",
-                borderBottom: "1px solid rgba(26,22,18,0.07)",
-              }}>
-                <span style={{
-                  fontSize: 11, color: selected.statut === "À louer" ? "#3A7A5A" : selected.statut === "À vendre" ? "#2563EB" : "#B45309",
-                  fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
-                }}>
-                  {selected.statut}
-                </span>
-                <button onClick={closePanel} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex" }}>
-                  <X size={18} color={MUTED} />
-                </button>
-              </div>
-
-              {/* Photo */}
-              <div style={{ height: 210, background: selected.gradient, position: "relative", flexShrink: 0 }}>
-                {selected.verifie && (
-                  <span style={{
-                    position: "absolute", top: 12, right: 12,
-                    background: "rgba(255,255,255,0.94)", color: ORANGE,
-                    fontSize: 11, fontWeight: 700,
-                    padding: "4px 10px", borderRadius: 6,
-                    border: `1px solid ${ORANGE}`,
-                  }}>
-                    ✓ Vérifié Althy
-                  </span>
-                )}
-              </div>
-
-              {/* Content */}
-              <div style={{ padding: "22px 22px 28px" }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginBottom: 8 }}>
-                  <span style={{ fontFamily: serif, fontSize: 30, fontWeight: 300, color: DARK }}>
-                    CHF {selected.prix}
-                  </span>
-                  <span style={{ fontSize: 14, color: MUTED }}>{selected.periode}</span>
-                </div>
-
-                <p style={{ margin: "0 0 3px", fontSize: 14, fontWeight: 600, color: DARK }}>
-                  {selected.adresse}
-                </p>
-                <p style={{ margin: "0 0 16px", fontSize: 13, color: MUTED }}>
-                  {selected.ville}
-                </p>
-
-                <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 16 }}>
-                  {[`${selected.pieces} pièce${selected.pieces > 1 ? "s" : ""}`, `${selected.surface} m²`, selected.type].map(t => (
-                    <span key={t} style={{
-                      fontSize: 12, fontWeight: 500,
-                      padding: "4px 10px", borderRadius: 6,
-                      background: "rgba(26,22,18,0.05)", color: MUTED,
-                    }}>
-                      {t}
-                    </span>
-                  ))}
-                </div>
-
-                <div style={{ display: "flex", gap: 2, alignItems: "center", marginBottom: 24 }}>
-                  {[1,2,3,4,5].map(i => (
-                    <span key={i} style={{ color: i <= Math.round(selected.note) ? ORANGE : "#D4CEC8", fontSize: 15 }}>★</span>
-                  ))}
-                  <span style={{ fontSize: 12, color: MUTED, marginLeft: 5, fontWeight: 500 }}>{selected.note}</span>
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <Link href="/register?role=locataire" style={{
-                    display: "block", textAlign: "center",
-                    padding: "14px 0", borderRadius: 12,
-                    background: ORANGE, color: "#fff",
-                    fontSize: 14, fontWeight: 700, textDecoration: "none",
-                    boxShadow: "0 4px 18px rgba(232,96,44,0.32)",
-                  }}>
-                    Postuler — envoyer mon dossier
-                  </Link>
-                  <button
-                    onClick={closePanel}
-                    style={{
-                      padding: "12px 0", borderRadius: 12,
-                      border: "1.5px solid rgba(26,22,18,0.12)",
-                      background: "transparent", color: DARK,
-                      fontSize: 13, fontWeight: 500,
-                      cursor: "pointer", fontFamily: sans,
-                    }}
-                  >
-                    Voir d&apos;autres biens
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
 
         {/* ════════════════════════════════════════════════════════════════
             LISTE DES BIENS
