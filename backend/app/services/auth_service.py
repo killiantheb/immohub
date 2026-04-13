@@ -165,6 +165,25 @@ class AuthService:
             role=req.role,
         )
 
+        # 4. Scanner onboarding en arrière-plan — tous les rôles sauf locataire
+        _ROLE_MAP = {"owner": "proprio_solo", "agency": "agence", "opener": "opener", "company": "artisan"}
+        mapped_role = _ROLE_MAP.get(user.role, user.role)
+        if mapped_role != "locataire":
+            from app.tasks.onboarding_scan import scanner_nouvel_utilisateur
+            scanner_nouvel_utilisateur.delay(
+                user_id  = str(user.id),
+                contexte = {
+                    "prenom":     user.first_name or "",
+                    "nom":        user.last_name  or "",
+                    "email":      user.email,
+                    "ville":      req.ville      or "",
+                    "agence_nom": req.agence_nom  or "",
+                    "site_web":   req.site_web    or "",
+                    "telephone":  req.phone       or "",
+                    "role":       mapped_role,
+                },
+            )
+
         return AuthResponse(
             token=_build_token(token_data),
             user=UserProfileResponse.model_validate(user),
