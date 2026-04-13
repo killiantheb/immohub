@@ -543,7 +543,7 @@ export default function LandingPage() {
     <>
       <style>{GLOBAL_CSS}</style>
 
-      <div style={{ fontFamily: sans, background: BG, overflow: "hidden" }}>
+      <div style={{ fontFamily: sans, background: BG }}>
 
         {/* ════════════════════════════════════════════════════════════════
             NAVBAR — fixed, transparent → opaque on scroll
@@ -910,13 +910,25 @@ export default function LandingPage() {
           </div>
 
           {/* Scroll indicator */}
-          <div style={{
-            position: "absolute", bottom: 18, left: "50%",
-            transform: "translateX(-50%)", zIndex: 10,
-          }}>
+          <div
+            onClick={scrollToList}
+            style={{
+              position: "absolute", bottom: 22, left: "50%",
+              transform: "translateX(-50%)", zIndex: 10,
+              cursor: "pointer", padding: "8px",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+            }}
+          >
+            <span style={{
+              fontSize: 9, letterSpacing: "0.12em",
+              color: "rgba(255,255,255,0.50)",
+              fontFamily: sans, textTransform: "uppercase",
+            }}>
+              Découvrir
+            </span>
             <ChevronDown
-              size={20}
-              color="rgba(255,255,255,0.55)"
+              size={22}
+              color="rgba(255,255,255,0.65)"
               style={{ animation: "lp-bounce 1.8s ease-in-out infinite" }}
             />
           </div>
