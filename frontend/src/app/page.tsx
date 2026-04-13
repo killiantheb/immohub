@@ -226,6 +226,7 @@ export default function LandingPage() {
   const [isMobile,      setIsMobile]     = useState(false);
   const [panelVisible,  setPanelVisible] = useState(false);
   const [query,         setQuery]        = useState("");
+  const [mapMode,       setMapMode]      = useState<"standard" | "satellite">("standard");
 
   // Navbar scroll opacity
   useEffect(() => {
@@ -385,14 +386,72 @@ export default function LandingPage() {
   }, [query]);
 
   const closePanel = useCallback(() => {
-    markersRef.current.forEach(m => m.classList.remove("active"));
+    markersRef.current.forEach(m => {
+      const bubble = m.querySelector(".althy-bubble");
+      if (bubble) bubble.classList.remove("active");
+    });
     setSelected(null);
   }, []);
 
   const openBien = useCallback((bien: BienMarker) => {
-    markersRef.current.forEach((m, id) => m.classList.toggle("active", id === bien.id));
+    markersRef.current.forEach((m, id) => {
+      const bubble = m.querySelector(".althy-bubble");
+      if (bubble) bubble.classList.toggle("active", id === bien.id);
+    });
     setSelected(bien);
   }, []);
+
+  const toggleMapMode = useCallback(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    const next = mapMode === "standard" ? "satellite" : "standard";
+
+    if (next === "satellite") {
+      map.setStyle("mapbox://styles/mapbox/satellite-streets-v12");
+    } else {
+      map.setStyle("mapbox://styles/mapbox/standard");
+    }
+
+    map.once("style.load", () => {
+      if (next === "standard") {
+        map.setConfigProperty("basemap", "lightPreset",              "day");
+        map.setConfigProperty("basemap", "colorTheme",               "monochrome");
+        map.setConfigProperty("basemap", "showPointOfInterestLabels", false);
+        map.setConfigProperty("basemap", "showTransitLabels",         false);
+        map.setConfigProperty("basemap", "showRoadLabels",            false);
+      }
+
+      if (!map.getSource("mapbox-dem")) {
+        map.addSource("mapbox-dem", {
+          type: "raster-dem",
+          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+          tileSize: 512,
+          maxzoom: 14,
+        });
+        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.4 });
+      }
+
+      if (!map.getSource("cantons")) {
+        map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
+      }
+      if (!map.getLayer("cantons-fill-active")) {
+        map.addLayer({
+          id: "cantons-fill-active", type: "fill", source: "cantons",
+          slot: "bottom",
+          filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
+          paint: { "fill-color": "#E8602C", "fill-opacity": next === "satellite" ? 0.18 : 0.12 },
+        });
+        map.addLayer({
+          id: "cantons-line-active", type: "line", source: "cantons",
+          slot: "bottom",
+          filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
+          paint: { "line-color": "#E8602C", "line-width": 2, "line-opacity": 0.7 },
+        });
+      }
+    });
+
+    setMapMode(next);
+  }, [mapMode]);
 
   const scrollToList = () =>
     document.getElementById("liste")?.scrollIntoView({ behavior: "smooth" });
@@ -617,6 +676,41 @@ export default function LandingPage() {
               >
                 <List size={13} /> Liste ({BIENS_MARKERS.length})
               </button>
+            </div>
+          </div>
+
+          {/* Toggle carte — bas gauche */}
+          <div
+            onClick={toggleMapMode}
+            style={{
+              position: "absolute", bottom: "2.5rem", left: "1rem", zIndex: 10,
+              width: 72, height: 72,
+              borderRadius: 12, overflow: "hidden",
+              cursor: "pointer",
+              border: "3px solid #FFFFFF",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.30)",
+              transition: "transform 0.2s",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.05)")}
+            onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
+          >
+            <img
+              src={
+                mapMode === "standard"
+                  ? `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/7.0,46.65,6/72x72?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`
+                  : `https://api.mapbox.com/styles/v1/mapbox/standard/static/7.0,46.65,6/72x72?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`
+              }
+              alt={mapMode === "standard" ? "Vue satellite" : "Vue carte"}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+            <div style={{
+              position: "absolute", bottom: 0, left: 0, right: 0,
+              background: "rgba(0,0,0,0.55)",
+              color: "#fff", fontSize: 10, fontWeight: 600,
+              textAlign: "center", padding: "3px 0",
+              fontFamily: sans, letterSpacing: "0.04em",
+            }}>
+              {mapMode === "standard" ? "SATELLITE" : "STANDARD"}
             </div>
           </div>
 
