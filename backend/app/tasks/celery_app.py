@@ -13,6 +13,7 @@ celery_app = Celery(
         "app.tasks.ai_tasks",
         "app.tasks.alerts",
         "app.tasks.onboarding_scan",
+        "app.tasks.import_elements",
     ],
 )
 

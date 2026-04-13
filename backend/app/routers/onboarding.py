@@ -759,3 +759,57 @@ def _fallback_email_html(prenom: str, nom_agence: str, magic_link_url: str) -> s
   </div>
 </body>
 </html>"""
+
+
+# ── Scan onboarding ───────────────────────────────────────────────────────────
+
+from sqlalchemy import select as _select
+from app.models.onboarding import OnboardingScan
+
+
+@router.get("/scan")
+async def get_scan(user: AuthDep, db: DbDep):
+    """Retourne le dernier scan onboarding de l'utilisateur."""
+    result = await db.execute(
+        _select(OnboardingScan)
+        .where(OnboardingScan.user_id == user.id)
+        .order_by(OnboardingScan.created_at.desc())
+    )
+    scan = result.scalar_one_or_none()
+    if not scan:
+        return {"status": "pending", "elements": [], "nb": 0}
+    return {
+        "status":   scan.status,
+        "nb":       scan.nb_elements,
+        "elements": json.loads(scan.elements_trouves or "[]"),
+    }
+
+
+class ConfirmerRequest(BaseModel):
+    confirmes: list[str]
+    rejetes:   list[str]
+
+
+@router.post("/confirmer")
+async def confirmer(body: ConfirmerRequest, user: AuthDep, db: DbDep):
+    """Valide les éléments sélectionnés et lance l'import en arrière-plan."""
+    result = await db.execute(
+        _select(OnboardingScan).where(OnboardingScan.user_id == user.id)
+    )
+    scan = result.scalar_one_or_none()
+    if not scan:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Aucun scan trouvé")
+
+    elements = json.loads(scan.elements_trouves or "[]")
+    a_importer = [e for e in elements if e.get("source_id") in body.confirmes]
+
+    from app.tasks.import_elements import importer_elements
+    importer_elements.delay(
+        user_id   = str(user.id),
+        user_role = user.role,
+        elements  = a_importer,
+    )
+
+    scan.status = "done"
+    await db.commit()
+    return {"status": "import_lance", "nb": len(a_importer)}
