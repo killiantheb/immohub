@@ -139,10 +139,10 @@ const ROLES = [
 
 const GLOBAL_CSS = `
   .lp-price-marker {
-    display: inline-flex;
+    display: inline-block;
+    width: auto;
+    max-width: max-content;
     align-items: center;
-    width: fit-content;
-    max-width: fit-content;
     background: ${ORANGE};
     color: #fff;
     font-size: 12px;
@@ -325,9 +325,14 @@ export default function LandingPage() {
 
         // ── MARKERS PRIX ──────────────────────────────────────────────────────
         BIENS_MARKERS.forEach(bien => {
+          const wrapper = document.createElement("div");
+          wrapper.style.cssText = "display:flex;flex-direction:column;align-items:center;width:max-content;";
+
           const el = document.createElement("div");
           el.className = "lp-price-marker";
           el.textContent = `CHF ${bien.prix}${bien.periode === "/mois" ? "/m" : ""}`;
+
+          wrapper.appendChild(el);
 
           el.addEventListener("click", e => {
             e.stopPropagation();
@@ -336,7 +341,7 @@ export default function LandingPage() {
           });
 
           markersRef.current.set(bien.id, el);
-          new mapboxgl.Marker({ element: el, anchor: "bottom" })
+          new mapboxgl.Marker({ element: wrapper, anchor: "bottom" })
             .setLngLat([bien.lng, bien.lat])
             .addTo(map);
         });
