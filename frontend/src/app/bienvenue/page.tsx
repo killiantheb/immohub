@@ -466,7 +466,9 @@ function BienvenueContent() {
     }
     await patchProfile(role ?? 'proprio_solo', data)
     setSaving(false)
-    router.push('/app/sphere')
+    // Les rôles non-locataire passent par la validation du scan onboarding
+    const resolvedRole = role ?? 'proprio_solo'
+    router.push(resolvedRole !== 'locataire' ? '/onboarding/scan' : '/app/sphere')
   }
 
   // Auto mode: show verification screen directly

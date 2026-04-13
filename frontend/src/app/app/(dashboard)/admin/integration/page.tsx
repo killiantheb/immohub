@@ -288,6 +288,23 @@ function TabSphere() {
               Copier
             </button>
           </div>
+
+          {/* Scan onboarding info */}
+          {role !== "locataire" && (
+            <div style={{ marginTop: 14, padding: "12px 14px", background: S.surface, border: `1px solid ${S.border}`, borderRadius: 10, display: "flex", alignItems: "flex-start", gap: 10 }}>
+              <Sparkles size={14} color={S.orange} style={{ marginTop: 1, flexShrink: 0 }} />
+              <div>
+                <p style={{ margin: "0 0 3px", fontSize: 12, fontWeight: 700, color: S.text }}>
+                  Scan en cours…
+                </p>
+                <p style={{ margin: 0, fontSize: 11, color: S.text3, lineHeight: 1.5 }}>
+                  Althy recherche les annonces existantes du client sur Homegate, ImmoScout24, Immobilier.ch et son site web.
+                  À sa première connexion, il arrivera sur <span style={{ color: S.orange, fontWeight: 600 }}>/onboarding/scan</span> pour valider et importer ses biens en un clic.
+                </p>
+              </div>
+            </div>
+          )}
+
           <button onClick={() => { setScraped(null); setEdited(null); setSent(null); setRequete(""); }}
             style={{ marginTop: 14, fontSize: 12, color: S.orange, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0 }}>
             Intégrer un autre client →
