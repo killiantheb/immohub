@@ -508,7 +508,7 @@ export default function LandingPage() {
         {/* ════════════════════════════════════════════════════════════════
             HERO — fullscreen Mapbox map
         ════════════════════════════════════════════════════════════════ */}
-        <section style={{ position: "relative", height: "100vh", overflow: "hidden" }}>
+        <section style={{ position: "relative", height: "100dvh", overflow: "hidden", width: "100vw" }}>
 
           {/* Mapbox canvas — dépasse de 50px pour cacher le logo Mapbox sous le fold */}
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: "-50px" }}>
