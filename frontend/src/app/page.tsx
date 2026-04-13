@@ -473,7 +473,7 @@ export default function LandingPage() {
     <>
       <style>{GLOBAL_CSS}</style>
 
-      <div style={{ fontFamily: sans, background: BG }}>
+      <div style={{ fontFamily: sans, background: BG, overflow: "hidden" }}>
 
         {/* ════════════════════════════════════════════════════════════════
             NAVBAR — fixed, transparent → opaque on scroll
@@ -542,8 +542,10 @@ export default function LandingPage() {
         ════════════════════════════════════════════════════════════════ */}
         <section style={{ position: "relative", height: "100vh", overflow: "hidden" }}>
 
-          {/* Mapbox canvas */}
-          <div ref={mapContainer} style={{ position: "absolute", inset: 0 }} />
+          {/* Mapbox canvas — dépasse de 50px pour cacher le logo Mapbox sous le fold */}
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: "-50px" }}>
+            <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
+          </div>
 
           {/* Top gradient for navbar readability */}
           <div style={{
