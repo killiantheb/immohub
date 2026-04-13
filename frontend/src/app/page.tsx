@@ -289,14 +289,14 @@ export default function LandingPage() {
 
       map.on("load", () => {
 
-        // ── Style Standard — Day, Default, sans POI/transit/roads ────────────
+        // ── CONFIG STYLE STANDARD ─────────────────────────────────────────────
         map.setConfigProperty("basemap", "lightPreset",              "day");
         map.setConfigProperty("basemap", "colorTheme",               "default");
         map.setConfigProperty("basemap", "showPointOfInterestLabels", false);
         map.setConfigProperty("basemap", "showTransitLabels",         false);
         map.setConfigProperty("basemap", "showRoadLabels",            false);
 
-        // ── Terrain 3D — relief des Alpes ────────────────────────────────────
+        // ── TERRAIN 3D ────────────────────────────────────────────────────────
         map.addSource("mapbox-dem", {
           type: "raster-dem",
           url: "mapbox://mapbox.mapbox-terrain-dem-v1",
@@ -305,29 +305,26 @@ export default function LandingPage() {
         });
         map.setTerrain({ source: "mapbox-dem", exaggeration: 1.4 });
 
-        // ── MASQUE MONDIAL avec trous aux contours suisses ───────────────────
+        // ── MASQUE MONDIAL — zones hors Suisse voilées ────────────────────────
         map.addSource("world-mask", { type: "geojson", data: "/suisse-mask.json" });
         map.addLayer({
           id: "world-mask-layer", type: "fill", source: "world-mask",
-          slot: "top",
-          paint: { "fill-color": "#FAFAF8", "fill-opacity": 0.38 },
+          paint: { "fill-color": "#F0EBE2", "fill-opacity": 0.48 },
         });
 
-        // ── CONTOUR ORANGE PARFAIT DE LA SUISSE ──────────────────────────────
+        // ── FRONTIÈRE SUISSE EN ORANGE ────────────────────────────────────────
         map.addSource("swiss-union", { type: "geojson", data: "/suisse-union.json" });
         map.addLayer({
           id: "swiss-border", type: "line", source: "swiss-union",
-          slot: "top",
-          paint: { "line-color": "#E8602C", "line-width": 2.5, "line-opacity": 0.80 },
+          paint: { "line-color": "#E8602C", "line-width": 2.5, "line-opacity": 0.85, "line-blur": 0 },
         });
 
-        // ── FILL ORANGE LÉGER — SUISSE ROMANDE uniquement ────────────────────
+        // ── FILL ORANGE — SUISSE ROMANDE uniquement ───────────────────────────
         map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
         map.addLayer({
           id: "cantons-romands-fill", type: "fill", source: "cantons",
-          slot: "top",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "fill-color": "#E8602C", "fill-opacity": 0.09 },
+          paint: { "fill-color": "#E8602C", "fill-opacity": 0.08 },
         });
 
         // ── MARKERS PRIX ──────────────────────────────────────────────────────
@@ -337,9 +334,7 @@ export default function LandingPage() {
 
           const el = document.createElement("div");
           el.className = "lp-price-marker";
-          el.textContent = `CHF ${bien.prix}${bien.periode === "/mois" ? "/m" : ""}`;
-
-          wrapper.appendChild(el);
+          el.textContent = `CHF ${bien.prix} / mois`;
 
           el.addEventListener("click", e => {
             e.stopPropagation();
@@ -347,7 +342,9 @@ export default function LandingPage() {
             setSelected(bien);
           });
 
+          wrapper.appendChild(el);
           markersRef.current.set(bien.id, el);
+
           new mapboxgl.Marker({ element: wrapper, anchor: "bottom" })
             .setLngLat([bien.lng, bien.lat])
             .addTo(map);
