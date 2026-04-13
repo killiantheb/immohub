@@ -134,7 +134,7 @@ export function DashboardArtisan({ firstName }: Props) {
         >
           Bonjour{firstName ? `, ${firstName}` : ""}
         </h1>
-        <p style={{ fontSize: 14, color: DC.muted }}>
+        <p style={{ fontSize: 14, color: DC.muted }} suppressHydrationWarning>
           {new Date().toLocaleDateString("fr-CH", {
             weekday: "long",
             day: "numeric",
