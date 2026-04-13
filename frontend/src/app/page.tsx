@@ -347,7 +347,9 @@ export default function LandingPage() {
 
           const el = document.createElement("div");
           el.className = "lp-price-marker";
-          el.textContent = `CHF ${bien.prix} / mois`;
+          el.textContent = bien.periode === "/mois"
+            ? `CHF ${bien.prix} / mois`
+            : `CHF ${bien.prix}`;
 
           el.addEventListener("click", e => {
             e.stopPropagation();
