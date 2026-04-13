@@ -443,8 +443,7 @@ export default function LandingPage() {
             <span className="lp-nav-tag" style={{
               fontFamily: "var(--font-sans, system-ui)",
               fontSize: 11, letterSpacing: "0.14em",
-              color: "rgba(26,18,8,0.55)",
-              textShadow: "0 1px 8px rgba(255,255,255,0.80)",
+              color: ORANGE,
             }}>
               Votre agent personnel
             </span>
