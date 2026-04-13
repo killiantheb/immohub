@@ -302,45 +302,14 @@ export default function LandingPage() {
 
       map.on("load", () => {
 
-        // ── CONFIG STYLE STANDARD ─────────────────────────────────────────────
-        map.setConfigProperty("basemap", "lightPreset",              "day");
-        map.setConfigProperty("basemap", "colorTheme",               "default");
-        map.setConfigProperty("basemap", "showPointOfInterestLabels", false);
-        map.setConfigProperty("basemap", "showTransitLabels",         false);
-        map.setConfigProperty("basemap", "showRoadLabels",            false);
-
-        // ── TERRAIN 3D ────────────────────────────────────────────────────────
-        map.addSource("mapbox-dem", {
-          type: "raster-dem",
-          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-          tileSize: 512,
-          maxzoom: 14,
-        });
-        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.4 });
-
-        // ── MASQUE MONDIAL — zones hors Suisse voilées ────────────────────────
-        map.addSource("world-mask", { type: "geojson", data: "/suisse-mask.json" });
-        map.addLayer({
-          id: "world-mask-layer", type: "fill", source: "world-mask",
-          paint: { "fill-color": "#F0EBE2", "fill-opacity": 0.48 },
-        });
-
-        // ── FRONTIÈRE SUISSE EN ORANGE ────────────────────────────────────────
+        // Frontière suisse en orange
         map.addSource("swiss-union", { type: "geojson", data: "/suisse-union.json" });
         map.addLayer({
           id: "swiss-border", type: "line", source: "swiss-union",
-          paint: { "line-color": "#E8602C", "line-width": 2.5, "line-opacity": 0.85, "line-blur": 0 },
+          paint: { "line-color": "#E8602C", "line-width": 2.5, "line-opacity": 0.90 },
         });
 
-        // ── FILL ORANGE — SUISSE ROMANDE uniquement ───────────────────────────
-        map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
-        map.addLayer({
-          id: "cantons-romands-fill", type: "fill", source: "cantons",
-          filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "fill-color": "#E8602C", "fill-opacity": 0.08 },
-        });
-
-        // ── MARKERS PRIX ──────────────────────────────────────────────────────
+        // Markers prix
         BIENS_MARKERS.forEach(bien => {
           const wrapper = document.createElement("div");
           wrapper.style.cssText = "display:flex;flex-direction:column;align-items:center;width:max-content;";
