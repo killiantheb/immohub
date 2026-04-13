@@ -1,8 +1,8 @@
 "use client";
 import { useParams } from "next/navigation";
-import { redirect } from "next/navigation";
+import { TabDocuments } from "../_shared";
 
 export default function BienDocumentsPage() {
   const { id } = useParams<{ id: string }>();
-  redirect(`/app/biens/${id}?tab=documents`);
+  return <TabDocuments bienId={id} />;
 }

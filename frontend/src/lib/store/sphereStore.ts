@@ -31,6 +31,8 @@ export interface SphereAction {
   acteur_id?: string;
   acteur_nom?: string;
   acteur_role?: string;
+  // Deep-link optionnel — si présent, le CTA principal devient un lien de navigation
+  href?: string;
   // Legacy (kept for compat)
   label?: string;
   icon?: string;

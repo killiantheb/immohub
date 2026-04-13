@@ -114,7 +114,9 @@ export default function TransactionsPage() {
 
 function TransactionsContent() {
   const searchParams = useSearchParams();
-  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "");
+  // Deep-link: ?status=late (from Sphère) ou ?filter=impaye (alias)
+  const initialStatus = searchParams.get("status") ?? (searchParams.get("filter") === "impaye" ? "late" : "");
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [typeFilter, setTypeFilter] = useState("");
   const [monthFilter, setMonthFilter] = useState("");
   const [search, setSearch] = useState("");

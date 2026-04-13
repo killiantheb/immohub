@@ -9,12 +9,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: BASE,                           changeFrequency: "weekly",  priority: 1.0 },
     { url: `${BASE}/biens`,                changeFrequency: "hourly",  priority: 0.95 },
     { url: `${BASE}/biens/swipe`,          changeFrequency: "daily",   priority: 0.85 },
+    // ── Pages SEO villes actives ───────────────────────────────────────────
     { url: `${BASE}/biens/geneve`,         changeFrequency: "daily",   priority: 0.9 },
     { url: `${BASE}/biens/lausanne`,       changeFrequency: "daily",   priority: 0.9 },
-    { url: `${BASE}/biens/vaud`,           changeFrequency: "daily",   priority: 0.9 },
     { url: `${BASE}/biens/fribourg`,       changeFrequency: "daily",   priority: 0.9 },
+    { url: `${BASE}/biens/neuchatel`,      changeFrequency: "daily",   priority: 0.9 },
+    { url: `${BASE}/biens/sion`,           changeFrequency: "daily",   priority: 0.9 },
+    // ── Pages SEO cantons ─────────────────────────────────────────────────
+    { url: `${BASE}/biens/vaud`,           changeFrequency: "daily",   priority: 0.85 },
     { url: `${BASE}/biens/valais`,         changeFrequency: "daily",   priority: 0.85 },
-    { url: `${BASE}/biens/neuchatel`,      changeFrequency: "daily",   priority: 0.85 },
     { url: `${BASE}/estimation`,           changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/register`,             changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/login`,                changeFrequency: "monthly", priority: 0.5 },

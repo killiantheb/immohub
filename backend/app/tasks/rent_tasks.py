@@ -2,9 +2,11 @@
 Celery tasks for rental management.
 
 Tasks:
-  generate_monthly_rents  — 1st of each month at 06:00 Paris time
-  send_rent_reminders     — daily at 08:00 Paris time (checks J-3, J0, J+3, J+7)
-  calculate_commissions   — daily at 09:00 Paris time
+  generate_monthly_rents      — 1st of each month at 06:00 Paris time
+  send_rent_reminders         — daily at 08:00 Paris time (checks J-3, J0, J+3, J+7)
+  calculate_commissions       — daily at 09:00 Paris time
+  reverse_loyers              — every hour — reverse les loyers reçus sur compte Althy
+  _notify_proprio_reversement — notifie le proprio qu'un reversement a été effectué
 """
 
 from __future__ import annotations
@@ -333,3 +335,165 @@ async def _generate_quittances_async() -> dict:
 
     logger.info("generate_monthly_quittances: created=%d skipped=%d mois=%s", created, skipped, mois_str)
     return {"created": created, "skipped": skipped, "mois": mois_str}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# reverse_loyers — Modèle transit Airbnb
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@celery_app.task(bind=True, name="tasks.reverse_loyers", max_retries=3)
+def reverse_loyers(self) -> dict:
+    """
+    Cherche toutes les loyer_transactions avec statut='recu' et date_reversement IS NULL,
+    prépare le reversement vers le proprio et met à jour le statut.
+
+    Phase 1 MVP : le virement sortant réel est fait manuellement depuis l'e-banking.
+    La task calcule les montants, met à jour le statut en 'reverse' et notifie le proprio.
+    En Phase 2 : intégration API bancaire (PostFinance / BCGE) pour virement automatique.
+    """
+    try:
+        return _run(_reverse_loyers_async())
+    except Exception as exc:
+        logger.exception("reverse_loyers failed: %s", exc)
+        raise self.retry(exc=exc, countdown=300)
+
+
+async def _reverse_loyers_async() -> dict:
+    from app.core.database import AsyncSessionLocal
+    from app.core.config import settings
+    from sqlalchemy import text
+
+    reversed_count = 0
+    total_reverse  = 0.0
+
+    async with AsyncSessionLocal() as db:
+        rows = (await db.execute(
+            text("""
+                SELECT lt.id, lt.owner_id, lt.montant_total, lt.commission_montant,
+                       lt.montant_reverse, lt.mois_concerne, lt.qr_reference,
+                       lt.property_id,
+                       u.iban as owner_iban, u.email as owner_email,
+                       u.first_name as owner_first_name
+                FROM loyer_transactions lt
+                LEFT JOIN users u ON u.id = lt.owner_id
+                WHERE lt.statut = 'recu' AND lt.date_reversement IS NULL
+                ORDER BY lt.date_reception ASC
+            """)
+        )).mappings().all()
+
+        for row in rows:
+            tx_id           = row["id"]
+            montant_total   = float(row["montant_total"])
+            commission_mnt  = float(row["commission_montant"])
+            montant_reverse = float(row["montant_reverse"])
+            owner_iban      = row["owner_iban"]
+            owner_email     = row["owner_email"]
+            owner_name      = row["owner_first_name"] or "Propriétaire"
+            mois_label      = row["mois_concerne"].strftime("%B %Y") if row["mois_concerne"] else "—"
+
+            # ── Phase 1 MVP : marquer comme 'reverse' sans virement automatique ──
+            # En Phase 2, appeler ici l'API bancaire (PostFinance / ISO 20022 pain.001)
+            await db.execute(
+                text("""
+                    UPDATE loyer_transactions
+                    SET statut = 'reverse',
+                        date_reversement = now(),
+                        updated_at = now()
+                    WHERE id = :id
+                """),
+                {"id": str(tx_id)},
+            )
+
+            reversed_count += 1
+            total_reverse  += montant_reverse
+
+            # ── Notification in-app + email ──
+            notif_body = (
+                f"Loyer {mois_label} reçu. "
+                f"Montant brut : CHF {montant_total:,.2f} — "
+                f"Commission Althy : CHF {commission_mnt:,.2f} — "
+                f"Reversé : CHF {montant_reverse:,.2f}"
+            )
+            if owner_iban:
+                notif_body += f" → {owner_iban}"
+
+            # Crée notification in-app
+            notif_id = uuid.uuid4()
+            await db.execute(
+                text("""
+                    INSERT INTO notifications (id, user_id, type, title, body, lu, created_at)
+                    VALUES (:id, :uid, 'loyer_reverse', 'Loyer reversé', :body, false, now())
+                """),
+                {"id": notif_id, "uid": str(row["owner_id"]), "body": notif_body},
+            )
+
+            logger.info(
+                "reverse_loyers: tx=%s owner=%s montant_reverse=%.2f",
+                tx_id, owner_email, montant_reverse,
+            )
+
+        await db.commit()
+
+    logger.info(
+        "reverse_loyers done: reversed=%d total_CHF=%.2f",
+        reversed_count, total_reverse,
+    )
+    return {"reversed": reversed_count, "total_reverse_chf": round(total_reverse, 2)}
+
+
+# ── Notification individuelle (appelée depuis PATCH /loyers/{id}/statut) ──────
+
+
+@celery_app.task(bind=True, name="tasks.notify_proprio_reversement", max_retries=2)
+def _notify_proprio_reversement(self, transaction_id: str) -> dict:
+    """Envoie la notification de reversement pour une transaction spécifique."""
+    try:
+        return _run(_notify_reversement_async(transaction_id))
+    except Exception as exc:
+        logger.exception("_notify_proprio_reversement failed: %s", exc)
+        raise self.retry(exc=exc, countdown=60)
+
+
+async def _notify_reversement_async(transaction_id: str) -> dict:
+    from app.core.database import AsyncSessionLocal
+    from sqlalchemy import text
+
+    async with AsyncSessionLocal() as db:
+        row = (await db.execute(
+            text("""
+                SELECT lt.owner_id, lt.montant_total, lt.commission_montant, lt.montant_reverse,
+                       lt.mois_concerne, lt.reference_virement_sortant,
+                       u.email as owner_email
+                FROM loyer_transactions lt
+                LEFT JOIN users u ON u.id = lt.owner_id
+                WHERE lt.id = :id
+            """),
+            {"id": transaction_id},
+        )).mappings().one_or_none()
+
+        if not row:
+            return {"status": "not_found"}
+
+        mois_label = row["mois_concerne"].strftime("%B %Y") if row["mois_concerne"] else "—"
+        body = (
+            f"Loyer {mois_label} — Reversement effectué. "
+            f"Brut: CHF {float(row['montant_total']):,.2f} · "
+            f"Commission: CHF {float(row['commission_montant']):,.2f} · "
+            f"Net versé: CHF {float(row['montant_reverse']):,.2f}"
+        )
+        if row["reference_virement_sortant"]:
+            body += f" (réf. {row['reference_virement_sortant']})"
+
+        notif_id = uuid.uuid4()
+        await db.execute(
+            text("""
+                INSERT INTO notifications (id, user_id, type, title, body, lu, created_at)
+                VALUES (:id, :uid, 'loyer_reverse', 'Loyer reversé', :body, false, now())
+            """),
+            {"id": notif_id, "uid": str(row["owner_id"]), "body": body},
+        )
+        await db.commit()
+
+    logger.info("notify_proprio_reversement: tx=%s", transaction_id)
+    return {"status": "notified", "transaction_id": transaction_id}

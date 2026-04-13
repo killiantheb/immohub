@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { DocumentQuickGenerator } from "@/components/DocumentQuickGenerator";
 import { Camera, Upload, Check, AlertTriangle, Loader2, X } from "lucide-react";
@@ -286,10 +287,27 @@ const ACTION_CARDS = [
 ];
 
 export default function DocumentsPage() {
+  return (
+    <Suspense>
+      <DocumentsContent />
+    </Suspense>
+  );
+}
+
+function DocumentsContent() {
+  const searchParams = useSearchParams();
+  const generatorRef = useRef<HTMLDivElement>(null);
   const [history, setHistory] = useState<GeneratedDoc[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [previewHtml, setPreviewHtml] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
+
+  // Deep-link: ?action=generer → scroll to generators section
+  useEffect(() => {
+    if (searchParams.get("action") === "generer" && generatorRef.current) {
+      setTimeout(() => generatorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     api.get<GeneratedDoc[]>("/documents/?limit=30")
@@ -333,7 +351,7 @@ export default function DocumentsPage() {
       </div>
 
       {/* Actions rapides */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16, marginBottom: "2rem" }}>
+      <div ref={generatorRef} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16, marginBottom: "2rem" }}>
         {ACTION_CARDS.map((card) => (
           <div key={card.title} style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: "20px 20px 16px", boxShadow: S.shadow }}>
             <h2 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontSize: 17, fontWeight: 400, color: S.text, margin: "0 0 6px" }}>{card.title}</h2>

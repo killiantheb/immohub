@@ -1,862 +1,118 @@
+// src/app/app/(dashboard)/biens/[id]/page.tsx
+// Vue d'ensemble — hub de navigation entre les sections du bien
 "use client";
 
-import { useState } from "react";
-import { useParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  AlertTriangle, CheckCircle2, ChevronRight,
-  Clock, Download, Eye, FileText, Lightbulb, Loader2, MapPin,
-  PiggyBank, Plus, RefreshCw, Sparkles, TrendingUp, User, Wrench, XCircle,
-} from "lucide-react";
-import {
-  useBien, useDocuments, useInterventions, useLocataireActuel,
-  useLocataires, usePaiements, useScoring, useCreateIntervention,
-  type DocumentAlthy, type Locataire, type Paiement,
-} from "@/lib/hooks/useBiens";
-import { FilAriane } from "@/components/FilAriane";
-import { usePotentielIA } from "@/lib/hooks/useDashboardData";
+import { Clock, FileText, Sparkles, TrendingUp, User, Wrench } from "lucide-react";
+import { S, Card } from "./_shared";
 
-// ── Design tokens via CSS vars (light + dark auto) ────────────────────────────
-const S = {
-  bg:       "var(--althy-bg)",
-  surface:  "var(--althy-surface)",
-  surface2: "var(--althy-surface-2)",
-  border:   "var(--althy-border)",
-  text:     "var(--althy-text)",
-  text2:    "var(--althy-text-2)",
-  text3:    "var(--althy-text-3)",
-  orange:   "var(--althy-orange)",
-  orangeBg: "var(--althy-orange-bg)",
-  green:    "var(--althy-green)",
-  greenBg:  "var(--althy-green-bg)",
-  red:      "var(--althy-red)",
-  redBg:    "var(--althy-red-bg)",
-  blue:     "var(--althy-blue)",
-  blueBg:   "var(--althy-blue-bg)",
-  amber:    "var(--althy-amber)",
-  amberBg:  "var(--althy-amber-bg)",
-  shadow:   "var(--althy-shadow)",
-} as const;
+// ── Tab deep-link redirect (PROMPT 12 compat) ─────────────────────────────────
+const TAB_TO_PATH: Record<string, string> = {
+  locataire:     "locataire",
+  historique:    "historique",
+  documents:     "documents",
+  interventions: "interventions",
+  finances:      "finances",
+  potentiel:     "potentiel",
+};
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function fmtDate(iso?: string | null) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("fr-CH", { day: "numeric", month: "short", year: "numeric" });
-}
-function fmtMois(yyyyMM?: string | null) {
-  if (!yyyyMM) return "—";
-  const [y, m] = yyyyMM.split("-");
-  return new Date(Number(y), Number(m) - 1).toLocaleDateString("fr-CH", { month: "long", year: "numeric" });
-}
-function fmtCHF(n?: number | null) {
-  if (n == null) return "—";
-  return `CHF ${Number(n).toLocaleString("fr-CH")}`;
-}
-function daysUntil(iso?: string | null): number | null {
-  if (!iso) return null;
-  return Math.round((new Date(iso).getTime() - Date.now()) / 86_400_000);
-}
-function initials(str?: string | null) {
-  if (!str) return "?";
-  return str.trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2);
-}
+function BienOverview() {
+  const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-// ── Atoms ─────────────────────────────────────────────────────────────────────
-function Badge({ label, color, bg }: { label: string; color: string; bg: string }) {
+  // Redirige ?tab=xxx → sous-page canonique (deep-links depuis la Sphère IA)
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && TAB_TO_PATH[tab]) {
+      router.replace(`/app/biens/${id}/${TAB_TO_PATH[tab]}`);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const sections = [
+    {
+      label: "Locataire",
+      sub: "Bail, paiements et scoring",
+      icon: User,
+      color: S.orange,
+      bg: S.orangeBg,
+      href: `/app/biens/${id}/locataire`,
+    },
+    {
+      label: "Documents",
+      sub: "Bail, EDL, quittances",
+      icon: FileText,
+      color: S.blue,
+      bg: S.blueBg,
+      href: `/app/biens/${id}/documents`,
+    },
+    {
+      label: "Finances",
+      sub: "Loyers encaissés, charges",
+      icon: TrendingUp,
+      color: S.green,
+      bg: S.greenBg,
+      href: `/app/biens/${id}/finances`,
+    },
+    {
+      label: "Interventions",
+      sub: "Travaux et incidents",
+      icon: Wrench,
+      color: S.amber,
+      bg: S.amberBg,
+      href: `/app/biens/${id}/interventions`,
+    },
+    {
+      label: "Historique",
+      sub: "Anciens locataires",
+      icon: Clock,
+      color: S.text2,
+      bg: S.border,
+      href: `/app/biens/${id}/historique`,
+    },
+    {
+      label: "Potentiel IA",
+      sub: "Analyse et rendement",
+      icon: Sparkles,
+      color: S.orange,
+      bg: S.orangeBg,
+      href: `/app/biens/${id}/potentiel`,
+    },
+  ];
+
   return (
-    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 20, color, background: bg, whiteSpace: "nowrap" }}>
-      {label}
-    </span>
-  );
-}
-function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return (
-    <div style={{ background: S.surface, borderRadius: 14, border: `1px solid ${S.border}`, boxShadow: S.shadow, padding: "1.25rem", ...style }}>
-      {children}
-    </div>
-  );
-}
-function Skel({ h = 16, w = "100%" }: { h?: number; w?: string | number }) {
-  return <div style={{ height: h, width: w, borderRadius: 6, background: S.border, opacity: 0.6 }} />;
-}
-function ScoreBar({ label, value }: { label: string; value: number }) {
-  const pct = Math.round((value / 10) * 100);
-  const color = value >= 7 ? S.green : value >= 5 ? S.amber : S.red;
-  return (
-    <div style={{ marginBottom: "0.65rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: S.text2 }}>{label}</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color }}>{value.toFixed(1)}/10</span>
-      </div>
-      <div style={{ height: 5, borderRadius: 99, background: S.border }}>
-        <div style={{ height: "100%", width: `${pct}%`, borderRadius: 99, background: color, transition: "width 0.5s ease" }} />
-      </div>
-    </div>
-  );
-}
-function Empty({ icon: Icon, title, sub }: { icon: React.ElementType; title: string; sub?: string }) {
-  return (
-    <div style={{ textAlign: "center", padding: "3rem 1rem", color: S.text3 }}>
-      <Icon size={34} style={{ margin: "0 auto 0.75rem", opacity: 0.35 }} />
-      <p style={{ fontWeight: 600, color: S.text2, marginBottom: 4 }}>{title}</p>
-      {sub && <p style={{ fontSize: 13 }}>{sub}</p>}
-    </div>
-  );
-}
-function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: `1px solid ${S.border}` }}>
-      <span style={{ fontSize: 12, color: S.text3 }}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: 600, color: S.text, textAlign: "right" }}>{value}</span>
-    </div>
-  );
-}
-
-// ── Button styles ─────────────────────────────────────────────────────────────
-const btnP: React.CSSProperties = {
-  display: "inline-flex", alignItems: "center", gap: 6,
-  padding: "8px 16px", borderRadius: 9, border: "none",
-  background: S.orange, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer",
-};
-const btnS: React.CSSProperties = {
-  display: "inline-flex", alignItems: "center", gap: 6,
-  padding: "8px 16px", borderRadius: 9,
-  border: `1px solid ${S.border}`, background: S.surface,
-  color: S.text, fontSize: 13, fontWeight: 600, cursor: "pointer",
-};
-const iconBtn: React.CSSProperties = {
-  display: "inline-flex", alignItems: "center", justifyContent: "center",
-  width: 30, height: 30, borderRadius: 8,
-  border: `1px solid ${S.border}`, background: S.surface,
-  color: S.text2, textDecoration: "none",
-};
-
-// ── Statut maps ───────────────────────────────────────────────────────────────
-const BIEN_STATUT: Record<string, { label: string; color: string; bg: string }> = {
-  loue:       { label: "Loué",       color: S.green,  bg: S.greenBg },
-  vacant:     { label: "Vacant",     color: S.amber,  bg: S.amberBg },
-  en_travaux: { label: "En travaux", color: S.blue,   bg: S.blueBg },
-};
-const INTER_STATUT: Record<string, { label: string; color: string; bg: string }> = {
-  nouveau:  { label: "Nouveau",  color: S.blue,   bg: S.blueBg },
-  en_cours: { label: "En cours", color: S.orange, bg: S.orangeBg },
-  planifie: { label: "Planifié", color: S.amber,  bg: S.amberBg },
-  resolu:   { label: "Résolu",   color: S.green,  bg: S.greenBg },
-};
-const INTER_URGENCE: Record<string, string> = {
-  faible: S.green, moderee: S.amber, urgente: S.orange, tres_urgente: S.red,
-};
-const PAI_STATUT: Record<string, { label: string; color: string; bg: string }> = {
-  recu:       { label: "Reçu",       color: S.green, bg: S.greenBg },
-  en_attente: { label: "En attente", color: S.amber, bg: S.amberBg },
-  retard:     { label: "En retard",  color: S.red,   bg: S.redBg },
-};
-const DOC_LABELS: Record<string, string> = {
-  bail: "Bail", edl_entree: "EDL entrée", edl_sortie: "EDL sortie",
-  quittance: "Quittance", attestation_assurance: "Attestation assurance",
-  contrat_travail: "Contrat travail", fiche_salaire: "Fiche de salaire",
-  extrait_poursuites: "Extrait poursuites", attestation_caution: "Att. caution", autre: "Autre",
-};
-const CAT_LABELS: Record<string, string> = {
-  plomberie: "Plomberie", electricite: "Électricité", menuiserie: "Menuiserie",
-  peinture: "Peinture", serrurerie: "Serrurerie", chauffage: "Chauffage", autre: "Autre",
-};
-const BIEN_TYPE_LABELS: Record<string, string> = {
-  appartement: "Appartement", villa: "Villa", studio: "Studio", maison: "Maison",
-  commerce: "Commerce", bureau: "Bureau", parking: "Parking", garage: "Garage", cave: "Cave", autre: "Autre",
-};
-
-// ══════════════════════════════════════════════════════════════════════════════
-// BienHeader
-// ══════════════════════════════════════════════════════════════════════════════
-function BienHeader({ bienId }: { bienId: string }) {
-  const { data: bien, isLoading } = useBien(bienId);
-  if (isLoading) return (
-    <Card style={{ marginBottom: "1.5rem" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <Skel h={26} w="55%" /><Skel h={16} w="40%" /><Skel h={14} w="30%" />
-      </div>
-    </Card>
-  );
-  if (!bien) return null;
-  const s = BIEN_STATUT[bien.statut] ?? { label: bien.statut, color: S.text2, bg: S.border };
-  return (
-    <Card style={{ marginBottom: "1.5rem" }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "1.25rem", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div>
-          <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-            <Badge label={BIEN_TYPE_LABELS[bien.type] ?? bien.type} color={S.orange} bg={S.orangeBg} />
-            <Badge label={s.label} color={s.color} bg={s.bg} />
-          </div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: S.text, marginBottom: 3 }}>{bien.adresse}</h1>
-          <p style={{ fontSize: 14, color: S.text2, display: "flex", alignItems: "center", gap: 4 }}>
-            <MapPin size={13} />{bien.cp} {bien.ville}
-          </p>
-          {bien.surface && (
-            <p style={{ fontSize: 12, color: S.text3, marginTop: 2 }}>
-              {bien.surface} m²{bien.etage != null ? ` · Étage ${bien.etage}` : ""}
-            </p>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
-          {[
-            { label: "Loyer", val: bien.loyer },
-            { label: "Charges", val: bien.charges },
-          ].filter(m => m.val != null).map(m => (
-            <div key={m.label} style={{ textAlign: "center" }}>
-              <p style={{ fontSize: 10, color: S.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>{m.label}</p>
-              <p style={{ fontSize: 18, fontWeight: 700, color: S.text }}>{fmtCHF(m.val)}</p>
-              <p style={{ fontSize: 10, color: S.text3 }}>/ mois</p>
-            </div>
-          ))}
-          {bien.loyer && bien.loyer > 0 && (
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: 10, color: S.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>Rendement</p>
-              <p style={{ fontSize: 18, fontWeight: 700, color: S.green }}>
-                {(((bien.loyer - (bien.charges ?? 0)) * 12) / (bien.loyer * 266.67) * 100).toFixed(1)}%
-              </p>
-              <p style={{ fontSize: 10, color: S.text3 }}>brut estimé</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// TabLocataireActuel
-// ══════════════════════════════════════════════════════════════════════════════
-function TabLocataireActuel({ bienId }: { bienId: string }) {
-  const { data: locataire, isLoading } = useLocataireActuel(bienId);
-  const { data: scoring, isLoading: loadScore } = useScoring(locataire?.id);
-  const { data: paiements } = usePaiements(bienId);
-  const moisCourant = new Date().toISOString().slice(0, 7);
-  const pMois = paiements?.find(p => p.mois === moisCourant);
-  const daysFin = daysUntil(locataire?.date_sortie);
-
-  if (isLoading) return (
-    <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(270px, 1fr))" }}>
-      <Card><Skel h={180} /></Card><Card><Skel h={120} /></Card><Card><Skel h={160} /></Card>
-    </div>
-  );
-  if (!locataire) return <Empty icon={User} title="Aucun locataire actuel" sub="Ce bien est vacant." />;
-
-  const ps = pMois ? PAI_STATUT[pMois.statut] : null;
-  return (
-    <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(270px, 1fr))" }}>
-      {/* ── Contact & bail ── */}
-      <Card>
-        <p style={{ fontSize: 11, fontWeight: 700, color: S.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "1rem" }}>Contact & bail</p>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "1rem" }}>
-          <div style={{ width: 44, height: 44, borderRadius: "50%", background: S.orangeBg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: S.orange }}>
-            {initials(locataire.id)}
-          </div>
-          <div>
-            <p style={{ fontWeight: 600, color: S.text }}>Locataire</p>
-            <p style={{ fontSize: 11, color: S.text3 }}>#{locataire.id.slice(0, 8)}</p>
-          </div>
-        </div>
-        <InfoRow label="Statut" value={<Badge label="Actif" color={S.green} bg={S.greenBg} />} />
-        <InfoRow label="Entrée" value={fmtDate(locataire.date_entree)} />
-        <InfoRow label="Sortie prévue" value={
-          locataire.date_sortie
-            ? <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                {fmtDate(locataire.date_sortie)}
-                {daysFin !== null && daysFin <= 60 && (
-                  <span style={{ fontSize: 11, color: S.red, fontWeight: 700, display: "flex", alignItems: "center", gap: 2 }}>
-                    <AlertTriangle size={10} />{daysFin}j
-                  </span>
-                )}
-              </span>
-            : "—"
-        } />
-        <InfoRow label="Loyer" value={fmtCHF(locataire.loyer)} />
-        <InfoRow label="Charges" value={fmtCHF(locataire.charges)} />
-        <InfoRow label="Dépôt garantie" value={fmtCHF(locataire.depot_garantie)} />
-        {locataire.type_caution && <InfoRow label="Caution" value={locataire.type_caution.replace("_", " ")} />}
-        {daysFin !== null && daysFin <= 60 && (
-          <div style={{ marginTop: "0.75rem", padding: "0.65rem 0.9rem", borderRadius: 10, background: S.redBg, display: "flex", gap: 8, alignItems: "flex-start" }}>
-            <AlertTriangle size={14} style={{ color: S.red, flexShrink: 0, marginTop: 1 }} />
-            <p style={{ fontSize: 12, color: S.red, lineHeight: 1.4 }}>
-              Bail se termine dans <strong>{daysFin} jour{daysFin !== 1 ? "s" : ""}</strong>. Pensez au renouvellement ou à la résiliation.
-            </p>
-          </div>
-        )}
-        <button style={{ ...btnP, marginTop: "1rem" }}>
-          <RefreshCw size={12} /> Proposer renouvellement
-        </button>
-      </Card>
-
-      {/* ── Paiement du mois ── */}
-      <Card>
-        <p style={{ fontSize: 11, fontWeight: 700, color: S.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "1rem" }}>
-          Paiement · {fmtMois(moisCourant)}
-        </p>
-        {ps && pMois ? (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: "1rem" }}>
-              {pMois.statut === "recu"
-                ? <CheckCircle2 size={30} style={{ color: S.green }} />
-                : pMois.statut === "retard"
-                ? <XCircle size={30} style={{ color: S.red }} />
-                : <Clock size={30} style={{ color: S.amber }} />}
-              <div>
-                <p style={{ fontSize: 22, fontWeight: 800, color: S.text }}>{fmtCHF(pMois.montant)}</p>
-                <Badge label={ps.label} color={ps.color} bg={ps.bg} />
-              </div>
-            </div>
-            <InfoRow label="Échéance" value={fmtDate(pMois.date_echeance)} />
-            {pMois.date_paiement && <InfoRow label="Reçu le" value={fmtDate(pMois.date_paiement)} />}
-            {pMois.jours_retard > 0 && <InfoRow label="Retard" value={`${pMois.jours_retard} jours`} />}
-          </>
-        ) : (
-          <Empty icon={Clock} title="Aucun paiement" sub={`Pour ${fmtMois(moisCourant)}`} />
-        )}
-      </Card>
-
-      {/* ── Scoring IA ── */}
-      <Card>
-        <p style={{ fontSize: 11, fontWeight: 700, color: S.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "1rem" }}>
-          Scoring IA
-        </p>
-        {loadScore ? <Skel h={140} /> : scoring ? (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: "1rem" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem" }}>
+      {sections.map(sec => {
+        const Icon = sec.icon;
+        return (
+          <Link key={sec.href} href={sec.href} style={{ textDecoration: "none" }}>
+            <Card style={{ display: "flex", alignItems: "center", gap: 14, cursor: "pointer", transition: "box-shadow 0.15s" }}>
               <div style={{
-                width: 52, height: 52, borderRadius: "50%",
-                background: scoring.score_global >= 7 ? S.greenBg : scoring.score_global >= 5 ? S.amberBg : S.redBg,
+                width: 42, height: 42, borderRadius: 10, flexShrink: 0,
+                background: sec.bg,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <span style={{ fontSize: 19, fontWeight: 800, color: scoring.score_global >= 7 ? S.green : scoring.score_global >= 5 ? S.amber : S.red }}>
-                  {scoring.score_global.toFixed(1)}
-                </span>
+                <Icon size={18} style={{ color: sec.color }} />
               </div>
               <div>
-                <p style={{ fontWeight: 600, color: S.text }}>Score global</p>
-                <p style={{ fontSize: 12, color: S.text3 }}>{scoring.nb_retards} retard{scoring.nb_retards !== 1 ? "s" : ""} enregistré{scoring.nb_retards !== 1 ? "s" : ""}</p>
+                <p style={{ fontSize: 14, fontWeight: 600, color: S.text, margin: 0 }}>{sec.label}</p>
+                <p style={{ fontSize: 12, color: S.text3, margin: 0 }}>{sec.sub}</p>
               </div>
-            </div>
-            <ScoreBar label="Ponctualité" value={scoring.ponctualite} />
-            <ScoreBar label="Solvabilité" value={scoring.solvabilite} />
-            <ScoreBar label="Communication" value={scoring.communication} />
-            <ScoreBar label="État du logement" value={scoring.etat_logement} />
-          </>
-        ) : (
-          <Empty icon={TrendingUp} title="Scoring non disponible" sub="Aucun historique de scoring." />
-        )}
-      </Card>
+            </Card>
+          </Link>
+        );
+      })}
     </div>
   );
 }
-
-// ══════════════════════════════════════════════════════════════════════════════
-// TabHistoriqueLocs
-// ══════════════════════════════════════════════════════════════════════════════
-function TabHistoriqueLocs({ bienId }: { bienId: string }) {
-  const { data: anciens, isLoading } = useLocataires(bienId, "sorti");
-  if (isLoading) return <Card><Skel h={120} /></Card>;
-  if (!anciens?.length) return <Empty icon={User} title="Aucun historique" sub="Aucun ancien locataire enregistré." />;
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-      {anciens.map(loc => (
-        <Card key={loc.id}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "space-between", flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: "50%", background: S.surface2, border: `1px solid ${S.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: S.text2, flexShrink: 0 }}>
-                L
-              </div>
-              <div>
-                <p style={{ fontWeight: 600, color: S.text }}>Locataire #{loc.id.slice(0, 8)}</p>
-                <p style={{ fontSize: 12, color: S.text2 }}>
-                  {fmtDate(loc.date_entree)} → {fmtDate(loc.date_sortie)}
-                </p>
-                {loc.motif_depart && (
-                  <p style={{ fontSize: 11, color: S.text3, marginTop: 2 }}>Motif: {loc.motif_depart}</p>
-                )}
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {loc.loyer && <span style={{ fontSize: 13, color: S.text3 }}>{fmtCHF(loc.loyer)}/m</span>}
-              <Badge label="Sortie propre" color={S.green} bg={S.greenBg} />
-              <Link
-                href={`/app/biens/${bienId}/historique/${loc.id}`}
-                style={{ ...btnS, marginTop: 0, textDecoration: "none", fontSize: 12 }}
-              >
-                Voir dossier <ChevronRight size={11} />
-              </Link>
-            </div>
-          </div>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// TabDocuments
-// ══════════════════════════════════════════════════════════════════════════════
-function TabDocuments({ bienId }: { bienId: string }) {
-  const { data: docs, isLoading } = useDocuments(bienId);
-  if (isLoading) return <Card><Skel h={200} /></Card>;
-  const grouped = (docs ?? []).reduce<Record<string, DocumentAlthy[]>>((acc, d) => {
-    (acc[d.type] ??= []).push(d);
-    return acc;
-  }, {});
-  return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
-        <button style={btnS}>
-          <Plus size={13} /> Générer document IA
-        </button>
-      </div>
-      {!docs?.length
-        ? <Empty icon={FileText} title="Aucun document" sub="Déposez ou générez vos premiers documents." />
-        : Object.entries(grouped).map(([type, items]) => (
-          <div key={type} style={{ marginBottom: "1.25rem" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: S.text3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
-              {DOC_LABELS[type] ?? type}
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {items.map(doc => (
-                <div key={doc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.7rem 1rem", borderRadius: 10, border: `1px solid ${S.border}`, background: S.surface }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <FileText size={15} style={{ color: doc.genere_par_ia ? S.orange : S.text3, flexShrink: 0 }} />
-                    <div>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: S.text }}>{DOC_LABELS[doc.type] ?? doc.type}</p>
-                      <p style={{ fontSize: 11, color: S.text3 }}>
-                        {fmtDate(doc.date_document ?? doc.created_at)}
-                        {doc.genere_par_ia && <span style={{ marginLeft: 6, color: S.orange, fontWeight: 600 }}>· IA</span>}
-                      </p>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <a href={doc.url_storage} target="_blank" rel="noopener noreferrer" style={iconBtn}><Eye size={13} /></a>
-                    <a href={doc.url_storage} download style={iconBtn}><Download size={13} /></a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))
-      }
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// TabInterventions
-// ══════════════════════════════════════════════════════════════════════════════
-function TabInterventions({ bienId }: { bienId: string }) {
-  const { data: interventions, isLoading } = useInterventions(bienId);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ titre: "", categorie: "autre", urgence: "moderee", description: "" });
-  const create = useCreateIntervention();
-
-  const handleCreate = async () => {
-    if (!form.titre.trim()) return;
-    await create.mutateAsync({
-      ...form, bien_id: bienId, statut: "nouveau", avancement: 0,
-    } as Parameters<typeof create.mutateAsync>[0]);
-    setShowForm(false);
-    setForm({ titre: "", categorie: "autre", urgence: "moderee", description: "" });
-  };
-
-  if (isLoading) return <Card><Skel h={200} /></Card>;
-  return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
-        <button style={btnP} onClick={() => setShowForm(v => !v)}>
-          <Plus size={13} /> Nouvelle intervention
-        </button>
-      </div>
-      {showForm && (
-        <Card style={{ marginBottom: "1rem" }}>
-          <p style={{ fontSize: 14, fontWeight: 700, color: S.text, marginBottom: "1rem" }}>Nouvelle intervention</p>
-          <div style={{ display: "grid", gap: "0.75rem", gridTemplateColumns: "1fr 1fr" }}>
-            <div style={{ gridColumn: "1/-1" }}>
-              <label style={{ fontSize: 12, color: S.text2, display: "block", marginBottom: 4 }}>Titre *</label>
-              <input className="input" value={form.titre} onChange={e => setForm(f => ({ ...f, titre: e.target.value }))} placeholder="Ex: Fuite robinet cuisine" />
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color: S.text2, display: "block", marginBottom: 4 }}>Catégorie</label>
-              <select className="input" value={form.categorie} onChange={e => setForm(f => ({ ...f, categorie: e.target.value }))}>
-                {Object.entries(CAT_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color: S.text2, display: "block", marginBottom: 4 }}>Urgence</label>
-              <select className="input" value={form.urgence} onChange={e => setForm(f => ({ ...f, urgence: e.target.value }))}>
-                <option value="faible">Faible</option>
-                <option value="moderee">Modérée</option>
-                <option value="urgente">Urgente</option>
-                <option value="tres_urgente">Très urgente</option>
-              </select>
-            </div>
-            <div style={{ gridColumn: "1/-1" }}>
-              <label style={{ fontSize: 12, color: S.text2, display: "block", marginBottom: 4 }}>Description</label>
-              <textarea className="input" rows={3} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Décrivez le problème…" />
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 8, marginTop: "1rem" }}>
-            <button style={btnP} onClick={handleCreate} disabled={create.isPending}>
-              {create.isPending && <Loader2 size={12} className="animate-spin" />} Créer
-            </button>
-            <button style={btnS} onClick={() => setShowForm(false)}>Annuler</button>
-          </div>
-        </Card>
-      )}
-      {!interventions?.length
-        ? <Empty icon={Wrench} title="Aucune intervention" sub="Aucun travaux ou incident signalé." />
-        : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {interventions.map(inter => {
-              const s = INTER_STATUT[inter.statut] ?? { label: inter.statut, color: S.text2, bg: S.border };
-              const uColor = INTER_URGENCE[inter.urgence] ?? S.text2;
-              return (
-                <Card key={inter.id}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: uColor, flexShrink: 0 }} />
-                        <p style={{ fontWeight: 600, color: S.text }}>{inter.titre}</p>
-                        <Badge label={s.label} color={s.color} bg={s.bg} />
-                      </div>
-                      <p style={{ fontSize: 12, color: S.text2 }}>
-                        {CAT_LABELS[inter.categorie] ?? inter.categorie} · {fmtDate(inter.date_signalement ?? inter.created_at)}
-                      </p>
-                      {inter.artisan_id && <p style={{ fontSize: 12, color: S.blue, marginTop: 2 }}>Artisan assigné</p>}
-                      {inter.cout != null && <p style={{ fontSize: 12, color: S.text3 }}>Coût estimé: {fmtCHF(inter.cout)}</p>}
-                    </div>
-                    <div style={{ textAlign: "right", minWidth: 100 }}>
-                      <p style={{ fontSize: 11, color: S.text3, marginBottom: 4 }}>{inter.avancement}%</p>
-                      <div style={{ width: 100, height: 4, borderRadius: 99, background: S.border }}>
-                        <div style={{ height: "100%", width: `${inter.avancement}%`, borderRadius: 99, background: inter.avancement === 100 ? S.green : S.orange }} />
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        )
-      }
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// TabFinances
-// ══════════════════════════════════════════════════════════════════════════════
-function TabFinances({ bienId }: { bienId: string }) {
-  const { data: bien } = useBien(bienId);
-  const { data: paiements, isLoading } = usePaiements(bienId);
-  if (isLoading) return <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}><Skel h={80} /><Skel h={300} /></div>;
-  const recus = (paiements ?? []).filter(p => p.statut === "recu");
-  const totalEncaisse = recus.reduce((s, p) => s + Number(p.montant), 0);
-  const totalCharges = recus.length * (bien?.charges ?? 0);
-  return (
-    <div>
-      {/* Métriques */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
-        {[
-          { label: "Encaissé", val: fmtCHF(totalEncaisse), color: S.green },
-          { label: "Charges", val: fmtCHF(totalCharges), color: S.amber },
-          { label: "Net", val: fmtCHF(totalEncaisse - totalCharges), color: (totalEncaisse - totalCharges) >= 0 ? S.green : S.red },
-        ].map(m => (
-          <Card key={m.label} style={{ textAlign: "center", padding: "1rem" }}>
-            <p style={{ fontSize: 10, color: S.text3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{m.label}</p>
-            <p style={{ fontSize: 20, fontWeight: 800, color: m.color }}>{m.val}</p>
-          </Card>
-        ))}
-      </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
-        <button style={btnP}>
-          <FileText size={13} /> Générer quittance
-        </button>
-      </div>
-      {!paiements?.length
-        ? <Empty icon={TrendingUp} title="Aucun mouvement" sub="Aucun paiement enregistré pour ce bien." />
-        : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {[...paiements].sort((a, b) => b.mois.localeCompare(a.mois)).map(p => {
-              const ps = PAI_STATUT[p.statut] ?? { label: p.statut, color: S.text2, bg: S.border };
-              return (
-                <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.75rem 1rem", borderRadius: 10, border: `1px solid ${S.border}`, background: S.surface }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: ps.color, flexShrink: 0 }} />
-                    <div>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: S.text }}>{fmtMois(p.mois)}</p>
-                      <p style={{ fontSize: 11, color: S.text3 }}>Éch. {fmtDate(p.date_echeance)}{p.jours_retard > 0 ? ` · ${p.jours_retard}j retard` : ""}</p>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: S.text }}>{fmtCHF(p.montant)}</p>
-                    <Badge label={ps.label} color={ps.color} bg={ps.bg} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )
-      }
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// TabPotentielIA — 7 blocs d'analyse
-// ══════════════════════════════════════════════════════════════════════════════
-function ScoreRing({ score }: { score: number }) {
-  const color = score >= 7 ? S.green : score >= 5 ? S.amber : S.red;
-  const bg = score >= 7 ? S.greenBg : score >= 5 ? S.amberBg : S.redBg;
-  return (
-    <div style={{
-      width: 72, height: 72, borderRadius: "50%",
-      background: bg, border: `3px solid ${color}`,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      flexDirection: "column",
-    }}>
-      <span style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 300, color, lineHeight: 1 }}>
-        {score.toFixed(1)}
-      </span>
-      <span style={{ fontSize: 9, color, textTransform: "uppercase", letterSpacing: "0.05em" }}>/10</span>
-    </div>
-  );
-}
-
-function PotentielBloc({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <Card>
-      <p style={{ fontSize: 11, fontWeight: 700, color: S.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "0.85rem" }}>
-        {title}
-      </p>
-      {children}
-    </Card>
-  );
-}
-
-function TabPotentielIA({ bienId }: { bienId: string }) {
-  const { data, isLoading, error, refetch, isFetching } = usePotentielIA(bienId);
-
-  if (isLoading) {
-    return (
-      <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(270px, 1fr))" }}>
-        {Array.from({ length: 7 }).map((_, i) => <Card key={i}><Skel h={100} /></Card>)}
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <Card style={{ textAlign: "center", padding: "2.5rem" }}>
-        <Sparkles size={32} style={{ margin: "0 auto 0.75rem", color: S.text3, opacity: 0.4 }} />
-        <p style={{ fontWeight: 600, color: S.text2, marginBottom: 4 }}>Analyse non disponible</p>
-        <p style={{ fontSize: 13, color: S.text3, marginBottom: "1rem" }}>
-          L&apos;analyse IA nécessite un loyer renseigné pour ce bien.
-        </p>
-        <button style={btnP} onClick={() => refetch()} disabled={isFetching}>
-          {isFetching && <Loader2 size={12} className="animate-spin" />}
-          Générer l&apos;analyse
-        </button>
-      </Card>
-    );
-  }
-
-  const fCHF = (n: number) => n > 0 ? `CHF ${Math.round(n).toLocaleString("fr-CH")}` : "—";
-  const fPct = (n: number) => `${n.toFixed(2)} %`;
-
-  return (
-    <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
-
-      {/* Bloc 1 — Valeur estimée */}
-      <PotentielBloc title="Valeur estimée du bien">
-        <div style={{ display: "flex", gap: "1.5rem", alignItems: "flex-end" }}>
-          <div>
-            <p style={{ fontSize: 11, color: S.text3, marginBottom: 2 }}>Fourchette</p>
-            <p style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 300, color: S.text }}>
-              {fCHF(data.valeur_min)} – {fCHF(data.valeur_max)}
-            </p>
-          </div>
-        </div>
-        <p style={{ fontSize: 11, color: S.text3, marginTop: 6 }}>
-          Estimation basée sur multiplicateur 200–260× loyer mensuel (marché CH)
-        </p>
-      </PotentielBloc>
-
-      {/* Bloc 2 — Rendement */}
-      <PotentielBloc title="Rendement locatif">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {[
-            { label: "Brut", val: fPct(data.rendement_brut), color: S.green },
-            { label: "Net charges", val: fPct(data.rendement_net), color: S.text2 },
-          ].map(m => (
-            <div key={m.label} style={{ padding: "0.75rem", borderRadius: 10, background: S.surface2, border: `1px solid ${S.border}`, textAlign: "center" }}>
-              <p style={{ fontSize: 10, color: S.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>{m.label}</p>
-              <p style={{ fontFamily: "var(--font-serif)", fontSize: 20, fontWeight: 300, color: m.color }}>{m.val}</p>
-            </div>
-          ))}
-        </div>
-      </PotentielBloc>
-
-      {/* Bloc 3 — Loyer marché */}
-      <PotentielBloc title="Loyer vs marché">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-          <div>
-            <p style={{ fontSize: 11, color: S.text3 }}>Actuel</p>
-            <p style={{ fontSize: 18, fontWeight: 700, color: S.text }}>{fCHF(data.loyer_actuel)}/m</p>
-          </div>
-          <div style={{ fontSize: 20, color: S.text3 }}>→</div>
-          <div>
-            <p style={{ fontSize: 11, color: S.text3 }}>Marché estimé</p>
-            <p style={{ fontSize: 18, fontWeight: 700, color: S.orange }}>{fCHF(data.loyer_marche)}/m</p>
-          </div>
-        </div>
-        {data.ecart_marche_pct > 0 && (
-          <div style={{ padding: "6px 10px", borderRadius: 8, background: S.greenBg, fontSize: 12, color: S.green, fontWeight: 600 }}>
-            +{data.ecart_marche_pct}% de potentiel de revalorisation
-          </div>
-        )}
-      </PotentielBloc>
-
-      {/* Bloc 4 — Score investissement */}
-      <PotentielBloc title="Score investissement">
-        <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
-          <ScoreRing score={data.score_investissement} />
-          <div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: S.text }}>
-              {data.score_investissement >= 7 ? "Excellent" : data.score_investissement >= 5 ? "Correct" : "À améliorer"}
-            </p>
-            <p style={{ fontSize: 12, color: S.text3 }}>Score global Althy IA</p>
-            <p style={{ fontSize: 11, color: S.text3, marginTop: 3 }}>
-              Basé sur rendement, statut, surface et loyer marché
-            </p>
-          </div>
-        </div>
-      </PotentielBloc>
-
-      {/* Bloc 5 — Recommandations IA */}
-      <PotentielBloc title="Recommandations IA">
-        {data.recommandations.length > 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {data.recommandations.map((rec, i) => (
-              <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                <div style={{
-                  width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
-                  background: S.orangeBg, color: S.orange,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 10, fontWeight: 800,
-                }}>{i + 1}</div>
-                <p style={{ fontSize: 13, color: S.text2, lineHeight: 1.45 }}>{rec}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <Empty icon={Lightbulb} title="Aucune recommandation" />
-        )}
-      </PotentielBloc>
-
-      {/* Bloc 6 — Conseil fiscal CH */}
-      <PotentielBloc title="Optimisation fiscale CH">
-        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-          <PiggyBank size={18} style={{ color: S.green, flexShrink: 0, marginTop: 2 }} />
-          <p style={{ fontSize: 13, color: S.text2, lineHeight: 1.55 }}>
-            {data.conseil_fiscal || "—"}
-          </p>
-        </div>
-      </PotentielBloc>
-
-      {/* Bloc 7 — Prochaine action */}
-      <PotentielBloc title="Prochaine action prioritaire">
-        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-          <div style={{
-            width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-            background: S.orangeBg, color: S.orange,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <TrendingUp size={14} />
-          </div>
-          <p style={{ fontSize: 14, fontWeight: 600, color: S.text, lineHeight: 1.45 }}>
-            {data.prochaine_action || "—"}
-          </p>
-        </div>
-        <button
-          onClick={() => refetch()}
-          disabled={isFetching}
-          style={{ ...btnS, marginTop: "1rem", fontSize: 12 }}
-        >
-          {isFetching ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-          Régénérer l&apos;analyse
-        </button>
-      </PotentielBloc>
-
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// Main page
-// ══════════════════════════════════════════════════════════════════════════════
-type TabId = "locataire" | "historique" | "documents" | "interventions" | "finances" | "potentiel";
-
-const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
-  { id: "locataire",     label: "Locataire actuel",  icon: User },
-  { id: "historique",    label: "Historique locs.",  icon: Clock },
-  { id: "documents",     label: "Documents",         icon: FileText },
-  { id: "interventions", label: "Interventions",     icon: Wrench },
-  { id: "finances",      label: "Finances",          icon: TrendingUp },
-  { id: "potentiel",     label: "Potentiel IA",      icon: Sparkles },
-];
 
 export default function BienDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const [activeTab, setActiveTab] = useState<TabId>("locataire");
-
   return (
-    <div style={{ background: S.bg, minHeight: "100vh" }}>
-      {/* Fil d'Ariane */}
-      <FilAriane items={[
-        { label: 'Tableau de bord', href: '/app' },
-        { label: 'Biens', href: '/app/biens' },
-        { label: id },
-      ]} />
-
-      {/* Header */}
-      <BienHeader bienId={id} />
-
-      {/* Tab bar */}
-      <div style={{ display: "flex", gap: 2, borderBottom: `1px solid ${S.border}`, marginBottom: "1.5rem", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-        {TABS.map(tab => {
-          const active = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "10px 16px", background: "none", border: "none",
-                borderBottom: `2px solid ${active ? S.orange : "transparent"}`,
-                color: active ? S.orange : S.text3,
-                fontWeight: active ? 700 : 500, fontSize: 13,
-                cursor: "pointer", whiteSpace: "nowrap", transition: "color 0.15s",
-              }}
-            >
-              <tab.icon size={13} />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Content */}
-      <div style={{ maxWidth: 1040 }}>
-        {activeTab === "locataire"     && <TabLocataireActuel   bienId={id} />}
-        {activeTab === "historique"    && <TabHistoriqueLocs     bienId={id} />}
-        {activeTab === "documents"     && <TabDocuments           bienId={id} />}
-        {activeTab === "interventions" && <TabInterventions       bienId={id} />}
-        {activeTab === "finances"      && <TabFinances            bienId={id} />}
-        {activeTab === "potentiel"     && <TabPotentielIA         bienId={id} />}
-      </div>
-    </div>
+    <Suspense>
+      <BienOverview />
+    </Suspense>
   );
 }

@@ -97,6 +97,15 @@ class Settings(BaseSettings):
     # Portal syndication — Althy marge 15%
     PORTAL_MARGIN_PCT: float = 15.0
 
+    # Transit Airbnb — QR-facture loyers
+    ALTHY_QR_IBAN: str = ""                    # QR-IBAN du compte Althy (CH…)
+    ALTHY_COMMISSION_PCT: float = 0.03         # 3% sur loyers en transit
+    ALTHY_BANK_NAME: str = "PostFinance"       # Pour en-tête QR-factures
+    ALTHY_CREDITOR_NAME: str = "Althy SA"
+    ALTHY_CREDITOR_STREET: str = "Rue de Rive 1"
+    ALTHY_CREDITOR_CITY: str = "1204 Genève"
+    ALTHY_CREDITOR_COUNTRY: str = "CH"
+
     @property
     def is_production(self) -> bool:
         return self.APP_ENV == "production"

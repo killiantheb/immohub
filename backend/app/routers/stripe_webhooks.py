@@ -1,24 +1,25 @@
-"""Stripe — webhooks, Connect, Billing, loyer payments.
+"""Stripe — webhooks, Connect, Billing (abonnements uniquement).
 
-Routes :
-  POST /connect/onboard          → Stripe Connect Express onboarding
-  GET  /connect/status           → vérifier le compte Connect
-  POST /checkout                 → créer une session Checkout abonnement
-  GET  /subscription             → abonnement actif de l'utilisateur
-  POST /loyer/{paiement_id}      → PaymentIntent loyer (4% Althy)
-  POST /webhook                  → événements Stripe asynchrones
+Routes actives :
+  POST /connect/onboard                  → Stripe Connect Express onboarding
+  GET  /connect/status                   → vérifier le compte Connect
+  POST /create-subscription-intent       → Subscription + client_secret Payment Element
+  GET  /subscription                     → abonnement actif de l'utilisateur
+  POST /webhook                          → événements Stripe asynchrones
 
-Règle absolue CLAUDE.md :
-  - 4 % Althy prélevé en application_fee (transfer_data.destination = compte proprio)
-  - Jamais afficher "commission" côté utilisateur → toujours "Loyer net reçu"
-  - CHF 90 frais dossier → uniquement si locataire retenu (POST /locataires/{id}/retenir)
+Routes supprimées (loyers via Stripe) :
+  POST /checkout        → remplacé par /create-subscription-intent (Payment Element)
+  POST /loyer/{id}      → loyers gérés par QR-facture SPC 2.0 + CAMT.054
+                          voir app/routers/loyers.py
+
+Stripe utilisé UNIQUEMENT pour les abonnements Althy (SOLO/PRO/AGENCE).
+Les loyers passent par QR-facture (SPC 2.0) + réconciliation bancaire.
 """
 
 from __future__ import annotations
 
 import json
 import uuid
-from datetime import date
 from typing import Annotated, Literal
 
 import httpx
@@ -38,8 +39,6 @@ router = APIRouter()
 
 DbDep = Annotated[AsyncSession, Depends(get_db)]
 AuthDep = Annotated[User, Depends(get_current_user)]
-
-PLATFORM_FEE_PCT = settings.STRIPE_PLATFORM_FEE_PCT  # 4.0
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -101,11 +100,11 @@ async def get_connect_status(db: DbDep, user: AuthDep):
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# Stripe Billing — abonnements
+# Stripe Billing — abonnements (Payment Element inline)
 # ═════════════════════════════════════════════════════════════════════════════
 
 
-class CheckoutRequest(BaseModel):
+class SubscriptionIntentRequest(BaseModel):
     plan: Literal["proprio", "pro", "agence", "portail"]
 
 
@@ -116,12 +115,29 @@ PLAN_PRICE_MAP = {
     "portail": "STRIPE_PRICE_PORTAL_MONTHLY",
 }
 
+# Méthodes de paiement acceptées pour les abonnements
+# card → CB/Visa/Mastercard + Apple Pay + Google Pay (auto via Payment Element)
+# twint → TWINT suisse (premier paiement; renouvellement par card)
+_SUBSCRIPTION_PAYMENT_METHODS = ["card", "twint"]
 
-@router.post("/checkout")
-async def create_checkout_session(payload: CheckoutRequest, db: DbDep, user: AuthDep):
+
+@router.post("/create-subscription-intent")
+async def create_subscription_intent(
+    payload: SubscriptionIntentRequest,
+    db: DbDep,
+    user: AuthDep,
+):
     """
-    Crée une session Stripe Checkout pour l'abonnement choisi.
-    Retourne l'URL de la page de paiement Stripe.
+    Crée un abonnement Stripe en mode 'default_incomplete' et retourne le
+    client_secret du PaymentIntent de la première facture.
+
+    Ce client_secret est passé à Stripe Payment Element (frontend) qui affiche :
+    - Carte (Visa / Mastercard / Amex)
+    - TWINT (paiement initial — paiements récurrents par carte)
+    - Apple Pay (automatique sous Safari / iOS)
+    - Google Pay (automatique sous Chrome / Android)
+
+    Si l'abonnement existe déjà (conflit), retourne son client_secret actuel.
     """
     price_attr = PLAN_PRICE_MAP.get(payload.plan)
     if not price_attr:
@@ -132,13 +148,17 @@ async def create_checkout_session(payload: CheckoutRequest, db: DbDep, user: Aut
 
     # Récupérer ou créer le customer Stripe
     row = (await db.execute(
-        text("SELECT stripe_customer_id FROM profiles WHERE user_id = :uid"),
+        text("SELECT stripe_customer_id, stripe_subscription_id FROM profiles WHERE user_id = :uid"),
         {"uid": str(user.id)},
     )).fetchone()
     customer_id = row[0] if row else None
+    existing_sub_id = row[1] if row else None
 
     if not customer_id:
-        customer = stripe.Customer.create(email=user.email, metadata={"user_id": str(user.id)})
+        customer = stripe.Customer.create(
+            email=user.email,
+            metadata={"user_id": str(user.id)},
+        )
         customer_id = customer.id
         await db.execute(
             text("UPDATE profiles SET stripe_customer_id = :cid WHERE user_id = :uid"),
@@ -146,16 +166,53 @@ async def create_checkout_session(payload: CheckoutRequest, db: DbDep, user: Aut
         )
         await db.commit()
 
-    session = stripe.checkout.Session.create(
+    # Si un abonnement incomplet existe déjà, le réutiliser
+    if existing_sub_id:
+        try:
+            sub = stripe.Subscription.retrieve(
+                existing_sub_id,
+                expand=["latest_invoice.payment_intent"],
+            )
+            if sub.status == "incomplete":
+                pi = sub.latest_invoice.payment_intent
+                return {
+                    "client_secret": pi.client_secret,
+                    "subscription_id": sub.id,
+                    "plan": payload.plan,
+                }
+        except stripe.error.InvalidRequestError:
+            pass  # abonnement introuvable — en créer un nouveau
+
+    # Créer un nouvel abonnement en mode incomplet
+    subscription = stripe.Subscription.create(
         customer=customer_id,
-        mode="subscription",
-        line_items=[{"price": price_id, "quantity": 1}],
-        success_url=f"{settings.ALLOWED_ORIGINS[0]}/app/abonnement?checkout=success",
-        cancel_url=f"{settings.ALLOWED_ORIGINS[0]}/app/abonnement?checkout=cancel",
+        items=[{"price": price_id}],
+        payment_behavior="default_incomplete",
+        payment_settings={
+            "payment_method_types": _SUBSCRIPTION_PAYMENT_METHODS,
+            "save_default_payment_method": "on_subscription",
+        },
+        expand=["latest_invoice.payment_intent"],
         metadata={"user_id": str(user.id), "plan": payload.plan},
-        subscription_data={"metadata": {"user_id": str(user.id), "plan": payload.plan}},
     )
-    return {"url": session.url}
+
+    # Persister l'ID abonnement pour pouvoir le réutiliser
+    await db.execute(
+        text("""
+            UPDATE profiles
+            SET stripe_subscription_id = :sid
+            WHERE user_id = :uid
+        """),
+        {"sid": subscription.id, "uid": str(user.id)},
+    )
+    await db.commit()
+
+    pi = subscription.latest_invoice.payment_intent
+    return {
+        "client_secret": pi.client_secret,
+        "subscription_id": subscription.id,
+        "plan": payload.plan,
+    }
 
 
 @router.get("/subscription")
@@ -183,96 +240,12 @@ async def get_subscription(db: DbDep, user: AuthDep):
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# Paiement loyer via Stripe Connect
+# SUPPRIMÉ — POST /loyer/{paiement_id}
+# Les loyers ne transitent plus par Stripe Connect.
+# Flux : propriétaire génère QR-facture (SPC 2.0) → locataire paie via e-banking →
+#         banque envoie CAMT.054 → Althy réconcilie → propriétaire notifié.
+# Voir : app/routers/loyers.py
 # ═════════════════════════════════════════════════════════════════════════════
-
-
-class LoyerPaymentResponse(BaseModel):
-    client_secret: str
-    payment_intent_id: str
-    loyer_brut: float    # montant réel (ex: 1800)
-    loyer_net: float     # loyer_brut - 4% Althy (ex: 1728) — affiché "Loyer net reçu"
-    frais_althy: float   # 4% (ex: 72) — JAMAIS affiché à l'utilisateur
-
-
-@router.post("/loyer/{paiement_id}", response_model=LoyerPaymentResponse)
-async def initiate_loyer_payment(
-    paiement_id: uuid.UUID,
-    db: DbDep,
-    user: AuthDep,
-):
-    """
-    Crée un PaymentIntent Stripe pour le paiement d'un loyer.
-    Prélève automatiquement 4% d'application_fee pour Althy.
-    Transfère le solde (96%) au compte Connect du propriétaire.
-
-    Le frontend affiche uniquement : "Loyer net reçu : CHF {loyer_net}"
-    Le frais_althy n'est JAMAIS affiché.
-    """
-    # Récupérer le paiement + le compte Connect du proprio + locataire
-    row = (await db.execute(
-        text("""
-            SELECT p.montant, p.bien_id, p.locataire_id, b.owner_id,
-                   pr.stripe_account_id
-            FROM paiements p
-            JOIN biens b ON b.id = p.bien_id
-            JOIN profiles pr ON pr.user_id = b.owner_id
-            WHERE p.id = :pid AND p.statut = 'en_attente'
-        """),
-        {"pid": str(paiement_id)},
-    )).fetchone()
-
-    if not row:
-        raise HTTPException(404, "Paiement introuvable ou déjà réglé")
-
-    montant, bien_id, locataire_id, owner_id, stripe_account_id = row
-
-    if not stripe_account_id:
-        raise HTTPException(
-            422,
-            "Le propriétaire n'a pas encore connecté son compte Stripe. "
-            "Il doit compléter l'onboarding depuis son espace Abonnement.",
-        )
-
-    loyer_brut = float(montant)
-    frais_althy = round(loyer_brut * PLATFORM_FEE_PCT / 100, 2)
-    loyer_net = round(loyer_brut - frais_althy, 2)
-
-    # Montant en centimes pour Stripe
-    amount_centimes = int(loyer_brut * 100)
-    fee_centimes = int(frais_althy * 100)
-
-    pi = stripe.PaymentIntent.create(
-        amount=amount_centimes,
-        currency="chf",
-        application_fee_amount=fee_centimes,
-        transfer_data={"destination": stripe_account_id},
-        metadata={
-            "type": "loyer",
-            "paiement_id": str(paiement_id),
-            "bien_id": str(bien_id),
-            "locataire_id": str(locataire_id) if locataire_id else "",
-            "owner_id": str(owner_id),
-            "loyer_net": str(loyer_net),
-        },
-        description=f"Loyer net reçu : CHF {loyer_net}",
-        automatic_payment_methods={"enabled": True},
-    )
-
-    # Stocker le PI ID sur le paiement dès maintenant
-    await db.execute(
-        text("UPDATE paiements SET stripe_payment_intent_id = :pi WHERE id = :pid"),
-        {"pi": pi.id, "pid": str(paiement_id)},
-    )
-    await db.commit()
-
-    return LoyerPaymentResponse(
-        client_secret=pi.client_secret,
-        payment_intent_id=pi.id,
-        loyer_brut=loyer_brut,
-        loyer_net=loyer_net,
-        frais_althy=frais_althy,
-    )
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -363,33 +336,25 @@ async def stripe_webhook(
             )
             await db.commit()
 
-    # ── Loyer reçu ─────────────────────────────────────────────────────────
+    # ── payment_intent.succeeded — frais dossier CHF 90 uniquement ──────────
+    # NOTE: les loyers ne passent plus par Stripe (QR-facture SPC 2.0 + CAMT.054)
     elif etype == "payment_intent.succeeded":
-        await _handle_payment_intent_succeeded(db, data)
-
-    # ── Loyer impayé (PaymentIntent manuel) ───────────────────────────────
-    elif etype == "payment_intent.payment_failed":
         pi_id = data.get("id")
-        reason = data.get("last_payment_error", {}).get("message", "Échec paiement")
         metadata = data.get("metadata", {})
-        paiement_id = metadata.get("paiement_id")
-
-        if paiement_id:
-            await db.execute(
-                text("""
-                    UPDATE paiements SET statut = 'retard', updated_at = now()
-                    WHERE id = :pid
-                """),
-                {"pid": paiement_id},
-            )
-        await db.execute(
-            text("""
-                UPDATE transactions SET status = 'failed', failure_reason = :r, updated_at = now()
-                WHERE stripe_payment_intent_id = :pi
-            """),
-            {"r": reason, "pi": pi_id},
-        )
-        await db.commit()
+        if metadata.get("type") == "frais_dossier":
+            candidature_id = metadata.get("candidature_id")
+            if candidature_id:
+                await db.execute(
+                    text("""
+                        UPDATE candidatures
+                        SET frais_payes = true, updated_at = now()
+                        WHERE id = :cid
+                    """),
+                    {"cid": candidature_id},
+                )
+                await db.commit()
+        # Tout autre type de payment_intent (ex: loyer) est ignoré —
+        # les loyers sont réconciliés via CAMT.054 (POST /api/v1/loyers/reconcilier)
 
     # ── Loyer impayé (facture récurrente Stripe Billing) ──────────────────
     elif etype == "invoice.payment_failed":
@@ -409,119 +374,6 @@ async def stripe_webhook(
 
 
 # ─── Handlers internes ────────────────────────────────────────────────────────
-
-
-async def _handle_payment_intent_succeeded(
-    db: AsyncSession,
-    data: dict,
-) -> None:
-    """
-    Traite un PaymentIntent réussi.
-    Seuls les PaymentIntents de type 'loyer' (metadata.type == 'loyer') sont traités.
-    """
-    pi_id = data.get("id")
-    metadata = data.get("metadata", {})
-    ptype = metadata.get("type")
-
-    # ── Frais de dossier CHF 90 ───────────────────────────────────────────────
-    if ptype == "frais_dossier":
-        candidature_id = metadata.get("candidature_id")
-        if candidature_id:
-            await db.execute(
-                text("""
-                    UPDATE candidatures
-                    SET frais_payes = true, updated_at = now()
-                    WHERE id = :cid
-                """),
-                {"cid": candidature_id},
-            )
-            await db.commit()
-        return
-
-    # Ne traiter que les paiements de loyer identifiés
-    if ptype != "loyer":
-        return
-
-    amount = data.get("amount_received", 0) / 100
-    paiement_id = metadata.get("paiement_id")
-    bien_id = metadata.get("bien_id")
-    owner_id = metadata.get("owner_id")
-    loyer_net_meta = metadata.get("loyer_net")
-    locataire_id = metadata.get("locataire_id")
-
-    frais_althy = round(amount * PLATFORM_FEE_PCT / 100, 2)
-    net_amount = float(loyer_net_meta) if loyer_net_meta else round(amount - frais_althy, 2)
-
-    if paiement_id:
-        # Mettre à jour la table paiements (Althy natif)
-        # frais_althy stocké dans net_montant (loyer brut - frais = loyer net reçu)
-        await db.execute(
-            text("""
-                UPDATE paiements
-                SET statut = 'recu',
-                    date_paiement = CURRENT_DATE,
-                    net_montant = :net,
-                    stripe_payment_intent_id = :pi,
-                    updated_at = now()
-                WHERE id = :pid
-            """),
-            {"net": net_amount, "pi": pi_id, "pid": paiement_id},
-        )
-
-    # Mettre à jour la table transactions (avec platform_fee = frais Althy 4%)
-    lease_id = metadata.get("lease_id")
-    await db.execute(
-        text("""
-            UPDATE transactions
-            SET status = 'paid', paid_date = now(),
-                stripe_payment_intent_id = :pi,
-                net_amount = :net, platform_fee = :fee,
-                updated_at = now()
-            WHERE stripe_payment_intent_id = :pi
-               OR (lease_id = :lid AND status = 'pending' AND :lid IS NOT NULL)
-        """),
-        {"pi": pi_id, "net": net_amount, "fee": frais_althy, "lid": lease_id},
-    )
-
-    # Notification proprio : loyer reçu
-    if owner_id:
-        montant_fmt = f"CHF {net_amount:,.2f}".replace(",", " ")
-        await db.execute(
-            text("""
-                INSERT INTO notifications (user_id, type, titre, message, lien, created_at, updated_at)
-                VALUES (:uid, 'loyer_recu', 'Loyer reçu', :msg, :lien, now(), now())
-            """),
-            {
-                "uid": owner_id,
-                "msg": f"Loyer net reçu : {montant_fmt} (frais Althy 4% déduits).",
-                "lien": f"/app/biens/{bien_id}/finances" if bien_id else "/app/finances",
-            },
-        )
-
-    # Audit log
-    await db.execute(
-        text("""
-            INSERT INTO audit_logs
-                (id, user_id, action, resource_type, resource_id, new_values, created_at)
-            VALUES
-                (:id, :uid, 'loyer_recu', 'paiement', :rid, :nv::jsonb, now())
-        """),
-        {
-            "id": str(uuid.uuid4()),
-            "uid": owner_id,
-            "rid": paiement_id,
-            "nv": json.dumps({
-                "stripe_pi": pi_id,
-                "montant_brut": amount,
-                "frais_althy": frais_althy,
-                "loyer_net": net_amount,
-                "bien_id": bien_id,
-                "locataire_id": locataire_id,
-            }),
-        },
-    )
-
-    await db.commit()
 
 
 async def _handle_invoice_payment_failed(

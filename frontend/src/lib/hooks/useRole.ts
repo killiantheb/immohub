@@ -11,24 +11,24 @@ export { ROLE_LABELS };
 /** Sections accessibles par rôle (mirrors backend ROLE_SECTIONS) */
 export const ROLE_SECTIONS: Record<UserRole, string[]> = {
   super_admin:      ["*"],
-  proprio_solo:     ["dashboard", "sphere", "carte", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "ouvreurs", "vente", "settings", "messages", "agenda", "whatsapp", "profile"],
-  agence:           ["dashboard", "sphere", "carte", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail", "ouvreurs", "vente", "settings", "messages", "agenda", "whatsapp", "artisans", "onboarding", "profile"],
-  portail_proprio:  ["dashboard", "carte", "biens", "finances", "documents", "settings", "profile"],
-  opener:           ["dashboard", "sphere", "carte", "ouvreurs", "interventions", "finances", "abonnement", "settings", "messages", "agenda", "whatsapp", "profile"],
-  artisan:          ["dashboard", "sphere", "carte", "interventions", "finances", "abonnement", "artisans", "settings", "messages", "agenda", "whatsapp", "profile"],
-  expert:           ["dashboard", "sphere", "carte", "biens", "finances", "abonnement", "settings", "messages", "agenda", "profile"],
-  hunter:           ["dashboard", "sphere", "carte", "hunters", "abonnement", "vente", "settings", "messages", "profile"],
-  locataire:        ["dashboard", "sphere", "carte", "biens", "finances", "documents", "settings", "messages", "profile"],
-  acheteur_premium: ["dashboard", "sphere", "carte", "listings", "settings", "vente", "messages", "profile"],
+  proprio_solo:     ["dashboard", "sphere", "carte", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "ouvreurs", "vente", "settings", "communication", "profile"],
+  agence:           ["dashboard", "sphere", "carte", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail", "ouvreurs", "vente", "settings", "communication", "artisans", "onboarding", "profile"],
+  portail_proprio:  ["dashboard", "carte", "biens", "finances", "documents", "settings", "communication", "profile"],
+  opener:           ["dashboard", "sphere", "carte", "ouvreurs", "interventions", "finances", "abonnement", "settings", "communication", "profile"],
+  artisan:          ["dashboard", "sphere", "carte", "interventions", "finances", "abonnement", "artisans", "settings", "communication", "profile"],
+  expert:           ["dashboard", "sphere", "carte", "biens", "finances", "abonnement", "settings", "communication", "profile"],
+  hunter:           ["dashboard", "sphere", "carte", "hunters", "abonnement", "vente", "settings", "communication", "profile"],
+  locataire:        ["dashboard", "sphere", "carte", "biens", "finances", "documents", "settings", "communication", "profile"],
+  acheteur_premium: ["dashboard", "sphere", "carte", "listings", "settings", "vente", "communication", "profile"],
 };
 
 /** Plan tarifaire par rôle */
 export const ROLE_PRICE: Record<UserRole, string | null> = {
-  proprio_solo:     "CHF 29/mois",
+  proprio_solo:     "Gratuit · Pro CHF 29/mois",
   agence:           "CHF 29/agent/mois",
   portail_proprio:  "CHF 9/mois (facturé à l'agence)",
   opener:           "Gratuit · Pro CHF 19/mois",
-  artisan:          "Gratuit · Pro CHF 19/mois",
+  artisan:          "Profil gratuit · Commission 10%",
   expert:           "Gratuit · Pro CHF 19/mois",
   hunter:           "Referral fee",
   locataire:        "Gratuit",

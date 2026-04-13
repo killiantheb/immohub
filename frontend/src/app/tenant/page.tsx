@@ -57,7 +57,6 @@ export default function TenantPage() {
   const [deposit, setDeposit] = useState<DepositInfo | null>(null)
   const [quittances, setQuittances] = useState<Quittance[]>([])
   const [loading, setLoading] = useState(true)
-  const [payLoading, setPayLoading] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -67,18 +66,6 @@ export default function TenantPage() {
       api.get<Quittance[]>('/tenants/me/quittances').then(r => setQuittances(r.data)).catch(() => {}),
     ]).finally(() => setLoading(false))
   }, [])
-
-  async function payRent(transactionId: string) {
-    setPayLoading(true)
-    try {
-      const { data } = await api.post<{ checkout_url: string }>(`/transactions/${transactionId}/checkout`)
-      window.location.href = data.checkout_url
-    } catch {
-      alert('Paiement indisponible pour le moment.')
-    } finally {
-      setPayLoading(false)
-    }
-  }
 
   const firstName = profile?.first_name ?? 'Locataire'
   const rentStatus = info?.status ?? 'ok'
@@ -125,14 +112,10 @@ export default function TenantPage() {
               {info.property_address && (
                 <div style={{ fontSize: 11, color: T3, marginTop: 4 }}>{info.property_address}</div>
               )}
-              {info.pending_transaction_id && rentStatus !== 'ok' && (
-                <button
-                  onClick={() => payRent(info.pending_transaction_id!)}
-                  disabled={payLoading}
-                  style={{ marginTop: 12, width: '100%', padding: '10px 0', borderRadius: 10, background: O, border: 'none', color: '#fff', fontSize: 13, fontWeight: 500, cursor: payLoading ? 'not-allowed' : 'pointer', opacity: payLoading ? 0.7 : 1, fontFamily: 'inherit' }}
-                >
-                  {payLoading ? 'Redirection…' : 'Payer le loyer en ligne →'}
-                </button>
+              {rentStatus !== 'ok' && (
+                <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 10, background: 'rgba(212,96,26,0.07)', border: `0.5px solid ${O20}`, fontSize: 12, color: T5, lineHeight: 1.5 }}>
+                  Payez votre loyer via votre e-banking avec le QR-bulletin reçu par e-mail.
+                </div>
               )}
               {rentStatus === 'ok' && (
                 <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#3B6D11' }}>

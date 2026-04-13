@@ -98,10 +98,13 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 NEXT_PUBLIC_POSTHOG_KEY=
 NEXT_PUBLIC_POSTHOG_HOST=https://eu.posthog.com
 
+# frontend/.env.local (à ajouter)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...  ← Clé publique pour Payment Element
+
 # backend/.env (voir .env.example)
 ANTHROPIC_API_KEY=sk-ant-...
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
+STRIPE_SECRET_KEY=          ← Utilisé UNIQUEMENT pour les abonnements (SOLO/PRO/AGENCE)
+STRIPE_WEBHOOK_SECRET=      ← Webhook abonnements (checkout.session.completed, subscription.updated…)
 RESEND_API_KEY=
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
@@ -351,7 +354,8 @@ line-opacity: 0.5
 ### Revenus sur flux (la vraie scalabilité)
 
 ```
-4%     sur TOUS les flux Stripe (loyers, frais dossier, paiements artisans, missions ouvreurs...)
+4%     sur loyers réconciliés (QR-facture SPC 2.0 + CAMT.054 — hors Stripe)
+4%     sur frais dossier, paiements artisans, missions ouvreurs (via Stripe Connect)
 15%    commission ouvreurs (par mission)
 10%    commission artisans (sur devis acceptés)
 10%    commission cautions (SwissCaution / Firstcaution)
@@ -360,16 +364,23 @@ line-opacity: 0.5
 ```
 
 **Règle absolue : zéro marge cachée.**
-Le client paie le tarif du service directement. Althy facture ses 4% séparément via Stripe Connect.
+Le client paie le tarif du service directement. Althy facture ses 4% séparément.
 
 **Clause fondateur (dans les statuts) :**
 L'agence du fondateur (130 biens annuels + 30 saisonniers + 20/semaine) → accès permanent gratuit.
 
-### Stripe Connect — 4% Althy ✓
-- `POST /api/v1/paiements/creer-intent` — crée un PaymentIntent avec `application_fee_amount = montant * 4%`
-- `POST /api/v1/webhooks/loyer/{paiement_id}` — idem pour paiement depuis une fiche paiement
-- Webhook `payment_intent.succeeded` — traite uniquement `metadata.type == 'loyer'`, met à jour statut, notifie le proprio, log audit
-- Webhook `invoice.payment_failed` — crée `ai_action` urgente `relancer_loyer` + SMS Twilio au proprio
+### Stripe — abonnements uniquement ✓
+Stripe est utilisé **uniquement pour les abonnements** (SOLO/PRO/AGENCE).
+Les loyers passent par QR-facture SPC 2.0 + réconciliation CAMT.054 (app/routers/loyers.py).
+
+- `POST /api/v1/stripe/create-subscription-intent` — crée Subscription + retourne client_secret
+  → utilisé par Stripe Payment Element (card + TWINT + Apple Pay + Google Pay)
+- `GET  /api/v1/stripe/subscription` — abonnement actif de l'utilisateur
+- `POST /api/v1/stripe/connect/onboard` — onboarding Stripe Connect Express (proprio)
+- Webhook `checkout.session.completed` → active l'abonnement
+- Webhook `customer.subscription.updated/deleted` → met à jour le plan
+- Webhook `invoice.payment_failed` → crée `ai_action` urgente `relancer_loyer` + SMS Twilio
+- Webhook `payment_intent.succeeded` → traite uniquement `metadata.type == 'frais_dossier'`
 
 ---
 
@@ -468,12 +479,20 @@ GET /api/v1/whatsapp/non-lus          → { count: int }  (somme unread_count)
 ```
 Appelés toutes les 60s par DashboardSidebar avec `.catch(() => { count: 0 })`.
 
-### Paiements
+### Abonnements Stripe (Payment Element inline)
 ```
-POST /api/v1/paiements/creer-intent   → PaymentIntent avec 4% application_fee
-POST /api/v1/webhooks/loyer/{id}      → idem depuis fiche paiement existante
-POST /api/v1/webhooks/webhook         → Stripe webhook (payment_intent.succeeded,
-                                        invoice.payment_failed, subscriptions...)
+POST /api/v1/stripe/create-subscription-intent → Subscription + client_secret (card/TWINT/ApplePay/GooglePay)
+GET  /api/v1/stripe/subscription               → abonnement actif
+POST /api/v1/stripe/connect/onboard            → onboarding Stripe Connect Express
+POST /api/v1/webhooks/webhook                  → Stripe webhook (subscription events, frais_dossier)
+```
+
+### Loyers (QR-facture SPC 2.0 — hors Stripe)
+```
+POST /api/v1/loyers/generer-qr    → génère QR-facture PDF + insère loyer_transaction
+POST /api/v1/loyers/reconcilier   → parse CAMT.054 XML ou liste manuelle, réconcilie
+GET  /api/v1/loyers               → liste loyer_transactions du proprio
+PATCH /api/v1/loyers/{id}/statut  → forcer statut (admin)
 ```
 
 ---
@@ -487,7 +506,7 @@ POST /api/v1/webhooks/webhook         → Stripe webhook (payment_intent.succeed
 - Documents légaux (bail, EDL, quittances)
 - Ouvreurs + artisans (services autour de la location)
 - Dossiers locataires scorés
-- Paiements loyers via Stripe
+- QR-factures loyers (SPC 2.0) + réconciliation CAMT.054
 
 ### EN PAUSE — code gardé, modules cachés dans l'UI
 Ces fonctionnalités **existent dans le code** mais ne sont **pas mis en avant** pour l'instant.
@@ -522,7 +541,8 @@ Phase 4 (Mois 4-6) — SEO local (/biens/geneve, /biens/lausanne, /louer/vaud) +
 ✅ Scoring locataire IA
 ✅ Ouvreurs géolocalisés + missions
 ✅ Artisans + devis comparés
-✅ Paiements Stripe Connect + 4% application_fee
+✅ Abonnements Stripe — Payment Element inline (card + TWINT + Apple Pay + Google Pay)
+✅ QR-factures loyers SPC 2.0 + réconciliation CAMT.054 (Prompt 14)
 ✅ Carte Mapbox (landing + /app/carte)
 ✅ Notifications WhatsApp / SMS (Twilio)
 ✅ CRM locataires
@@ -532,7 +552,7 @@ Phase 4 (Mois 4-6) — SEO local (/biens/geneve, /biens/lausanne, /louer/vaud) +
 ✅ Mobile React Native / Expo
 ✅ Layout responsive (sidebar drawer mobile)
 ✅ Endpoints non-lus messagerie + WhatsApp (badges sidebar)
-✅ 25 migrations Supabase actives (0001 → 0025)
+✅ 26 migrations Supabase actives (0001 → 0026)
 ```
 
 ---

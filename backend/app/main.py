@@ -57,6 +57,9 @@ from app.routers.whatsapp import router as whatsapp_router
 from app.routers.onboarding import router as onboarding_router
 from app.routers.sphere_carte import router as sphere_carte_router
 from app.routers.contact import router as contact_router
+from app.routers.estimation import router as estimation_router
+from app.routers.loyers import router as loyers_router
+from app.routers.changements import router as changements_router
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -200,7 +203,10 @@ app.include_router(agenda_router, prefix="/api/v1", tags=["agenda"])
 app.include_router(whatsapp_router, prefix="/api/v1", tags=["whatsapp"])
 app.include_router(onboarding_router, prefix="/api/v1", tags=["onboarding"])
 app.include_router(sphere_carte_router, prefix="/api/v1", tags=["sphere-carte"])
-app.include_router(contact_router, prefix="/api/v1", tags=["contact"])
+app.include_router(contact_router,    prefix="/api/v1",            tags=["contact"])
+app.include_router(estimation_router, prefix="/api/v1",            tags=["estimation"])
+app.include_router(loyers_router,     prefix="/api/v1/loyers",       tags=["loyers"])
+app.include_router(changements_router, prefix="/api/v1/biens",        tags=["changements"])
 
 
 # ── Health check ──────────────────────────────────────────────────────────────

@@ -176,7 +176,8 @@ Retourne UNIQUEMENT ce JSON valide (aucun texte avant/après) :
       "description": "Description utile, 1-2 phrases",
       "cta_principal": "Libellé bouton principal",
       "cta_secondaire": "Libellé bouton secondaire (optionnel)",
-      "payload": {{"path": "/app/...", "id": "uuid_si_besoin"}}
+      "href": "/app/page?param=valeur (optionnel — deep-link de navigation, voir règles ci-dessous)",
+      "payload": {{"id": "uuid_si_besoin"}}
     }}
   ]
 }}
@@ -185,9 +186,18 @@ Règles :
 - 2 à 5 actions maximum, uniquement les plus prioritaires
 - urgence "haute" = rouge, "normale" = bleu, "info" = gris
 - Si données vides : propose 1-2 actions utiles selon le rôle
-- Chemins français : /app/biens, /app/locataires, /app/comptabilite, /app/ouvreurs, /app/artisans, /app/sphere
+- Chemins français : /app/biens, /app/finances, /app/documents, /app/comptabilite, /app/ouvreurs, /app/artisans, /app/sphere
 - Réponds en français, sois concis et bienveillant
-- Les IDs dans payload doivent correspondre à de vrais IDs si disponibles dans le contexte"""
+- Les IDs dans payload doivent correspondre à de vrais IDs si disponibles dans le contexte
+- Champ "href" (deep-link) — utilise UNIQUEMENT pour les types de navigation (pas pour messagerie/document/whatsapp) :
+  * Loyers impayés / transactions en retard → href: "/app/finances?status=late"
+  * Interventions en cours sur un bien précis → href: "/app/biens/{{bien_id}}?tab=interventions"
+  * Documents à générer → href: "/app/documents?action=generer"
+  * Bail expirant sur un bien précis → href: "/app/biens/{{bien_id}}?tab=locataire"
+  * Bien vacant → href: "/app/biens/{{bien_id}}"
+  * Missions ouvreurs → href: "/app/ouvreurs/missions"
+  * Devis artisan → href: "/app/artisans/devis"
+- Omets "href" pour messagerie_action, whatsapp_action, document_action, validation_action, ocr_action (ces types ouvrent des panneaux inline)"""
 
     client = _client()
     message = await client.messages.create(

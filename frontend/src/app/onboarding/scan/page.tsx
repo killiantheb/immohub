@@ -117,8 +117,8 @@ export default function OnboardingScanPage() {
       <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 300, color: S.dark, margin: 0 }}>
         {confirmes.size} élément{confirmes.size > 1 ? "s" : ""} importé{confirmes.size > 1 ? "s" : ""}
       </h2>
-      <a href="/app/listings" style={{ padding: "12px 28px", background: S.orange, color: "#fff", borderRadius: 12, textDecoration: "none", fontWeight: 600 }}>
-        Voir mes annonces →
+      <a href="/app/biens" style={{ padding: "12px 28px", background: S.orange, color: "#fff", borderRadius: 12, textDecoration: "none", fontWeight: 600 }}>
+        Voir mes biens →
       </a>
     </div>
   );

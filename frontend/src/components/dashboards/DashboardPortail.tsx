@@ -1,398 +1,215 @@
+// src/components/dashboards/DashboardPortail.tsx
+// Vue LECTURE SEULE — portail_proprio — max 200 lignes
 "use client";
 
 import { useState } from "react";
-import {
-  Banknote, FileText, Wrench, AlertTriangle,
-  Download, Send, X, ChevronRight,
-} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { Building2, FileText, Download, Send, Sparkles, MessageSquare } from "lucide-react";
 import { api } from "@/lib/api";
-import {
-  DC, DCard, DKpi, DRoleHeader,
-  DTopNav, DSectionTitle,
-} from "@/components/dashboards/DashBoardShared";
+import { DC, DCard, DKpi, DTopNav, DSectionTitle, DEmptyState } from "./DashBoardShared";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface Props { firstName: string }
-
+interface Bien  { id: string; adresse: string; type: string; loyer: number; loyer_statut: "recu" | "en_attente" | "retard" }
+interface Doc   { id: string; label: string; type: string; url: string; bien_id?: string }
+interface MsgItem { id: string; sender: "proprio" | "agence" | "ai"; content: string; created_at: string }
 interface PortailData {
-  agence_nom:         string;
-  bien_adresse:       string;
-  prochain_loyer:     number;
-  prochain_loyer_date:string;
-  loyer_statut:       "recu" | "en_attente";
-  bail_statut:        "actif" | "expirant";
-  bail_fin:           string;
-  interventions_nb:   number;
-  documents: {
-    type:  "quittance" | "bail" | "edl";
-    label: string;
-    url:   string;
-  }[];
-  paiements: {
-    mois:   string;
-    statut: "paye" | "en_attente";
-    montant:number;
-  }[];
+  agence_nom: string; first_name: string;
+  biens: Bien[]; documents: Doc[]; messages: MsgItem[];
 }
 
-// Données mock affichées pendant le chargement ou si l'API n'est pas branchée
+// ── Mock (fallback si API pas encore branchée) ────────────────────────────────
+
 const MOCK: PortailData = {
-  agence_nom:          "Agence Dupont Immobilier",
-  bien_adresse:        "Rue de Rive 12, 1204 Genève",
-  prochain_loyer:      2_400,
-  prochain_loyer_date: "01 mai 2026",
-  loyer_statut:        "en_attente",
-  bail_statut:         "actif",
-  bail_fin:            "31 août 2027",
-  interventions_nb:    1,
+  agence_nom: "Agence Dupont Immobilier", first_name: "",
+  biens: [
+    { id: "1", adresse: "Rue de Rive 12, 1204 Genève",        type: "Appartement", loyer: 2400, loyer_statut: "recu" },
+    { id: "2", adresse: "Av. de la Gare 8, 1003 Lausanne",    type: "Studio",      loyer: 1200, loyer_statut: "en_attente" },
+  ],
   documents: [
-    { type: "quittance", label: "Quittance avril 2026", url: "#" },
-    { type: "quittance", label: "Quittance mars 2026",  url: "#" },
-    { type: "quittance", label: "Quittance fév. 2026",  url: "#" },
-    { type: "bail",      label: "Bail en cours",        url: "#" },
-    { type: "edl",       label: "EDL entrée",           url: "#" },
+    { id: "1", label: "Quittance avril 2026",  type: "quittance", url: "#", bien_id: "1" },
+    { id: "2", label: "Contrat de bail",        type: "bail",      url: "#", bien_id: "1" },
+    { id: "3", label: "Quittance mars 2026",   type: "quittance", url: "#", bien_id: "2" },
   ],
-  paiements: [
-    { mois: "Avril 2026", statut: "en_attente", montant: 2_400 },
-    { mois: "Mars 2026",  statut: "paye",        montant: 2_400 },
-    { mois: "Fév. 2026",  statut: "paye",        montant: 2_400 },
-  ],
+  messages: [],
 };
 
-// ── Modal signalement ─────────────────────────────────────────────────────────
+// ── Statut loyer badge ─────────────────────────────────────────────────────────
 
-type SignalType = "panne" | "document" | "contact" | null;
+const LOYER_STATUT: Record<string, { emoji: string; color: string; bg: string }> = {
+  recu:       { emoji: "✅", color: "var(--althy-green)",  bg: "var(--althy-green-bg)" },
+  en_attente: { emoji: "⏳", color: "#D97706",             bg: "rgba(217,119,6,0.10)" },
+  retard:     { emoji: "🔴", color: "var(--althy-red, #ef4444)", bg: "rgba(239,68,68,0.10)" },
+};
 
-function SignalModal({ type, onClose }: { type: SignalType; onClose: () => void }) {
-  const [msg, setMsg]   = useState("");
-  const [sent, setSent] = useState(false);
+// ── DashboardPortail ──────────────────────────────────────────────────────────
 
-  const config: Record<NonNullable<SignalType>, { titre: string; placeholder: string }> = {
-    panne:    { titre: "Panne ou réparation",  placeholder: "Décrivez le problème : localisation, urgence…" },
-    document: { titre: "Demande de document",  placeholder: "Quel document souhaitez-vous ? (quittance, attestation…)" },
-    contact:  { titre: "Contacter l'agence",   placeholder: "Votre message à l'agence…" },
-  };
+interface Props { firstName?: string }
 
-  if (!type) return null;
-  const { titre, placeholder } = config[type];
-
-  async function handleSend() {
-    if (!msg.trim()) return;
-    try {
-      await api.post("/portail/me/signalement", { type, message: msg });
-    } catch { /* ignore — affiche succès quand même */ }
-    setSent(true);
-  }
-
-  return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 9000,
-      background: "rgba(26,22,18,0.45)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      padding: 20,
-    }}>
-      <div style={{
-        background: DC.surface, borderRadius: 16, padding: 28,
-        width: "100%", maxWidth: 440,
-        boxShadow: "0 20px 60px rgba(26,22,18,0.18)",
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-          <span style={{ fontFamily: DC.serif, fontSize: 18, fontWeight: 300, color: DC.text }}>{titre}</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: DC.muted }}>
-            <X size={18} />
-          </button>
-        </div>
-
-        {sent ? (
-          <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>✓</div>
-            <p style={{ color: DC.text, fontWeight: 600, marginBottom: 6 }}>Message envoyé</p>
-            <p style={{ color: DC.muted, fontSize: 13 }}>L'agence vous répondra par email sous 24h.</p>
-            <button
-              onClick={onClose}
-              style={{ marginTop: 18, padding: "9px 24px", borderRadius: 8, background: DC.orange, color: "#fff", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 }}
-            >
-              Fermer
-            </button>
-          </div>
-        ) : (
-          <>
-            <textarea
-              value={msg}
-              onChange={e => setMsg(e.target.value)}
-              placeholder={placeholder}
-              rows={4}
-              style={{
-                width: "100%", boxSizing: "border-box",
-                padding: "10px 12px", borderRadius: 8,
-                border: `1px solid ${DC.border}`, fontSize: 13.5,
-                color: DC.text, resize: "vertical", outline: "none",
-                fontFamily: "inherit", lineHeight: 1.6,
-              }}
-            />
-            <div style={{ display: "flex", gap: 10, marginTop: 14, justifyContent: "flex-end" }}>
-              <button
-                onClick={onClose}
-                style={{ padding: "8px 18px", borderRadius: 8, border: `1px solid ${DC.border}`, background: "transparent", cursor: "pointer", fontSize: 13, color: DC.muted }}
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleSend}
-                disabled={!msg.trim()}
-                style={{ padding: "8px 20px", borderRadius: 8, background: msg.trim() ? DC.orange : "#ccc", color: "#fff", border: "none", cursor: msg.trim() ? "pointer" : "not-allowed", fontSize: 13, fontWeight: 600 }}
-              >
-                Envoyer
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Composant principal ───────────────────────────────────────────────────────
-
-export function DashboardPortail({ firstName }: Props) {
-  const [modal, setModal]       = useState<SignalType>(null);
-  const [iaQuery, setIaQuery]   = useState("");
-  const [iaReply, setIaReply]   = useState("");
-  const [iaLoading, setIaLoading] = useState(false);
+export function DashboardPortail({ firstName = "" }: Props) {
+  const [filterBien, setFilterBien]     = useState<string | null>(null);
+  const [msgInput,   setMsgInput]       = useState("");
+  const [msgSent,    setMsgSent]        = useState(false);
+  const [iaInput,    setIaInput]        = useState("");
+  const [iaReply,    setIaReply]        = useState("");
+  const [iaLoading,  setIaLoading]      = useState(false);
 
   const { data } = useQuery<PortailData>({
-    queryKey: ["portail-dashboard"],
-    queryFn:  () => api.get<PortailData>("/portail/me/dashboard").then(r => r.data),
+    queryKey: ["portail-me"],
+    queryFn: () => api.get<PortailData>("/portail/me/dashboard").then(r => r.data),
   });
-
   const d = data ?? MOCK;
+  const name = firstName || d.first_name || "";
 
-  // ── Sphère IA simple ──────────────────────────────────────────────────────
-  async function handleIaAsk() {
-    if (!iaQuery.trim() || iaLoading) return;
-    setIaLoading(true);
-    setIaReply("");
-    try {
-      const res = await api.post<{ reply: string }>("/sphere/chat", {
-        message: iaQuery,
-        context: "portail_proprio",
-      });
-      setIaReply(res.data.reply);
-    } catch {
-      setIaReply("Je n'ai pas pu obtenir de réponse. Réessayez dans un instant.");
-    } finally {
-      setIaLoading(false);
-    }
+  const docsFiltres = filterBien
+    ? d.documents.filter(doc => doc.bien_id === filterBien)
+    : d.documents;
+
+  async function sendMessage() {
+    if (!msgInput.trim()) return;
+    try { await api.post("/portail/me/signalement", { type: "contact", message: msgInput.trim() }); }
+    catch { /* best-effort */ }
+    setMsgInput(""); setMsgSent(true);
   }
 
-  // ── Couleurs loyer / bail ─────────────────────────────────────────────────
-  const loyerColor  = d.loyer_statut  === "recu"   ? "var(--althy-green)"  : "var(--althy-orange)";
-  const loyerLabel  = d.loyer_statut  === "recu"   ? "Reçu ✓"              : "En attente";
-  const bailColor   = d.bail_statut   === "actif"  ? "var(--althy-green)"  : "var(--althy-amber)";
-  const bailLabel   = d.bail_statut   === "actif"  ? "Actif"               : "Expirant bientôt";
-
-  const docIcon = (type: string) =>
-    type === "bail" ? "📄" : type === "edl" ? "🔑" : "🧾";
+  async function askIA() {
+    if (!iaInput.trim() || iaLoading) return;
+    setIaLoading(true); setIaReply("");
+    try {
+      const { data: r } = await api.post<{ reply: string }>("/ai/chat", { message: iaInput, context: "portail_proprio" });
+      setIaReply(r.reply ?? "Je n'ai pas pu répondre, réessayez.");
+    } catch { setIaReply("Service temporairement indisponible."); }
+    finally { setIaLoading(false); }
+  }
 
   return (
-    <>
-      {modal && <SignalModal type={modal} onClose={() => setModal(null)} />}
+    <div style={{ minHeight: "100vh", background: DC.bg, maxWidth: 820, margin: "0 auto" }}>
+      <DTopNav />
 
-      <div style={{ maxWidth: 860, margin: "0 auto", padding: "0 4px" }}>
+      {/* Header */}
+      <div style={{ marginBottom: "2rem" }}>
+        <h1 style={{ fontSize: 28, fontWeight: 300, fontFamily: DC.serif, color: DC.text, margin: "0 0 4px" }}>
+          Bonjour{name ? `, ${name}` : ""}
+        </h1>
+        <p style={{ fontSize: 13, color: DC.muted, margin: 0 }}>
+          Vos biens gérés par {d.agence_nom}
+        </p>
+      </div>
 
-        {/* ── Header ── */}
-        <DTopNav />
-          <DRoleHeader role="portail_proprio" />
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontFamily: DC.serif, fontSize: 28, fontWeight: 300, color: DC.text, margin: "0 0 4px" }}>
-            Bonjour {firstName}
-          </h1>
-          <p style={{ fontSize: 13, color: DC.muted, margin: 0 }}>
-            Portail propriétaire · {d.agence_nom} · {d.bien_adresse}
-          </p>
-        </div>
+      {/* KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
+        <DKpi icon={Building2} iconColor="#2563EB" iconBg="rgba(37,99,235,0.10)"
+          value={String(d.biens.length)} label="Biens gérés" sub="En gestion agence" trend="neutral" />
+        <DKpi icon={FileText}  iconColor="var(--althy-green)" iconBg="var(--althy-green-bg)"
+          value={String(d.biens.filter(b => b.loyer_statut === "recu").length)} label="Loyers reçus" sub="Ce mois" trend="neutral" />
+        <DKpi icon={FileText}  iconColor="#D97706" iconBg="rgba(217,119,6,0.10)"
+          value={String(d.documents.length)} label="Documents" sub="Disponibles" trend="neutral" />
+      </div>
 
-        {/* ── KPIs ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginBottom: 24 }}>
-          <DKpi
-            icon={Banknote}
-            iconColor={loyerColor}
-            iconBg="var(--althy-orange-bg)"
-            value={`CHF ${d.prochain_loyer.toLocaleString("fr-CH")}`}
-            label={`Loyer du ${d.prochain_loyer_date}`}
-            sub={loyerLabel}
-            trend={d.loyer_statut === "recu" ? "up" : "neutral"}
-          />
-          <DKpi
-            icon={FileText}
-            iconColor={bailColor}
-            iconBg="var(--althy-green-bg)"
-            value={bailLabel}
-            label={`Bail — fin ${d.bail_fin}`}
-            sub={d.bail_statut === "actif" ? "En cours" : "À renouveler"}
-            trend={d.bail_statut === "actif" ? "up" : "down"}
-          />
-          <DKpi
-            icon={Wrench}
-            iconColor="var(--althy-amber)"
-            iconBg="var(--althy-amber-bg)"
-            value={String(d.interventions_nb)}
-            label="Intervention(s) en cours"
-            sub={d.interventions_nb === 0 ? "Aucune" : "En traitement"}
-            trend={d.interventions_nb === 0 ? "up" : "neutral"}
-          />
-        </div>
-
-        {/* ── Ligne : Documents + Paiements ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-
-          {/* Documents */}
-          <DCard>
-            <DSectionTitle>Mes documents</DSectionTitle>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {d.documents.map((doc, i) => (
-                <div key={i} style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "9px 12px", borderRadius: 8,
-                  background: "var(--althy-bg)",
-                  border: "1px solid var(--althy-border)",
-                }}>
-                  <span style={{ fontSize: 16 }}>{docIcon(doc.type)}</span>
-                  <span style={{ flex: 1, fontSize: 13, color: DC.text }}>{doc.label}</span>
-                  <a
-                    href={doc.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{
-                      display: "flex", alignItems: "center", gap: 4,
-                      fontSize: 11.5, fontWeight: 600, color: DC.orange,
-                      textDecoration: "none",
-                    }}
-                  >
-                    <Download size={12} /> PDF
-                  </a>
-                </div>
-              ))}
-            </div>
-          </DCard>
-
-          {/* Paiements */}
-          <DCard>
-            <DSectionTitle>Mes paiements</DSectionTitle>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {d.paiements.map((p, i) => (
-                <div key={i} style={{
-                  display: "flex", alignItems: "center",
-                  padding: "10px 14px", borderRadius: 8,
-                  background: "var(--althy-bg)",
-                  border: "1px solid var(--althy-border)",
-                }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: DC.text }}>{p.mois}</div>
-                    <div style={{ fontSize: 12, color: DC.muted }}>CHF {p.montant.toLocaleString("fr-CH")}</div>
+      {/* Section 1 — Mes biens */}
+      <div style={{ marginBottom: "2rem" }}>
+        <DSectionTitle>Mes biens</DSectionTitle>
+        {d.biens.length === 0 ? (
+          <DEmptyState icon={Building2} title="Aucun bien enregistré" />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            {d.biens.map(b => {
+              const st = LOYER_STATUT[b.loyer_statut] ?? LOYER_STATUT.en_attente;
+              return (
+                <DCard key={b.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: DC.text, margin: "0 0 2px" }}>{b.adresse}</p>
+                    <p style={{ fontSize: 11, color: DC.muted, margin: 0 }}>{b.type} · CHF {b.loyer.toLocaleString("fr-CH")}/mois</p>
                   </div>
-                  <span style={{
-                    fontSize: 11.5, fontWeight: 700, padding: "3px 10px", borderRadius: 20,
-                    background: p.statut === "paye" ? "var(--althy-green-bg)" : "var(--althy-orange-bg)",
-                    color:      p.statut === "paye" ? "var(--althy-green)"    : "var(--althy-orange)",
-                  }}>
-                    {p.statut === "paye" ? "Payé ✓" : "En attente"}
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, color: st.color, background: st.bg, flexShrink: 0 }}>
+                    {st.emoji} Loyer {b.loyer_statut === "recu" ? "reçu" : b.loyer_statut === "retard" ? "en retard" : "en attente"}
                   </span>
+                </DCard>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Section 2 — Mes documents */}
+      <div style={{ marginBottom: "2rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+          <DSectionTitle style={{ marginBottom: 0 }}>Mes documents</DSectionTitle>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={() => setFilterBien(null)} style={{ padding: "4px 10px", borderRadius: 20, border: `1px solid ${DC.border}`, background: filterBien === null ? DC.orange : "transparent", color: filterBien === null ? "#fff" : DC.muted, fontSize: 11, cursor: "pointer" }}>
+              Tous
+            </button>
+            {d.biens.map(b => (
+              <button key={b.id} onClick={() => setFilterBien(filterBien === b.id ? null : b.id)}
+                style={{ padding: "4px 10px", borderRadius: 20, border: `1px solid ${DC.border}`, background: filterBien === b.id ? DC.orange : "transparent", color: filterBien === b.id ? "#fff" : DC.muted, fontSize: 11, cursor: "pointer", maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {b.adresse.split(",")[0]}
+              </button>
+            ))}
+          </div>
+        </div>
+        {docsFiltres.length === 0 ? (
+          <DEmptyState icon={FileText} title="Aucun document" subtitle="Les documents apparaîtront ici." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            {docsFiltres.map(doc => (
+              <DCard key={doc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.8rem 1.25rem" }}>
+                <p style={{ fontSize: 13, fontWeight: 500, color: DC.text, margin: 0 }}>{doc.label}</p>
+                <a href={doc.url} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: DC.orange, textDecoration: "none" }}>
+                  <Download size={13} /> PDF
+                </a>
+              </DCard>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Section 3 — Messagerie agence */}
+      <div style={{ marginBottom: "2rem" }}>
+        <DSectionTitle><MessageSquare size={14} style={{ marginRight: 6 }} />Contacter mon agence</DSectionTitle>
+        <DCard>
+          {d.messages.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: "1rem", maxHeight: 200, overflowY: "auto" }}>
+              {d.messages.map(m => (
+                <div key={m.id} style={{ display: "flex", justifyContent: m.sender === "agence" || m.sender === "ai" ? "flex-start" : "flex-end" }}>
+                  <div style={{ maxWidth: "80%", padding: "8px 12px", borderRadius: 10, background: m.sender === "proprio" ? DC.orange : DC.border, color: m.sender === "proprio" ? "#fff" : DC.text, fontSize: 13 }}>
+                    {m.sender === "ai" && <div style={{ fontSize: 10, fontWeight: 700, color: "var(--althy-orange)", marginBottom: 2 }}>✨ Althy</div>}
+                    {m.content}
+                  </div>
                 </div>
               ))}
             </div>
-          </DCard>
-        </div>
-
-        {/* ── Ligne : Signalement + Althy IA ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 8 }}>
-
-          {/* Signaler un problème */}
-          <DCard>
-            <DSectionTitle>
-              <AlertTriangle size={14} style={{ marginRight: 6, verticalAlign: "middle" }} />
-              Signaler un problème
-            </DSectionTitle>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {([
-                { type: "panne"    as SignalType, label: "Panne ou réparation",  emoji: "🔧" },
-                { type: "document" as SignalType, label: "Demande de document",  emoji: "📋" },
-                { type: "contact"  as SignalType, label: "Contacter l'agence",   emoji: "✉️" },
-              ] as { type: SignalType; label: string; emoji: string }[]).map(item => (
-                <button
-                  key={item.label}
-                  onClick={() => setModal(item.type)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 10,
-                    padding: "11px 14px", borderRadius: 8, textAlign: "left",
-                    background: "var(--althy-bg)",
-                    border: "1px solid var(--althy-border)",
-                    cursor: "pointer", fontSize: 13.5, color: DC.text,
-                    transition: "border-color 0.15s",
-                    fontFamily: "inherit",
-                  }}
-                >
-                  <span>{item.emoji}</span>
-                  <span style={{ flex: 1 }}>{item.label}</span>
-                  <ChevronRight size={13} style={{ color: DC.muted }} />
-                </button>
-              ))}
-            </div>
-          </DCard>
-
-          {/* Question à Althy IA */}
-          <DCard>
-            <DSectionTitle>Question à Althy IA</DSectionTitle>
-            <p style={{ fontSize: 12.5, color: DC.muted, margin: "0 0 12px", lineHeight: 1.5 }}>
-              Posez vos questions sur votre bail, vos charges ou vos droits en tant que propriétaire.
-            </p>
-            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-              <input
-                value={iaQuery}
-                onChange={e => setIaQuery(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleIaAsk()}
-                placeholder="Ex : Qui prend en charge le chauffage ?"
-                style={{
-                  flex: 1, padding: "9px 12px", borderRadius: 8,
-                  border: `1px solid var(--althy-border)`,
-                  fontSize: 13, color: DC.text, outline: "none",
-                  fontFamily: "inherit",
-                }}
-              />
-              <button
-                onClick={handleIaAsk}
-                disabled={!iaQuery.trim() || iaLoading}
-                style={{
-                  padding: "9px 14px", borderRadius: 8,
-                  background: iaQuery.trim() && !iaLoading ? DC.orange : "#ccc",
-                  color: "#fff", border: "none",
-                  cursor: iaQuery.trim() && !iaLoading ? "pointer" : "not-allowed",
-                  display: "flex", alignItems: "center",
-                }}
-              >
+          )}
+          {msgSent ? (
+            <p style={{ fontSize: 13, color: "var(--althy-green)", fontWeight: 600 }}>✓ Message envoyé — l'agence vous répondra sous 24h.</p>
+          ) : (
+            <div style={{ display: "flex", gap: 8 }}>
+              <input value={msgInput} onChange={e => setMsgInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()} placeholder="Votre message à l'agence…" style={{ flex: 1, padding: "9px 12px", borderRadius: 9, border: `1px solid ${DC.border}`, fontSize: 13, outline: "none", background: DC.bg, color: DC.text, fontFamily: "inherit" }} />
+              <button onClick={sendMessage} disabled={!msgInput.trim()} style={{ padding: "9px 14px", borderRadius: 9, background: msgInput.trim() ? DC.orange : DC.border, color: "#fff", border: "none", cursor: msgInput.trim() ? "pointer" : "not-allowed", display: "flex", alignItems: "center" }}>
                 <Send size={14} />
               </button>
             </div>
-            {iaLoading && (
-              <p style={{ fontSize: 12.5, color: DC.muted, margin: 0, fontStyle: "italic" }}>
-                Althy réfléchit…
-              </p>
-            )}
-            {iaReply && !iaLoading && (
-              <div style={{
-                padding: "12px 14px", borderRadius: 8,
-                background: "var(--althy-orange-bg)",
-                border: "1px solid rgba(232,96,44,0.15)",
-                fontSize: 13, color: DC.text, lineHeight: 1.6,
-              }}>
-                {iaReply}
-              </div>
-            )}
-          </DCard>
-        </div>
+          )}
+        </DCard>
       </div>
-    </>
+
+      {/* Section 4 — Althy IA FAQ */}
+      <div style={{ marginBottom: "2rem" }}>
+        <DSectionTitle><Sparkles size={14} style={{ marginRight: 6 }} />Question à Althy IA</DSectionTitle>
+        <DCard>
+          <p style={{ fontSize: 12.5, color: DC.muted, margin: "0 0 12px" }}>Posez une question sur vos biens, loyers ou contrats.</p>
+          <div style={{ display: "flex", gap: 8, marginBottom: iaReply ? 10 : 0 }}>
+            <input value={iaInput} onChange={e => setIaInput(e.target.value)} onKeyDown={e => e.key === "Enter" && askIA()} placeholder="Ex : Quand est le prochain loyer ?" style={{ flex: 1, padding: "9px 12px", borderRadius: 9, border: `1px solid ${DC.border}`, fontSize: 13, outline: "none", background: DC.bg, color: DC.text, fontFamily: "inherit" }} />
+            <button onClick={askIA} disabled={!iaInput.trim() || iaLoading} style={{ padding: "9px 14px", borderRadius: 9, background: iaInput.trim() && !iaLoading ? DC.orange : DC.border, color: "#fff", border: "none", cursor: iaInput.trim() && !iaLoading ? "pointer" : "not-allowed", display: "flex", alignItems: "center" }}>
+              {iaLoading ? <span style={{ fontSize: 11 }}>…</span> : <Sparkles size={14} />}
+            </button>
+          </div>
+          {iaReply && (
+            <div style={{ padding: "10px 14px", borderRadius: 9, background: "var(--althy-orange-bg, rgba(232,96,44,0.08))", border: "1px solid rgba(232,96,44,0.15)", fontSize: 13, color: DC.text, lineHeight: 1.6 }}>
+              {iaReply}
+            </div>
+          )}
+        </DCard>
+      </div>
+    </div>
   );
 }

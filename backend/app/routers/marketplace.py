@@ -65,17 +65,26 @@ _TYPE_LABEL: dict[str, str] = {
 }
 
 
+def _statut(listing: Listing, prop: Property) -> str:
+    if listing.transaction_type == "vente":
+        return "À vendre"
+    if prop.status == "rented":
+        return "Loué"
+    return "À louer"
+
+
 def _serialize(listing: Listing, prop: Property) -> dict:
     photos = listing.photos if isinstance(listing.photos, list) else []
     tags = listing.tags_ia if isinstance(listing.tags_ia, list) else []
+    prix_val = float(listing.price) if listing.price else (
+        float(prop.monthly_rent) if prop.monthly_rent else None
+    )
     return {
         "id": str(listing.id),
         "titre": listing.title or f"{_TYPE_LABEL.get(prop.type, prop.type)} à {prop.city}",
         "description": listing.description_ai,
         "transaction_type": listing.transaction_type,
-        "prix": float(listing.price) if listing.price else (
-            float(prop.monthly_rent) if prop.monthly_rent else None
-        ),
+        "prix": prix_val,
         "charges": float(prop.charges) if prop.charges else None,
         "caution": float(prop.deposit) if prop.deposit else None,
         "adresse_affichee": listing.adresse_affichee or prop.city,
@@ -106,6 +115,10 @@ def _serialize(listing: Listing, prop: Property) -> dict:
         "vues": listing.views,
         "contacts_count": listing.contacts_count,
         "published_at": listing.published_at.isoformat() if listing.published_at else None,
+        # ── Champs BienPublic ─────────────────────────────────────────────────
+        "statut": _statut(listing, prop),
+        "periode": "/mois" if listing.transaction_type != "vente" else "",
+        "created_at": prop.created_at.isoformat(),
     }
 
 
@@ -115,6 +128,12 @@ def _serialize(listing: Listing, prop: Property) -> dict:
 async def list_biens(
     db: DbDep,
     response: Response,
+    # Nouveaux params (spec BienPublic)
+    type: str | None = Query(None, description="Type de bien : apartment, house, studio, commercial…"),
+    pieces_min: int | None = Query(None),
+    limit: int | None = Query(None, ge=1, le=100),
+    offset: int | None = Query(None, ge=0),
+    # Params existants (rétrocompatibilité frontend)
     transaction_type: str | None = Query(None),
     ville: str | None = Query(None),
     canton: str | None = Query(None),
@@ -123,10 +142,11 @@ async def list_biens(
     pieces: int | None = Query(None),
     surface_min: float | None = Query(None),
     page: int = Query(1, ge=1),
-    size: int = Query(20, le=50),
+    size: int = Query(20, le=100),
 ):
-    """Liste publique des biens actifs sur la marketplace."""
+    """Liste publique des biens actifs sur la marketplace (SANS authentification)."""
     response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
+
     conds = [
         Listing.status == "active",
         Listing.is_active == True,
@@ -134,6 +154,8 @@ async def list_biens(
     ]
     if transaction_type:
         conds.append(Listing.transaction_type == transaction_type)
+    if type:
+        conds.append(Property.type == type)
     if ville:
         conds.append(Property.city.ilike(f"%{ville}%"))
     if canton:
@@ -142,8 +164,10 @@ async def list_biens(
         conds.append(Listing.price >= prix_min)
     if prix_max is not None:
         conds.append(Listing.price <= prix_max)
-    if pieces is not None:
-        conds.append(Property.rooms >= pieces)
+    # pieces_min prend le dessus sur pieces si les deux sont fournis
+    pieces_filter = pieces_min if pieces_min is not None else pieces
+    if pieces_filter is not None:
+        conds.append(Property.rooms >= pieces_filter)
     if surface_min is not None:
         conds.append(Property.surface >= surface_min)
 
@@ -158,13 +182,17 @@ async def list_biens(
         )
     ).scalar_one()
 
+    # Pagination : limit/offset prend le dessus sur page/size si fournis
+    _limit  = limit  if limit  is not None else size
+    _offset = offset if offset is not None else (page - 1) * size
+
     # Items — premium en premier, puis plus récents
     rows = (
         await db.execute(
             join.where(*conds)
             .order_by(Listing.is_premium.desc(), Listing.published_at.desc())
-            .offset((page - 1) * size)
-            .limit(size)
+            .offset(_offset)
+            .limit(_limit)
         )
     ).all()
 
@@ -172,7 +200,43 @@ async def list_biens(
         "items": [_serialize(l, p) for l, p in rows],
         "total": total,
         "page": page,
-        "pages": max(1, -(-total // size)),
+        "pages": max(1, -(-total // _limit)),
+    }
+
+
+@router.get("/stats")
+async def marketplace_stats(db: DbDep, response: Response):
+    """Statistiques publiques de la marketplace (SANS authentification)."""
+    response.headers["Cache-Control"] = "public, max-age=120, stale-while-revalidate=600"
+
+    base_conds = [
+        Listing.status == "active",
+        Listing.is_active == True,
+        Property.is_active == True,
+    ]
+    base_join = select(func.count(Listing.id)).join(Property, Listing.property_id == Property.id)
+
+    total_biens = (
+        await db.execute(base_join.where(*base_conds))
+    ).scalar_one()
+
+    # Villes avec leur nombre de biens
+    ville_rows = (
+        await db.execute(
+            select(Property.city, func.count(Listing.id).label("cnt"))
+            .join(Listing, Listing.property_id == Property.id)
+            .where(*base_conds)
+            .group_by(Property.city)
+            .order_by(func.count(Listing.id).desc())
+        )
+    ).all()
+
+    villes = [{"nom": r.city, "count": r.cnt} for r in ville_rows]
+
+    return {
+        "total_biens": total_biens,
+        "total_villes": len(villes),
+        "villes": villes,
     }
 
 

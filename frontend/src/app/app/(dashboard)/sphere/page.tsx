@@ -247,25 +247,34 @@ function ActionCardItem({ action, onDismiss, onRegenerate }: ActionCardProps) {
 
           {/* CTA buttons */}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {/* Primary CTA — behavior depends on type */}
-            <button
-              onClick={() => {
-                if (action.type === "document_action" || action.type === "validation_action" || action.type === "ocr_action") {
-                  setModal(action.type === "document_action" ? "document" : action.type === "validation_action" ? "validation" : "ocr");
-                } else if (action.type === "messagerie_action") {
-                  setPanel("messagerie");
-                } else if (action.type === "whatsapp_action") {
-                  setPanel("whatsapp");
-                } else if (action.type === "integration_action") {
-                  window.location.href = "/admin/integration?" + new URLSearchParams(action.payload as Record<string, string>).toString();
-                } else {
-                  setExpanded(v => !v);
-                }
-              }}
-              style={{ padding: "7px 14px", borderRadius: 8, background: "var(--althy-orange)", color: "#fff", border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-            >
-              {action.cta_principal ?? "Voir"}
-            </button>
+            {/* Primary CTA — Link si href présent + type navigation, sinon exécution inline */}
+            {action.href && !["document_action", "validation_action", "ocr_action", "messagerie_action", "whatsapp_action"].includes(action.type ?? "") ? (
+              <Link
+                href={action.href}
+                style={{ padding: "7px 14px", borderRadius: 8, background: "var(--althy-orange)", color: "#fff", fontSize: 12, fontWeight: 600, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+              >
+                {action.cta_principal ?? "Voir →"}
+              </Link>
+            ) : (
+              <button
+                onClick={() => {
+                  if (action.type === "document_action" || action.type === "validation_action" || action.type === "ocr_action") {
+                    setModal(action.type === "document_action" ? "document" : action.type === "validation_action" ? "validation" : "ocr");
+                  } else if (action.type === "messagerie_action") {
+                    setPanel("messagerie");
+                  } else if (action.type === "whatsapp_action") {
+                    setPanel("whatsapp");
+                  } else if (action.type === "integration_action") {
+                    window.location.href = "/admin/integration?" + new URLSearchParams(action.payload as Record<string, string>).toString();
+                  } else {
+                    setExpanded(v => !v);
+                  }
+                }}
+                style={{ padding: "7px 14px", borderRadius: 8, background: "var(--althy-orange)", color: "#fff", border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              >
+                {action.cta_principal ?? "Voir"}
+              </button>
+            )}
 
             {action.cta_secondaire && (
               <button onClick={() => execute(action.cta_secondaire)} disabled={executing}

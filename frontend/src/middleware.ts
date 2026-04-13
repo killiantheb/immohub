@@ -54,14 +54,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Utilisateur connecté sur page auth → carte (entrée immersive)
+  // Utilisateur connecté sur page auth → sphère IA (first-screen)
   if (user && (pathname === "/login" || pathname === "/register")) {
-    return NextResponse.redirect(new URL("/app/carte", request.url));
+    return NextResponse.redirect(new URL("/app/sphere", request.url));
   }
 
-  // Utilisateur connecté sur / → carte (entrée immersive)
+  // Utilisateur connecté sur / → sphère IA (first-screen)
   if (user && pathname === "/") {
-    return NextResponse.redirect(new URL("/app/carte", request.url));
+    return NextResponse.redirect(new URL("/app/sphere", request.url));
   }
 
   return response;

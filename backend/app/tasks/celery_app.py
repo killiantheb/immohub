@@ -14,6 +14,7 @@ celery_app = Celery(
         "app.tasks.alerts",
         "app.tasks.onboarding_scan",
         "app.tasks.import_elements",
+        "app.tasks.email_sequences",
     ],
 )
 
@@ -69,5 +70,15 @@ celery_app.conf.beat_schedule = {
     "check-expiring-leases": {
         "task": "tasks.check_expiring_leases",
         "schedule": crontab(hour=8, minute=30),
+    },
+    # Every hour — transit Airbnb : reverse les loyers reçus sur compte Althy
+    "reverse-loyers": {
+        "task": "tasks.reverse_loyers",
+        "schedule": crontab(minute=0),   # toutes les heures pile
+    },
+    # Every hour at :30 — séquences emails post-inscription (J+0, J+3, J+7, J+14, J+30)
+    "check-email-sequences": {
+        "task": "tasks.check_email_sequences",
+        "schedule": crontab(minute=30),  # décalé de 30min vs reverse-loyers
     },
 }
