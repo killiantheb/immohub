@@ -265,12 +265,12 @@ export default function LandingPage() {
 
       map = new mapboxgl.Map({
         container:          mapContainer.current,
-        style:              "mapbox://styles/mapbox/light-v11",
+        style:              "mapbox://styles/mapbox/standard",
         center:             [7.5, 46.8],
         zoom:               7.2,
         minZoom:            5.5,
         maxZoom:            16,
-        pitch:              48,
+        pitch:              50,
         bearing:            -8,
         antialias:          true,
         attributionControl: false,
@@ -282,17 +282,35 @@ export default function LandingPage() {
 
       map.on("load", () => {
 
+        // ── Style Standard — Day, Default, sans POI/transit/roads ────────────
+        map.setConfigProperty("basemap", "lightPreset",              "day");
+        map.setConfigProperty("basemap", "colorTheme",               "default");
+        map.setConfigProperty("basemap", "showPointOfInterestLabels", false);
+        map.setConfigProperty("basemap", "showTransitLabels",         false);
+        map.setConfigProperty("basemap", "showRoadLabels",            false);
+
+        // ── Terrain 3D — relief des Alpes ────────────────────────────────────
+        map.addSource("mapbox-dem", {
+          type: "raster-dem",
+          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+          tileSize: 512,
+          maxzoom: 14,
+        });
+        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.4 });
+
         // ── MASQUE MONDIAL avec trous aux contours suisses ───────────────────
         map.addSource("world-mask", { type: "geojson", data: "/suisse-mask.json" });
         map.addLayer({
           id: "world-mask-layer", type: "fill", source: "world-mask",
-          paint: { "fill-color": "#F5F0E8", "fill-opacity": 0.55 },
+          slot: "top",
+          paint: { "fill-color": "#FAFAF8", "fill-opacity": 0.38 },
         });
 
         // ── CONTOUR ORANGE PARFAIT DE LA SUISSE ──────────────────────────────
         map.addSource("swiss-union", { type: "geojson", data: "/suisse-union.json" });
         map.addLayer({
           id: "swiss-border", type: "line", source: "swiss-union",
+          slot: "top",
           paint: { "line-color": "#E8602C", "line-width": 2.5, "line-opacity": 0.80 },
         });
 
@@ -300,6 +318,7 @@ export default function LandingPage() {
         map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
         map.addLayer({
           id: "cantons-romands-fill", type: "fill", source: "cantons",
+          slot: "top",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
           paint: { "fill-color": "#E8602C", "fill-opacity": 0.09 },
         });
@@ -362,17 +381,34 @@ export default function LandingPage() {
     if (next === "satellite") {
       map.setStyle("mapbox://styles/mapbox/satellite-streets-v12");
     } else {
-      map.setStyle("mapbox://styles/mapbox/light-v11");
+      map.setStyle("mapbox://styles/mapbox/standard");
     }
 
     map.once("style.load", () => {
+      if (next === "standard") {
+        map.setConfigProperty("basemap", "lightPreset",              "day");
+        map.setConfigProperty("basemap", "colorTheme",               "default");
+        map.setConfigProperty("basemap", "showPointOfInterestLabels", false);
+        map.setConfigProperty("basemap", "showTransitLabels",         false);
+        map.setConfigProperty("basemap", "showRoadLabels",            false);
+        if (!map.getSource("mapbox-dem")) {
+          map.addSource("mapbox-dem", {
+            type: "raster-dem",
+            url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+            tileSize: 512, maxzoom: 14,
+          });
+        }
+        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.4 });
+      }
+
       // Masque mondial
       if (!map.getSource("world-mask")) {
         map.addSource("world-mask", { type: "geojson", data: "/suisse-mask.json" });
       }
       map.addLayer({
         id: "world-mask-layer", type: "fill", source: "world-mask",
-        paint: { "fill-color": "#F5F0E8", "fill-opacity": next === "satellite" ? 0 : 0.55 },
+        slot: "top",
+        paint: { "fill-color": "#FAFAF8", "fill-opacity": next === "satellite" ? 0 : 0.38 },
       });
 
       // Contour orange Suisse
@@ -381,6 +417,7 @@ export default function LandingPage() {
       }
       map.addLayer({
         id: "swiss-border", type: "line", source: "swiss-union",
+        slot: "top",
         paint: { "line-color": "#E8602C", "line-width": 2.5, "line-opacity": 0.80 },
       });
 
@@ -390,6 +427,7 @@ export default function LandingPage() {
       }
       map.addLayer({
         id: "cantons-romands-fill", type: "fill", source: "cantons",
+        slot: "top",
         filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
         paint: { "fill-color": "#E8602C", "fill-opacity": next === "satellite" ? 0.18 : 0.09 },
       });
