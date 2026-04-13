@@ -297,6 +297,41 @@ export default function LandingPage() {
         });
         map.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
 
+        // ── MASQUE HORS-SUISSE ───────────────────────────────────────────────
+        map.addSource("swiss-mask", {
+          type: "geojson",
+          data: {
+            type: "Feature",
+            geometry: {
+              type: "Polygon",
+              coordinates: [
+                [[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]],
+                [
+                  [5.96, 47.81], [6.02, 47.54], [6.37, 47.36], [6.94, 47.50],
+                  [7.05, 47.34], [7.45, 47.48], [7.59, 47.59], [8.23, 47.61],
+                  [8.52, 47.78], [9.01, 47.69], [9.52, 47.52], [10.49, 47.39],
+                  [10.42, 46.89], [10.14, 46.85], [10.07, 46.56], [9.53, 46.50],
+                  [9.18, 46.22], [8.99, 45.83], [8.45, 45.82], [8.08, 45.99],
+                  [7.59, 45.93], [7.11, 45.93], [6.80, 45.92], [6.93, 46.35],
+                  [6.50, 46.43], [6.23, 46.32], [5.97, 46.14], [5.96, 46.45],
+                  [6.02, 46.73], [5.97, 47.04], [5.96, 47.27], [5.96, 47.81],
+                ],
+              ],
+            },
+            properties: {},
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          } as any,
+        });
+        map.addLayer({
+          id: "swiss-mask-fill",
+          type: "fill",
+          source: "swiss-mask",
+          paint: {
+            "fill-color": "#FAF8F4",
+            "fill-opacity": 0.52,
+          },
+        });
+
         // ── CANTONS ROMANDS ──────────────────────────────────────────────────
         map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
         map.addLayer({
@@ -413,6 +448,38 @@ export default function LandingPage() {
         });
       }
       map.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
+
+      // Masque hors-Suisse
+      if (!map.getSource("swiss-mask")) {
+        map.addSource("swiss-mask", {
+          type: "geojson",
+          data: {
+            type: "Feature",
+            geometry: {
+              type: "Polygon",
+              coordinates: [
+                [[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]],
+                [
+                  [5.96, 47.81], [6.02, 47.54], [6.37, 47.36], [6.94, 47.50],
+                  [7.05, 47.34], [7.45, 47.48], [7.59, 47.59], [8.23, 47.61],
+                  [8.52, 47.78], [9.01, 47.69], [9.52, 47.52], [10.49, 47.39],
+                  [10.42, 46.89], [10.14, 46.85], [10.07, 46.56], [9.53, 46.50],
+                  [9.18, 46.22], [8.99, 45.83], [8.45, 45.82], [8.08, 45.99],
+                  [7.59, 45.93], [7.11, 45.93], [6.80, 45.92], [6.93, 46.35],
+                  [6.50, 46.43], [6.23, 46.32], [5.97, 46.14], [5.96, 46.45],
+                  [6.02, 46.73], [5.97, 47.04], [5.96, 47.27], [5.96, 47.81],
+                ],
+              ],
+            },
+            properties: {},
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          } as any,
+        });
+      }
+      map.addLayer({
+        id: "swiss-mask-fill", type: "fill", source: "swiss-mask",
+        paint: { "fill-color": "#FAF8F4", "fill-opacity": next === "satellite" ? 0 : 0.52 },
+      });
 
       // Cantons romands
       if (!map.getSource("cantons")) {
