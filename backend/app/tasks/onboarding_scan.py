@@ -32,8 +32,7 @@ def scanner_nouvel_utilisateur(self, user_id: str, contexte: dict):
                 "photos":       el.photos,
                 "donnees":      el.donnees_brutes,
             } for el in elements], ensure_ascii=False),
-            nb_elements   = len(elements),
-            contexte_scan = json.dumps(contexte, ensure_ascii=False),
+            nb_elements = len(elements),
         )
         db.add(scan)
 
