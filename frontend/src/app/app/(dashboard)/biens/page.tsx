@@ -1,12 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Plus, Building2, Home, MapPin, Search, Heart } from "lucide-react";
+import { Plus, Building2, Home, MapPin, Search, Heart, Map } from "lucide-react";
 import { useProperties } from "@/lib/hooks/useProperties";
 import { api } from "@/lib/api";
 import type { Property, PropertyStatus } from "@/lib/types";
+import { AlthyMap, type AlthyMapMarker } from "@/components/map/AlthyMap";
+
+// ── Coordonnées par ville (fallback) ──────────────────────────────────────────
+
+const CITY_COORDS: Record<string, [number, number]> = {
+  "genève":    [6.143, 46.204], "geneve":    [6.143, 46.204],
+  "lausanne":  [6.632, 46.519],
+  "fribourg":  [7.161, 46.806],
+  "neuchâtel": [6.931, 46.992], "neuchatel": [6.931, 46.992],
+  "sion":      [7.359, 46.233],
+  "nyon":      [6.239, 46.383], "montreux":  [6.911, 46.433],
+  "vevey":     [6.844, 46.461], "yverdon":   [6.641, 46.778],
+  "morges":    [6.499, 46.512], "renens":    [6.589, 46.537],
+  "carouge":   [6.140, 46.185], "meyrin":    [6.079, 46.233],
+};
+
+function cityCoords(city: string | undefined): [number, number] | null {
+  if (!city) return null;
+  const key = city.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const direct = CITY_COORDS[city.toLowerCase()];
+  if (direct) return direct;
+  for (const [k, v] of Object.entries(CITY_COORDS)) {
+    const kn = k.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (kn === key) return v;
+  }
+  return null;
+}
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
@@ -173,8 +200,10 @@ function BiensPageInner() {
   const router = useRouter();
   const tab = searchParams.get("tab") || "tous";
 
-  const [filtre, setFiltre] = useState<PropertyStatus | "">("");
-  const [search, setSearch] = useState("");
+  const [filtre,       setFiltre]       = useState<PropertyStatus | "">("");
+  const [search,       setSearch]       = useState("");
+  const [selectedId,   setSelectedId]   = useState<string | null>(null);
+  const [showMap,      setShowMap]      = useState(true);
 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [favorites, setFavorites] = useState<Property[]>([]);
@@ -253,8 +282,23 @@ function BiensPageInner() {
   const displayLoading = tab === "favoris" ? favLoading : isLoading;
   const totalCount = tab === "favoris" ? favorites.length : biens.length;
 
+  // Markers carte
+  const mapMarkers = useMemo<AlthyMapMarker[]>(() => {
+    return displayList
+      .filter(b => cityCoords(b.city) !== null)
+      .map(b => {
+        const [lng, lat] = cityCoords(b.city)!;
+        const label = b.monthly_rent
+          ? `CHF ${b.monthly_rent.toLocaleString("fr-CH")} / mois`
+          : b.price_sale
+          ? `CHF ${b.price_sale.toLocaleString("fr-CH")}`
+          : b.address;
+        return { id: b.id, lng, lat, label, sublabel: b.city };
+      });
+  }, [displayList]);
+
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+    <div style={{ maxWidth: "100%", margin: "0 auto" }}>
 
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, gap: 12, flexWrap: "wrap" }}>
@@ -268,12 +312,27 @@ function BiensPageInner() {
               : `${totalCount} bien${totalCount !== 1 ? "s" : ""}${tab === "favoris" ? " en favori" : tab === "archives" ? " archivé" : " enregistré"}${totalCount !== 1 ? "s" : ""}`}
           </p>
         </div>
-        <Link
-          href="/app/biens/nouveau"
-          style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 18px", borderRadius: 10, background: S.orange, color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}
-        >
-          <Plus size={14} /> Ajouter un bien
-        </Link>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={() => setShowMap(v => !v)}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 7,
+              padding: "9px 16px", borderRadius: 10,
+              background: showMap ? S.orangeBg : S.surface,
+              color: showMap ? S.orange : S.text3,
+              border: `1px solid ${showMap ? S.orange : S.border}`,
+              fontSize: 13, fontWeight: 600, cursor: "pointer",
+            }}
+          >
+            <Map size={14} /> Carte
+          </button>
+          <Link
+            href="/app/biens/nouveau"
+            style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 18px", borderRadius: 10, background: S.orange, color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}
+          >
+            <Plus size={14} /> Ajouter un bien
+          </Link>
+        </div>
       </div>
 
       {/* ── Tabs ── */}
@@ -354,54 +413,81 @@ function BiensPageInner() {
         </div>
       )}
 
-      {/* ── Grid ── */}
-      {displayLoading ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} style={{ height: 260, borderRadius: 14, background: "var(--althy-border)", opacity: 0.35 }} />
-          ))}
-        </div>
-      ) : displayList.length === 0 ? (
-        <div style={{ background: S.surface, border: "1px solid var(--althy-border)", borderRadius: 14, padding: "56px 24px", textAlign: "center" }}>
-          {tab === "favoris" ? (
-            <>
-              <Heart size={40} color="var(--althy-border)" style={{ margin: "0 auto 16px" }} />
-              <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600, color: S.text }}>
-                {search ? "Aucun résultat" : "Aucun favori enregistré"}
-              </h3>
-              <p style={{ margin: 0, fontSize: 13, color: S.text3 }}>
-                {search ? "Essayez un autre terme." : "Cliquez sur le cœur d'un bien pour l'ajouter à vos favoris."}
-              </p>
-            </>
-          ) : (
-            <>
-              <Building2 size={40} color="var(--althy-border)" style={{ margin: "0 auto 16px" }} />
-              <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600, color: S.text }}>
-                {search ? "Aucun résultat" : tab === "archives" ? "Aucun bien archivé" : "Aucun bien enregistré"}
-              </h3>
-              <p style={{ margin: "0 0 20px", fontSize: 13, color: S.text3 }}>
-                {search ? "Essayez un autre terme de recherche." : tab === "archives" ? "Les biens vendus apparaîtront ici." : "Ajoutez votre premier bien pour commencer."}
-              </p>
-              {!search && tab === "tous" && (
-                <Link href="/app/biens/nouveau" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 20px", borderRadius: 10, background: S.orange, color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
-                  <Plus size={14} /> Ajouter un bien
-                </Link>
+      {/* ── Layout split liste + carte ── */}
+      <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+
+        {/* Liste */}
+        <div style={{ flex: showMap ? "0 0 420px" : "1 1 100%", minWidth: 0, maxHeight: showMap ? "calc(100vh - 220px)" : "none", overflowY: showMap ? "auto" : "visible" }}>
+          {displayLoading ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} style={{ height: 260, borderRadius: 14, background: "var(--althy-border)", opacity: 0.35 }} />
+              ))}
+            </div>
+          ) : displayList.length === 0 ? (
+            <div style={{ background: S.surface, border: "1px solid var(--althy-border)", borderRadius: 14, padding: "56px 24px", textAlign: "center" }}>
+              {tab === "favoris" ? (
+                <>
+                  <Heart size={40} color="var(--althy-border)" style={{ margin: "0 auto 16px" }} />
+                  <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600, color: S.text }}>
+                    {search ? "Aucun résultat" : "Aucun favori enregistré"}
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 13, color: S.text3 }}>
+                    {search ? "Essayez un autre terme." : "Cliquez sur le cœur d'un bien pour l'ajouter à vos favoris."}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Building2 size={40} color="var(--althy-border)" style={{ margin: "0 auto 16px" }} />
+                  <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600, color: S.text }}>
+                    {search ? "Aucun résultat" : tab === "archives" ? "Aucun bien archivé" : "Aucun bien enregistré"}
+                  </h3>
+                  <p style={{ margin: "0 0 20px", fontSize: 13, color: S.text3 }}>
+                    {search ? "Essayez un autre terme de recherche." : tab === "archives" ? "Les biens vendus apparaîtront ici." : "Ajoutez votre premier bien pour commencer."}
+                  </p>
+                  {!search && tab === "tous" && (
+                    <Link href="/app/biens/nouveau" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 20px", borderRadius: 10, background: S.orange, color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
+                      <Plus size={14} /> Ajouter un bien
+                    </Link>
+                  )}
+                </>
               )}
-            </>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
+              {displayList.map(b => (
+                <BienCard
+                  key={b.id}
+                  bien={b}
+                  isFav={favoriteIds.has(b.id)}
+                  onToggleFavorite={toggleFavorite}
+                />
+              ))}
+            </div>
           )}
         </div>
-      ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
-          {displayList.map(b => (
-            <BienCard
-              key={b.id}
-              bien={b}
-              isFav={favoriteIds.has(b.id)}
-              onToggleFavorite={toggleFavorite}
+
+        {/* Carte sticky */}
+        {showMap && (
+          <div style={{
+            flex: "1 1 0",
+            position: "sticky",
+            top: 20,
+            height: "calc(100vh - 220px)",
+            borderRadius: 16,
+            overflow: "hidden",
+            border: "1px solid var(--althy-border)",
+            boxShadow: "0 2px 16px rgba(26,22,18,0.07)",
+          }}>
+            <AlthyMap
+              markers={mapMarkers}
+              selectedId={selectedId}
+              onMarkerClick={id => setSelectedId(id)}
+              height="100%"
             />
-          ))}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

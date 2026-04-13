@@ -1,9 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Shield, Star, Users } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Search, Shield, Star, Users, Map } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { AlthyMap, type AlthyMapMarker } from "@/components/map/AlthyMap";
+
+// Coordonnées par canton/ville pour les ouvreurs
+const CITY_COORDS: Record<string, [number, number]> = {
+  "ge": [6.143, 46.204], "vd": [6.632, 46.519], "vs": [7.359, 46.233],
+  "fr": [7.161, 46.806], "ne": [6.931, 46.992], "ju": [7.343, 47.362],
+  "be": [7.447, 46.948], "zh": [8.541, 47.376], "bs": [7.589, 47.560],
+};
 
 const S = {
   bg:       "var(--althy-bg)",
@@ -137,8 +145,10 @@ function OuvreurCard({ o }: { o: Ouvreur }) {
 const CANTONS_CH = ["GE","VD","VS","FR","BE","ZH","BS","BL","AG","SO","TI","NE","JU"];
 
 export default function OuvreursPage() {
-  const [search, setSearch] = useState("");
-  const [canton, setCanton] = useState("");
+  const [search,     setSearch]     = useState("");
+  const [canton,     setCanton]     = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showMap,    setShowMap]    = useState(true);
 
   const { data: ouvreurs = [], isLoading } = useQuery<Ouvreur[]>({
     queryKey: ["ouvreurs-classement", canton],
@@ -160,16 +170,49 @@ export default function OuvreursPage() {
     );
   });
 
+  // Markers carte — position par canton
+  const mapMarkers = useMemo<AlthyMapMarker[]>(() => {
+    return filtered
+      .map((o, idx) => {
+        const cantonKey = canton.toLowerCase() || "vd";
+        const base = CITY_COORDS[cantonKey] ?? CITY_COORDS["vd"];
+        // léger offset pour éviter la superposition
+        const offset = idx * 0.015;
+        return {
+          id:       o.acteur_id,
+          lng:      base[0] + (idx % 3 - 1) * 0.06 + offset,
+          lat:      base[1] + Math.floor(idx / 3) * 0.04,
+          label:    `${o.prenom} ${o.nom[0]}.`,
+          sublabel: o.specialites[0] ?? "Ouvreur",
+        };
+      });
+  }, [filtered, canton]);
+
   return (
-    <div style={{ padding: "28px 24px", maxWidth: 1100, margin: "0 auto" }}>
+    <div style={{ padding: "28px 24px", maxWidth: "100%", margin: "0 auto" }}>
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ margin: "0 0 6px", fontSize: 26, fontWeight: 700, color: S.text, letterSpacing: "-0.02em" }}>
-          Ouvreurs
-        </h1>
-        <p style={{ margin: 0, color: S.text3, fontSize: 13.5 }}>
-          Classés par note · Visites et états des lieux · Vérifiés par Althy
-        </p>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28, flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <h1 style={{ margin: "0 0 6px", fontSize: 26, fontWeight: 700, color: S.text, letterSpacing: "-0.02em" }}>
+            Ouvreurs
+          </h1>
+          <p style={{ margin: 0, color: S.text3, fontSize: 13.5 }}>
+            Classés par note · Visites et états des lieux · Vérifiés par Althy
+          </p>
+        </div>
+        <button
+          onClick={() => setShowMap(v => !v)}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 7,
+            padding: "9px 16px", borderRadius: 10,
+            background: showMap ? S.orangeBg : S.surface,
+            color: showMap ? S.orange : S.text3,
+            border: `1px solid ${showMap ? S.orange : S.border}`,
+            fontSize: 13, fontWeight: 600, cursor: "pointer",
+          }}
+        >
+          <Map size={14} /> Carte
+        </button>
       </div>
 
       {/* Filtres */}
@@ -194,23 +237,50 @@ export default function OuvreursPage() {
         </select>
       </div>
 
-      {/* Grille */}
-      {isLoading ? (
-        <div style={{ textAlign: "center", padding: "60px 0", color: S.text3, fontSize: 14 }}>Chargement…</div>
-      ) : filtered.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 0" }}>
-          <Users size={36} color={S.border} style={{ marginBottom: 12 }} />
-          <p style={{ margin: "8px 0 0", color: S.text3, fontSize: 14 }}>
-            {ouvreurs.length === 0
-              ? "Aucun ouvreur noté pour le moment. Les ouvreurs apparaissent ici après leur première mission."
-              : "Aucun ouvreur ne correspond à votre recherche."}
-          </p>
+      {/* Layout split */}
+      <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+
+        {/* Liste */}
+        <div style={{ flex: showMap ? "0 0 420px" : "1 1 100%", minWidth: 0, maxHeight: showMap ? "calc(100vh - 250px)" : "none", overflowY: showMap ? "auto" : "visible" }}>
+          {isLoading ? (
+            <div style={{ textAlign: "center", padding: "60px 0", color: S.text3, fontSize: 14 }}>Chargement…</div>
+          ) : filtered.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "60px 0" }}>
+              <Users size={36} color={S.border} style={{ marginBottom: 12 }} />
+              <p style={{ margin: "8px 0 0", color: S.text3, fontSize: 14 }}>
+                {ouvreurs.length === 0
+                  ? "Aucun ouvreur noté pour le moment. Les ouvreurs apparaissent ici après leur première mission."
+                  : "Aucun ouvreur ne correspond à votre recherche."}
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
+              {filtered.map(o => <OuvreurCard key={o.acteur_id} o={o} />)}
+            </div>
+          )}
         </div>
-      ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
-          {filtered.map(o => <OuvreurCard key={o.acteur_id} o={o} />)}
-        </div>
-      )}
+
+        {/* Carte sticky */}
+        {showMap && (
+          <div style={{
+            flex: "1 1 0",
+            position: "sticky",
+            top: 20,
+            height: "calc(100vh - 250px)",
+            borderRadius: 16,
+            overflow: "hidden",
+            border: `1px solid ${S.border}`,
+            boxShadow: "0 2px 16px rgba(26,22,18,0.07)",
+          }}>
+            <AlthyMap
+              markers={mapMarkers}
+              selectedId={selectedId}
+              onMarkerClick={id => setSelectedId(id)}
+              height="100%"
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
