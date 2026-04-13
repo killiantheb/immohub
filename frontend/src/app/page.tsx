@@ -567,26 +567,27 @@ export default function LandingPage() {
             width: "min(680px, calc(100vw - 48px))",
           }}>
             <h1 style={{
-              fontFamily: serif,
-              fontSize: "clamp(38px, 6vw, 78px)",
+              fontFamily: "var(--font-serif, 'Fraunces', 'Cormorant Garamond', Georgia, serif)",
+              fontSize: "clamp(3.2rem, 6vw, 5rem)",
               fontWeight: 300,
-              fontStyle: "normal",
-              color: "#1A1208",
-              textShadow: "0 1px 12px rgba(255,255,255,0.70)",
-              margin: 0,
+              fontStyle: "italic",
+              lineHeight: 1.06,
               letterSpacing: "-0.02em",
-              lineHeight: 1.08,
+              color: "#1A1208",
+              textShadow: "0 2px 28px rgba(255,255,255,0.70), 0 1px 6px rgba(255,255,255,0.50)",
+              margin: 0,
             }}>
               Trouvez votre<br />
-              <span style={{ color: "#E8602C" }}>chez-vous.</span>
+              <span style={{ color: "#E8602C", fontStyle: "normal", textShadow: "0 2px 20px rgba(255,255,255,0.60)" }}>chez-vous.</span>
             </h1>
             <p style={{
-              fontFamily: sans,
-              fontSize: "clamp(13px, 1.8vw, 17px)",
-              color: "#5C5650",
+              fontFamily: "var(--font-sans, 'DM Sans', system-ui)",
+              fontSize: "0.8125rem",
+              color: "rgba(26,18,8,0.50)",
+              textShadow: "0 1px 12px rgba(255,255,255,0.80)",
               margin: "18px 0 0",
               fontWeight: 400,
-              letterSpacing: "0.03em",
+              letterSpacing: "0.08em",
             }}>
               Suisse romande — Althy gère, vous décidez.
             </p>
