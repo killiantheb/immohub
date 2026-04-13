@@ -138,43 +138,52 @@ const ROLES = [
 
 const GLOBAL_CSS = `
   .althy-bubble {
-    background: #E8602C;
-    color: #fff;
-    font-size: 12px;
-    font-weight: 700;
+    background: rgba(26,18,8,0.72);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 600;
     font-family: 'DM Sans', system-ui, sans-serif;
     padding: 5px 12px;
-    border-radius: 20px;
+    border-radius: 16px;
     white-space: nowrap;
-    box-shadow: 0 3px 14px rgba(232,96,44,0.50), 0 1px 3px rgba(0,0,0,0.15);
-    border: 2px solid rgba(255,255,255,0.55);
-    letter-spacing: 0.01em;
+    border: 1px solid rgba(255,255,255,0.14);
+    letter-spacing: 0.02em;
     position: relative;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: all 0.18s ease;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.28);
     cursor: pointer;
     user-select: none;
   }
   .althy-bubble::after {
     content: '';
     position: absolute;
-    bottom: -7px;
+    bottom: -6px;
     left: 50%;
     transform: translateX(-50%);
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-top: 7px solid #E8602C;
-    display: block;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid rgba(26,18,8,0.72);
   }
-  .althy-bubble:hover { transform: scale(1.08) translateY(-2px); box-shadow: 0 6px 20px rgba(232,96,44,0.55); }
-  .althy-bubble.active { background: #1A1208; box-shadow: 0 6px 20px rgba(26,18,8,0.40); }
-  .althy-bubble.active::after { border-top-color: #1A1208; }
+  .althy-bubble:hover {
+    background: rgba(26,18,8,0.88);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.30);
+  }
+  .althy-bubble.active {
+    background: rgba(232,96,44,0.92);
+    border-color: rgba(255,255,255,0.22);
+    box-shadow: 0 4px 18px rgba(232,96,44,0.45);
+  }
+  .althy-bubble.active::after { border-top-color: rgba(232,96,44,0.92); }
   .althy-dot {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
     background: #E8602C;
     margin-top: 1px;
-    box-shadow: 0 0 0 3px rgba(232,96,44,0.20);
+    box-shadow: 0 0 0 3px rgba(232,96,44,0.18);
   }
 
   .lp-grid-valeurs { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
@@ -328,14 +337,12 @@ export default function LandingPage() {
         // Price markers
         BIENS_MARKERS.forEach(bien => {
           const el = document.createElement("div");
-          // Élément racine neutre — Mapbox gère le positionnement
           el.style.cssText = `
-            cursor: pointer;
             display: flex;
             flex-direction: column;
             align-items: center;
+            cursor: pointer;
             width: auto;
-            height: auto;
           `;
           el.innerHTML = `
             <div class="althy-bubble">CHF ${bien.prix}</div>
