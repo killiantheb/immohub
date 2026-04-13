@@ -139,45 +139,39 @@ const ROLES = [
 
 const GLOBAL_CSS = `
   .lp-price-marker {
-    background: rgba(26,18,8,0.76);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    color: #FFFFFF;
-    font-size: 11px;
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    max-width: fit-content;
+    background: ${ORANGE};
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
     font-family: 'DM Sans', system-ui, sans-serif;
-    padding: 5px 11px;
-    border-radius: 14px;
-    white-space: nowrap;
-    border: 1px solid rgba(255,255,255,0.14);
-    letter-spacing: 0.02em;
-    position: relative;
-    transition: all 0.18s ease;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.26);
+    padding: 5px 12px;
+    border-radius: 20px;
+    box-shadow: 0 2px 14px rgba(232,96,44,0.42);
     cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    border: 2px solid rgba(255,255,255,0.45);
     user-select: none;
+    letter-spacing: 0.01em;
+    position: relative;
   }
   .lp-price-marker::after {
     content: '';
     position: absolute;
-    bottom: -5px;
+    bottom: -7px;
     left: 50%;
     transform: translateX(-50%);
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid rgba(26,18,8,0.76);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 7px solid ${ORANGE};
   }
-  .lp-price-marker:hover {
-    background: rgba(26,18,8,0.92);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.30);
-  }
-  .lp-price-marker.active {
-    background: rgba(232,96,44,0.94);
-    border-color: rgba(255,255,255,0.20);
-    box-shadow: 0 4px 16px rgba(232,96,44,0.45);
-  }
-  .lp-price-marker.active::after { border-top-color: rgba(232,96,44,0.94); }
+  .lp-price-marker:hover { transform: scale(1.10) translateY(-2px); box-shadow: 0 6px 22px rgba(232,96,44,0.55); }
+  .lp-price-marker.active { background: ${DARK}; transform: scale(1.12) translateY(-3px); box-shadow: 0 8px 26px rgba(26,22,18,0.40); }
+  .lp-price-marker.active::after { border-top-color: ${DARK}; }
 
   .lp-grid-valeurs { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
   .lp-grid-roles   { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
