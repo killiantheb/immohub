@@ -479,20 +479,19 @@ export default function LandingPage() {
             NAVBAR — fixed, transparent → opaque on scroll
         ════════════════════════════════════════════════════════════════ */}
         <nav style={{
-          position: "fixed", top: 0, left: 0, right: 0, zIndex: 200,
-          height: 62,
-          display: "flex", alignItems: "center",
-          padding: "0 24px", gap: 16,
-          background: "rgba(255,255,255,0.08)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          borderBottom: "1px solid rgba(255,255,255,0.12)",
-          transition: "background 0.35s ease",
+          position: "fixed", top: 0, left: 0, right: 0,
+          height: 52,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "0 28px",
+          zIndex: 30,
+          background: "transparent",
+          backdropFilter: "none",
+          border: "none",
         }}>
           <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
             <span style={{
-              fontFamily: serif,
-              fontSize: 21, fontWeight: 400, letterSpacing: "0.18em",
+              fontFamily: "var(--font-serif, 'Fraunces', Georgia, serif)",
+              fontSize: 15, fontWeight: 400, letterSpacing: "0.22em",
               color: ORANGE,
             }}>
               ALTHY
@@ -504,27 +503,34 @@ export default function LandingPage() {
             pointerEvents: "none",
           }}>
             <span className="lp-nav-tag" style={{
-              fontFamily: sans, fontSize: 13, fontWeight: 500,
-              color: "#1A1208",
-              letterSpacing: "0.04em",
+              fontFamily: "var(--font-sans, system-ui)",
+              fontSize: 11, letterSpacing: "0.14em",
+              color: "rgba(26,18,8,0.55)",
+              textShadow: "0 1px 8px rgba(255,255,255,0.80)",
             }}>
               Votre agent personnel
             </span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, marginLeft: "auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
             <Link href="/login" style={{
-              fontSize: 13, fontWeight: 500, textDecoration: "none",
-              padding: "7px 14px",
+              fontSize: 11, fontWeight: 400, textDecoration: "none",
+              padding: "7px 16px", borderRadius: 100,
+              border: "1px solid rgba(26,18,8,0.20)",
+              background: "rgba(255,255,255,0.60)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
               color: "#1A1208",
+              fontFamily: "var(--font-sans, system-ui)",
             }}>
               Se connecter
             </Link>
             <Link href="/register" className="lp-nav-cta" style={{
-              fontSize: 13, fontWeight: 600, textDecoration: "none",
-              padding: "8px 18px", borderRadius: 10,
-              background: ORANGE, color: "#fff",
-              boxShadow: "0 2px 12px rgba(232,96,44,0.30)",
+              fontSize: 11, fontWeight: 500, textDecoration: "none",
+              padding: "7px 16px", borderRadius: 100,
+              background: ORANGE, color: "#fff", border: "none",
+              fontFamily: "var(--font-sans, system-ui)",
+              boxShadow: "0 2px 10px rgba(232,96,44,0.35)",
             }}>
               Commencer gratuitement
             </Link>
