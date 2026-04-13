@@ -243,40 +243,64 @@ export default function LandingPage() {
 
       map = new mapboxgl.Map({
         container:          mapContainer.current,
-        style:              "mapbox://styles/mapbox/light-v11",
+        style:              "mapbox://styles/mapbox/standard",
         center:             [7.0, 46.65],
         zoom:               7.2,
         minZoom:            5.5,
         maxZoom:            18,
         pitch:              40,
-        bearing:            -5,
+        bearing:            -8,
         antialias:          true,
         attributionControl: false,
       });
 
       mapRef.current = map;
 
+      // Contrôles de navigation (zoom + rotation + tilt)
+      map.addControl(new mapboxgl.NavigationControl({
+        visualizePitch: true,
+      }), "bottom-right");
+
       map.on("load", () => {
-        // Terrain 3D
+        // Style Standard — Default theme + Day preset
+        map.setConfigProperty("basemap", "lightPreset",              "day");
+        map.setConfigProperty("basemap", "colorTheme",               "default");
+        map.setConfigProperty("basemap", "showPointOfInterestLabels", false);
+        map.setConfigProperty("basemap", "showTransitLabels",         false);
+        map.setConfigProperty("basemap", "showPlaceLabels",           true);
+        map.setConfigProperty("basemap", "showRoadLabels",            false);
+
+        // Terrain 3D — relief des Alpes suisses
         map.addSource("mapbox-dem", {
           type: "raster-dem",
           url: "mapbox://mapbox.mapbox-terrain-dem-v1",
           tileSize: 512,
           maxzoom: 14,
         });
-        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.3 });
+        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.4 });
+
+        // Sky layer — ciel réaliste au-dessus des montagnes
+        map.addLayer({
+          id: "sky",
+          type: "sky",
+          paint: {
+            "sky-type": "atmosphere",
+            "sky-atmosphere-sun": [0.0, 90.0],
+            "sky-atmosphere-sun-intensity": 15,
+          },
+        });
 
         // Cantons
         map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
         map.addLayer({
           id: "cantons-fill", type: "fill", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint:  { "fill-color": ORANGE, "fill-opacity": 0.08 },
+          paint:  { "fill-color": ORANGE, "fill-opacity": 0.12 },
         });
         map.addLayer({
           id: "cantons-line", type: "line", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint:  { "line-color": ORANGE, "line-width": 1.5, "line-opacity": 0.50 },
+          paint:  { "line-color": ORANGE, "line-width": 2, "line-opacity": 0.6 },
         });
 
         // Price markers
