@@ -110,7 +110,7 @@ export function AlthyMap({ markers, selectedId, onMarkerClick, height = "100%" }
         center:             [7.0, 46.6],
         zoom:               7.8,
         minZoom:            5.5,
-        maxZoom:            16,
+        maxZoom:            20,
         pitch:              30,
         bearing:            -5,
         antialias:          true,
@@ -124,6 +124,15 @@ export function AlthyMap({ markers, selectedId, onMarkerClick, height = "100%" }
       map.addControl(new mapboxgl.NavigationControl({ visualizePitch: false }), "bottom-right");
 
       map.on("load", () => {
+        // Terrain 3D
+        map.addSource("mapbox-dem", {
+          type: "raster-dem",
+          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+          tileSize: 512,
+          maxzoom: 14,
+        });
+        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
+
         // Cantons romands
         map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
         map.addLayer({

@@ -284,7 +284,7 @@ export default function LandingPage() {
         center:             [7.5, 46.8],
         zoom:               7.2,
         minZoom:            5.5,
-        maxZoom:            16,
+        maxZoom:            20,
         pitch:              50,
         bearing:            -8,
         antialias:          true,
@@ -306,6 +306,15 @@ export default function LandingPage() {
       map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "bottom-right");
 
       map.on("load", () => {
+
+        // Terrain 3D — relief des montagnes
+        map.addSource("mapbox-dem", {
+          type: "raster-dem",
+          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+          tileSize: 512,
+          maxzoom: 14,
+        });
+        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
 
         // Source cantons suisses
         map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
