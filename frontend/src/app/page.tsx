@@ -629,28 +629,34 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Search bar + action buttons — bottom center */}
+          {/* Search bar premium — filtres + micro IA */}
           <div style={{
             position: "absolute",
             bottom: 72, left: "50%",
             transform: "translateX(-50%)",
             zIndex: 10,
-            width: "min(500px, calc(100vw - 40px))",
+            width: "min(620px, calc(100vw - 32px))",
             display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
           }}>
+
+            {/* Barre principale */}
             <form onSubmit={handleSearch} style={{ position: "relative", width: "100%" }}>
               <Search
                 size={15}
-                style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: MUTED, pointerEvents: "none" }}
+                style={{
+                  position: "absolute", left: 16, top: "50%",
+                  transform: "translateY(-50%)",
+                  color: MUTED, pointerEvents: "none", zIndex: 2,
+                }}
               />
               <input
                 type="text"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder="Rechercher une ville… Genève, Lausanne, Sion"
+                placeholder="Ville, quartier, code postal…"
                 style={{
                   width: "100%", boxSizing: "border-box",
-                  padding: "14px 120px 14px 42px",
+                  padding: "15px 200px 15px 44px",
                   borderRadius: 32, border: "none",
                   background: "rgba(250,250,248,0.97)",
                   backdropFilter: "blur(20px)",
@@ -660,46 +666,147 @@ export default function LandingPage() {
                   fontFamily: sans,
                 }}
               />
-              <button
-                type="submit"
-                style={{
-                  position: "absolute", right: 6, top: "50%",
-                  transform: "translateY(-50%)",
-                  padding: "7px 18px", borderRadius: 24,
-                  background: ORANGE, color: "#fff",
-                  border: "none", fontSize: 13, fontWeight: 600,
-                  cursor: "pointer", fontFamily: sans,
-                }}
-              >
-                Chercher
-              </button>
+              <div style={{
+                position: "absolute", right: 6, top: "50%",
+                transform: "translateY(-50%)",
+                display: "flex", alignItems: "center", gap: 4,
+              }}>
+                <div style={{ width: 1, height: 20, background: "rgba(26,22,18,0.12)", marginRight: 4 }} />
+                <button
+                  type="button"
+                  title="Parler à Althy IA"
+                  onClick={() => { window.location.href = "/register"; }}
+                  style={{
+                    width: 34, height: 34, borderRadius: "50%",
+                    background: "rgba(232,96,44,0.10)",
+                    border: "1.5px solid rgba(232,96,44,0.25)",
+                    color: ORANGE,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer", transition: "all 0.2s", flexShrink: 0,
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = "rgba(232,96,44,0.18)";
+                    e.currentTarget.style.borderColor = ORANGE;
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = "rgba(232,96,44,0.10)";
+                    e.currentTarget.style.borderColor = "rgba(232,96,44,0.25)";
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <rect x="4.5" y="1" width="5" height="8" rx="2.5" fill="#E8602C"/>
+                    <path d="M2 7.5c0 2.76 2.24 5 5 5s5-2.24 5-5" stroke="#E8602C" strokeWidth="1.3" strokeLinecap="round"/>
+                    <line x1="7" y1="12.5" x2="7" y2="14" stroke="#E8602C" strokeWidth="1.3" strokeLinecap="round"/>
+                  </svg>
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: "7px 18px", borderRadius: 24,
+                    background: ORANGE, color: "#fff",
+                    border: "none", fontSize: 13, fontWeight: 600,
+                    cursor: "pointer", fontFamily: sans, flexShrink: 0,
+                    boxShadow: "0 2px 10px rgba(232,96,44,0.35)",
+                  }}
+                >
+                  Chercher
+                </button>
+              </div>
             </form>
 
-            <div style={{ display: "flex", gap: 8 }}>
+            {/* Filtres rapides */}
+            <div style={{
+              display: "flex", gap: 6, alignItems: "center",
+              flexWrap: "nowrap", overflowX: "auto",
+            }}>
+              {[
+                { label: "Location", value: "location" },
+                { label: "Vente",    value: "vente" },
+                { label: "Colocation", value: "colocation" },
+              ].map(f => (
+                <button
+                  key={f.value}
+                  type="button"
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5,
+                    padding: "6px 14px", borderRadius: 20,
+                    background: "rgba(250,250,248,0.85)",
+                    backdropFilter: "blur(12px)",
+                    border: "1px solid rgba(255,255,255,0.35)",
+                    color: DARK, fontSize: 11.5, fontWeight: 500,
+                    cursor: "pointer", fontFamily: sans,
+                    whiteSpace: "nowrap",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+                    transition: "all 0.15s",
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = ORANGE;
+                    e.currentTarget.style.color = "#fff";
+                    e.currentTarget.style.borderColor = ORANGE;
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = "rgba(250,250,248,0.85)";
+                    e.currentTarget.style.color = DARK;
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)";
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
+              <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.35)", flexShrink: 0 }} />
+              <button
+                type="button"
+                style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  padding: "6px 14px", borderRadius: 20,
+                  background: "rgba(250,250,248,0.85)", backdropFilter: "blur(12px)",
+                  border: "1px solid rgba(255,255,255,0.35)",
+                  color: DARK, fontSize: 11.5, fontWeight: 500,
+                  cursor: "pointer", fontFamily: sans,
+                  whiteSpace: "nowrap", boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+                }}
+              >
+                Budget
+              </button>
+              <button
+                type="button"
+                style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  padding: "6px 14px", borderRadius: 20,
+                  background: "rgba(250,250,248,0.85)", backdropFilter: "blur(12px)",
+                  border: "1px solid rgba(255,255,255,0.35)",
+                  color: DARK, fontSize: 11.5, fontWeight: 500,
+                  cursor: "pointer", fontFamily: sans,
+                  whiteSpace: "nowrap", boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+                }}
+              >
+                Pièces
+              </button>
+              <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.35)", flexShrink: 0 }} />
               <Link href="/biens/swipe" style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "8px 16px", borderRadius: 22,
-                background: "rgba(26,22,18,0.78)", backdropFilter: "blur(10px)",
-                color: "#fff", fontSize: 12, fontWeight: 600,
-                textDecoration: "none",
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "6px 14px", borderRadius: 20,
+                background: "rgba(26,22,18,0.75)", backdropFilter: "blur(12px)",
                 border: "1px solid rgba(255,255,255,0.12)",
-                boxShadow: "0 2px 12px rgba(0,0,0,0.20)",
+                color: "#fff", fontSize: 11.5, fontWeight: 600,
+                textDecoration: "none", whiteSpace: "nowrap",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
               }}>
-                <Layers size={13} /> Mode Swipe
+                <Layers size={12} /> Mode Swipe
               </Link>
               <button
                 onClick={scrollToList}
                 style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  padding: "8px 16px", borderRadius: 22,
-                  background: "rgba(250,250,248,0.94)", backdropFilter: "blur(10px)",
-                  color: DARK, fontSize: 12, fontWeight: 600,
-                  border: "1px solid rgba(26,22,18,0.12)",
+                  display: "flex", alignItems: "center", gap: 5,
+                  padding: "6px 14px", borderRadius: 20,
+                  background: "rgba(250,250,248,0.85)", backdropFilter: "blur(12px)",
+                  border: "1px solid rgba(255,255,255,0.35)",
+                  color: DARK, fontSize: 11.5, fontWeight: 500,
                   cursor: "pointer", fontFamily: sans,
-                  boxShadow: "0 2px 12px rgba(0,0,0,0.12)",
+                  whiteSpace: "nowrap", boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
                 }}
               >
-                <List size={13} /> Liste ({BIENS_MARKERS.length})
+                <List size={12} /> Liste ({BIENS_MARKERS.length})
               </button>
             </div>
           </div>
