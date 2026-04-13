@@ -282,77 +282,29 @@ export default function LandingPage() {
 
       map.on("load", () => {
 
-        // ── 1. SOURCE CANTONS ────────────────────────────────────────────────
-        map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
-
-        // ── 2. VOILE MONDIAL avec trou Suisse ────────────────────────────────
-        map.addSource("world-mask", {
-          type: "geojson",
-          data: {
-            type: "Feature",
-            geometry: {
-              type: "Polygon",
-              coordinates: [
-                [[-180,-90],[180,-90],[180,90],[-180,90],[-180,-90]],
-                [
-                  [5.96,47.81],[5.96,47.27],[5.97,47.04],[6.02,46.73],[5.96,46.45],
-                  [5.97,46.14],[6.23,46.32],[6.50,46.43],[6.93,46.35],[6.80,45.92],
-                  [7.11,45.93],[7.59,45.93],[8.08,45.99],[8.45,45.82],[8.99,45.83],
-                  [9.18,46.22],[9.53,46.50],[10.07,46.56],[10.14,46.85],[10.42,46.89],
-                  [10.49,47.39],[9.52,47.52],[9.01,47.69],[8.52,47.78],[8.23,47.61],
-                  [7.59,47.59],[7.45,47.48],[7.05,47.34],[6.94,47.50],[6.37,47.36],
-                  [6.02,47.54],[5.96,47.81],
-                ],
-              ],
-            },
-            properties: {},
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          } as any,
-        });
+        // ── MASQUE MONDIAL avec trous aux contours suisses ───────────────────
+        map.addSource("world-mask", { type: "geojson", data: "/suisse-mask.json" });
         map.addLayer({
           id: "world-mask-layer", type: "fill", source: "world-mask",
-          paint: { "fill-color": "#F5F0E8", "fill-opacity": 0.52 },
+          paint: { "fill-color": "#F5F0E8", "fill-opacity": 0.55 },
         });
 
-        // ── 3. CONTOUR ORANGE DE LA SUISSE ───────────────────────────────────
-        map.addSource("swiss-border", {
-          type: "geojson",
-          data: {
-            type: "Feature",
-            geometry: {
-              type: "LineString",
-              coordinates: [
-                [5.96,47.81],[5.96,47.27],[5.97,47.04],[6.02,46.73],[5.96,46.45],
-                [5.97,46.14],[6.23,46.32],[6.50,46.43],[6.93,46.35],[6.80,45.92],
-                [7.11,45.93],[7.59,45.93],[8.08,45.99],[8.45,45.82],[8.99,45.83],
-                [9.18,46.22],[9.53,46.50],[10.07,46.56],[10.14,46.85],[10.42,46.89],
-                [10.49,47.39],[9.52,47.52],[9.01,47.69],[8.52,47.78],[8.23,47.61],
-                [7.59,47.59],[7.45,47.48],[7.05,47.34],[6.94,47.50],[6.37,47.36],
-                [6.02,47.54],[5.96,47.81],
-              ],
-            },
-            properties: {},
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          } as any,
-        });
+        // ── CONTOUR ORANGE PARFAIT DE LA SUISSE ──────────────────────────────
+        map.addSource("swiss-union", { type: "geojson", data: "/suisse-union.json" });
         map.addLayer({
-          id: "swiss-border-line", type: "line", source: "swiss-border",
-          paint: { "line-color": ORANGE, "line-width": 2.5, "line-opacity": 0.75 },
+          id: "swiss-border", type: "line", source: "swiss-union",
+          paint: { "line-color": "#E8602C", "line-width": 2.5, "line-opacity": 0.80 },
         });
 
-        // ── 4. FILL ORANGE LÉGER — SUISSE ROMANDE ────────────────────────────
+        // ── FILL ORANGE LÉGER — SUISSE ROMANDE uniquement ────────────────────
+        map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
         map.addLayer({
           id: "cantons-romands-fill", type: "fill", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "fill-color": ORANGE, "fill-opacity": 0.08 },
-        });
-        map.addLayer({
-          id: "cantons-romands-line", type: "line", source: "cantons",
-          filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "line-color": ORANGE, "line-width": 1, "line-opacity": 0.30 },
+          paint: { "fill-color": "#E8602C", "fill-opacity": 0.09 },
         });
 
-        // ── 5. MARKERS PRIX ───────────────────────────────────────────────────
+        // ── MARKERS PRIX ──────────────────────────────────────────────────────
         BIENS_MARKERS.forEach(bien => {
           const el = document.createElement("div");
           el.className = "lp-price-marker";
@@ -414,80 +366,32 @@ export default function LandingPage() {
     }
 
     map.once("style.load", () => {
-      // Cantons source
-      if (!map.getSource("cantons")) {
-        map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
-      }
-
-      // Voile mondial avec trou Suisse
+      // Masque mondial
       if (!map.getSource("world-mask")) {
-        map.addSource("world-mask", {
-          type: "geojson",
-          data: {
-            type: "Feature",
-            geometry: {
-              type: "Polygon",
-              coordinates: [
-                [[-180,-90],[180,-90],[180,90],[-180,90],[-180,-90]],
-                [
-                  [5.96,47.81],[5.96,47.27],[5.97,47.04],[6.02,46.73],[5.96,46.45],
-                  [5.97,46.14],[6.23,46.32],[6.50,46.43],[6.93,46.35],[6.80,45.92],
-                  [7.11,45.93],[7.59,45.93],[8.08,45.99],[8.45,45.82],[8.99,45.83],
-                  [9.18,46.22],[9.53,46.50],[10.07,46.56],[10.14,46.85],[10.42,46.89],
-                  [10.49,47.39],[9.52,47.52],[9.01,47.69],[8.52,47.78],[8.23,47.61],
-                  [7.59,47.59],[7.45,47.48],[7.05,47.34],[6.94,47.50],[6.37,47.36],
-                  [6.02,47.54],[5.96,47.81],
-                ],
-              ],
-            },
-            properties: {},
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          } as any,
-        });
+        map.addSource("world-mask", { type: "geojson", data: "/suisse-mask.json" });
       }
       map.addLayer({
         id: "world-mask-layer", type: "fill", source: "world-mask",
-        paint: { "fill-color": "#F5F0E8", "fill-opacity": next === "satellite" ? 0 : 0.52 },
+        paint: { "fill-color": "#F5F0E8", "fill-opacity": next === "satellite" ? 0 : 0.55 },
       });
 
       // Contour orange Suisse
-      if (!map.getSource("swiss-border")) {
-        map.addSource("swiss-border", {
-          type: "geojson",
-          data: {
-            type: "Feature",
-            geometry: {
-              type: "LineString",
-              coordinates: [
-                [5.96,47.81],[5.96,47.27],[5.97,47.04],[6.02,46.73],[5.96,46.45],
-                [5.97,46.14],[6.23,46.32],[6.50,46.43],[6.93,46.35],[6.80,45.92],
-                [7.11,45.93],[7.59,45.93],[8.08,45.99],[8.45,45.82],[8.99,45.83],
-                [9.18,46.22],[9.53,46.50],[10.07,46.56],[10.14,46.85],[10.42,46.89],
-                [10.49,47.39],[9.52,47.52],[9.01,47.69],[8.52,47.78],[8.23,47.61],
-                [7.59,47.59],[7.45,47.48],[7.05,47.34],[6.94,47.50],[6.37,47.36],
-                [6.02,47.54],[5.96,47.81],
-              ],
-            },
-            properties: {},
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          } as any,
-        });
+      if (!map.getSource("swiss-union")) {
+        map.addSource("swiss-union", { type: "geojson", data: "/suisse-union.json" });
       }
       map.addLayer({
-        id: "swiss-border-line", type: "line", source: "swiss-border",
-        paint: { "line-color": ORANGE, "line-width": 2.5, "line-opacity": 0.75 },
+        id: "swiss-border", type: "line", source: "swiss-union",
+        paint: { "line-color": "#E8602C", "line-width": 2.5, "line-opacity": 0.80 },
       });
 
       // Fill orange léger Suisse romande
+      if (!map.getSource("cantons")) {
+        map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
+      }
       map.addLayer({
         id: "cantons-romands-fill", type: "fill", source: "cantons",
         filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-        paint: { "fill-color": ORANGE, "fill-opacity": next === "satellite" ? 0.18 : 0.08 },
-      });
-      map.addLayer({
-        id: "cantons-romands-line", type: "line", source: "cantons",
-        filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-        paint: { "line-color": ORANGE, "line-width": 1, "line-opacity": next === "satellite" ? 0.6 : 0.30 },
+        paint: { "fill-color": "#E8602C", "fill-opacity": next === "satellite" ? 0.18 : 0.09 },
       });
     });
 
