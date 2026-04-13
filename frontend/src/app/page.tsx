@@ -138,54 +138,46 @@ const ROLES = [
 // ── CSS ────────────────────────────────────────────────────────────────────────
 
 const GLOBAL_CSS = `
-  .althy-bubble {
-    background: rgba(26,18,8,0.72);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+  .lp-price-marker {
+    background: rgba(26,18,8,0.76);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     color: #FFFFFF;
     font-size: 11px;
     font-weight: 600;
     font-family: 'DM Sans', system-ui, sans-serif;
-    padding: 5px 12px;
-    border-radius: 16px;
+    padding: 5px 11px;
+    border-radius: 14px;
     white-space: nowrap;
     border: 1px solid rgba(255,255,255,0.14);
     letter-spacing: 0.02em;
     position: relative;
     transition: all 0.18s ease;
-    box-shadow: 0 2px 14px rgba(0,0,0,0.28);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.26);
     cursor: pointer;
     user-select: none;
   }
-  .althy-bubble::after {
+  .lp-price-marker::after {
     content: '';
     position: absolute;
-    bottom: -6px;
+    bottom: -5px;
     left: 50%;
     transform: translateX(-50%);
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-top: 6px solid rgba(26,18,8,0.72);
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid rgba(26,18,8,0.76);
   }
-  .althy-bubble:hover {
-    background: rgba(26,18,8,0.88);
+  .lp-price-marker:hover {
+    background: rgba(26,18,8,0.92);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.30);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.30);
   }
-  .althy-bubble.active {
-    background: rgba(232,96,44,0.92);
-    border-color: rgba(255,255,255,0.22);
-    box-shadow: 0 4px 18px rgba(232,96,44,0.45);
+  .lp-price-marker.active {
+    background: rgba(232,96,44,0.94);
+    border-color: rgba(255,255,255,0.20);
+    box-shadow: 0 4px 16px rgba(232,96,44,0.45);
   }
-  .althy-bubble.active::after { border-top-color: rgba(232,96,44,0.92); }
-  .althy-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: #E8602C;
-    margin-top: 1px;
-    box-shadow: 0 0 0 3px rgba(232,96,44,0.18);
-  }
+  .lp-price-marker.active::after { border-top-color: rgba(232,96,44,0.94); }
 
   .lp-grid-valeurs { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
   .lp-grid-roles   { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
@@ -279,12 +271,12 @@ export default function LandingPage() {
 
       map = new mapboxgl.Map({
         container:          mapContainer.current,
-        style:              "mapbox://styles/mapbox/standard",
-        center:             [7.0, 46.65],
+        style:              "mapbox://styles/mapbox/light-v11",
+        center:             [7.5, 46.8],
         zoom:               7.2,
         minZoom:            5.5,
-        maxZoom:            18,
-        pitch:              40,
+        maxZoom:            16,
+        pitch:              48,
         bearing:            -8,
         antialias:          true,
         attributionControl: false,
@@ -292,54 +284,33 @@ export default function LandingPage() {
 
       mapRef.current = map;
 
-      // Contrôles de navigation (zoom + rotation + tilt)
-      map.addControl(new mapboxgl.NavigationControl({
-        visualizePitch: true,
-      }), "bottom-right");
+      map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "bottom-right");
 
       map.on("load", () => {
-        // Style Standard — Default theme + Day preset
-        map.setConfigProperty("basemap", "lightPreset",              "day");
-        map.setConfigProperty("basemap", "colorTheme",               "default");
-        map.setConfigProperty("basemap", "showPointOfInterestLabels", false);
-        map.setConfigProperty("basemap", "showTransitLabels",         false);
-        map.setConfigProperty("basemap", "showPlaceLabels",           true);
-        map.setConfigProperty("basemap", "showRoadLabels",            false);
 
-        // Terrain 3D — relief des Alpes suisses
+        // ── TERRAIN 3D ───────────────────────────────────────────────────────
         map.addSource("mapbox-dem", {
           type: "raster-dem",
           url: "mapbox://mapbox.mapbox-terrain-dem-v1",
           tileSize: 512,
           maxzoom: 14,
         });
-        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.4 });
+        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
 
-        // Sky layer — ciel réaliste au-dessus des montagnes
-        map.addLayer({
-          id: "sky",
-          type: "sky",
-          paint: {
-            "sky-type": "atmosphere",
-            "sky-atmosphere-sun": [0.0, 90.0],
-            "sky-atmosphere-sun-intensity": 15,
-          },
-        });
-
-        // Cantons
+        // ── CANTONS ROMANDS ──────────────────────────────────────────────────
         map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
         map.addLayer({
           id: "cantons-fill", type: "fill", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint:  { "fill-color": ORANGE, "fill-opacity": 0.12 },
+          paint: { "fill-color": ORANGE, "fill-opacity": 0.07 },
         });
         map.addLayer({
           id: "cantons-line", type: "line", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint:  { "line-color": ORANGE, "line-width": 2, "line-opacity": 0.6 },
+          paint: { "line-color": ORANGE, "line-width": 2, "line-opacity": 0.55 },
         });
 
-        // Contour suisse entier — bordure orange
+        // ── CONTOUR SUISSE ENTIER ────────────────────────────────────────────
         map.addSource("swiss-outline", {
           type: "geojson",
           data: {
@@ -358,57 +329,38 @@ export default function LandingPage() {
               ]],
             },
             properties: {},
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
           } as any,
         });
         map.addLayer({
           id: "swiss-outline-fill", type: "fill", source: "swiss-outline",
-          slot: "bottom",
           paint: { "fill-color": ORANGE, "fill-opacity": 0.03 },
         });
         map.addLayer({
           id: "swiss-outline-line", type: "line", source: "swiss-outline",
-          slot: "middle",
           paint: { "line-color": ORANGE, "line-width": 2.8, "line-opacity": 0.70 },
         });
 
-        // Price markers
+        // ── MARKERS PRIX ─────────────────────────────────────────────────────
         BIENS_MARKERS.forEach(bien => {
           const el = document.createElement("div");
-          el.style.cssText = `
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            width: auto;
-          `;
-          el.innerHTML = `
-            <div class="althy-bubble">CHF ${bien.prix}</div>
-            <div class="althy-dot"></div>
-          `;
+          el.className = "lp-price-marker";
+          el.textContent = `CHF ${bien.prix}${bien.periode === "/mois" ? "/m" : ""}`;
 
           el.addEventListener("click", e => {
             e.stopPropagation();
-            markersRef.current.forEach((m, id) => {
-              const bubble = m.querySelector(".althy-bubble");
-              if (bubble) bubble.classList.toggle("active", id === bien.id);
-            });
+            markersRef.current.forEach((m, id) => m.classList.toggle("active", id === bien.id));
             setSelected(bien);
           });
 
           markersRef.current.set(bien.id, el);
-
-          new mapboxgl.Marker({ element: el, anchor: "bottom", offset: [0, 0] })
+          new mapboxgl.Marker({ element: el, anchor: "bottom" })
             .setLngLat([bien.lng, bien.lat])
             .addTo(map);
         });
 
-        // Click sur la carte → fermer le panel
         map.on("click", () => {
-          markersRef.current.forEach(m => {
-            const bubble = m.querySelector(".althy-bubble");
-            if (bubble) bubble.classList.remove("active");
-          });
+          markersRef.current.forEach(m => m.classList.remove("active"));
           setSelected(null);
         });
       });
@@ -431,18 +383,12 @@ export default function LandingPage() {
   }, [query]);
 
   const closePanel = useCallback(() => {
-    markersRef.current.forEach(m => {
-      const bubble = m.querySelector(".althy-bubble");
-      if (bubble) bubble.classList.remove("active");
-    });
+    markersRef.current.forEach(m => m.classList.remove("active"));
     setSelected(null);
   }, []);
 
   const openBien = useCallback((bien: BienMarker) => {
-    markersRef.current.forEach((m, id) => {
-      const bubble = m.querySelector(".althy-bubble");
-      if (bubble) bubble.classList.toggle("active", id === bien.id);
-    });
+    markersRef.current.forEach((m, id) => m.classList.toggle("active", id === bien.id));
     setSelected(bien);
   }, []);
 
@@ -453,18 +399,11 @@ export default function LandingPage() {
     if (next === "satellite") {
       map.setStyle("mapbox://styles/mapbox/satellite-streets-v12");
     } else {
-      map.setStyle("mapbox://styles/mapbox/standard");
+      map.setStyle("mapbox://styles/mapbox/light-v11");
     }
 
     map.once("style.load", () => {
-      if (next === "standard") {
-        map.setConfigProperty("basemap", "lightPreset",              "day");
-        map.setConfigProperty("basemap", "colorTheme",               "monochrome");
-        map.setConfigProperty("basemap", "showPointOfInterestLabels", false);
-        map.setConfigProperty("basemap", "showTransitLabels",         false);
-        map.setConfigProperty("basemap", "showRoadLabels",            false);
-      }
-
+      // Terrain 3D
       if (!map.getSource("mapbox-dem")) {
         map.addSource("mapbox-dem", {
           type: "raster-dem",
@@ -472,26 +411,23 @@ export default function LandingPage() {
           tileSize: 512,
           maxzoom: 14,
         });
-        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.4 });
       }
+      map.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
 
+      // Cantons romands
       if (!map.getSource("cantons")) {
         map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
       }
-      if (!map.getLayer("cantons-fill-active")) {
-        map.addLayer({
-          id: "cantons-fill-active", type: "fill", source: "cantons",
-          slot: "bottom",
-          filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "fill-color": "#E8602C", "fill-opacity": next === "satellite" ? 0.18 : 0.12 },
-        });
-        map.addLayer({
-          id: "cantons-line-active", type: "line", source: "cantons",
-          slot: "bottom",
-          filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "line-color": "#E8602C", "line-width": 2, "line-opacity": 0.7 },
-        });
-      }
+      map.addLayer({
+        id: "cantons-fill", type: "fill", source: "cantons",
+        filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
+        paint: { "fill-color": ORANGE, "fill-opacity": next === "satellite" ? 0.18 : 0.07 },
+      });
+      map.addLayer({
+        id: "cantons-line", type: "line", source: "cantons",
+        filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
+        paint: { "line-color": ORANGE, "line-width": 2, "line-opacity": next === "satellite" ? 0.7 : 0.55 },
+      });
 
       // Contour suisse entier
       if (!map.getSource("swiss-outline")) {
@@ -517,18 +453,14 @@ export default function LandingPage() {
           } as any,
         });
       }
-      if (!map.getLayer("swiss-outline-fill")) {
-        map.addLayer({
-          id: "swiss-outline-fill", type: "fill", source: "swiss-outline",
-          slot: "bottom",
-          paint: { "fill-color": "#E8602C", "fill-opacity": 0.03 },
-        });
-        map.addLayer({
-          id: "swiss-outline-line", type: "line", source: "swiss-outline",
-          slot: "middle",
-          paint: { "line-color": "#E8602C", "line-width": 2.8, "line-opacity": 0.70 },
-        });
-      }
+      map.addLayer({
+        id: "swiss-outline-fill", type: "fill", source: "swiss-outline",
+        paint: { "fill-color": ORANGE, "fill-opacity": 0.03 },
+      });
+      map.addLayer({
+        id: "swiss-outline-line", type: "line", source: "swiss-outline",
+        paint: { "line-color": ORANGE, "line-width": 2.8, "line-opacity": 0.70 },
+      });
     });
 
     setMapMode(next);
