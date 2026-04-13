@@ -413,10 +413,9 @@ export default function LandingPage() {
     setSelected(bien);
   }, []);
 
-  const toggleMapMode = useCallback(() => {
-    if (!mapRef.current) return;
+  const toggleMapMode = useCallback((next: "standard" | "satellite") => {
+    if (!mapRef.current || next === mapMode) return;
     const map = mapRef.current;
-    const next = mapMode === "standard" ? "satellite" : "standard";
 
     if (next === "satellite") {
       map.setStyle("mapbox://styles/mapbox/satellite-streets-v12");
@@ -795,38 +794,44 @@ export default function LandingPage() {
           )}
 
           {/* Toggle carte — bas gauche */}
-          <div
-            onClick={toggleMapMode}
-            style={{
-              position: "absolute", bottom: "2.5rem", left: "1rem", zIndex: 10,
-              width: 72, height: 72,
-              borderRadius: 12, overflow: "hidden",
-              cursor: "pointer",
-              border: "3px solid #FFFFFF",
-              boxShadow: "0 2px 12px rgba(0,0,0,0.30)",
-              transition: "transform 0.2s",
-            }}
-            onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.05)")}
-            onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
-          >
-            <img
-              src={
-                mapMode === "standard"
-                  ? `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/7.0,46.65,6/72x72?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`
-                  : `https://api.mapbox.com/styles/v1/mapbox/standard/static/7.0,46.65,6/72x72?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`
-              }
-              alt={mapMode === "standard" ? "Vue satellite" : "Vue carte"}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-            <div style={{
-              position: "absolute", bottom: 0, left: 0, right: 0,
-              background: "rgba(0,0,0,0.55)",
-              color: "#fff", fontSize: 10, fontWeight: 600,
-              textAlign: "center", padding: "3px 0",
-              fontFamily: sans, letterSpacing: "0.04em",
-            }}>
-              {mapMode === "standard" ? "SATELLITE" : "STANDARD"}
-            </div>
+          <div style={{
+            position: "absolute", bottom: "2.5rem", left: "1.25rem",
+            zIndex: 20, display: "flex", flexDirection: "column", gap: 3,
+          }}>
+            <button
+              onClick={() => toggleMapMode("standard")}
+              style={{
+                background: mapMode === "standard" ? "#1A1208" : "rgba(255,255,255,0.80)",
+                backdropFilter: "blur(16px)",
+                color: mapMode === "standard" ? "#fff" : "rgba(26,18,8,0.60)",
+                border: mapMode === "standard" ? "1px solid #1A1208" : "1px solid rgba(255,255,255,0.90)",
+                borderRadius: 9, padding: "7px 13px",
+                fontSize: 9, fontWeight: 600,
+                fontFamily: "system-ui", letterSpacing: "0.09em",
+                textTransform: "uppercase", cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+                transition: "all 0.18s",
+              }}
+            >
+              Standard
+            </button>
+            <button
+              onClick={() => toggleMapMode("satellite")}
+              style={{
+                background: mapMode === "satellite" ? "#1A1208" : "rgba(255,255,255,0.80)",
+                backdropFilter: "blur(16px)",
+                color: mapMode === "satellite" ? "#fff" : "rgba(26,18,8,0.60)",
+                border: mapMode === "satellite" ? "1px solid #1A1208" : "1px solid rgba(255,255,255,0.90)",
+                borderRadius: 9, padding: "7px 13px",
+                fontSize: 9, fontWeight: 600,
+                fontFamily: "system-ui", letterSpacing: "0.09em",
+                textTransform: "uppercase", cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+                transition: "all 0.18s",
+              }}
+            >
+              Satellite
+            </button>
           </div>
 
           {/* Scroll indicator */}
