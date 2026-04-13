@@ -185,6 +185,19 @@ const GLOBAL_CSS = `
     .lp-grid-etapes  { grid-template-columns:1fr; }
     .lp-grid-biens   { grid-template-columns:1fr; }
     .lp-nav-tag      { display:none !important; }
+    .lp-section      { padding:56px 16px 44px !important; }
+    .lp-section-valeurs   { padding:48px 16px !important; }
+    .lp-section-roles     { padding:56px 16px !important; }
+    .lp-section-cta       { padding:64px 16px !important; }
+    .lp-section-inner     { margin-bottom:36px !important; }
+  }
+
+  @media (max-width:768px) {
+    .lp-stats-card { display:none !important; }
+  }
+
+  @media (max-width:420px) {
+    .lp-nav-cta { display:none !important; }
   }
 
   @keyframes lp-bounce {
@@ -441,18 +454,21 @@ export default function LandingPage() {
             </span>
           </Link>
 
-          <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
+          <div style={{
+            position: "absolute", left: "50%", transform: "translateX(-50%)",
+            pointerEvents: "none",
+          }}>
             <span className="lp-nav-tag" style={{
-              fontFamily: serif, fontSize: 14, fontStyle: "italic", fontWeight: 300,
-              color: scrolled ? MUTED : "rgba(255,255,255,0.82)",
-              letterSpacing: "0.02em",
+              fontFamily: sans, fontSize: 13, fontWeight: 500,
+              color: scrolled ? MUTED : "rgba(255,255,255,0.85)",
+              letterSpacing: "0.04em",
               transition: "color 0.35s ease",
             }}>
-              Votre Agent Personnel
+              Votre agent personnel
             </span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, marginLeft: "auto" }}>
             <Link href="/login" style={{
               fontSize: 13, fontWeight: 500, textDecoration: "none",
               padding: "7px 14px",
@@ -461,7 +477,7 @@ export default function LandingPage() {
             }}>
               Se connecter
             </Link>
-            <Link href="/register" style={{
+            <Link href="/register" className="lp-nav-cta" style={{
               fontSize: 13, fontWeight: 600, textDecoration: "none",
               padding: "8px 18px", borderRadius: 10,
               background: scrolled ? ORANGE : "rgba(255,255,255,0.16)",
@@ -510,15 +526,14 @@ export default function LandingPage() {
           }}>
             <h1 style={{
               fontFamily: serif,
-              fontSize: "clamp(40px, 6.5vw, 82px)",
+              fontSize: "clamp(38px, 6vw, 78px)",
               fontWeight: 300,
-              fontStyle: "italic",
-              fontVariationSettings: "'wght' 300, 'SOFT' 40, 'WONK' 0",
+              fontStyle: "normal",
               color: "#1A1208",
-              textShadow: "0 2px 20px rgba(0,0,0,0.08), 0 1px 4px rgba(255,255,255,0.60)",
+              textShadow: "0 1px 12px rgba(255,255,255,0.70)",
               margin: 0,
-              letterSpacing: "-0.025em",
-              lineHeight: 1.06,
+              letterSpacing: "-0.02em",
+              lineHeight: 1.08,
             }}>
               Trouvez votre<br />
               <span style={{ color: "#E8602C" }}>chez-vous.</span>
@@ -536,7 +551,7 @@ export default function LandingPage() {
           </div>
 
           {/* Stats card — top left */}
-          <div style={{
+          <div className="lp-stats-card" style={{
             position: "absolute", top: 80, left: 20, zIndex: 10,
             background: "rgba(250,250,248,0.94)", backdropFilter: "blur(14px)",
             borderRadius: 14, padding: "14px 18px",
@@ -776,7 +791,7 @@ export default function LandingPage() {
         {/* ════════════════════════════════════════════════════════════════
             LISTE DES BIENS
         ════════════════════════════════════════════════════════════════ */}
-        <section id="liste" style={{ maxWidth: 1100, margin: "0 auto", padding: "88px 24px 64px" }}>
+        <section id="liste" className="lp-section" style={{ maxWidth: 1100, margin: "0 auto", padding: "88px 24px 64px" }}>
           <div style={{ textAlign: "center", marginBottom: 52 }}>
             <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.14em", color: ORANGE, textTransform: "uppercase", marginBottom: 12 }}>
               Suisse romande · Genève · Vaud · Valais
@@ -872,7 +887,7 @@ export default function LandingPage() {
         {/* ════════════════════════════════════════════════════════════════
             VALEURS
         ════════════════════════════════════════════════════════════════ */}
-        <section style={{
+        <section className="lp-section-valeurs" style={{
           background: "#fff",
           borderTop: "1px solid rgba(26,22,18,0.06)",
           borderBottom: "1px solid rgba(26,22,18,0.06)",
@@ -900,7 +915,7 @@ export default function LandingPage() {
         {/* ════════════════════════════════════════════════════════════════
             COMMENT ÇA MARCHE
         ════════════════════════════════════════════════════════════════ */}
-        <section style={{ maxWidth: 1100, margin: "0 auto", padding: "88px 24px" }}>
+        <section className="lp-section" style={{ maxWidth: 1100, margin: "0 auto", padding: "88px 24px" }}>
           <div style={{ textAlign: "center", marginBottom: 52 }}>
             <h2 style={{ fontFamily: serif, fontSize: "clamp(26px,3.5vw,38px)", fontWeight: 300, color: DARK, margin: "0 0 12px" }}>
               Comment ça marche
@@ -927,7 +942,7 @@ export default function LandingPage() {
         {/* ════════════════════════════════════════════════════════════════
             RÔLES
         ════════════════════════════════════════════════════════════════ */}
-        <section style={{ background: "rgba(26,22,18,0.02)", borderTop: "1px solid rgba(26,22,18,0.06)", padding: "88px 24px" }}>
+        <section className="lp-section-roles" style={{ background: "rgba(26,22,18,0.02)", borderTop: "1px solid rgba(26,22,18,0.06)", padding: "88px 24px" }}>
           <div style={{ maxWidth: 1100, margin: "0 auto" }}>
             <div style={{ textAlign: "center", marginBottom: 52 }}>
               <h2 style={{ fontFamily: serif, fontSize: "clamp(26px,3.5vw,38px)", fontWeight: 300, color: DARK, margin: "0 0 12px" }}>
@@ -978,7 +993,7 @@ export default function LandingPage() {
         {/* ════════════════════════════════════════════════════════════════
             CTA BAND
         ════════════════════════════════════════════════════════════════ */}
-        <section style={{ background: DARK, padding: "88px 24px", textAlign: "center" }}>
+        <section className="lp-section-cta" style={{ background: DARK, padding: "88px 24px", textAlign: "center" }}>
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(250,250,248,0.40)", marginBottom: 20 }}>
               Disponible maintenant
