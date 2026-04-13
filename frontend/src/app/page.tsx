@@ -137,37 +137,45 @@ const ROLES = [
 // ── CSS ────────────────────────────────────────────────────────────────────────
 
 const GLOBAL_CSS = `
-  .lp-price-marker {
-    display: inline-block !important;
-    width: fit-content !important;
-    white-space: nowrap !important;
-    background: ${ORANGE};
+  .althy-bubble {
+    background: #E8602C;
     color: #fff;
     font-size: 12px;
     font-weight: 700;
     font-family: 'DM Sans', system-ui, sans-serif;
-    padding: 5px 11px;
+    padding: 5px 12px;
     border-radius: 20px;
-    box-shadow: 0 2px 14px rgba(232,96,44,0.42);
-    cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-    border: 2px solid rgba(255,255,255,0.45);
-    user-select: none;
+    white-space: nowrap;
+    box-shadow: 0 3px 14px rgba(232,96,44,0.50), 0 1px 3px rgba(0,0,0,0.15);
+    border: 2px solid rgba(255,255,255,0.55);
     letter-spacing: 0.01em;
     position: relative;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+    user-select: none;
   }
-  .lp-price-marker::after {
+  .althy-bubble::after {
     content: '';
     position: absolute;
-    bottom: -7px; left: 50%;
+    bottom: -7px;
+    left: 50%;
     transform: translateX(-50%);
     border-left: 6px solid transparent;
     border-right: 6px solid transparent;
-    border-top: 7px solid ${ORANGE};
+    border-top: 7px solid #E8602C;
+    display: block;
   }
-  .lp-price-marker:hover { transform: scale(1.10) translateY(-2px); box-shadow: 0 6px 22px rgba(232,96,44,0.55); }
-  .lp-price-marker.active { background: ${DARK}; transform: scale(1.12) translateY(-3px); box-shadow: 0 8px 26px rgba(26,22,18,0.40); }
-  .lp-price-marker.active::after { border-top-color: ${DARK}; }
+  .althy-bubble:hover { transform: scale(1.08) translateY(-2px); box-shadow: 0 6px 20px rgba(232,96,44,0.55); }
+  .althy-bubble.active { background: #1A1208; box-shadow: 0 6px 20px rgba(26,18,8,0.40); }
+  .althy-bubble.active::after { border-top-color: #1A1208; }
+  .althy-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #E8602C;
+    margin-top: 1px;
+    box-shadow: 0 0 0 3px rgba(232,96,44,0.20);
+  }
 
   .lp-grid-valeurs { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
   .lp-grid-roles   { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
@@ -319,74 +327,42 @@ export default function LandingPage() {
         // Price markers
         BIENS_MARKERS.forEach(bien => {
           const el = document.createElement("div");
+          // Élément racine neutre — Mapbox gère le positionnement
           el.style.cssText = `
-            display: inline-flex;
+            cursor: pointer;
+            display: flex;
             flex-direction: column;
             align-items: center;
-            cursor: pointer;
-            width: fit-content;
-            white-space: nowrap;
-            position: relative;
+            width: auto;
+            height: auto;
           `;
           el.innerHTML = `
-            <div style="
-              display: inline-block;
-              width: fit-content;
-              white-space: nowrap;
-              background: #E8602C;
-              color: #fff;
-              font-size: 12px;
-              font-weight: 700;
-              font-family: 'DM Sans', system-ui, sans-serif;
-              padding: 5px 12px;
-              border-radius: 20px;
-              box-shadow: 0 3px 12px rgba(232,96,44,0.45), 0 1px 3px rgba(0,0,0,0.2);
-              border: 2px solid rgba(255,255,255,0.5);
-              letter-spacing: 0.01em;
-              position: relative;
-              transition: transform 0.15s ease;
-            ">
-              CHF ${bien.prix}
-              <span style="
-                position: absolute;
-                bottom: -6px;
-                left: 50%;
-                transform: translateX(-50%);
-                border-left: 5px solid transparent;
-                border-right: 5px solid transparent;
-                border-top: 6px solid #E8602C;
-                display: block;
-                width: 0;
-                height: 0;
-              "></span>
-            </div>
-            <div style="
-              width: 5px;
-              height: 5px;
-              border-radius: 50%;
-              background: #E8602C;
-              margin-top: 1px;
-              box-shadow: 0 0 0 3px rgba(232,96,44,0.2);
-            "></div>
+            <div class="althy-bubble">CHF ${bien.prix}</div>
+            <div class="althy-dot"></div>
           `;
 
           el.addEventListener("click", e => {
             e.stopPropagation();
-            markersRef.current.forEach((m, id) => m.classList.toggle("active", id === bien.id));
+            markersRef.current.forEach((m, id) => {
+              const bubble = m.querySelector(".althy-bubble");
+              if (bubble) bubble.classList.toggle("active", id === bien.id);
+            });
             setSelected(bien);
           });
 
           markersRef.current.set(bien.id, el);
 
-          new mapboxgl.Marker({ element: el, anchor: "bottom" })
+          new mapboxgl.Marker({ element: el, anchor: "bottom", offset: [0, 0] })
             .setLngLat([bien.lng, bien.lat])
             .addTo(map);
-
         });
 
-        // Click on empty map → close panel
+        // Click sur la carte → fermer le panel
         map.on("click", () => {
-          markersRef.current.forEach(m => m.classList.remove("active"));
+          markersRef.current.forEach(m => {
+            const bubble = m.querySelector(".althy-bubble");
+            if (bubble) bubble.classList.remove("active");
+          });
           setSelected(null);
         });
       });
