@@ -55,6 +55,11 @@ class Listing(BaseModel):
     swipes_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     contacts_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
 
+    # ── Source tracing (migration 0027) ───────────────────────────────────────
+    source_site: Mapped[str | None] = mapped_column(String(100))
+    source_id:   Mapped[str | None] = mapped_column(String(100))
+    source_url:  Mapped[str | None] = mapped_column(String(500))
+
     __table_args__ = (
         Index("ix_listings_property_id", "property_id"),
         Index("ix_listings_status", "status"),
