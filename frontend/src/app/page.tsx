@@ -269,6 +269,7 @@ export default function LandingPage() {
   // Mapbox init
   useEffect(() => {
     let map: any;
+    let ro: ResizeObserver | null = null;
 
     (async () => {
       if (!mapContainer.current) return;
@@ -291,6 +292,10 @@ export default function LandingPage() {
       });
 
       mapRef.current = map;
+
+      map.resize();
+      ro = new ResizeObserver(() => map.resize());
+      if (mapContainer.current) ro.observe(mapContainer.current);
 
       const handleInteraction = () => setMapInteracted(true);
       map.on("dragstart",   handleInteraction);
@@ -342,6 +347,7 @@ export default function LandingPage() {
     })();
 
     return () => {
+      ro?.disconnect();
       map?.remove();
       mapRef.current = null;
       markersRef.current.clear();
@@ -438,7 +444,7 @@ export default function LandingPage() {
     <>
       <style>{GLOBAL_CSS}</style>
 
-      <div style={{ fontFamily: sans, background: BG }}>
+      <div style={{ fontFamily: sans, background: BG, width: "100%", overflowX: "hidden" }}>
 
         {/* ════════════════════════════════════════════════════════════════
             NAVBAR — fixed, transparent → opaque on scroll
@@ -510,10 +516,8 @@ export default function LandingPage() {
         ════════════════════════════════════════════════════════════════ */}
         <section style={{ position: "relative", height: "100dvh", overflow: "hidden", width: "100vw" }}>
 
-          {/* Mapbox canvas — dépasse de 50px pour cacher le logo Mapbox sous le fold */}
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: "-50px" }}>
-            <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
-          </div>
+          {/* Mapbox canvas */}
+          <div ref={mapContainer} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%" }} />
 
           {/* Top gradient for navbar readability */}
           <div style={{
@@ -610,40 +614,33 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Search bar premium — filtres + micro IA */}
+          {/* Search bar premium + like/dislike */}
           <div style={{
             position: "absolute",
-            bottom: 72, left: "50%",
+            bottom: 64, left: "50%",
             transform: "translateX(-50%)",
             zIndex: 10,
-            width: "min(620px, calc(100vw - 32px))",
-            display: "flex", flexDirection: "column", alignItems: "center", gap: 10,
+            width: "min(580px, calc(100vw - 32px))",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
           }}>
-
-            {/* Barre principale */}
-            <form onSubmit={handleSearch} style={{ position: "relative", width: "100%" }}>
-              <Search
-                size={15}
-                style={{
-                  position: "absolute", left: 16, top: "50%",
-                  transform: "translateY(-50%)",
-                  color: MUTED, pointerEvents: "none", zIndex: 2,
-                }}
-              />
+            {/* Barre de recherche */}
+            <form onSubmit={handleSearch} style={{ position: "relative", width: "100%", display: "flex", alignItems: "center" }}>
               <input
                 type="text"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                placeholder="Ville, quartier, code postal…"
+                placeholder="Ville, quartier, adresse…"
                 style={{
                   width: "100%", boxSizing: "border-box",
-                  padding: "15px 200px 15px 44px",
-                  borderRadius: 32, border: "none",
-                  background: "rgba(250,250,248,0.97)",
+                  padding: "14px 160px 14px 20px",
+                  borderRadius: 32,
+                  border: "1.5px solid rgba(255,255,255,0.6)",
+                  background: "rgba(255,255,255,0.82)",
                   backdropFilter: "blur(20px)",
+                  WebkitBackdropFilter: "blur(20px)",
                   fontSize: 14, color: DARK,
                   outline: "none",
-                  boxShadow: "0 8px 36px rgba(26,22,18,0.22)",
+                  boxShadow: "0 8px 32px rgba(26,22,18,0.18)",
                   fontFamily: sans,
                 }}
               />
@@ -652,144 +649,127 @@ export default function LandingPage() {
                 transform: "translateY(-50%)",
                 display: "flex", alignItems: "center", gap: 4,
               }}>
-                <div style={{ width: 1, height: 20, background: "rgba(26,22,18,0.12)", marginRight: 4 }} />
-                <button
-                  type="button"
-                  title="Parler à Althy IA"
-                  onClick={() => { window.location.href = "/register"; }}
-                  style={{
-                    width: 34, height: 34, borderRadius: "50%",
-                    background: "rgba(232,96,44,0.10)",
-                    border: "1.5px solid rgba(232,96,44,0.25)",
-                    color: ORANGE,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    cursor: "pointer", transition: "all 0.2s", flexShrink: 0,
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = "rgba(232,96,44,0.18)";
-                    e.currentTarget.style.borderColor = ORANGE;
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = "rgba(232,96,44,0.10)";
-                    e.currentTarget.style.borderColor = "rgba(232,96,44,0.25)";
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <rect x="4.5" y="1" width="5" height="8" rx="2.5" fill="#E8602C"/>
-                    <path d="M2 7.5c0 2.76 2.24 5 5 5s5-2.24 5-5" stroke="#E8602C" strokeWidth="1.3" strokeLinecap="round"/>
-                    <line x1="7" y1="12.5" x2="7" y2="14" stroke="#E8602C" strokeWidth="1.3" strokeLinecap="round"/>
-                  </svg>
+                <button type="button" title="Parler à Althy IA" style={{
+                  width: 34, height: 34, borderRadius: "50%",
+                  background: "transparent", border: "none", color: MUTED,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer",
+                }}>
+                  <Mic size={15} />
                 </button>
-                <button
-                  type="submit"
-                  style={{
-                    padding: "7px 18px", borderRadius: 24,
-                    background: ORANGE, color: "#fff",
-                    border: "none", fontSize: 13, fontWeight: 600,
-                    cursor: "pointer", fontFamily: sans, flexShrink: 0,
-                    boxShadow: "0 2px 10px rgba(232,96,44,0.35)",
-                  }}
-                >
-                  Chercher
+                <button type="button" title="Filtres" style={{
+                  width: 34, height: 34, borderRadius: "50%",
+                  background: "transparent", border: "none", color: MUTED,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer",
+                }}>
+                  <SlidersHorizontal size={15} />
+                </button>
+                <div style={{ width: 1, height: 18, background: "rgba(26,22,18,0.15)" }} />
+                <button type="submit" style={{
+                  padding: "7px 16px", borderRadius: 24,
+                  background: ORANGE, color: "#fff",
+                  border: "none", fontSize: 13, fontWeight: 600,
+                  cursor: "pointer", fontFamily: sans,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  boxShadow: "0 2px 10px rgba(232,96,44,0.35)",
+                }}>
+                  <Search size={14} />
                 </button>
               </div>
             </form>
 
-            {/* Filtres rapides */}
-            <div style={{
-              display: "flex", gap: 6, alignItems: "center",
-              flexWrap: "nowrap", overflowX: "auto",
-            }}>
-              {[
-                { label: "Location", value: "location" },
-                { label: "Vente",    value: "vente" },
-                { label: "Colocation", value: "colocation" },
-              ].map(f => (
-                <button
-                  key={f.value}
-                  type="button"
-                  style={{
-                    display: "flex", alignItems: "center", gap: 5,
-                    padding: "6px 14px", borderRadius: 20,
-                    background: "rgba(250,250,248,0.85)",
-                    backdropFilter: "blur(12px)",
-                    border: "1px solid rgba(255,255,255,0.35)",
-                    color: DARK, fontSize: 11.5, fontWeight: 500,
-                    cursor: "pointer", fontFamily: sans,
-                    whiteSpace: "nowrap",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
-                    transition: "all 0.15s",
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = ORANGE;
-                    e.currentTarget.style.color = "#fff";
-                    e.currentTarget.style.borderColor = ORANGE;
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = "rgba(250,250,248,0.85)";
-                    e.currentTarget.style.color = DARK;
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)";
-                  }}
-                >
-                  {f.label}
+            {/* Pills filtres + actions */}
+            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "nowrap" }}>
+              {["Location", "Vente", "Colocation"].map(label => (
+                <button key={label} type="button" style={{
+                  padding: "5px 13px", borderRadius: 20,
+                  background: "rgba(255,255,255,0.72)",
+                  backdropFilter: "blur(12px)",
+                  border: "1px solid rgba(255,255,255,0.50)",
+                  color: DARK, fontSize: 11.5, fontWeight: 500,
+                  cursor: "pointer", fontFamily: sans,
+                  whiteSpace: "nowrap",
+                  boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
+                }}>
+                  {label}
                 </button>
               ))}
-              <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.35)", flexShrink: 0 }} />
-              <button
-                type="button"
-                style={{
-                  display: "flex", alignItems: "center", gap: 5,
-                  padding: "6px 14px", borderRadius: 20,
-                  background: "rgba(250,250,248,0.85)", backdropFilter: "blur(12px)",
-                  border: "1px solid rgba(255,255,255,0.35)",
-                  color: DARK, fontSize: 11.5, fontWeight: 500,
-                  cursor: "pointer", fontFamily: sans,
-                  whiteSpace: "nowrap", boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
-                }}
-              >
-                Budget
-              </button>
-              <button
-                type="button"
-                style={{
-                  display: "flex", alignItems: "center", gap: 5,
-                  padding: "6px 14px", borderRadius: 20,
-                  background: "rgba(250,250,248,0.85)", backdropFilter: "blur(12px)",
-                  border: "1px solid rgba(255,255,255,0.35)",
-                  color: DARK, fontSize: 11.5, fontWeight: 500,
-                  cursor: "pointer", fontFamily: sans,
-                  whiteSpace: "nowrap", boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
-                }}
-              >
-                Pièces
-              </button>
-              <div style={{ width: 1, height: 16, background: "rgba(255,255,255,0.35)", flexShrink: 0 }} />
+              <div style={{ width: 1, height: 14, background: "rgba(255,255,255,0.4)" }} />
               <Link href="/biens/swipe" style={{
                 display: "flex", alignItems: "center", gap: 5,
-                padding: "6px 14px", borderRadius: 20,
-                background: "rgba(26,22,18,0.75)", backdropFilter: "blur(12px)",
+                padding: "5px 13px", borderRadius: 20,
+                background: "rgba(26,22,18,0.80)",
+                backdropFilter: "blur(12px)",
                 border: "1px solid rgba(255,255,255,0.12)",
                 color: "#fff", fontSize: 11.5, fontWeight: 600,
                 textDecoration: "none", whiteSpace: "nowrap",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
               }}>
                 <Layers size={12} /> Mode Swipe
               </Link>
-              <button
-                onClick={scrollToList}
-                style={{
-                  display: "flex", alignItems: "center", gap: 5,
-                  padding: "6px 14px", borderRadius: 20,
-                  background: "rgba(250,250,248,0.85)", backdropFilter: "blur(12px)",
-                  border: "1px solid rgba(255,255,255,0.35)",
-                  color: DARK, fontSize: 11.5, fontWeight: 500,
-                  cursor: "pointer", fontFamily: sans,
-                  whiteSpace: "nowrap", boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
-                }}
-              >
-                <List size={12} /> Liste ({BIENS_MARKERS.length})
+              <button onClick={scrollToList} style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "5px 13px", borderRadius: 20,
+                background: "rgba(255,255,255,0.72)",
+                backdropFilter: "blur(12px)",
+                border: "1px solid rgba(255,255,255,0.50)",
+                color: DARK, fontSize: 11.5, fontWeight: 500,
+                cursor: "pointer", fontFamily: sans, whiteSpace: "nowrap",
+              }}>
+                <List size={12} /> Listes ({BIENS_MARKERS.length})
               </button>
             </div>
+          </div>
+
+          {/* Boutons Like / Dislike — coin bas droit */}
+          <div style={{
+            position: "absolute", bottom: 80, right: 24,
+            zIndex: 10, display: "flex", flexDirection: "column", gap: 10,
+          }}>
+            <button title="Ajouter aux favoris" style={{
+              width: 52, height: 52, borderRadius: "50%",
+              background: "rgba(255,255,255,0.85)",
+              backdropFilter: "blur(16px)",
+              border: "1.5px solid rgba(255,255,255,0.7)",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.14)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", transition: "all 0.18s",
+            }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "#E8602C";
+                e.currentTarget.style.borderColor = "#E8602C";
+                (e.currentTarget.querySelector("svg") as SVGElement).style.color = "#fff";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.85)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.7)";
+                (e.currentTarget.querySelector("svg") as SVGElement).style.color = "#E8602C";
+              }}
+            >
+              <Heart size={22} color="#E8602C" />
+            </button>
+            <button title="Pas intéressé" style={{
+              width: 52, height: 52, borderRadius: "50%",
+              background: "rgba(255,255,255,0.85)",
+              backdropFilter: "blur(16px)",
+              border: "1.5px solid rgba(255,255,255,0.7)",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.14)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", transition: "all 0.18s",
+            }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "#1A1208";
+                e.currentTarget.style.borderColor = "#1A1208";
+                (e.currentTarget.querySelector("svg") as SVGElement).style.color = "#fff";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.85)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.7)";
+                (e.currentTarget.querySelector("svg") as SVGElement).style.color = MUTED;
+              }}
+            >
+              <X size={22} color={MUTED} />
+            </button>
           </div>
 
           {/* Panel détail — haut droite */}
