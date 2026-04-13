@@ -3,7 +3,7 @@
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Search, Layers, List, ChevronDown, X } from "lucide-react";
+import { Search, Layers, List, ChevronDown, X, Heart, Mic, SlidersHorizontal } from "lucide-react";
 import { Footer } from "@/components/landing/Footer";
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
