@@ -56,7 +56,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr" suppressHydrationWarning className={`${fraunces.variable} ${dmSans.variable}`}>
-      <body className={`${dmSans.variable} font-sans`}>
+      <body className={`${dmSans.variable} ${fraunces.variable} font-sans`}>
         <Providers>{children}</Providers>
         <CookieBanner />
       </body>

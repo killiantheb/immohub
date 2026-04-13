@@ -12,7 +12,7 @@ const ORANGE = "#E8602C";
 const DARK   = "#1A1612";
 const MUTED  = "#6B5E52";
 const BG     = "#FAFAF8";
-const serif  = "var(--font-serif, Fraunces, Georgia, serif)";
+const serif  = "var(--font-serif, 'Fraunces', Georgia, serif)";
 const sans   = "var(--font-sans, 'DM Sans', system-ui, sans-serif)";
 
 const ACTIVE_CANTONS = ["Genève", "Vaud", "Valais", "Fribourg", "Neuchâtel", "Jura"];
@@ -138,6 +138,9 @@ const ROLES = [
 
 const GLOBAL_CSS = `
   .lp-price-marker {
+    display: inline-block !important;
+    width: fit-content !important;
+    white-space: nowrap !important;
     background: ${ORANGE};
     color: #fff;
     font-size: 12px;
@@ -147,13 +150,11 @@ const GLOBAL_CSS = `
     border-radius: 20px;
     box-shadow: 0 2px 14px rgba(232,96,44,0.42);
     cursor: pointer;
-    white-space: nowrap;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
     border: 2px solid rgba(255,255,255,0.45);
     user-select: none;
     letter-spacing: 0.01em;
     position: relative;
-    display: block;
   }
   .lp-price-marker::after {
     content: '';
@@ -241,18 +242,30 @@ export default function LandingPage() {
       mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
       map = new mapboxgl.Map({
-        container: mapContainer.current,
-        style:     "mapbox://styles/mapbox/light-v11",
-        center:    [7.0, 46.65],
-        zoom:      7.5,
-        minZoom:   5.5,
-        maxZoom:   16,
+        container:          mapContainer.current,
+        style:              "mapbox://styles/mapbox/light-v11",
+        center:             [7.0, 46.65],
+        zoom:               7.2,
+        minZoom:            5.5,
+        maxZoom:            18,
+        pitch:              40,
+        bearing:            -5,
+        antialias:          true,
         attributionControl: false,
       });
 
       mapRef.current = map;
 
       map.on("load", () => {
+        // Terrain 3D
+        map.addSource("mapbox-dem", {
+          type: "raster-dem",
+          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+          tileSize: 512,
+          maxzoom: 14,
+        });
+        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.3 });
+
         // Cantons
         map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
         map.addLayer({
@@ -269,8 +282,56 @@ export default function LandingPage() {
         // Price markers
         BIENS_MARKERS.forEach(bien => {
           const el = document.createElement("div");
-          el.className = "lp-price-marker";
-          el.textContent = `CHF ${bien.prix}${bien.periode === "/mois" ? "/m" : ""}`;
+          el.style.cssText = `
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            width: fit-content;
+            white-space: nowrap;
+            position: relative;
+          `;
+          el.innerHTML = `
+            <div style="
+              display: inline-block;
+              width: fit-content;
+              white-space: nowrap;
+              background: #E8602C;
+              color: #fff;
+              font-size: 12px;
+              font-weight: 700;
+              font-family: 'DM Sans', system-ui, sans-serif;
+              padding: 5px 12px;
+              border-radius: 20px;
+              box-shadow: 0 3px 12px rgba(232,96,44,0.45), 0 1px 3px rgba(0,0,0,0.2);
+              border: 2px solid rgba(255,255,255,0.5);
+              letter-spacing: 0.01em;
+              position: relative;
+              transition: transform 0.15s ease;
+            ">
+              CHF ${bien.prix}
+              <span style="
+                position: absolute;
+                bottom: -6px;
+                left: 50%;
+                transform: translateX(-50%);
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 6px solid #E8602C;
+                display: block;
+                width: 0;
+                height: 0;
+              "></span>
+            </div>
+            <div style="
+              width: 5px;
+              height: 5px;
+              border-radius: 50%;
+              background: #E8602C;
+              margin-top: 1px;
+              box-shadow: 0 0 0 3px rgba(232,96,44,0.2);
+            "></div>
+          `;
 
           el.addEventListener("click", e => {
             e.stopPropagation();
@@ -283,6 +344,7 @@ export default function LandingPage() {
           new mapboxgl.Marker({ element: el, anchor: "bottom" })
             .setLngLat([bien.lng, bien.lat])
             .addTo(map);
+
         });
 
         // Click on empty map → close panel
@@ -428,21 +490,21 @@ export default function LandingPage() {
               fontWeight: 300,
               fontStyle: "italic",
               fontVariationSettings: "'wght' 300, 'SOFT' 40, 'WONK' 0",
-              color: "#fff",
-              textShadow: "0 2px 24px rgba(0,0,0,0.38), 0 1px 4px rgba(0,0,0,0.20)",
+              color: "#1A1208",
+              textShadow: "0 2px 20px rgba(0,0,0,0.08), 0 1px 4px rgba(255,255,255,0.60)",
               margin: 0,
               letterSpacing: "-0.025em",
               lineHeight: 1.06,
             }}>
-              Trouvez votre<br />chez-vous.
+              Trouvez votre<br />
+              <span style={{ color: "#E8602C" }}>chez-vous.</span>
             </h1>
             <p style={{
               fontFamily: sans,
               fontSize: "clamp(13px, 1.8vw, 17px)",
-              color: "rgba(255,255,255,0.80)",
+              color: "#5C5650",
               margin: "18px 0 0",
               fontWeight: 400,
-              textShadow: "0 1px 8px rgba(0,0,0,0.28)",
               letterSpacing: "0.03em",
             }}>
               Suisse romande — Althy gère, vous décidez.
