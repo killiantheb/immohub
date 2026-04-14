@@ -82,7 +82,7 @@ function fmtDate(iso: string | null | undefined) {
   return new Date(iso).toLocaleDateString("fr-CH", { day: "numeric", month: "short", year: "numeric" });
 }
 function initials(firstName: string) {
-  return firstName ? firstName.slice(0, 2).toUpperCase() : "–";
+  return firstName ? firstName[0].toUpperCase() : "?";
 }
 
 // ── DASHBOARD_CONFIGS ─────────────────────────────────────────────────────────
