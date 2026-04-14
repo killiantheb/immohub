@@ -1020,57 +1020,55 @@ function HKpiCard({ icon: Icon, iconColor, iconBg, value, label, sub, isUrgent }
   icon: LucideIcon; iconColor: string; iconBg: string;
   value: string; label: string; sub?: string; isUrgent?: boolean;
 }) {
-  const [hov, setHov] = useState(false);
   return (
-    <div
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        background: "#FFFFFF",
-        borderRadius: 24,
-        border: "1px solid var(--border-subtle)",
-        boxShadow: hov ? H_SHADOW_HOV : H_SHADOW,
-        padding: 24,
-        position: "relative",
-        transform: hov ? "translateY(-2px)" : "translateY(0)",
-        transition: "box-shadow 0.2s, transform 0.2s",
-      }}
+    <div style={{
+      background: "#fff", borderRadius: 24, padding: "24px",
+      border: "1px solid var(--border-subtle)",
+      position: "relative", cursor: "default",
+      transition: "box-shadow 0.2s, transform 0.2s",
+    }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,0,0,0.06)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }}
     >
-      {/* Menu ··· */}
-      <span style={{
-        position: "absolute", top: 16, right: 18,
-        opacity: hov ? 0.5 : 0,
-        fontSize: 18, color: "var(--text-tertiary)", letterSpacing: 2, lineHeight: 1,
-        userSelect: "none", transition: "opacity 0.15s",
-      }}>···</span>
-
-      {/* Urgent badge */}
-      {isUrgent && (
-        <span style={{
-          position: "absolute", top: 16, left: 20,
-          fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 99,
-          background: "var(--urgent-bg)", color: "#DC3545",
-          letterSpacing: "0.06em", textTransform: "uppercase",
-        }}>Urgent</span>
-      )}
-
-      {/* Icon square */}
-      <div style={{
-        width: 48, height: 48, borderRadius: 16, background: iconBg,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        marginBottom: 16, marginTop: isUrgent ? 20 : 0,
-      }}>
-        <Icon size={22} color={isUrgent ? "#DC3545" : iconColor} strokeWidth={1.6} />
+      {/* Menu dots — discret */}
+      <div style={{ position: "absolute", top: 20, right: 20, opacity: 0.2, cursor: "pointer" }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--text-tertiary)">
+          <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+        </svg>
       </div>
 
-      {/* Value */}
-      <div style={{ fontSize: 36, fontWeight: 600, color: "var(--charcoal)", lineHeight: 1, marginBottom: 6, fontFamily: "var(--font-display)" }}>
-        {value}
+      {/* Icône dans CERCLE pastel */}
+      <div style={{
+        width: 48, height: 48, borderRadius: "50%",
+        background: iconBg,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        marginBottom: 20,
+      }}>
+        <Icon size={20} strokeWidth={1.5} style={{ color: iconColor }} />
+      </div>
+
+      {/* Valeur + badge urgent */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <span style={{
+          fontSize: 36, fontWeight: 600, lineHeight: 1,
+          color: "var(--charcoal)",
+          fontFamily: "var(--font-display)",
+        }}>
+          {value}
+        </span>
+        {isUrgent && (
+          <span style={{
+            padding: "3px 8px", borderRadius: 8,
+            background: "var(--urgent-bg)", color: "var(--terracotta-primary)",
+            fontSize: 9, fontWeight: 700, textTransform: "uppercase",
+            letterSpacing: "0.08em",
+          }}>Urgent</span>
+        )}
       </div>
 
       {/* Label */}
-      <div style={{ fontSize: 13, color: "var(--text-secondary)", fontWeight: 500 }}>{label}</div>
-      {sub && <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 3 }}>{sub}</div>}
+      <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>{label}</div>
+      {sub && <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: 2 }}>{sub}</div>}
     </div>
   );
 }
