@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- Althy — Schéma Supabase complet (18 tables)
+-- Althy — Schéma Supabase complet (22 tables)
 -- Exécuter dans l'ordre dans l'éditeur SQL Supabase
 -- RLS activé sur toutes les tables
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -542,6 +542,107 @@ CREATE TABLE IF NOT EXISTS analytics (
 CREATE INDEX IF NOT EXISTS ix_analytics_user_id    ON analytics(user_id);
 CREATE INDEX IF NOT EXISTS ix_analytics_event      ON analytics(event);
 CREATE INDEX IF NOT EXISTS ix_analytics_created_at ON analytics(created_at DESC);
+
+-- ── 20. loyer_transactions (transit Althy — QR-facture SPC 2.0) ──────────────
+-- Migration 0026 : architecture de transit des loyers (QR-facture → réception → reversement)
+CREATE TABLE IF NOT EXISTS loyer_transactions (
+    id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    property_id               UUID NOT NULL REFERENCES properties(id),
+    tenant_id                 UUID REFERENCES auth.users(id),
+    owner_id                  UUID NOT NULL REFERENCES auth.users(id),
+    montant_total             NUMERIC(10,2) NOT NULL,
+    commission_pct            NUMERIC(5,4)  NOT NULL DEFAULT 0.03,
+    commission_montant        NUMERIC(10,2) NOT NULL,
+    montant_reverse           NUMERIC(10,2) NOT NULL,
+    qr_reference              VARCHAR(27),   -- Référence QR-Referenz SIX (27 chiffres)
+    statut                    VARCHAR(20)   NOT NULL DEFAULT 'en_attente',
+    -- en_attente | recu | reverse | en_retard | conteste
+    mois_concerne             DATE          NOT NULL,
+    date_reception            TIMESTAMPTZ,
+    date_reversement          TIMESTAMPTZ,
+    reference_virement_sortant VARCHAR(100),
+    created_at                TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at                TIMESTAMPTZ   NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS ix_loyer_tx_owner    ON loyer_transactions(owner_id);
+CREATE INDEX IF NOT EXISTS ix_loyer_tx_property ON loyer_transactions(property_id);
+CREATE INDEX IF NOT EXISTS ix_loyer_tx_qr_ref   ON loyer_transactions(qr_reference);
+CREATE INDEX IF NOT EXISTS ix_loyer_tx_statut   ON loyer_transactions(statut);
+CREATE UNIQUE INDEX IF NOT EXISTS ix_loyer_tx_qr_ref_unique ON loyer_transactions(qr_reference)
+    WHERE qr_reference IS NOT NULL;
+
+ALTER TABLE loyer_transactions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "loyer_tx_proprio_read" ON loyer_transactions FOR SELECT USING (owner_id  = auth.uid());
+CREATE POLICY "loyer_tx_tenant_read"  ON loyer_transactions FOR SELECT USING (tenant_id = auth.uid());
+CREATE POLICY "loyer_tx_service_all"  ON loyer_transactions FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- ── 21. estimation_logs (analytics estimations IA — landing page) ─────────────
+-- Migration 011 : logs des estimations publiques sans auth
+CREATE TABLE IF NOT EXISTS estimation_logs (
+    id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    adresse     TEXT         NOT NULL,
+    pieces      INTEGER      NOT NULL,
+    surface_m2  NUMERIC(8,2) NOT NULL,
+    type        TEXT         NOT NULL DEFAULT 'apartment',
+    resultat    JSONB,                         -- { min, max, confiance }
+    ip          TEXT,                          -- IP anonymisée
+    created_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS ix_estimation_logs_created_at ON estimation_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_estimation_logs_ip         ON estimation_logs(ip);
+
+ALTER TABLE estimation_logs ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='estimation_logs' AND policyname='admin_read_estimation_logs') THEN
+        CREATE POLICY admin_read_estimation_logs ON estimation_logs FOR SELECT
+            USING (EXISTS (SELECT 1 FROM users u WHERE u.id = auth.uid() AND u.role = 'super_admin'));
+    END IF;
+END $$;
+
+-- ── 22. changements_locataire (cycle check-in / check-out / EDL) ─────────────
+-- Migration 0028 : suivi du changement de locataire (4 phases)
+CREATE TABLE IF NOT EXISTS changements_locataire (
+    id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    bien_id              UUID        NOT NULL REFERENCES biens(id) ON DELETE CASCADE,
+    phase                VARCHAR(30) NOT NULL DEFAULT 'depart_annonce',
+    -- depart_annonce | recherche | checkout | checkin | termine
+    statut               VARCHAR(20) NOT NULL DEFAULT 'en_cours',
+    -- en_cours | termine | annule
+    -- Phase 1 — Départ annoncé
+    date_depart_prevu    DATE,
+    checklist_depart     JSONB       NOT NULL DEFAULT '[]',
+    -- Phase 2 — Recherche locataire
+    annonce_publiee      BOOLEAN     NOT NULL DEFAULT false,
+    -- Phase 3 — Check-out (EDL sortie)
+    date_checkout        DATE,
+    edl_sortie           JSONB       NOT NULL DEFAULT '{}',
+    caution_retenue      NUMERIC(10,2),
+    caution_motif        TEXT,
+    -- Phase 4 — Check-in (EDL entrée)
+    date_checkin         DATE,
+    edl_entree           JSONB       NOT NULL DEFAULT '{}',
+    nouveau_locataire_id UUID,
+    bail_signe           BOOLEAN     NOT NULL DEFAULT false,
+    premier_loyer_envoye BOOLEAN     NOT NULL DEFAULT false,
+    created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_cl_bien_id ON changements_locataire(bien_id);
+CREATE INDEX IF NOT EXISTS idx_cl_statut  ON changements_locataire(statut) WHERE statut = 'en_cours';
+CREATE INDEX IF NOT EXISTS idx_cl_phase   ON changements_locataire(phase);
+
+ALTER TABLE changements_locataire ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='changements_locataire' AND policyname='owner_all') THEN
+        CREATE POLICY owner_all ON changements_locataire FOR ALL
+            USING (EXISTS (SELECT 1 FROM biens WHERE biens.id = changements_locataire.bien_id AND biens.owner_id = auth.uid()))
+            WITH CHECK (EXISTS (SELECT 1 FROM biens WHERE biens.id = changements_locataire.bien_id AND biens.owner_id = auth.uid()));
+    END IF;
+END $$;
+CREATE POLICY "cl_service_role_all" ON changements_locataire FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- ROW LEVEL SECURITY

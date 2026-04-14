@@ -76,7 +76,7 @@ frontend/   Next.js 14 App Router + TypeScript → Vercel
 backend/    FastAPI Python + Celery + Redis → Railway
 mobile/     React Native / Expo
 supabase/   PostgreSQL + Auth + Storage + Realtime
-            25 migrations actives (0001 → 0025)
+            28 migrations actives (0001 → 0028)
 ```
 
 ### Dépendances clés (frontend)
@@ -449,12 +449,17 @@ DTopNav       // Navigation haut de page : "← Sphère IA" + "Carte"
 
 ## Migrations DB — état actuel
 
-25 migrations actives (0001 → 0025).
+28 migrations actives (0001 → 0028).
 - 0006 : tables Althy core
 - 0022 : communication, onboarding, notation
 - 0023 : briefing cache + context hash
 - 0024 : type et affectation sur dépenses
 - 0025 : index partiels messagerie/whatsapp non-lus (performances < 10ms)
+- 0026 : loyer_transactions (QR-facture SPC 2.0, transit Althy, CAMT.054)
+- 0027 : email_sequence_logs
+- 0028 : changements_locataire (cycle check-in/check-out/EDL, 4 phases)
+
+**schema.sql** : 22 tables (synchronisé avec les migrations 0026–0028).
 
 **Prochaine migration à créer si besoin :**
 - Table `ai_user_preferences` (apprentissage Sphère) — vérifier si existe déjà en 0003/0006
@@ -552,7 +557,7 @@ Phase 4 (Mois 4-6) — SEO local (/biens/geneve, /biens/lausanne, /louer/vaud) +
 ✅ Mobile React Native / Expo
 ✅ Layout responsive (sidebar drawer mobile)
 ✅ Endpoints non-lus messagerie + WhatsApp (badges sidebar)
-✅ 26 migrations Supabase actives (0001 → 0026)
+✅ 28 migrations Supabase actives (0001 → 0028)
 ```
 
 ---
