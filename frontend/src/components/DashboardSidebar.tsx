@@ -22,7 +22,6 @@ import {
   FileText,
   LayoutGrid,
 } from "lucide-react";
-import { AlthySphere } from "@/components/AlthySphere";
 
 // ── Nav items ─────────────────────────────────────────────────────────────────
 
@@ -161,26 +160,28 @@ const S = {
 
   navItem: (active: boolean, collapsed: boolean): React.CSSProperties => ({
     width: "100%", display: "flex", alignItems: "center",
-    gap: 12, padding: collapsed ? "12px 0" : "10px 22px",
+    gap: 10, padding: collapsed ? "8px 0" : "5px 12px",
     justifyContent: collapsed ? "center" : "flex-start",
-    background: active ? "var(--sidebar-active)" : "transparent",
-    border: "none",
-    borderLeft: active ? "2.5px solid var(--sidebar-gold)" : "2.5px solid transparent",
+    background: "transparent",
+    border: "none", borderLeft: "none",
     cursor: "pointer", fontFamily: "var(--font-sans), inherit",
-    transition: "background 0.15s, color 0.15s",
+    transition: "opacity 0.15s",
+    borderRadius: 10,
   }),
 
   navLabel: (active: boolean): React.CSSProperties => ({
-    flex: 1, fontSize: 14, textAlign: "left",
-    color: active ? "var(--sidebar-text-on)" : "var(--sidebar-text)",
-    fontWeight: active ? 500 : 400,
-    letterSpacing: "0.01em",
+    flex: 1, fontSize: 13, textAlign: "left",
+    color: active ? "#E8602C" : "#6E6A65",
+    fontWeight: active ? 600 : 400,
   }),
 
-  navIcon: (active: boolean): React.CSSProperties => ({
-    color: active ? "var(--sidebar-gold)" : "#7A6450",
+  navIconWrap: (active: boolean): React.CSSProperties => ({
+    width: 36, height: 36, borderRadius: 10,
+    background: active ? "#FEF0EA" : "transparent",
+    display: "flex", alignItems: "center", justifyContent: "center",
     flexShrink: 0,
-    transition: "color 0.15s",
+    color: active ? "#E8602C" : "#A8A29E",
+    transition: "background 0.15s, color 0.15s",
   }),
 
   footer: (collapsed: boolean): React.CSSProperties => ({
@@ -263,27 +264,32 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
         style={S.navItem(active, collapsed)}
         title={collapsed ? item.label : undefined}
       >
-        <span style={S.navIcon(active)}>{item.icon}</span>
+        {/* Icon in square */}
+        <span style={S.navIconWrap(active)}>{item.icon}</span>
+
         {!collapsed && (
           <>
             <span style={S.navLabel(active)}>{item.label}</span>
+
             {/* Badge non-lus communication */}
             {item.section === "communication" && unreadMsg > 0 && (
               <span style={{
                 marginLeft: "auto", minWidth: 17, height: 17, borderRadius: 9,
-                background: "var(--althy-orange)", color: "#fff",
+                background: "#E8602C", color: "#fff",
                 fontSize: 9, fontWeight: 800,
                 display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px",
               }}>
                 {unreadMsg > 99 ? "99+" : unreadMsg}
               </span>
             )}
-            {/* Point orange animé sur Althy IA */}
+
+            {/* Point pulsant sur Althy IA — 7px + glow */}
             {item.section === "sphere" && (
               <span style={{
-                width: 6, height: 6, borderRadius: "50%",
-                background: "var(--althy-orange)",
+                width: 7, height: 7, borderRadius: "50%",
+                background: "#E8602C",
                 flexShrink: 0,
+                boxShadow: "0 0 0 2px rgba(232,96,44,0.25), 0 0 0 4px rgba(232,96,44,0.10)",
                 animation: "sidebar-pulse 2s ease-in-out infinite",
               }} />
             )}
@@ -302,11 +308,15 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
       <div style={S.brand(collapsed)}>
         {!collapsed ? (
           <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-            <AlthySphere size={30} />
-            <span style={S.wordmark}>Althy</span>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: "#E8602C", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <span style={{ color: "#fff", fontSize: 17, fontWeight: 800, lineHeight: 1 }}>A</span>
+            </div>
+            <span style={{ fontSize: 18, fontWeight: 700, color: "#1A1816", letterSpacing: "-0.01em", lineHeight: 1 }}>Althy</span>
           </Link>
         ) : (
-          <AlthySphere size={30} />
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: "#E8602C", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ color: "#fff", fontSize: 17, fontWeight: 800, lineHeight: 1 }}>A</span>
+          </div>
         )}
         <button
           onClick={() => setCollapsed(c => !c)}

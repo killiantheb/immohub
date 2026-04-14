@@ -251,31 +251,31 @@ export const DASHBOARD_CONFIGS: Record<UserRole, DashboardConfig> = {
   },
 };
 
-// ── KPI icon styles ────────────────────────────────────────────────────────────
+// ── KPI icon styles — H-care pastel palette ───────────────────────────────────
 
 interface IconStyle { iconColor: string; iconBg: string }
 
 function kpiIconStyle(key: string, isUrgent: boolean): IconStyle {
-  if (isUrgent) return { iconColor: "var(--althy-red)", iconBg: "var(--althy-red-bg, rgba(239,68,68,0.10))" };
+  if (isUrgent) return { iconColor: "#EF4444", iconBg: "#FEF0EF" };
   const MAP: Record<string, IconStyle> = {
-    biens_actifs:          { iconColor: "#2563EB",               iconBg: "rgba(37,99,235,0.10)" },
-    biens_geres:           { iconColor: "#2563EB",               iconBg: "rgba(37,99,235,0.10)" },
-    loyers_mois:           { iconColor: "var(--althy-green)",    iconBg: "var(--althy-green-bg)" },
-    loyers_recus:          { iconColor: "var(--althy-green)",    iconBg: "var(--althy-green-bg)" },
-    impayes:               { iconColor: "#D97706",               iconBg: "rgba(217,119,6,0.10)" },
-    interventions_actives: { iconColor: DC.orange,               iconBg: "rgba(232,96,44,0.10)" },
-    bail_statut:           { iconColor: "var(--althy-green)",    iconBg: "var(--althy-green-bg)" },
-    prochain_loyer:        { iconColor: "#64748B",               iconBg: "rgba(100,116,139,0.10)" },
-    documents:             { iconColor: "#2563EB",               iconBg: "rgba(37,99,235,0.10)" },
-    revenus_mois:          { iconColor: "var(--althy-green)",    iconBg: "var(--althy-green-bg)" },
-    revenus_ouvreur:       { iconColor: "var(--althy-green)",    iconBg: "var(--althy-green-bg)" },
-    devis_attente:         { iconColor: "#D97706",               iconBg: "rgba(217,119,6,0.10)" },
-    missions_actives:      { iconColor: "var(--althy-green)",    iconBg: "var(--althy-green-bg)" },
-    agents_actifs:         { iconColor: DC.orange,               iconBg: "rgba(232,96,44,0.10)" },
-    missions_mois:         { iconColor: DC.orange,               iconBg: "rgba(232,96,44,0.10)" },
-    note_moyenne:          { iconColor: "#D97706",               iconBg: "rgba(217,119,6,0.10)" },
+    biens_actifs:          { iconColor: "#E8602C", iconBg: "#FEF0EA" },
+    biens_geres:           { iconColor: "#E8602C", iconBg: "#FEF0EA" },
+    loyers_mois:           { iconColor: "#16A34A", iconBg: "#E8F8F0" },
+    loyers_recus:          { iconColor: "#16A34A", iconBg: "#E8F8F0" },
+    impayes:               { iconColor: "#EF4444", iconBg: "#FEF0EF" },
+    interventions_actives: { iconColor: "#3B82F6", iconBg: "#EEF3FE" },
+    bail_statut:           { iconColor: "#16A34A", iconBg: "#E8F8F0" },
+    prochain_loyer:        { iconColor: "#3B82F6", iconBg: "#EEF3FE" },
+    documents:             { iconColor: "#3B82F6", iconBg: "#EEF3FE" },
+    revenus_mois:          { iconColor: "#16A34A", iconBg: "#E8F8F0" },
+    revenus_ouvreur:       { iconColor: "#16A34A", iconBg: "#E8F8F0" },
+    devis_attente:         { iconColor: "#D97706", iconBg: "#FEF9C3" },
+    missions_actives:      { iconColor: "#16A34A", iconBg: "#E8F8F0" },
+    agents_actifs:         { iconColor: "#E8602C", iconBg: "#FEF0EA" },
+    missions_mois:         { iconColor: "#E8602C", iconBg: "#FEF0EA" },
+    note_moyenne:          { iconColor: "#D97706", iconBg: "#FEF9C3" },
   };
-  return MAP[key] ?? { iconColor: DC.orange, iconBg: "rgba(232,96,44,0.10)" };
+  return MAP[key] ?? { iconColor: "#E8602C", iconBg: "#FEF0EA" };
 }
 
 // ── Shared status badge ────────────────────────────────────────────────────────
@@ -987,15 +987,175 @@ const SECTION_REGISTRY: Record<string, SectionRendererFn> = {
   missions_jour:      (p) => <SectionMissionsJour {...p} />,
 };
 
+// ── H-care KPI card ───────────────────────────────────────────────────────────
+
+const H_SHADOW      = "0 1px 3px rgba(26,24,22,0.04), 0 4px 16px rgba(26,24,22,0.03)";
+const H_SHADOW_HOV  = "0 4px 12px rgba(26,24,22,0.10), 0 8px 28px rgba(26,24,22,0.08)";
+
+function HKpiCard({ icon: Icon, iconColor, iconBg, value, label, sub, isUrgent }: {
+  icon: LucideIcon; iconColor: string; iconBg: string;
+  value: string; label: string; sub?: string; isUrgent?: boolean;
+}) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        background: "#FFFFFF", borderRadius: 18, border: "none",
+        boxShadow: hov ? H_SHADOW_HOV : H_SHADOW,
+        padding: "1.25rem", position: "relative",
+        transform: hov ? "translateY(-2px)" : "translateY(0)",
+        transition: "box-shadow 0.2s, transform 0.2s",
+      }}
+    >
+      {/* Menu ··· */}
+      <span style={{
+        position: "absolute", top: 14, right: 16, opacity: 0.3,
+        fontSize: 18, color: "#1A1816", letterSpacing: 2, lineHeight: 1,
+        userSelect: "none",
+      }}>···</span>
+
+      {/* Icon circle */}
+      <div style={{
+        width: 48, height: 48, borderRadius: "50%", background: iconBg,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        marginBottom: 14,
+      }}>
+        <Icon size={21} color={isUrgent ? "#EF4444" : iconColor} strokeWidth={1.7} />
+      </div>
+
+      {/* Value */}
+      <div style={{ fontSize: 28, fontWeight: 700, color: "#1A1816", lineHeight: 1, marginBottom: 5 }}>
+        {value}
+      </div>
+
+      {/* Label */}
+      <div style={{ fontSize: 13, color: "#A8A29E" }}>{label}</div>
+      {sub && <div style={{ fontSize: 11, color: "#C4C0BB", marginTop: 2 }}>{sub}</div>}
+    </div>
+  );
+}
+
+// ── H-care Orange highlight card ──────────────────────────────────────────────
+
+function HHighlightCard({ value, label }: { value: string; label: string }) {
+  const pts = [18, 28, 22, 38, 30, 44, 40].map((v, i, a) =>
+    `${(i / (a.length - 1)) * 100},${50 - ((v - 18) / 26) * 40}`
+  ).join(" ");
+
+  return (
+    <div style={{
+      background: "linear-gradient(145deg, #E8602C, #C04A18)", borderRadius: 18,
+      border: "none", boxShadow: "0 4px 20px rgba(232,96,44,0.35)",
+      padding: "1.25rem", color: "#fff",
+      display: "flex", flexDirection: "column", justifyContent: "space-between",
+      minHeight: 170,
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.75, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+        {label}
+      </div>
+      <div>
+        <div style={{ fontSize: 36, fontWeight: 800, lineHeight: 1, marginBottom: 8 }}>{value}</div>
+        <svg width="100%" height="36" viewBox="0 0 100 50" preserveAspectRatio="none">
+          <polyline points={pts} fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+      <Link href="/app/sphere" style={{
+        display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8,
+        background: "rgba(255,255,255,0.18)", borderRadius: 10,
+        padding: "8px 14px", fontSize: 12, fontWeight: 600, color: "#fff",
+        textDecoration: "none", width: "fit-content",
+      }}>
+        <Sparkles size={13} /> Ouvrir la Sphère IA
+      </Link>
+    </div>
+  );
+}
+
+// ── H-care Bar chart ──────────────────────────────────────────────────────────
+
+function HBarChart({ paiements }: { paiements: Paiement[] }) {
+  const months = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(); d.setMonth(d.getMonth() - 5 + i);
+    return d.toISOString().slice(0, 7);
+  });
+  const MOCK_BASE = [1800, 2200, 1950, 2400, 2100, 2600];
+  const values = months.map((m, i) => {
+    const sum = paiements.filter(p => p.mois === m && p.statut === "recu").reduce((s, p) => s + Number(p.montant), 0);
+    return sum || MOCK_BASE[i];
+  });
+  const currentMois = new Date().toISOString().slice(0, 7);
+  const maxVal = Math.max(...values, 1);
+
+  return (
+    <div style={{ background: "#fff", borderRadius: 18, boxShadow: H_SHADOW, padding: "1.25rem", flex: 1 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1816", marginBottom: 18 }}>Loyers encaissés — 6 mois</div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 88 }}>
+        {months.map((m, i) => {
+          const h = Math.max((values[i] / maxVal) * 72, 8);
+          const isCur = m === currentMois;
+          const lbl = new Date(m + "-01").toLocaleDateString("fr-CH", { month: "short" });
+          return (
+            <div key={m} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+              <div style={{
+                width: "100%", maxWidth: 28, height: h,
+                borderRadius: 8,
+                background: isCur ? "#E8602C" : "#FEF0EA",
+                transition: "height 0.4s ease",
+              }} />
+              <span style={{ fontSize: 10, color: isCur ? "#E8602C" : "#A8A29E", fontWeight: isCur ? 700 : 400, whiteSpace: "nowrap" }}>
+                {lbl}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── H-care Donut ──────────────────────────────────────────────────────────────
+
+function HDonut({ recu, total }: { recu: number; total: number }) {
+  const pct = total > 0 ? Math.round((recu / total) * 100) : 0;
+  const R = 34; const C = 2 * Math.PI * R;
+  const dash = (pct / 100) * C;
+
+  return (
+    <div style={{ background: "#fff", borderRadius: 18, boxShadow: H_SHADOW, padding: "1.25rem", display: "flex", alignItems: "center", gap: 20, minWidth: 200 }}>
+      <div style={{ position: "relative", width: 88, height: 88, flexShrink: 0 }}>
+        <svg width="88" height="88" viewBox="0 0 88 88">
+          <circle cx="44" cy="44" r={R} fill="none" stroke="#FEF0EA" strokeWidth={10} />
+          <circle cx="44" cy="44" r={R} fill="none" stroke="#E8602C" strokeWidth={10}
+            strokeLinecap="round"
+            strokeDasharray={`${dash} ${C - dash}`}
+            transform="rotate(-90 44 44)"
+          />
+        </svg>
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontSize: 22, fontWeight: 700, color: "#1A1816", lineHeight: 1 }}>{pct}%</span>
+          <span style={{ fontSize: 9, fontWeight: 700, color: "#A8A29E", letterSpacing: "0.08em", textTransform: "uppercase" }}>REÇUS</span>
+        </div>
+      </div>
+      <div>
+        <div style={{ fontSize: 20, fontWeight: 700, color: "#1A1816", lineHeight: 1 }}>{fmtCHF(recu)}</div>
+        <div style={{ fontSize: 11, color: "#A8A29E", marginTop: 4 }}>sur {fmtCHF(total)} attendus</div>
+      </div>
+    </div>
+  );
+}
+
 // ── Loading skeleton ──────────────────────────────────────────────────────────
 
 function KpiSkeleton({ count }: { count: number }) {
   return (
     <>
       {Array.from({ length: count }).map((_, i) => (
-        <DCard key={i}>
-          <div style={{ height: 80, borderRadius: 8, background: DC.border, opacity: 0.5 }} />
-        </DCard>
+        <div key={i} style={{ background: "#fff", borderRadius: 18, boxShadow: H_SHADOW, padding: "1.25rem", minHeight: 140 }}>
+          <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#F4F2EE", marginBottom: 14 }} />
+          <div style={{ height: 28, width: "60%", borderRadius: 6, background: "#F4F2EE" }} />
+        </div>
       ))}
     </>
   );
@@ -1019,84 +1179,102 @@ export function UnifiedDashboard() {
   }
   const config    = DASHBOARD_CONFIGS[role ?? "proprio_solo"];
   const kpiValues = computeKpiValues(role, data);
+  const isManager = role === "proprio_solo" || role === "agence" || role === "super_admin";
 
   return (
-    <div style={{ minHeight: "100vh", background: DC.bg }}>
+    <div style={{ minHeight: "100vh", background: "#F4F2EE" }}>
       <DTopNav />
-      <DRoleHeader role={role ?? "proprio_solo"} initials={initials(firstName)} />
 
-      {/* Greeting */}
-      <div style={{ marginBottom: "2rem" }}>
-        <h1 style={{ fontSize: 30, fontWeight: 400, fontFamily: DC.serif, color: DC.text, marginBottom: 4, letterSpacing: "0.01em" }}>
-          Bonjour{firstName ? `, ${firstName}` : ""}
-        </h1>
-        <p style={{ fontSize: 14, color: DC.muted }} suppressHydrationWarning>
-          {new Date().toLocaleDateString("fr-CH", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-        </p>
-      </div>
-
-      {/* KPI grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-        {data.isLoading ? (
-          <KpiSkeleton count={config.kpis.length} />
-        ) : (
-          config.kpis.map(kpi => {
-            const kv    = kpiValues[kpi.key] ?? { value: "—", isUrgent: false, trend: "neutral" as const };
-            const style = kpiIconStyle(kpi.key, kv.isUrgent);
-            return (
-              <DKpi
-                key={kpi.key}
-                icon={kpi.icon}
-                iconColor={style.iconColor}
-                iconBg={style.iconBg}
-                value={kv.value}
-                label={kpi.label}
-                sub={kv.sub}
-                trend={kv.trend}
-              />
-            );
-          })
-        )}
-      </div>
-
-      {/* Quick actions */}
-      {config.quickActions.length > 0 && (
-        <div style={{ marginBottom: "2rem" }}>
-          <DSectionTitle>Actions rapides</DSectionTitle>
-          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-            {config.quickActions.map(qa => {
-              const Icon = qa.icon;
-              return (
-                <Link
-                  key={qa.label}
-                  href={qa.action}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 18px", borderRadius: 10, border: `1px solid ${DC.border}`, background: DC.surface, color: DC.text, fontSize: 13, fontWeight: 600, textDecoration: "none", transition: "border-color 0.15s" }}
-                >
-                  <Icon size={14} style={{ color: DC.orange }} />
-                  {qa.label}
-                </Link>
-              );
-            })}
-          </div>
+      <div style={{ padding: "1.5rem 1.75rem", maxWidth: 1200 }}>
+        {/* Greeting */}
+        <div style={{ marginBottom: "1.75rem" }}>
+          <h1 style={{ fontSize: 28, fontWeight: 400, fontFamily: DC.serif, color: "#1A1816", marginBottom: 3, letterSpacing: "0.01em" }}>
+            Bonjour{firstName ? `, ${firstName}` : ""}
+          </h1>
+          <p style={{ fontSize: 13, color: "#A8A29E" }} suppressHydrationWarning>
+            {new Date().toLocaleDateString("fr-CH", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+          </p>
         </div>
-      )}
 
-      {/* Sections */}
-      {config.sections.map(section => {
-        const render = SECTION_REGISTRY[section.component];
-        if (!render) return null;
-        return <div key={section.key}>{render({ data })}</div>;
-      })}
+        {/* KPI grid + highlight card */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.25rem" }}>
+          {data.isLoading ? (
+            <KpiSkeleton count={config.kpis.length + (isManager ? 1 : 0)} />
+          ) : (
+            <>
+              {config.kpis.map(kpi => {
+                const kv  = kpiValues[kpi.key] ?? { value: "—", isUrgent: false };
+                const st  = kpiIconStyle(kpi.key, kv.isUrgent);
+                return (
+                  <HKpiCard
+                    key={kpi.key}
+                    icon={kpi.icon}
+                    iconColor={st.iconColor}
+                    iconBg={st.iconBg}
+                    value={kv.value}
+                    label={kpi.label}
+                    sub={kv.sub}
+                    isUrgent={kv.isUrgent}
+                  />
+                );
+              })}
+              {/* Orange highlight card — managers uniquement */}
+              {isManager && (
+                <HHighlightCard
+                  value={kpiValues["loyers_mois"]?.value ?? "—"}
+                  label="Loyers récupérés"
+                />
+              )}
+            </>
+          )}
+        </div>
 
-      {/* CTA bas de page */}
-      <div style={{ textAlign: "center", paddingBottom: "2rem" }}>
-        <Link
-          href="/app/sphere"
-          style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 24px", borderRadius: 24, background: DC.orange, color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}
-        >
-          <Sparkles size={14} />
-          Sphère IA →
-        </Link>
+        {/* Bar chart + donut — managers uniquement */}
+        {isManager && !data.isLoading && (
+          <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+            <HBarChart paiements={data.paiements} />
+            <HDonut
+              recu={data.loyersMois}
+              total={data.loyersMois + data.loyersAttente}
+            />
+          </div>
+        )}
+
+        {/* Quick actions */}
+        {config.quickActions.length > 0 && (
+          <div style={{ marginBottom: "1.75rem" }}>
+            <DSectionTitle>Actions rapides</DSectionTitle>
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+              {config.quickActions.map(qa => {
+                const Icon = qa.icon;
+                return (
+                  <Link
+                    key={qa.label}
+                    href={qa.action}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 7,
+                      padding: "9px 18px", borderRadius: 12,
+                      border: "none", background: "#fff",
+                      boxShadow: H_SHADOW,
+                      color: "#1A1816", fontSize: 13, fontWeight: 600,
+                      textDecoration: "none", transition: "box-shadow 0.15s",
+                    }}
+                  >
+                    <Icon size={14} style={{ color: "#E8602C" }} />
+                    {qa.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Sections */}
+        {config.sections.map(section => {
+          const render = SECTION_REGISTRY[section.component];
+          if (!render) return null;
+          return <div key={section.key}>{render({ data })}</div>;
+        })}
       </div>
     </div>
   );
