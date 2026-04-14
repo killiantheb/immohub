@@ -5,7 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle, ArrowRight, Banknote, Bell, Briefcase, Building2,
-  Calendar, CheckCircle2, ChevronRight, Clock, Download, Euro,
+  Calendar, CheckCircle2, Clock, Download, Euro,
   FileText, Globe, Home, Layers, MapPin, Play, Plus, Send,
   Sparkles, Star, TrendingUp, Users, Wrench, X,
 } from "lucide-react";
@@ -1235,23 +1235,66 @@ export function UnifiedDashboard() {
     <div style={{ minHeight: "100vh", background: "var(--cream)" }}>
 
       {/* ── Top bar ── */}
-      <div style={{ height: 80, background: "#FFFFFF", borderBottom: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 48px", flexShrink: 0 }}>
-        {/* Search */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--cream)", borderRadius: 16, padding: "12px 20px", border: "1px solid var(--border-subtle)", width: 320 }}>
-          <ChevronRight size={14} style={{ color: "var(--text-tertiary)", transform: "rotate(90deg)" }} />
-          <span style={{ fontSize: 14, color: "var(--text-tertiary)" }}>Rechercher…</span>
+      <div style={{
+        height: 64, background: "#FFFFFF",
+        borderBottom: "1px solid var(--border-subtle)",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 40px", flexShrink: 0,
+      }}>
+        {/* Search — discret */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8,
+          background: "var(--cream)", borderRadius: 12,
+          padding: "9px 16px", border: "1px solid var(--border-subtle)",
+          width: 280, cursor: "text",
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Rechercher...</span>
         </div>
-        {/* Actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <Link href="/app/sphere" style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", borderRadius: 12, background: "var(--terracotta-ghost)", border: "1px solid rgba(232,96,44,0.15)", color: "var(--terracotta-primary)", fontSize: 13, fontWeight: 500, textDecoration: "none" }}>
-            <Sparkles size={14} /> Sphère IA
-          </Link>
-          <button style={{ width: 44, height: 44, borderRadius: 12, background: "var(--cream)", border: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <Bell size={16} style={{ color: "var(--text-secondary)" }} />
+
+        {/* Right side — bell + avatar */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          {/* Bell */}
+          <button style={{
+            position: "relative", padding: 8,
+            background: "transparent", border: "none", cursor: "pointer",
+            borderRadius: 10,
+          }}>
+            <Bell size={18} strokeWidth={1.5} style={{ color: "var(--text-secondary)" }} />
+            <span style={{
+              position: "absolute", top: 6, right: 6,
+              width: 7, height: 7, borderRadius: "50%",
+              background: "var(--terracotta-primary)",
+              border: "2px solid #fff",
+            }} />
           </button>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: "var(--terracotta-primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 15, fontWeight: 700, fontFamily: "var(--font-display)", cursor: "pointer" }}>
-            {initials(firstName)}
-          </div>
+
+          {/* Séparateur */}
+          <div style={{ width: 1, height: 24, background: "var(--border-subtle)" }} />
+
+          {/* Avatar — cercle gradient */}
+          <button style={{
+            display: "flex", alignItems: "center", gap: 10,
+            background: "transparent", border: "none", cursor: "pointer",
+            padding: "4px 8px 4px 4px", borderRadius: 12,
+          }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: "50%",
+              background: "linear-gradient(135deg, var(--terracotta-light, #F0997B), var(--terracotta-primary))",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>
+                {firstName ? firstName[0] : "?"}
+              </span>
+            </div>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--charcoal)" }}>{firstName || "—"}</div>
+              <div style={{ fontSize: 10, color: "var(--text-tertiary)" }}>{roleLabel || ""}</div>
+            </div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
         </div>
       </div>
 
