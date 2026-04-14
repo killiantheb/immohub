@@ -42,7 +42,9 @@ export function SphereWidget() {
     if (open) setTimeout(() => inputRef.current?.focus(), 100);
   }, [open]);
 
-  // Don't render on sphere page nor carte page — AFTER all hooks
+  // Remplacé par l'entrée "Althy IA" dans la sidebar — masqué partout
+  return null;
+  // eslint-disable-next-line no-unreachable
   if (pathname === '/app/sphere' || pathname === '/app/carte') return null;
 
   async function handleSend() {
