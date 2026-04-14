@@ -1143,12 +1143,10 @@ function HBarChart({ paiements }: { paiements: Paiement[] }) {
             <div key={m} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
               <div style={{
                 width: "100%", maxWidth: 32, height: h,
-                borderRadius: "10px 10px 4px 4px",
+                borderRadius: "12px 12px 4px 4px",
                 background: isLast
-                  ? "linear-gradient(180deg, var(--terracotta-light) 0%, var(--terracotta-primary) 100%)"
-                  : isCur
-                    ? "var(--terracotta-primary)"
-                    : "var(--terracotta-ghost)",
+                  ? "linear-gradient(to top, var(--terracotta-primary), var(--terracotta-light, #F0997B))"
+                  : "var(--terracotta-ghost)",
                 transition: "height 0.4s ease",
               }} />
               <span style={{ fontSize: 10, color: isCur || isLast ? "var(--terracotta-primary)" : "var(--text-tertiary)", fontWeight: isCur || isLast ? 600 : 400, whiteSpace: "nowrap" }}>
