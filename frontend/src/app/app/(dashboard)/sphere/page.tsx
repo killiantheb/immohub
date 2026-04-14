@@ -256,9 +256,16 @@ function ActionCardItem({ action, onDismiss, onRegenerate }: ActionCardProps) {
 
           {/* CTA buttons */}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {action.href && !["document_action", "validation_action", "ocr_action", "messagerie_action", "whatsapp_action"].includes(action.type ?? "") ? (
+            {(() => {
+              const PANEL_TYPES = ["document_action", "validation_action", "ocr_action", "messagerie_action", "whatsapp_action"];
+              const API_VERBS   = ["relancer", "générer", "generer", "envoyer", "créer", "creer", "générer"];
+              const isNav = action.href
+                && !PANEL_TYPES.includes(action.type ?? "")
+                && !API_VERBS.some(v => action.cta_principal?.toLowerCase().startsWith(v));
+              return isNav;
+            })() ? (
               <Link
-                href={action.href}
+                href={action.href!}
                 style={{ padding: "8px 16px", borderRadius: 10, background: "#E8602C", color: "#fff", fontSize: 12, fontWeight: 600, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
               >
                 {action.cta_principal ?? "Voir →"}

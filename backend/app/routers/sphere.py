@@ -69,14 +69,19 @@ async def _fetch_context(user: User, db: AsyncSession) -> dict[str, Any]:
                 {"uid": uid, "today": today},
             )
             ctx["late_transactions"] = [
-                {"id": str(r.id), "amount": float(r.amount), "due_date": r.due_date.isoformat() if r.due_date else None}
+                {
+                    "id": str(r.id),
+                    "amount": float(r.amount),
+                    "due_date": r.due_date.isoformat() if r.due_date else None,
+                    "href": "/app/finances?filter=impaye",
+                }
                 for r in rows
             ]
 
             # Expiring contracts (60 days)
             rows = await db.execute(
                 text("""
-                    SELECT id, end_date, monthly_rent
+                    SELECT id, end_date, monthly_rent, property_id
                     FROM contracts
                     WHERE owner_id = :uid AND status = 'active'
                       AND end_date IS NOT NULL
@@ -86,7 +91,35 @@ async def _fetch_context(user: User, db: AsyncSession) -> dict[str, Any]:
                 {"uid": uid, "today": today, "future": today + timedelta(days=60)},
             )
             ctx["expiring_contracts"] = [
-                {"id": str(r.id), "end_date": r.end_date.isoformat(), "monthly_rent": float(r.monthly_rent or 0)}
+                {
+                    "id": str(r.id),
+                    "end_date": r.end_date.isoformat(),
+                    "monthly_rent": float(r.monthly_rent or 0),
+                    "href": f"/app/biens/{r.property_id}?tab=locataire",
+                }
+                for r in rows
+            ]
+
+            # Pending interventions
+            rows = await db.execute(
+                text("""
+                    SELECT i.id, i.bien_id, i.titre, i.urgence, i.statut
+                    FROM interventions i
+                    JOIN biens b ON b.id = i.bien_id
+                    WHERE b.owner_id = :uid
+                      AND i.statut IN ('nouveau', 'en_cours')
+                    LIMIT 5
+                """),
+                {"uid": uid},
+            )
+            ctx["pending_interventions"] = [
+                {
+                    "id": str(r.id),
+                    "titre": r.titre,
+                    "urgence": r.urgence,
+                    "statut": r.statut,
+                    "href": f"/app/biens/{r.bien_id}?tab=interventions",
+                }
                 for r in rows
             ]
 
