@@ -1210,7 +1210,7 @@ function KpiSkeleton({ count }: { count: number }) {
 // ── UnifiedDashboard ──────────────────────────────────────────────────────────
 
 export function UnifiedDashboard() {
-  const { role }         = useRole();
+  const { role, label: roleLabel } = useRole();
   const { user }         = useAuthStore();
   const { data: profile } = useUser();
 
