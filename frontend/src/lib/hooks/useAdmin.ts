@@ -186,6 +186,7 @@ export function useAdminRevenue(months = 12) {
       return data;
     },
     staleTime: 120_000,
+    retry: false,
   });
 }
 
