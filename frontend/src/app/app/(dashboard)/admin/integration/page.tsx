@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Download, Link2, Loader2, QrCode, RefreshCw, Sparkles, UserPlus, X } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, Download, FileUp, Link2, Loader2, QrCode, RefreshCw, Sparkles, Trash2, Upload, UserPlus, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { createClient } from "@/lib/supabase";
@@ -30,7 +30,7 @@ const S = {
   shadowMd: "var(--althy-shadow-md)",
 } as const;
 
-type Tab = "sphere" | "lien" | "qr";
+type Tab = "sphere" | "lien" | "qr" | "csv";
 
 const ROLES_DISPONIBLES = [
   { value: "agence",           label: "Agent d'agence" },
@@ -545,12 +545,389 @@ function TabQrCode() {
   );
 }
 
+// ── Tab : Import CSV ──────────────────────────────────────────────────────────
+
+interface CsvRow {
+  adresse: string; ville: string; cp: string; type: string;
+  loyer: string; charges: string; surface: string; statut: string;
+  locataire_nom: string; locataire_prenom: string; date_entree: string;
+  erreurs: string[];
+}
+interface CsvPreview { rows: CsvRow[]; colonnes_detectees: Record<string,string>; total_lignes: number; colonnes_inconnues: string[] }
+interface CsvResult  { biens_crees: number; locataires_crees: number; total_lignes: number; lignes_ignorees: number; erreurs: {ligne:number;message:string}[] }
+
+const TYPE_OPTIONS = ["appartement","villa","studio","maison","commerce","bureau","parking","garage","cave","autre"];
+const STATUT_OPTIONS = [
+  { value: "vacant", label: "Vacant" },
+  { value: "loue",   label: "Loué" },
+  { value: "en_travaux", label: "Travaux" },
+];
+
+function TabImportCSV() {
+  const [phase, setPhase]     = useState<"upload"|"preview"|"importing"|"done">("upload");
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [rows, setRows]       = useState<CsvRow[]>([]);
+  const [preview, setPreview] = useState<CsvPreview | null>(null);
+  const [result, setResult]   = useState<CsvResult | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [erreur, setErreur]   = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const rowsValides = rows.filter(r => !r.erreurs.length);
+  const rowsErreurs = rows.filter(r => r.erreurs.length > 0);
+
+  async function handleFile(file: File) {
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (!["csv", "xlsx"].includes(ext ?? "")) {
+      setErreur("Format non supporté. Utilisez un fichier .csv ou .xlsx");
+      return;
+    }
+    setUploading(true);
+    setErreur(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const r = await api.post<CsvPreview>("/onboarding/import-csv/preview", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setPreview(r.data);
+      setRows(r.data.rows);
+      setPhase("preview");
+    } catch (e: unknown) {
+      const msg = (e as {response?:{data?:{detail?:string}}})?.response?.data?.detail ?? "Erreur lors de l'analyse du fichier.";
+      setErreur(typeof msg === "string" ? msg : JSON.stringify(msg));
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault(); setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  }
+
+  function editRow(idx: number, field: keyof CsvRow, value: string) {
+    setRows(prev => {
+      const next = [...prev];
+      const row = { ...next[idx], [field]: value };
+      // Re-validate required fields
+      const errs: string[] = [];
+      if (!row.adresse.trim()) errs.push("Adresse manquante");
+      if (!row.ville.trim())   errs.push("Ville manquante");
+      if (!row.cp.trim())      errs.push("NPA manquant");
+      next[idx] = { ...row, erreurs: errs };
+      return next;
+    });
+  }
+
+  function removeRow(idx: number) {
+    setRows(prev => prev.filter((_, i) => i !== idx));
+  }
+
+  async function handleImport() {
+    if (!rowsValides.length) return;
+    setPhase("importing");
+    setProgress(0);
+
+    // Simulate progress while request is in flight
+    const tick = setInterval(() => {
+      setProgress(p => p < 85 ? p + Math.random() * 12 : p);
+    }, 300);
+
+    try {
+      const r = await api.post<CsvResult>("/onboarding/import-csv", { rows: rowsValides });
+      clearInterval(tick);
+      setProgress(100);
+      setResult(r.data);
+      setPhase("done");
+    } catch (e: unknown) {
+      clearInterval(tick);
+      const msg = (e as {response?:{data?:{detail?:string}}})?.response?.data?.detail ?? "Erreur lors de l'import.";
+      setErreur(typeof msg === "string" ? msg : "Erreur lors de l'import.");
+      setPhase("preview");
+      setProgress(0);
+    }
+  }
+
+  function reset() {
+    setPhase("upload"); setRows([]); setPreview(null);
+    setResult(null); setProgress(0); setErreur(null);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  // ── Upload zone ──────────────────────────────────────────────────────────────
+  if (phase === "upload") return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <p style={{ margin: 0, fontSize: 13, color: S.text3 }}>
+        Importez vos biens depuis un fichier CSV ou Excel. Colonnes reconnues :{" "}
+        <code style={{ fontSize: 11, background: S.surface2, padding: "1px 5px", borderRadius: 4 }}>
+          adresse, ville, cp/npa, type, loyer, charges, surface, statut, locataire_nom, locataire_prenom, date_entree
+        </code>
+      </p>
+
+      {erreur && (
+        <div style={{ display: "flex", gap: 8, padding: "10px 14px", background: S.redBg, border: `1px solid ${S.red}`, borderRadius: 10 }}>
+          <AlertTriangle size={14} color={S.red} style={{ marginTop: 1, flexShrink: 0 }} />
+          <span style={{ fontSize: 13, color: S.red }}>{erreur}</span>
+        </div>
+      )}
+
+      <div
+        onDragOver={e => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
+        onClick={() => fileRef.current?.click()}
+        style={{
+          border: `2px dashed ${dragging ? S.orange : S.border}`,
+          borderRadius: 16, padding: "48px 32px", textAlign: "center", cursor: "pointer",
+          background: dragging ? S.orangeBg : S.surface,
+          transition: "all 0.18s",
+        }}
+      >
+        <input ref={fileRef} type="file" accept=".csv,.xlsx" style={{ display: "none" }}
+          onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+        {uploading ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+            <Loader2 size={32} color={S.orange} style={{ animation: "spin 1s linear infinite" }} />
+            <p style={{ margin: 0, fontSize: 13, color: S.text2 }}>Analyse en cours…</p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: S.orangeBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Upload size={24} color={S.orange} />
+            </div>
+            <div>
+              <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 700, color: S.text }}>
+                Glissez votre fichier ici
+              </p>
+              <p style={{ margin: 0, fontSize: 12, color: S.text3 }}>
+                ou cliquez pour sélectionner — CSV, XLSX · max 10 Mo
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Template download hint */}
+      <p style={{ margin: 0, fontSize: 12, color: S.text3, textAlign: "center" }}>
+        Format minimal requis : <strong>adresse</strong>, <strong>ville</strong>, <strong>npa</strong>
+      </p>
+    </div>
+  );
+
+  // ── Importing ────────────────────────────────────────────────────────────────
+  if (phase === "importing") return (
+    <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 16, padding: 32, textAlign: "center" }}>
+      <Loader2 size={36} color={S.orange} style={{ animation: "spin 1s linear infinite", marginBottom: 16 }} />
+      <p style={{ margin: "0 0 20px", fontSize: 14, fontWeight: 600, color: S.text }}>
+        Import en cours — {rowsValides.length} biens…
+      </p>
+      <div style={{ background: S.surface2, borderRadius: 99, height: 8, overflow: "hidden", maxWidth: 320, margin: "0 auto" }}>
+        <div style={{
+          height: "100%", borderRadius: 99, background: S.orange,
+          width: `${progress}%`, transition: "width 0.3s ease",
+        }} />
+      </div>
+      <p style={{ margin: "10px 0 0", fontSize: 12, color: S.text3 }}>{Math.round(progress)}%</p>
+    </div>
+  );
+
+  // ── Done ─────────────────────────────────────────────────────────────────────
+  if (phase === "done" && result) return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ background: S.greenBg, border: `1px solid ${S.green}`, borderRadius: 16, padding: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+          <CheckCircle2 size={22} color={S.green} />
+          <span style={{ fontSize: 16, fontWeight: 700, color: S.green }}>Import terminé !</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+          {[
+            { label: "Biens créés",       val: result.biens_crees,      color: S.green },
+            { label: "Locataires créés",  val: result.locataires_crees,  color: S.orange },
+            { label: "Lignes ignorées",   val: result.lignes_ignorees,   color: result.lignes_ignorees > 0 ? S.red : S.text3 },
+          ].map(kpi => (
+            <div key={kpi.label} style={{ background: "#fff", borderRadius: 12, padding: "14px 16px", textAlign: "center" }}>
+              <p style={{ margin: "0 0 4px", fontSize: 26, fontWeight: 800, color: kpi.color }}>{kpi.val}</p>
+              <p style={{ margin: 0, fontSize: 11, color: S.text3, textTransform: "uppercase", letterSpacing: "0.05em" }}>{kpi.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {result.erreurs.length > 0 && (
+        <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: 16 }}>
+          <p style={{ margin: "0 0 10px", fontSize: 12, fontWeight: 700, color: S.red, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            {result.erreurs.length} erreur(s)
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 200, overflowY: "auto" }}>
+            {result.erreurs.map((e, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, fontSize: 12, color: S.text2 }}>
+                <span style={{ color: S.text3, flexShrink: 0 }}>Ligne {e.ligne}</span>
+                <span>{e.message}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <button onClick={reset}
+        style={{ padding: "11px 24px", borderRadius: 10, background: S.orange, color: "#fff", border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit", alignSelf: "flex-start" }}>
+        <FileUp size={14} /> Importer un autre fichier
+      </button>
+    </div>
+  );
+
+  // ── Preview ───────────────────────────────────────────────────────────────────
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {erreur && (
+        <div style={{ display: "flex", gap: 8, padding: "10px 14px", background: S.redBg, border: `1px solid ${S.red}`, borderRadius: 10 }}>
+          <AlertTriangle size={14} color={S.red} style={{ marginTop: 1, flexShrink: 0 }} />
+          <span style={{ fontSize: 13, color: S.red }}>{erreur}</span>
+        </div>
+      )}
+
+      {/* Stats bar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: S.surface, border: `1px solid ${S.border}`, borderRadius: 12, padding: "12px 16px", flexWrap: "wrap", gap: 10 }}>
+        <div style={{ display: "flex", gap: 20 }}>
+          <span style={{ fontSize: 13, color: S.text }}>
+            <strong style={{ color: S.green }}>{rowsValides.length}</strong> biens valides
+          </span>
+          {rowsErreurs.length > 0 && (
+            <span style={{ fontSize: 13, color: S.red }}>
+              <strong>{rowsErreurs.length}</strong> erreur{rowsErreurs.length > 1 ? "s" : ""}
+            </span>
+          )}
+          {preview?.colonnes_inconnues.length ? (
+            <span style={{ fontSize: 12, color: S.text3 }}>
+              Colonnes ignorées : {preview.colonnes_inconnues.join(", ")}
+            </span>
+          ) : null}
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={reset}
+            style={{ padding: "7px 14px", borderRadius: 9, background: S.surface2, border: `1px solid ${S.border}`, fontSize: 12, cursor: "pointer", color: S.text2, fontFamily: "inherit" }}>
+            ← Autre fichier
+          </button>
+          <button onClick={handleImport} disabled={!rowsValides.length}
+            style={{ padding: "7px 18px", borderRadius: 9, background: rowsValides.length ? S.orange : S.border, color: rowsValides.length ? "#fff" : S.text3, border: "none", fontSize: 13, fontWeight: 700, cursor: rowsValides.length ? "pointer" : "not-allowed", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 7 }}>
+            <CheckCircle2 size={13} /> Importer {rowsValides.length} bien{rowsValides.length !== 1 ? "s" : ""}
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, overflow: "hidden" }}>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: S.surface2, borderBottom: `1px solid ${S.border}` }}>
+                {["Adresse *", "Ville *", "NPA *", "Type", "Loyer CHF", "Locataire", "Statut", ""].map(h => (
+                  <th key={h} style={{ textAlign: "left", padding: "9px 12px", fontSize: 10, fontWeight: 700, color: S.text3, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, idx) => {
+                const hasErr = row.erreurs.length > 0;
+                const rowStyle: React.CSSProperties = {
+                  borderBottom: `1px solid ${S.border}`,
+                  background: hasErr ? "rgba(229,62,62,0.04)" : undefined,
+                };
+                const cellStyle = (field: keyof CsvRow): React.CSSProperties => ({
+                  padding: "4px 6px",
+                });
+                const inp2: React.CSSProperties = {
+                  width: "100%", padding: "5px 8px", border: `1px solid ${S.border}`, borderRadius: 6,
+                  fontSize: 12, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit",
+                  boxSizing: "border-box",
+                };
+                const errInp: React.CSSProperties = { ...inp2, borderColor: S.red, background: S.redBg };
+                return (
+                  <tr key={idx} style={rowStyle}>
+                    <td style={cellStyle("adresse")}>
+                      <input value={row.adresse} onChange={e => editRow(idx, "adresse", e.target.value)}
+                        style={!row.adresse.trim() ? errInp : inp2} placeholder="15 rue du Lac" />
+                    </td>
+                    <td style={cellStyle("ville")}>
+                      <input value={row.ville} onChange={e => editRow(idx, "ville", e.target.value)}
+                        style={!row.ville.trim() ? errInp : inp2} placeholder="Genève" />
+                    </td>
+                    <td style={{ ...cellStyle("cp"), width: 72 }}>
+                      <input value={row.cp} onChange={e => editRow(idx, "cp", e.target.value)}
+                        style={!row.cp.trim() ? errInp : { ...inp2, textAlign: "center" }} placeholder="1201" />
+                    </td>
+                    <td style={{ ...cellStyle("type"), width: 120 }}>
+                      <select value={row.type} onChange={e => editRow(idx, "type", e.target.value)} style={inp2}>
+                        {TYPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </td>
+                    <td style={{ ...cellStyle("loyer"), width: 90 }}>
+                      <input value={row.loyer} onChange={e => editRow(idx, "loyer", e.target.value)}
+                        style={{ ...inp2, textAlign: "right" }} placeholder="1500" />
+                    </td>
+                    <td style={cellStyle("locataire_nom")}>
+                      <input value={`${row.locataire_prenom} ${row.locataire_nom}`.trim()}
+                        onChange={e => {
+                          const parts = e.target.value.trim().split(/\s+/);
+                          editRow(idx, "locataire_prenom", parts[0] ?? "");
+                          editRow(idx, "locataire_nom", parts.slice(1).join(" "));
+                        }}
+                        style={inp2} placeholder="Marie Dupont" />
+                    </td>
+                    <td style={{ ...cellStyle("statut"), width: 100 }}>
+                      <select value={row.statut} onChange={e => editRow(idx, "statut", e.target.value)} style={inp2}>
+                        {STATUT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                    </td>
+                    <td style={{ padding: "4px 8px", width: 36 }}>
+                      <button onClick={() => removeRow(idx)}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: S.text3, padding: 2, display: "flex", alignItems: "center" }}
+                        title="Supprimer cette ligne">
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {rows.length === 0 && (
+          <div style={{ padding: 32, textAlign: "center", fontSize: 13, color: S.text3 }}>
+            Toutes les lignes ont été supprimées.
+          </div>
+        )}
+      </div>
+
+      {rowsErreurs.length > 0 && (
+        <div style={{ padding: "10px 14px", background: S.redBg, border: `1px solid ${S.red}`, borderRadius: 10 }}>
+          <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, color: S.red, textTransform: "uppercase" }}>
+            Lignes en erreur — corrigez ou supprimez avant import
+          </p>
+          {rowsErreurs.slice(0, 5).map((r, i) => (
+            <p key={i} style={{ margin: "2px 0", fontSize: 12, color: S.red }}>
+              {r.erreurs.join(" · ")} — {r.adresse || "(sans adresse)"}
+            </p>
+          ))}
+          {rowsErreurs.length > 5 && (
+            <p style={{ margin: "4px 0 0", fontSize: 11, color: S.red }}>+ {rowsErreurs.length - 5} autres</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: "sphere", label: "Sphère IA", icon: <Sparkles size={14} /> },
+  { id: "sphere", label: "Sphère IA",    icon: <Sparkles size={14} /> },
   { id: "lien",   label: "Lien magique", icon: <Link2 size={14} /> },
-  { id: "qr",     label: "QR Code", icon: <QrCode size={14} /> },
+  { id: "qr",     label: "QR Code",      icon: <QrCode size={14} /> },
+  { id: "csv",    label: "Import CSV",   icon: <FileUp size={14} /> },
 ];
 
 export default function IntegrationPage() {
@@ -592,6 +969,7 @@ export default function IntegrationPage() {
       {tab === "sphere" && <TabSphere />}
       {tab === "lien"   && <TabLienMagique />}
       {tab === "qr"     && <TabQrCode />}
+      {tab === "csv"    && <TabImportCSV />}
     </div>
   );
 }

@@ -10,12 +10,15 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import csv
 import io
 import json
 import re
 import secrets
 import uuid as _uuid
+from datetime import date as _date
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal, InvalidOperation
 from typing import Annotated, Any
 
 import anthropic
@@ -25,7 +28,7 @@ from app.core.database import get_db
 from app.core.limiter import rate_limit
 from app.core.security import get_current_user
 from app.models.user import User
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -813,3 +816,363 @@ async def confirmer(body: ConfirmerRequest, user: AuthDep, db: DbDep):
     scan.status = "done"
     await db.commit()
     return {"status": "import_lance", "nb": len(a_importer)}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Import CSV / XLSX — /onboarding/import-csv
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── Column aliases → canonical field name ────────────────────────────────────
+
+_COL_ALIASES: dict[str, str] = {
+    # adresse
+    "adresse": "adresse", "address": "adresse", "rue": "adresse", "street": "adresse",
+    "adresse_bien": "adresse", "bien": "adresse",
+    # ville
+    "ville": "ville", "city": "ville", "localite": "ville", "localite": "ville",
+    # cp / npa
+    "cp": "cp", "npa": "cp", "code_postal": "cp", "postal_code": "cp",
+    "zip": "cp", "code": "cp",
+    # type
+    "type": "type", "type_bien": "type", "bien_type": "type", "categorie": "type",
+    "category": "type",
+    # loyer
+    "loyer": "loyer", "loyer_mensuel": "loyer", "rent": "loyer",
+    "monthly_rent": "loyer", "loyer_net": "loyer",
+    # charges
+    "charges": "charges", "charges_mensuelles": "charges",
+    "charges_locatives": "charges",
+    # surface
+    "surface": "surface", "superficie": "surface", "m2": "surface",
+    "surface_m2": "surface",
+    # locataire nom
+    "locataire_nom": "locataire_nom", "nom_locataire": "locataire_nom",
+    "tenant_name": "locataire_nom", "nom": "locataire_nom", "name": "locataire_nom",
+    "tenant": "locataire_nom",
+    # locataire prénom
+    "locataire_prenom": "locataire_prenom", "prenom_locataire": "locataire_prenom",
+    "tenant_firstname": "locataire_prenom", "prenom": "locataire_prenom",
+    "firstname": "locataire_prenom",
+    # date entrée
+    "date_entree": "date_entree", "entree": "date_entree", "debut_bail": "date_entree",
+    "lease_start": "date_entree", "date_debut": "date_entree",
+    # statut
+    "statut": "statut", "status": "statut", "etat": "statut",
+    "occupation": "statut",
+}
+
+_TYPE_MAP: dict[str, str] = {
+    "appt": "appartement", "apt": "appartement", "app": "appartement",
+    "appartement": "appartement", "appartement": "appartement",
+    "flat": "appartement", "appart": "appartement",
+    "villa": "villa",
+    "maison": "maison", "house": "maison",
+    "studio": "studio",
+    "commerce": "commerce", "commercial": "commerce",
+    "bureau": "bureau", "office": "bureau",
+    "parking": "parking", "place": "parking",
+    "garage": "garage",
+    "cave": "cave",
+    "autre": "autre", "other": "autre",
+}
+
+_STATUT_MAP: dict[str, str] = {
+    "loue": "loue", "loue": "loue", "loué": "loue", "rented": "loue",
+    "occupe": "loue", "occupé": "loue", "occupied": "loue",
+    "vacant": "vacant", "vide": "vacant", "libre": "vacant", "free": "vacant",
+    "disponible": "vacant", "available": "vacant",
+    "travaux": "en_travaux", "renovation": "en_travaux",
+    "en_travaux": "en_travaux", "maintenance": "en_travaux",
+}
+
+
+def _normalize_col(col: str) -> str | None:
+    key = col.strip().lower()
+    key = re.sub(r"[\s\-]+", "_", key)
+    key = re.sub(r"[éèêë]", "e", key)
+    key = re.sub(r"[àâä]", "a", key)
+    key = re.sub(r"[ùûü]", "u", key)
+    key = re.sub(r"[ôö]", "o", key)
+    key = re.sub(r"[îï]", "i", key)
+    return _COL_ALIASES.get(key)
+
+
+def _parse_decimal_val(val: str) -> Decimal | None:
+    if not val or not val.strip():
+        return None
+    v = val.strip()
+    v = re.sub(r"['\s]", "", v)
+    v = v.replace("CHF", "").replace("chf", "").replace("Fr.", "").replace("fr.", "")
+    v = v.replace(",", ".")
+    v = re.sub(r"[^0-9.]", "", v)
+    if not v:
+        return None
+    try:
+        return Decimal(v)
+    except InvalidOperation:
+        return None
+
+
+def _parse_date_val(val: str) -> _date | None:
+    if not val or not val.strip():
+        return None
+    v = val.strip()
+    # dd.mm.yyyy or dd/mm/yyyy
+    m = re.match(r"^(\d{1,2})[./](\d{1,2})[./](\d{4})$", v)
+    if m:
+        try:
+            return _date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+        except ValueError:
+            pass
+    # yyyy-mm-dd
+    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", v)
+    if m:
+        try:
+            return _date.fromisoformat(v)
+        except ValueError:
+            pass
+    return None
+
+
+def _parse_csv_bytes(content: bytes, filename: str) -> list[dict[str, str]]:
+    """Return list of dicts from CSV or XLSX bytes."""
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "csv"
+    if ext == "xlsx":
+        try:
+            import openpyxl  # type: ignore[import]
+            wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+            ws = wb.active
+            rows_raw = list(ws.iter_rows(values_only=True))
+            if not rows_raw:
+                return []
+            headers = [str(c or "").strip() for c in rows_raw[0]]
+            result: list[dict[str, str]] = []
+            for row in rows_raw[1:]:
+                if all(c is None for c in row):
+                    continue
+                result.append({
+                    headers[i]: str(row[i] if row[i] is not None else "").strip()
+                    for i in range(min(len(headers), len(row)))
+                })
+            return result
+        except ImportError:
+            raise HTTPException(400, "Support XLSX non disponible. Convertissez en CSV d'abord.")
+    else:
+        text_content = content.decode("utf-8-sig", errors="replace")
+        try:
+            dialect = csv.Sniffer().sniff(text_content[:2048], delimiters=",;\t|")
+        except csv.Error:
+            dialect = csv.excel
+        reader = csv.DictReader(io.StringIO(text_content), dialect=dialect)
+        return [dict(row) for row in reader]
+
+
+# ── Schemas ───────────────────────────────────────────────────────────────────
+
+class CsvRow(BaseModel):
+    adresse: str = ""
+    ville: str = ""
+    cp: str = ""
+    type: str = "appartement"
+    loyer: str = ""
+    charges: str = ""
+    surface: str = ""
+    statut: str = "vacant"
+    locataire_nom: str = ""
+    locataire_prenom: str = ""
+    date_entree: str = ""
+    erreurs: list[str] = []
+
+
+class CsvPreviewResponse(BaseModel):
+    rows: list[CsvRow]
+    colonnes_detectees: dict[str, str]
+    total_lignes: int
+    colonnes_inconnues: list[str]
+
+
+class CsvImportPayload(BaseModel):
+    rows: list[CsvRow]
+
+
+class CsvImportResult(BaseModel):
+    biens_crees: int
+    locataires_crees: int
+    total_lignes: int
+    lignes_ignorees: int
+    erreurs: list[dict[str, Any]]
+
+
+def _map_raw_rows(raw_rows: list[dict[str, str]]) -> tuple[list[CsvRow], dict[str, str], list[str]]:
+    if not raw_rows:
+        return [], {}, []
+
+    all_cols = list(raw_rows[0].keys())
+    col_map: dict[str, str] = {}   # original header → canonical
+    unknown: list[str] = []
+    for col in all_cols:
+        canonical = _normalize_col(col)
+        if canonical:
+            col_map[col] = canonical
+        else:
+            unknown.append(col)
+
+    # Reverse: canonical → first matching original header
+    rev: dict[str, str] = {}
+    for orig, canon in col_map.items():
+        rev.setdefault(canon, orig)
+
+    def get(row: dict[str, str], field: str) -> str:
+        orig = rev.get(field)
+        return row.get(orig, "").strip() if orig else ""
+
+    rows: list[CsvRow] = []
+    for raw in raw_rows:
+        errs: list[str] = []
+        adresse = get(raw, "adresse")
+        ville   = get(raw, "ville")
+        cp      = get(raw, "cp")
+        if not adresse: errs.append("Adresse manquante")
+        if not ville:   errs.append("Ville manquante")
+        if not cp:      errs.append("NPA manquant")
+
+        type_raw   = get(raw, "type").lower()
+        type_val   = _TYPE_MAP.get(type_raw) or (type_raw if type_raw in _TYPE_MAP.values() else "appartement")
+        statut_raw = get(raw, "statut").lower()
+        statut_val = _STATUT_MAP.get(statut_raw, "vacant")
+
+        rows.append(CsvRow(
+            adresse=adresse,
+            ville=ville,
+            cp=cp,
+            type=type_val,
+            loyer=get(raw, "loyer"),
+            charges=get(raw, "charges"),
+            surface=get(raw, "surface"),
+            statut=statut_val,
+            locataire_nom=get(raw, "locataire_nom"),
+            locataire_prenom=get(raw, "locataire_prenom"),
+            date_entree=get(raw, "date_entree"),
+            erreurs=errs,
+        ))
+
+    return rows, col_map, unknown
+
+
+# ── Endpoints ─────────────────────────────────────────────────────────────────
+
+@router.post("/import-csv/preview", response_model=CsvPreviewResponse)
+async def preview_csv_import(
+    current_user: AuthDep,
+    file: UploadFile = File(...),
+) -> CsvPreviewResponse:
+    """Parse CSV/XLSX and return rows preview — no DB write."""
+    if current_user.role not in ("super_admin",):
+        raise HTTPException(403, "Accès réservé aux super_admins")
+
+    fname = file.filename or "upload.csv"
+    ext   = fname.rsplit(".", 1)[-1].lower() if "." in fname else "csv"
+    if ext not in ("csv", "xlsx"):
+        raise HTTPException(400, "Format non supporté. Utilisez CSV ou XLSX.")
+
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(400, "Fichier trop volumineux (max 10 Mo)")
+    if not content:
+        raise HTTPException(400, "Fichier vide")
+
+    try:
+        raw_rows = _parse_csv_bytes(content, fname)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(400, f"Impossible de lire le fichier : {exc!s:.200}")
+
+    if not raw_rows:
+        raise HTTPException(400, "Le fichier ne contient aucune ligne de données")
+
+    rows, col_map, unknown = _map_raw_rows(raw_rows)
+
+    return CsvPreviewResponse(
+        rows=rows,
+        colonnes_detectees={v: k for k, v in col_map.items()},
+        total_lignes=len(rows),
+        colonnes_inconnues=unknown,
+    )
+
+
+@router.post("/import-csv", response_model=CsvImportResult)
+async def import_csv(
+    payload: CsvImportPayload,
+    current_user: AuthDep,
+    db: DbDep,
+) -> CsvImportResult:
+    """Batch-create biens + locataires from parsed rows."""
+    if current_user.role not in ("super_admin",):
+        raise HTTPException(403, "Accès réservé aux super_admins")
+
+    from app.models.bien import Bien
+    from app.models.locataire import Locataire
+
+    biens_crees      = 0
+    locataires_crees = 0
+    lignes_ignorees  = 0
+    erreurs: list[dict[str, Any]] = []
+
+    for i, row in enumerate(payload.rows):
+        ligne = i + 1
+        if not row.adresse.strip() or not row.ville.strip() or not row.cp.strip():
+            lignes_ignorees += 1
+            erreurs.append({"ligne": ligne, "message": "Ignorée — adresse/ville/NPA manquants"})
+            continue
+
+        try:
+            bien = Bien(
+                owner_id=current_user.id,
+                adresse=row.adresse.strip(),
+                ville=row.ville.strip(),
+                cp=row.cp.strip(),
+                type=row.type or "appartement",
+                loyer=_parse_decimal_val(row.loyer),
+                charges=_parse_decimal_val(row.charges),
+                surface=(
+                    float(re.sub(r"[^0-9.]", "", row.surface.replace(",", ".")))
+                    if row.surface and row.surface.strip() else None
+                ),
+                statut=row.statut or "vacant",
+            )
+            db.add(bien)
+            await db.flush()
+            biens_crees += 1
+
+            has_loc = bool(row.locataire_nom or row.locataire_prenom or row.date_entree)
+            if has_loc or row.statut == "loue":
+                note_parts = " ".join(filter(None, [row.locataire_prenom.strip(), row.locataire_nom.strip()]))
+                loc = Locataire(
+                    bien_id=bien.id,
+                    loyer=_parse_decimal_val(row.loyer),
+                    charges=_parse_decimal_val(row.charges),
+                    date_entree=_parse_date_val(row.date_entree),
+                    statut="actif",
+                    note_interne=note_parts or None,
+                )
+                db.add(loc)
+                locataires_crees += 1
+
+        except Exception as exc:
+            lignes_ignorees += 1
+            erreurs.append({"ligne": ligne, "message": str(exc)[:200]})
+
+    try:
+        await db.flush()
+    except Exception as exc:
+        await db.rollback()
+        raise HTTPException(500, f"Erreur lors de l'import : {exc!s:.300}")
+
+    return CsvImportResult(
+        biens_crees=biens_crees,
+        locataires_crees=locataires_crees,
+        total_lignes=len(payload.rows),
+        lignes_ignorees=lignes_ignorees,
+        erreurs=erreurs,
+    )
