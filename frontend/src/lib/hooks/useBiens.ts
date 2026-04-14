@@ -191,6 +191,7 @@ export function useBien(id: string) {
     },
     enabled: Boolean(id),
     staleTime: 30_000,
+    retry: false,
   });
 }
 

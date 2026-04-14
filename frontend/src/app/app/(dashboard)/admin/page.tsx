@@ -303,7 +303,7 @@ export default function AdminPage() {
             >
               Back-office plateforme
             </h1>
-            <p style={{ marginTop: 4, fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Vue globale de CATHY</p>
+            <p style={{ marginTop: 4, fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Vue globale d'Althy</p>
           </div>
           <div className="flex gap-3">
             <Link
