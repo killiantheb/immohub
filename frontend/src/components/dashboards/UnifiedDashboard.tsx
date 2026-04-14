@@ -22,7 +22,7 @@ import type {
 } from "@/lib/hooks/useDashboardData";
 import { DashboardPortail } from "./DashboardPortail";
 import {
-  DC, DCard, DKpi, DRoleHeader, DTopNav,
+  DC, DCard,
   DSectionTitle, DEmptyState,
 } from "@/components/dashboards/DashBoardShared";
 
@@ -649,18 +649,31 @@ function SectionLoyersStatus({ data }: SectionProps) {
       {paiements.length === 0 ? (
         <DEmptyState icon={CheckCircle2} title="Aucun loyer ce mois" subtitle="Les paiements apparaîtront ici." />
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          {paiements.map((p, i) => (
-            <DCard key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "0.85rem 1.25rem" }}>
-              <div>
-                <p style={{ fontSize: 13, fontWeight: 600, color: DC.text, marginBottom: 1 }}>
-                  {(p as { bien_titre?: string }).bien_titre ?? `Loyer ${p.mois ?? ""}`}
-                </p>
-                <p style={{ fontSize: 11, color: DC.muted }}>{fmtCHF(Number(p.montant))}</p>
-              </div>
-              <StatusBadge statut={p.statut} />
-            </DCard>
-          ))}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {paiements.map((p, i) => {
+            const isRecu = p.statut === "recu";
+            const isRetard = p.statut === "retard" || p.statut === "en_attente";
+            return (
+              <DCard key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", borderRadius: 16 }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                  background: isRecu ? "var(--success-bg)" : isRetard ? "var(--urgent-bg)" : "var(--info-bg)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  {isRecu
+                    ? <CheckCircle2 size={18} color="var(--sage)" strokeWidth={1.8} />
+                    : <AlertTriangle size={18} color={isRetard ? "#DC3545" : "var(--sky)"} strokeWidth={1.8} />}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: DC.text, marginBottom: 2 }}>
+                    {(p as { bien_titre?: string }).bien_titre ?? `Loyer ${p.mois ?? ""}`}
+                  </p>
+                  <p style={{ fontSize: 12, color: DC.muted }}>{fmtCHF(Number(p.montant))}</p>
+                </div>
+                <StatusBadge statut={p.statut} />
+              </DCard>
+            );
+          })}
         </div>
       )}
     </div>
@@ -675,14 +688,25 @@ function SectionInterventionsActives({ data }: SectionProps) {
       {inter.length === 0 ? (
         <DEmptyState icon={Wrench} title="Aucune intervention en cours" subtitle="Tout est en ordre." />
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {inter.map((item, i) => (
-            <DCard key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "0.85rem 1.25rem" }}>
-              <p style={{ fontSize: 13, color: DC.text }}>
-                {(item as { description?: string }).description ?? `Intervention #${item.id?.slice(0, 8) ?? i + 1}`}
-              </p>
+            <div key={i} style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+              padding: "14px 18px",
+              background: "var(--cream)",
+              borderRadius: 16,
+              border: "1px solid var(--border-subtle)",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: "var(--info-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Wrench size={16} color="var(--sky)" strokeWidth={1.8} />
+                </div>
+                <p style={{ fontSize: 13, color: DC.text, fontWeight: 500 }}>
+                  {(item as { description?: string }).description ?? `Intervention #${item.id?.slice(0, 8) ?? i + 1}`}
+                </p>
+              </div>
               <StatusBadge statut={item.statut} />
-            </DCard>
+            </div>
           ))}
         </div>
       )}
@@ -989,8 +1013,8 @@ const SECTION_REGISTRY: Record<string, SectionRendererFn> = {
 
 // ── H-care KPI card ───────────────────────────────────────────────────────────
 
-const H_SHADOW      = "0 1px 3px rgba(26,24,22,0.04), 0 4px 16px rgba(26,24,22,0.03)";
-const H_SHADOW_HOV  = "0 4px 12px rgba(26,24,22,0.10), 0 8px 28px rgba(26,24,22,0.08)";
+const H_SHADOW      = "0 1px 3px rgba(43,43,43,0.04), 0 4px 16px rgba(43,43,43,0.03)";
+const H_SHADOW_HOV  = "0 8px 32px rgba(43,43,43,0.10), 0 2px 8px rgba(43,43,43,0.05)";
 
 function HKpiCard({ icon: Icon, iconColor, iconBg, value, label, sub, isUrgent }: {
   icon: LucideIcon; iconColor: string; iconBg: string;
@@ -1002,37 +1026,51 @@ function HKpiCard({ icon: Icon, iconColor, iconBg, value, label, sub, isUrgent }
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        background: "#FFFFFF", borderRadius: 18, border: "none",
+        background: "#FFFFFF",
+        borderRadius: 24,
+        border: "1px solid var(--border-subtle)",
         boxShadow: hov ? H_SHADOW_HOV : H_SHADOW,
-        padding: "1.25rem", position: "relative",
+        padding: 24,
+        position: "relative",
         transform: hov ? "translateY(-2px)" : "translateY(0)",
         transition: "box-shadow 0.2s, transform 0.2s",
       }}
     >
       {/* Menu ··· */}
       <span style={{
-        position: "absolute", top: 14, right: 16, opacity: 0.3,
-        fontSize: 18, color: "#1A1816", letterSpacing: 2, lineHeight: 1,
-        userSelect: "none",
+        position: "absolute", top: 16, right: 18,
+        opacity: hov ? 0.5 : 0,
+        fontSize: 18, color: "var(--text-tertiary)", letterSpacing: 2, lineHeight: 1,
+        userSelect: "none", transition: "opacity 0.15s",
       }}>···</span>
 
-      {/* Icon circle */}
+      {/* Urgent badge */}
+      {isUrgent && (
+        <span style={{
+          position: "absolute", top: 16, left: 20,
+          fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 99,
+          background: "var(--urgent-bg)", color: "#DC3545",
+          letterSpacing: "0.06em", textTransform: "uppercase",
+        }}>Urgent</span>
+      )}
+
+      {/* Icon square */}
       <div style={{
-        width: 48, height: 48, borderRadius: "50%", background: iconBg,
+        width: 48, height: 48, borderRadius: 16, background: iconBg,
         display: "flex", alignItems: "center", justifyContent: "center",
-        marginBottom: 14,
+        marginBottom: 16, marginTop: isUrgent ? 20 : 0,
       }}>
-        <Icon size={21} color={isUrgent ? "#EF4444" : iconColor} strokeWidth={1.7} />
+        <Icon size={22} color={isUrgent ? "#DC3545" : iconColor} strokeWidth={1.6} />
       </div>
 
       {/* Value */}
-      <div style={{ fontSize: 28, fontWeight: 700, color: "#1A1816", lineHeight: 1, marginBottom: 5 }}>
+      <div style={{ fontSize: 36, fontWeight: 600, color: "var(--charcoal)", lineHeight: 1, marginBottom: 6, fontFamily: "var(--font-display)" }}>
         {value}
       </div>
 
       {/* Label */}
-      <div style={{ fontSize: 13, color: "#A8A29E" }}>{label}</div>
-      {sub && <div style={{ fontSize: 11, color: "#C4C0BB", marginTop: 2 }}>{sub}</div>}
+      <div style={{ fontSize: 13, color: "var(--text-secondary)", fontWeight: 500 }}>{label}</div>
+      {sub && <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 3 }}>{sub}</div>}
     </div>
   );
 }
@@ -1040,32 +1078,35 @@ function HKpiCard({ icon: Icon, iconColor, iconBg, value, label, sub, isUrgent }
 // ── H-care Orange highlight card ──────────────────────────────────────────────
 
 function HHighlightCard({ value, label }: { value: string; label: string }) {
-  const pts = [18, 28, 22, 38, 30, 44, 40].map((v, i, a) =>
-    `${(i / (a.length - 1)) * 100},${50 - ((v - 18) / 26) * 40}`
-  ).join(" ");
+  const pts = [28, 18, 38, 22, 48, 30, 44, 42, 58, 36, 70, 50, 100]
+    .map((v, i, a) => `${(i / (a.length - 1)) * 100},${50 - ((v - 18) / 32) * 38}`)
+    .join(" ");
 
   return (
     <div style={{
-      background: "linear-gradient(145deg, #E8602C, #C04A18)", borderRadius: 18,
-      border: "none", boxShadow: "0 4px 20px rgba(232,96,44,0.35)",
-      padding: "1.25rem", color: "#fff",
+      background: "linear-gradient(135deg, var(--terracotta-primary) 0%, var(--terracotta-deep) 100%)",
+      borderRadius: 24,
+      border: "none",
+      boxShadow: "0 8px 32px rgba(232,96,44,0.30)",
+      padding: 24, color: "#fff",
       display: "flex", flexDirection: "column", justifyContent: "space-between",
-      minHeight: 170,
+      minHeight: 180,
     }}>
-      <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.75, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+      <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.8, letterSpacing: "0.08em", textTransform: "uppercase" }}>
         {label}
       </div>
       <div>
-        <div style={{ fontSize: 36, fontWeight: 800, lineHeight: 1, marginBottom: 8 }}>{value}</div>
-        <svg width="100%" height="36" viewBox="0 0 100 50" preserveAspectRatio="none">
-          <polyline points={pts} fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <div style={{ fontSize: 36, fontWeight: 600, lineHeight: 1, marginBottom: 10, fontFamily: "var(--font-display)" }}>{value}</div>
+        <svg width="100%" height="32" viewBox="0 0 100 50" preserveAspectRatio="none">
+          <polyline points={pts} fill="none" stroke="rgba(255,255,255,0.40)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>
       <Link href="/app/sphere" style={{
-        display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8,
-        background: "rgba(255,255,255,0.18)", borderRadius: 10,
-        padding: "8px 14px", fontSize: 12, fontWeight: 600, color: "#fff",
+        display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10,
+        background: "rgba(255,255,255,0.18)", borderRadius: 12,
+        padding: "8px 16px", fontSize: 12, fontWeight: 600, color: "#fff",
         textDecoration: "none", width: "fit-content",
+        backdropFilter: "blur(8px)",
       }}>
         <Sparkles size={13} /> Ouvrir la Sphère IA
       </Link>
@@ -1089,22 +1130,27 @@ function HBarChart({ paiements }: { paiements: Paiement[] }) {
   const maxVal = Math.max(...values, 1);
 
   return (
-    <div style={{ background: "#fff", borderRadius: 18, boxShadow: H_SHADOW, padding: "1.25rem", flex: 1 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: "#1A1816", marginBottom: 18 }}>Loyers encaissés — 6 mois</div>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 88 }}>
+    <div style={{ background: "#fff", borderRadius: 24, border: "1px solid var(--border-subtle)", boxShadow: H_SHADOW, padding: 24, flex: 1 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--charcoal)", marginBottom: 20 }}>Loyers encaissés — 6 mois</div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 96 }}>
         {months.map((m, i) => {
-          const h = Math.max((values[i] / maxVal) * 72, 8);
-          const isCur = m === currentMois;
+          const h   = Math.max((values[i] / maxVal) * 80, 8);
+          const isCur  = m === currentMois;
+          const isLast = i === months.length - 1;
           const lbl = new Date(m + "-01").toLocaleDateString("fr-CH", { month: "short" });
           return (
-            <div key={m} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+            <div key={m} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
               <div style={{
-                width: "100%", maxWidth: 28, height: h,
-                borderRadius: 8,
-                background: isCur ? "#E8602C" : "#FEF0EA",
+                width: "100%", maxWidth: 32, height: h,
+                borderRadius: "10px 10px 4px 4px",
+                background: isLast
+                  ? "linear-gradient(180deg, var(--terracotta-light) 0%, var(--terracotta-primary) 100%)"
+                  : isCur
+                    ? "var(--terracotta-primary)"
+                    : "var(--terracotta-ghost)",
                 transition: "height 0.4s ease",
               }} />
-              <span style={{ fontSize: 10, color: isCur ? "#E8602C" : "#A8A29E", fontWeight: isCur ? 700 : 400, whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: 10, color: isCur || isLast ? "var(--terracotta-primary)" : "var(--text-tertiary)", fontWeight: isCur || isLast ? 600 : 400, whiteSpace: "nowrap" }}>
                 {lbl}
               </span>
             </div>
@@ -1123,24 +1169,25 @@ function HDonut({ recu, total }: { recu: number; total: number }) {
   const dash = (pct / 100) * C;
 
   return (
-    <div style={{ background: "#fff", borderRadius: 18, boxShadow: H_SHADOW, padding: "1.25rem", display: "flex", alignItems: "center", gap: 20, minWidth: 200 }}>
+    <div style={{ background: "#fff", borderRadius: 24, border: "1px solid var(--border-subtle)", boxShadow: H_SHADOW, padding: 24, display: "flex", alignItems: "center", gap: 20, minWidth: 220 }}>
       <div style={{ position: "relative", width: 88, height: 88, flexShrink: 0 }}>
         <svg width="88" height="88" viewBox="0 0 88 88">
-          <circle cx="44" cy="44" r={R} fill="none" stroke="#FEF0EA" strokeWidth={10} />
-          <circle cx="44" cy="44" r={R} fill="none" stroke="#E8602C" strokeWidth={10}
+          <circle cx="44" cy="44" r={R} fill="none" stroke="var(--terracotta-ghost)" strokeWidth={12} />
+          <circle cx="44" cy="44" r={R} fill="none" stroke="var(--terracotta-primary)" strokeWidth={12}
             strokeLinecap="round"
             strokeDasharray={`${dash} ${C - dash}`}
             transform="rotate(-90 44 44)"
+            style={{ transition: "stroke-dasharray 0.6s ease" }}
           />
         </svg>
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontSize: 22, fontWeight: 700, color: "#1A1816", lineHeight: 1 }}>{pct}%</span>
-          <span style={{ fontSize: 9, fontWeight: 700, color: "#A8A29E", letterSpacing: "0.08em", textTransform: "uppercase" }}>REÇUS</span>
+          <span style={{ fontSize: 22, fontWeight: 600, color: "var(--charcoal)", lineHeight: 1, fontFamily: "var(--font-display)" }}>{pct}%</span>
+          <span style={{ fontSize: 9, fontWeight: 600, color: "var(--text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase" }}>REÇUS</span>
         </div>
       </div>
       <div>
-        <div style={{ fontSize: 20, fontWeight: 700, color: "#1A1816", lineHeight: 1 }}>{fmtCHF(recu)}</div>
-        <div style={{ fontSize: 11, color: "#A8A29E", marginTop: 4 }}>sur {fmtCHF(total)} attendus</div>
+        <div style={{ fontSize: 20, fontWeight: 600, color: "var(--charcoal)", lineHeight: 1, fontFamily: "var(--font-display)" }}>{fmtCHF(recu)}</div>
+        <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>sur {fmtCHF(total)} attendus</div>
       </div>
     </div>
   );
@@ -1152,9 +1199,9 @@ function KpiSkeleton({ count }: { count: number }) {
   return (
     <>
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} style={{ background: "#fff", borderRadius: 18, boxShadow: H_SHADOW, padding: "1.25rem", minHeight: 140 }}>
-          <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#F4F2EE", marginBottom: 14 }} />
-          <div style={{ height: 28, width: "60%", borderRadius: 6, background: "#F4F2EE" }} />
+        <div key={i} style={{ background: "#fff", borderRadius: 24, border: "1px solid var(--border-subtle)", boxShadow: H_SHADOW, padding: 24, minHeight: 150 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 16, background: "var(--cream)", marginBottom: 16 }} />
+          <div style={{ height: 36, width: "55%", borderRadius: 8, background: "var(--cream)" }} />
         </div>
       ))}
     </>
@@ -1181,18 +1228,41 @@ export function UnifiedDashboard() {
   const kpiValues = computeKpiValues(role, data);
   const isManager = role === "proprio_solo" || role === "agence" || role === "super_admin";
 
-  return (
-    <div style={{ minHeight: "100vh", background: "#F4F2EE" }}>
-      <DTopNav />
+  const nbBiens   = data.biens.length;
+  const moisAnnee = new Date().toLocaleDateString("fr-CH", { month: "long", year: "numeric" });
 
-      <div style={{ padding: "1.5rem 1.75rem", maxWidth: 1200 }}>
+  return (
+    <div style={{ minHeight: "100vh", background: "var(--cream)" }}>
+
+      {/* ── Top bar ── */}
+      <div style={{ height: 80, background: "#FFFFFF", borderBottom: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 48px", flexShrink: 0 }}>
+        {/* Search */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--cream)", borderRadius: 16, padding: "12px 20px", border: "1px solid var(--border-subtle)", width: 320 }}>
+          <ChevronRight size={14} style={{ color: "var(--text-tertiary)", transform: "rotate(90deg)" }} />
+          <span style={{ fontSize: 14, color: "var(--text-tertiary)" }}>Rechercher…</span>
+        </div>
+        {/* Actions */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Link href="/app/sphere" style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", borderRadius: 12, background: "var(--terracotta-ghost)", border: "1px solid rgba(232,96,44,0.15)", color: "var(--terracotta-primary)", fontSize: 13, fontWeight: 500, textDecoration: "none" }}>
+            <Sparkles size={14} /> Sphère IA
+          </Link>
+          <button style={{ width: 44, height: 44, borderRadius: 12, background: "var(--cream)", border: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <Bell size={16} style={{ color: "var(--text-secondary)" }} />
+          </button>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: "var(--terracotta-primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 15, fontWeight: 700, fontFamily: "var(--font-display)", cursor: "pointer" }}>
+            {initials(firstName)}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: "2rem 3rem", maxWidth: 1280 }}>
         {/* Greeting */}
-        <div style={{ marginBottom: "1.75rem" }}>
-          <h1 style={{ fontSize: 28, fontWeight: 400, fontFamily: DC.serif, color: "#1A1816", marginBottom: 3, letterSpacing: "0.01em" }}>
+        <div style={{ marginBottom: "2rem" }}>
+          <h1 style={{ fontSize: 48, fontWeight: 600, fontFamily: "var(--font-display)", color: "var(--charcoal)", marginBottom: 6, lineHeight: 1.1 }}>
             Bonjour{firstName ? `, ${firstName}` : ""}
           </h1>
-          <p style={{ fontSize: 13, color: "#A8A29E" }} suppressHydrationWarning>
-            {new Date().toLocaleDateString("fr-CH", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+          <p style={{ fontSize: 15, color: "var(--text-secondary)" }} suppressHydrationWarning>
+            Voici un aperçu de vos {nbBiens} biens — {moisAnnee}
           </p>
         </div>
 
@@ -1252,15 +1322,15 @@ export function UnifiedDashboard() {
                     key={qa.label}
                     href={qa.action}
                     style={{
-                      display: "inline-flex", alignItems: "center", gap: 7,
-                      padding: "9px 18px", borderRadius: 12,
-                      border: "none", background: "#fff",
+                      display: "inline-flex", alignItems: "center", gap: 8,
+                      padding: "10px 20px", borderRadius: 99,
+                      border: "1px solid var(--border-subtle)", background: "#fff",
                       boxShadow: H_SHADOW,
-                      color: "#1A1816", fontSize: 13, fontWeight: 600,
+                      color: "var(--text-primary)", fontSize: 13, fontWeight: 500,
                       textDecoration: "none", transition: "box-shadow 0.15s",
                     }}
                   >
-                    <Icon size={14} style={{ color: "#E8602C" }} />
+                    <Icon size={14} style={{ color: "var(--terracotta-primary)" }} />
                     {qa.label}
                   </Link>
                 );

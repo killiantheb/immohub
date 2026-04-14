@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, DM_Sans } from "next/font/google";
+import { Fraunces, DM_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { CookieBanner } from "@/components/CookieBanner";
@@ -11,6 +11,14 @@ const fraunces = Fraunces({
   axes:    ["SOFT", "WONK"],
   style:   ["normal", "italic"],
   variable: "--font-serif",
+  display: "swap",
+});
+
+// Playfair Display — titres Figma V2
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight:  ["400", "500", "600", "700"],
+  variable: "--font-display",
   display: "swap",
 });
 
@@ -55,8 +63,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" suppressHydrationWarning className={`${fraunces.variable} ${dmSans.variable}`}>
-      <body className={`${dmSans.variable} ${fraunces.variable} font-sans`}>
+    <html lang="fr" suppressHydrationWarning className={`${fraunces.variable} ${dmSans.variable} ${playfair.variable}`}>
+      <body className={`${playfair.variable} ${dmSans.variable} ${fraunces.variable} font-sans`}>
         <Providers>{children}</Providers>
         <CookieBanner />
       </body>

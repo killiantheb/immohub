@@ -7,6 +7,7 @@ import { useRole } from "@/lib/hooks/useRole";
 import { useAuth } from "@/lib/auth";
 import { useAuthStore } from "@/lib/store/authStore";
 import { api } from "@/lib/api";
+import { AlthyLogo } from "@/components/AlthyLogo";
 import {
   Building2,
   LineChart,
@@ -112,9 +113,10 @@ const S = {
   sidebar: (w: number): React.CSSProperties => ({
     width: w, minWidth: w, maxWidth: w,
     height: "100vh", position: "sticky", top: 0,
-    background: "var(--sidebar-bg)",
-    borderRight: "1px solid var(--sidebar-border)",
+    background: "#FFFFFF",
+    borderRight: "1px solid var(--border-subtle)",
     display: "flex", flexDirection: "column",
+    padding: "0",
     transition: "width 0.22s cubic-bezier(0.4,0,0.2,1)",
     overflow: "hidden",
     zIndex: 40,
@@ -122,89 +124,67 @@ const S = {
   }),
 
   brand: (collapsed: boolean): React.CSSProperties => ({
-    padding: collapsed ? "20px 0" : "24px 22px 20px",
+    padding: collapsed ? "40px 0 20px" : "40px 24px 20px",
     display: "flex", alignItems: "center",
     justifyContent: collapsed ? "center" : "space-between",
-    borderBottom: "1px solid var(--sidebar-border)",
-    minHeight: 72,
     gap: 12,
   }),
 
-  wordmark: {
-    fontFamily: "var(--font-serif), 'Cormorant Garamond', serif",
-    fontSize: 24,
-    fontWeight: 300,
-    color: "var(--sidebar-gold)",
-    letterSpacing: "5px",
-    textDecoration: "none",
-    lineHeight: 1,
-  } as React.CSSProperties,
-
   collapseBtn: {
-    padding: 6, borderRadius: 6, border: "none",
+    padding: 6, borderRadius: 8, border: "none",
     background: "transparent", cursor: "pointer",
-    color: "#A8907C",
+    color: "var(--text-tertiary)",
     display: "flex", alignItems: "center", justifyContent: "center",
     flexShrink: 0,
     transition: "color 0.15s",
   } as React.CSSProperties,
 
-  roleBadge: {
-    fontSize: 10, letterSpacing: "2px", textTransform: "uppercase" as const,
-    color: "var(--sidebar-gold)",
-    padding: "4px 12px",
-    border: "0.5px solid rgba(232,96,44,0.28)",
-    borderRadius: 2,
-    display: "inline-block",
-  },
-
   navItem: (active: boolean, collapsed: boolean): React.CSSProperties => ({
     width: "100%", display: "flex", alignItems: "center",
-    gap: 10, padding: collapsed ? "8px 0" : "5px 12px",
+    gap: 12, padding: collapsed ? "8px 0" : "10px 16px",
     justifyContent: collapsed ? "center" : "flex-start",
-    background: "transparent",
-    border: "none", borderLeft: "none",
+    background: active ? "var(--terracotta-ghost)" : "transparent",
+    border: "none",
     cursor: "pointer", fontFamily: "var(--font-sans), inherit",
-    transition: "opacity 0.15s",
-    borderRadius: 10,
+    borderRadius: 16,
+    transition: "background 0.15s",
   }),
 
   navLabel: (active: boolean): React.CSSProperties => ({
-    flex: 1, fontSize: 13, textAlign: "left",
-    color: active ? "#E8602C" : "#6E6A65",
-    fontWeight: active ? 600 : 400,
+    flex: 1, fontSize: 14, textAlign: "left",
+    color: active ? "var(--terracotta-primary)" : "var(--text-secondary)",
+    fontWeight: 500,
   }),
 
   navIconWrap: (active: boolean): React.CSSProperties => ({
-    width: 36, height: 36, borderRadius: 10,
-    background: active ? "#FEF0EA" : "transparent",
+    width: 40, height: 40, borderRadius: 12,
+    background: active ? "#FFFFFF" : "transparent",
+    boxShadow: active ? "0 1px 3px rgba(43,43,43,0.08)" : "none",
     display: "flex", alignItems: "center", justifyContent: "center",
     flexShrink: 0,
-    color: active ? "#E8602C" : "#A8A29E",
+    color: active ? "var(--terracotta-primary)" : "var(--text-tertiary)",
     transition: "background 0.15s, color 0.15s",
   }),
 
   footer: (collapsed: boolean): React.CSSProperties => ({
-    padding: collapsed ? "16px 0" : "16px 22px",
-    borderTop: "1px solid var(--sidebar-border)",
+    padding: collapsed ? "16px 0" : "16px 24px",
+    borderTop: "1px solid var(--border-subtle)",
     display: "flex", flexDirection: "column", gap: 8,
   }),
 
   email: {
-    fontSize: 11.5, color: "#7A6450",
+    fontSize: 12, color: "var(--text-tertiary)",
     wordBreak: "break-all" as const, lineHeight: 1.4,
-    letterSpacing: "0.01em",
   } as React.CSSProperties,
 
   logoutBtn: (collapsed: boolean): React.CSSProperties => ({
     display: "flex", alignItems: "center", gap: 8,
     justifyContent: collapsed ? "center" : "flex-start",
     background: "none", border: "none", cursor: "pointer",
-    fontSize: 13, color: "#7A6450",
+    fontSize: 13, color: "var(--text-tertiary)",
     fontFamily: "var(--font-sans), inherit",
     padding: collapsed ? "4px 0" : 0,
     transition: "color 0.15s",
-    letterSpacing: "0.01em",
   }),
 };
 
@@ -253,7 +233,7 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
     onMobileClose?.();
   }
 
-  const w = collapsed ? 62 : 252;
+  const w = collapsed ? 72 : 288;
 
   function renderNavItem(item: NavItem) {
     const active = isActive(item.href);
@@ -307,16 +287,12 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
       {/* ── Brand ── */}
       <div style={S.brand(collapsed)}>
         {!collapsed ? (
-          <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: "#E8602C", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <span style={{ color: "#fff", fontSize: 17, fontWeight: 800, lineHeight: 1 }}>A</span>
-            </div>
-            <span style={{ fontSize: 18, fontWeight: 700, color: "#1A1816", letterSpacing: "-0.01em", lineHeight: 1 }}>Althy</span>
+          <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
+            <AlthyLogo size={44} animated />
+            <span style={{ fontSize: 20, fontWeight: 600, color: "var(--charcoal)", fontFamily: "var(--font-display)" }}>Althy</span>
           </Link>
         ) : (
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: "#E8602C", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ color: "#fff", fontSize: 17, fontWeight: 800, lineHeight: 1 }}>A</span>
-          </div>
+          <AlthyLogo size={44} animated />
         )}
         <button
           onClick={() => setCollapsed(c => !c)}
@@ -329,24 +305,17 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
         </button>
       </div>
 
-      {/* ── Role badge ── */}
-      {!collapsed && roleLabel && (
-        <div style={{ padding: "10px 20px" }}>
-          <span style={S.roleBadge}>{roleLabel}</span>
-        </div>
-      )}
-
       {/* ── Navigation principale (scrollable) ── */}
       <nav
         className="sidebar-scroll"
-        style={{ flex: 1, overflowY: "auto", padding: "6px 0" }}
+        style={{ flex: 1, overflowY: "auto", padding: collapsed ? "8px 0" : "8px 16px", display: "flex", flexDirection: "column", gap: 4 }}
       >
         {navMain.map(item => renderNavItem(item))}
       </nav>
 
       {/* ── Navigation bas (profil, paramètres) ── */}
       {navBottom.length > 0 && (
-        <div style={{ borderTop: "1px solid var(--sidebar-border)", padding: "4px 0" }}>
+        <div style={{ borderTop: "1px solid var(--border-subtle)", padding: collapsed ? "8px 0" : "8px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
           {navBottom.map(item => renderNavItem(item))}
         </div>
       )}

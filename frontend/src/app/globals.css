@@ -77,6 +77,40 @@
   /* Border-radius */
   --radius-card:       12px;
   --radius-elem:       8px;
+
+  /* ── Fonts ── */
+  --font-display: var(--font-display, 'Playfair Display', Georgia, serif);
+
+  /* ── Design System Figma V2 ── */
+  --terracotta-primary: #E8602C;
+  --terracotta-deep:    #C84E1E;
+  --terracotta-light:   #F0997B;
+  --terracotta-ghost:   rgba(232,96,44,0.06);
+
+  --cream:              #FAF9F6;
+  --charcoal:           #2B2B2B;
+  --gray-warm:          #8B8B8B;
+  --gray-light:         #E8E6E3;
+
+  --sage:               #22B573;
+  --sage-light:         #E8F8F0;
+  --sky:                #4B8BF5;
+  --sand:               #E4D5C9;
+
+  --background-page:    #FAF9F6;
+  --background-sphere:  #FFFFFF;
+  --background-card:    #FFFFFF;
+
+  --text-primary:       #2B2B2B;
+  --text-secondary:     #6E6A65;
+  --text-tertiary:      #A8A29E;
+
+  --border-subtle:      #EDE9E3;
+
+  --success-bg:         #E8F8F0;
+  --urgent-bg:          #FEF0EF;
+  --info-bg:            #EEF3FE;
+  --warning-bg:         #FFF6E5;
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────────── */
