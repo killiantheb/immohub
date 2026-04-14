@@ -16,14 +16,14 @@ import { useCreateRFQ, useQualifyRFQ } from "@/lib/hooks/useRFQ";
 import type { RFQCategory, RFQUrgency } from "@/lib/types";
 
 const S = {
-  bg: "var(--althy-bg)",
-  surface: "var(--althy-surface)",
+  bg: "var(--cream)",
+  surface: "var(--background-card)",
   surface2: "var(--althy-surface-2)",
-  border: "var(--althy-border)",
-  text: "var(--althy-text)",
-  text2: "var(--althy-text-2)",
-  text3: "var(--althy-text-3)",
-  orange: "var(--althy-orange)",
+  border: "var(--border-subtle)",
+  text: "var(--charcoal)",
+  text2: "var(--text-secondary)",
+  text3: "var(--text-tertiary)",
+  orange: "var(--terracotta-primary)",
   orangeBg: "var(--althy-orange-bg)",
   green: "var(--althy-green)",
   greenBg: "var(--althy-green-bg)",

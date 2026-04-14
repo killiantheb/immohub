@@ -6,14 +6,14 @@ import type { ReactNode, CSSProperties } from "react";
 
 // ── Design constants ──────────────────────────────────────────────────────────
 export const DC = {
-  bg:      "var(--althy-bg)",
-  surface: "var(--althy-surface)",
-  orange:  "var(--althy-orange)",
-  text:    "var(--althy-text)",
-  muted:   "var(--althy-text-3)",
-  border:  "var(--althy-border)",
-  shadow:  "var(--althy-shadow)",
-  serif:   "var(--font-serif, Fraunces, Georgia, serif)",
+  bg:      "var(--cream)",
+  surface: "#FFFFFF",
+  orange:  "var(--terracotta-primary)",
+  text:    "var(--charcoal)",
+  muted:   "var(--text-tertiary)",
+  border:  "var(--border-subtle)",
+  shadow:  "none",
+  serif:   "var(--font-display, 'Playfair Display', Georgia, serif)",
 } as const;
 
 // ── Role colors ───────────────────────────────────────────────────────────────
@@ -41,9 +41,9 @@ export const ROLE_LABEL: Record<string, string> = {
 
 // ── DTopNav ───────────────────────────────────────────────────────────────────
 const NAV_PILL: React.CSSProperties = {
-  fontSize: 12, color: "var(--althy-text-2)",
+  fontSize: 12, color: "var(--text-secondary)",
   padding: "6px 14px", borderRadius: 20,
-  border: "0.5px solid var(--althy-border)",
+  border: "0.5px solid var(--border-subtle)",
   display: "flex", alignItems: "center", gap: 5,
   textDecoration: "none", background: "transparent",
 };
@@ -66,10 +66,9 @@ export function DCard({ children, style }: DCardProps) {
     <div
       style={{
         background: DC.surface,
-        borderRadius: 14,
+        borderRadius: 24,
         border: `1px solid ${DC.border}`,
-        boxShadow: DC.shadow,
-        padding: "1.25rem",
+        padding: "1.5rem",
         ...style,
       }}
     >
@@ -101,16 +100,16 @@ export function DKpi({ icon: Icon, iconColor, iconBg, value, label, sub, trend }
       >
         <div
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: 12,
+            width: 48,
+            height: 48,
+            borderRadius: "50%",
             background: iconBg,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Icon size={18} style={{ color: iconColor }} />
+          <Icon size={20} strokeWidth={1.5} style={{ color: iconColor }} />
         </div>
         {trend && trend !== "neutral" && (
           <span
@@ -126,11 +125,11 @@ export function DKpi({ icon: Icon, iconColor, iconBg, value, label, sub, trend }
       </div>
       <p
         style={{
-          fontSize: 22,
-          fontWeight: 800,
+          fontSize: 36,
+          fontWeight: 600,
           color: DC.text,
-          marginBottom: 2,
-          letterSpacing: "-0.02em",
+          marginBottom: 4,
+          lineHeight: 1,
           fontFamily: DC.serif,
         }}
       >
@@ -207,8 +206,8 @@ export function DRoleHeader({ role, badge, badgeBg, initials }: DRoleHeaderProps
             padding: "6px 14px",
             borderRadius: 20,
             background: "transparent",
-            border: "0.5px solid var(--althy-border)",
-            color: "var(--althy-text-2)",
+            border: "0.5px solid var(--border-subtle)",
+            color: "var(--text-secondary)",
             fontSize: 12,
             fontWeight: 500,
             textDecoration: "none",

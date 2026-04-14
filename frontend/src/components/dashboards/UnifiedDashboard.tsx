@@ -907,7 +907,7 @@ function SectionPortailDocuments({ data }: SectionProps) {
       <DCard>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {docs.map((doc, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, background: "var(--althy-bg)", border: "1px solid var(--althy-border)" }}>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, background: "var(--cream)", border: "1px solid var(--border-subtle)" }}>
               <span style={{ fontSize: 16 }}>{docIcon(doc.type)}</span>
               <span style={{ flex: 1, fontSize: 13, color: DC.text }}>{doc.label}</span>
               <a href={doc.url} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, fontWeight: 600, color: DC.orange, textDecoration: "none" }}>
@@ -934,12 +934,12 @@ function SectionPortailPaiements({ data }: SectionProps) {
       <DCard>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {pais.map((p, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", padding: "10px 14px", borderRadius: 8, background: "var(--althy-bg)", border: "1px solid var(--althy-border)" }}>
+            <div key={i} style={{ display: "flex", alignItems: "center", padding: "10px 14px", borderRadius: 8, background: "var(--cream)", border: "1px solid var(--border-subtle)" }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 500, color: DC.text }}>{p.mois}</div>
                 <div style={{ fontSize: 12, color: DC.muted }}>CHF {p.montant.toLocaleString("fr-CH")}</div>
               </div>
-              <span style={{ fontSize: 11.5, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: p.statut === "paye" ? "var(--althy-green-bg)" : "rgba(232,96,44,0.10)", color: p.statut === "paye" ? "var(--althy-green)" : "var(--althy-orange)" }}>
+              <span style={{ fontSize: 11.5, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: p.statut === "paye" ? "var(--althy-green-bg)" : "rgba(232,96,44,0.10)", color: p.statut === "paye" ? "var(--althy-green)" : "var(--terracotta-primary)" }}>
                 {p.statut === "paye" ? "Payé ✓" : "En attente"}
               </span>
             </div>

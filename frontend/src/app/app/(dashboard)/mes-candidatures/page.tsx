@@ -102,13 +102,13 @@ export default function MesCandidaturesPage() {
   };
 
   const S = {
-    orange: "var(--althy-orange)",
-    surface: "var(--althy-surface)",
-    border: "var(--althy-border)",
-    text: "var(--althy-text)",
-    text2: "var(--althy-text-2)",
-    text3: "var(--althy-text-3)",
-    bg: "var(--althy-bg)",
+    orange: "var(--terracotta-primary)",
+    surface: "var(--background-card)",
+    border: "var(--border-subtle)",
+    text: "var(--charcoal)",
+    text2: "var(--text-secondary)",
+    text3: "var(--text-tertiary)",
+    bg: "var(--cream)",
     radius: "var(--radius-card)",
   };
 
@@ -183,7 +183,7 @@ export default function MesCandidaturesPage() {
                   ) : (
                     <div style={{
                       width: 80, height: 64, borderRadius: 8, flexShrink: 0,
-                      background: "var(--althy-bg)", display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "var(--cream)", display: "flex", alignItems: "center", justifyContent: "center",
                       fontSize: 24,
                     }}>🏠</div>
                   )}

@@ -31,14 +31,14 @@ import { useAuthStore } from "@/lib/store/authStore";
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
 const S = {
-  bg: "var(--althy-bg)",
-  surface: "var(--althy-surface)",
+  bg: "var(--cream)",
+  surface: "var(--background-card)",
   surface2: "var(--althy-surface-2)",
-  border: "var(--althy-border)",
-  text: "var(--althy-text)",
-  text2: "var(--althy-text-2)",
-  text3: "var(--althy-text-3)",
-  orange: "var(--althy-orange)",
+  border: "var(--border-subtle)",
+  text: "var(--charcoal)",
+  text2: "var(--text-secondary)",
+  text3: "var(--text-tertiary)",
+  orange: "var(--terracotta-primary)",
   orangeBg: "var(--althy-orange-bg)",
   green: "var(--althy-green)",
   greenBg: "var(--althy-green-bg)",
@@ -76,11 +76,11 @@ function formatMonth(m: string) {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  owner: "var(--althy-orange)",
-  agency: "var(--althy-orange)",
+  owner: "var(--terracotta-primary)",
+  agency: "var(--terracotta-primary)",
   tenant: "#10b981",
   company: "#f59e0b",
-  opener: "var(--althy-orange)",
+  opener: "var(--terracotta-primary)",
   super_admin: "#ef4444",
 };
 
@@ -390,13 +390,13 @@ export default function AdminPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke={S.border} vertical={false} />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 11, fill: "var(--althy-text-3)" }}
+                  tick={{ fontSize: 11, fill: "var(--text-tertiary)" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   tickFormatter={(v) => `${(v / 1000).toFixed(0)}k€`}
-                  tick={{ fontSize: 11, fill: "var(--althy-text-3)" }}
+                  tick={{ fontSize: 11, fill: "var(--text-tertiary)" }}
                   axisLine={false}
                   tickLine={false}
                   width={42}

@@ -66,15 +66,15 @@ function CommunicationInner() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--althy-bg)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--cream)" }}>
       <DTopNav />
 
       {/* Page title */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontFamily: "Cormorant Garamond, var(--font-serif), serif", fontSize: 28, fontWeight: 300, color: "var(--althy-text)", margin: "0 0 4px" }}>
+        <h1 style={{ fontFamily: "Cormorant Garamond, var(--font-serif), serif", fontSize: 28, fontWeight: 300, color: "var(--charcoal)", margin: "0 0 4px" }}>
           Communication
         </h1>
-        <p style={{ fontSize: 13, color: "var(--althy-text-3)", margin: 0 }}>
+        <p style={{ fontSize: 13, color: "var(--text-tertiary)", margin: 0 }}>
           Messages, WhatsApp et agenda réunis en un seul espace
         </p>
       </div>
@@ -82,7 +82,7 @@ function CommunicationInner() {
       {/* Tabs */}
       <div style={{
         display: "flex", gap: 4,
-        borderBottom: "1px solid var(--althy-border)",
+        borderBottom: "1px solid var(--border-subtle)",
         marginBottom: 28,
       }}>
         {TABS.map(tab => {
@@ -97,9 +97,9 @@ function CommunicationInner() {
                 display: "flex", alignItems: "center", gap: 7,
                 padding: "10px 18px",
                 background:  active ? "var(--althy-orange-bg, rgba(232,96,44,0.08))" : "transparent",
-                color:       active ? "var(--althy-orange)" : "var(--althy-text-3)",
+                color:       active ? "var(--terracotta-primary)" : "var(--text-tertiary)",
                 border:      "none",
-                borderBottom: active ? "2px solid var(--althy-orange)" : "2px solid transparent",
+                borderBottom: active ? "2px solid var(--terracotta-primary)" : "2px solid transparent",
                 borderRadius: "6px 6px 0 0",
                 cursor: "pointer",
                 fontFamily: "inherit",
@@ -114,7 +114,7 @@ function CommunicationInner() {
               {count > 0 && (
                 <span style={{
                   minWidth: 17, height: 17, borderRadius: 9,
-                  background: "var(--althy-orange)",
+                  background: "var(--terracotta-primary)",
                   color: "#fff",
                   fontSize: 9, fontWeight: 800,
                   display: "flex", alignItems: "center", justifyContent: "center",
@@ -142,7 +142,7 @@ export default function CommunicationPage() {
   return (
     <Suspense fallback={
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300 }}>
-        <div style={{ fontSize: 13, color: "var(--althy-text-3)" }}>Chargement…</div>
+        <div style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Chargement…</div>
       </div>
     }>
       <CommunicationInner />

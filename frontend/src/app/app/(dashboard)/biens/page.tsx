@@ -38,12 +38,12 @@ function cityCoords(city: string | undefined): [number, number] | null {
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
 const S = {
-  orange:   "var(--althy-orange)",
+  orange:   "var(--terracotta-primary)",
   orangeBg: "var(--althy-orange-bg, rgba(232,96,44,0.08))",
-  surface:  "var(--althy-surface)",
-  border:   "var(--althy-border)",
-  text:     "var(--althy-text)",
-  text3:    "var(--althy-text-3)",
+  surface:  "var(--background-card)",
+  border:   "var(--border-subtle)",
+  text:     "var(--charcoal)",
+  text3:    "var(--text-tertiary)",
   greenBg:  "var(--althy-green-bg, #EBF4E8)",
   green:    "var(--althy-green, #2E5E22)",
   blueBg:   "var(--althy-blue-bg, #EFF6FF)",
@@ -71,7 +71,7 @@ const STATUS_STYLE: Record<PropertyStatus, { label: string; bg: string; fg: stri
   available:   { label: "Libre",      bg: S.greenBg, fg: S.green  },
   rented:      { label: "Loué",       bg: S.blueBg,  fg: S.blue   },
   for_sale:    { label: "À vendre",   bg: S.amberBg, fg: S.amber  },
-  sold:        { label: "Vendu",      bg: "var(--althy-border)", fg: S.text3 },
+  sold:        { label: "Vendu",      bg: "var(--border-subtle)", fg: S.text3 },
   maintenance: { label: "Rénovation", bg: S.redBg,   fg: S.red    },
 };
 
@@ -86,7 +86,7 @@ function BienCard({
   isFav: boolean;
   onToggleFavorite: (e: React.MouseEvent, bien: Property) => void;
 }) {
-  const st = STATUS_STYLE[bien.status] ?? { label: bien.status, bg: "var(--althy-border)", fg: S.text3 };
+  const st = STATUS_STYLE[bien.status] ?? { label: bien.status, bg: "var(--border-subtle)", fg: S.text3 };
   const cover = bien.images?.find(i => i.is_cover)?.url ?? bien.images?.[0]?.url;
 
   return (
@@ -94,7 +94,7 @@ function BienCard({
       <div
         style={{
           background: S.surface, borderRadius: 14,
-          border: "1px solid var(--althy-border)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "0 1px 4px rgba(26,22,18,0.04)",
           overflow: "hidden", cursor: "pointer",
           transition: "box-shadow 0.18s, transform 0.18s",
@@ -109,13 +109,13 @@ function BienCard({
         }}
       >
         {/* Photo */}
-        <div style={{ height: 140, background: "var(--althy-bg)", position: "relative", overflow: "hidden" }}>
+        <div style={{ height: 140, background: "var(--cream)", position: "relative", overflow: "hidden" }}>
           {cover ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={cover} alt={bien.address} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
             <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Home size={32} color="var(--althy-border)" />
+              <Home size={32} color="var(--border-subtle)" />
             </div>
           )}
 
@@ -147,8 +147,8 @@ function BienCard({
           >
             <Heart
               size={14}
-              fill={isFav ? "var(--althy-orange)" : "none"}
-              color={isFav ? "var(--althy-orange)" : "var(--althy-text-3)"}
+              fill={isFav ? "var(--terracotta-primary)" : "none"}
+              color={isFav ? "var(--terracotta-primary)" : "var(--text-tertiary)"}
             />
           </button>
         </div>
@@ -336,7 +336,7 @@ function BiensPageInner() {
       </div>
 
       {/* ── Tabs ── */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "1px solid var(--althy-border)", paddingBottom: 0 }}>
+      <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "1px solid var(--border-subtle)", paddingBottom: 0 }}>
         {TABS.map(t => (
           <button
             key={t.key}
@@ -378,7 +378,7 @@ function BiensPageInner() {
                 onClick={() => setFiltre(f.key)}
                 style={{
                   padding: "6px 14px", borderRadius: 20, cursor: "pointer",
-                  border: `1px solid ${filtre === f.key ? S.orange : "var(--althy-border)"}`,
+                  border: `1px solid ${filtre === f.key ? S.orange : "var(--border-subtle)"}`,
                   background: filtre === f.key ? S.orangeBg : S.surface,
                   color: filtre === f.key ? S.orange : S.text3,
                   fontSize: 12, fontWeight: 600,
@@ -388,8 +388,8 @@ function BiensPageInner() {
               </button>
             ))}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", background: S.surface, border: "1px solid var(--althy-border)", borderRadius: 10, flex: 1, minWidth: 200 }}>
-            <Search size={13} color="var(--althy-text-3)" />
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", background: S.surface, border: "1px solid var(--border-subtle)", borderRadius: 10, flex: 1, minWidth: 200 }}>
+            <Search size={13} color="var(--text-tertiary)" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -402,8 +402,8 @@ function BiensPageInner() {
 
       {/* Search bar on Favoris tab */}
       {tab === "favoris" && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", background: S.surface, border: "1px solid var(--althy-border)", borderRadius: 10, marginBottom: 20 }}>
-          <Search size={13} color="var(--althy-text-3)" />
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", background: S.surface, border: "1px solid var(--border-subtle)", borderRadius: 10, marginBottom: 20 }}>
+          <Search size={13} color="var(--text-tertiary)" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -421,14 +421,14 @@ function BiensPageInner() {
           {displayLoading ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} style={{ height: 260, borderRadius: 14, background: "var(--althy-border)", opacity: 0.35 }} />
+                <div key={i} style={{ height: 260, borderRadius: 14, background: "var(--border-subtle)", opacity: 0.35 }} />
               ))}
             </div>
           ) : displayList.length === 0 ? (
-            <div style={{ background: S.surface, border: "1px solid var(--althy-border)", borderRadius: 14, padding: "56px 24px", textAlign: "center" }}>
+            <div style={{ background: S.surface, border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "56px 24px", textAlign: "center" }}>
               {tab === "favoris" ? (
                 <>
-                  <Heart size={40} color="var(--althy-border)" style={{ margin: "0 auto 16px" }} />
+                  <Heart size={40} color="var(--border-subtle)" style={{ margin: "0 auto 16px" }} />
                   <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600, color: S.text }}>
                     {search ? "Aucun résultat" : "Aucun favori enregistré"}
                   </h3>
@@ -438,7 +438,7 @@ function BiensPageInner() {
                 </>
               ) : (
                 <>
-                  <Building2 size={40} color="var(--althy-border)" style={{ margin: "0 auto 16px" }} />
+                  <Building2 size={40} color="var(--border-subtle)" style={{ margin: "0 auto 16px" }} />
                   <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600, color: S.text }}>
                     {search ? "Aucun résultat" : tab === "archives" ? "Aucun bien archivé" : "Aucun bien enregistré"}
                   </h3>
@@ -476,7 +476,7 @@ function BiensPageInner() {
             height: "calc(100vh - 220px)",
             borderRadius: 16,
             overflow: "hidden",
-            border: "1px solid var(--althy-border)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "0 2px 16px rgba(26,22,18,0.07)",
           }}>
             <AlthyMap
@@ -496,10 +496,10 @@ export default function BiensPage() {
   return (
     <Suspense fallback={
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div style={{ height: 40, borderRadius: 8, background: "var(--althy-border)", opacity: 0.35, marginBottom: 24, width: 200 }} />
+        <div style={{ height: 40, borderRadius: 8, background: "var(--border-subtle)", opacity: 0.35, marginBottom: 24, width: 200 }} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} style={{ height: 260, borderRadius: 14, background: "var(--althy-border)", opacity: 0.35 }} />
+            <div key={i} style={{ height: 260, borderRadius: 14, background: "var(--border-subtle)", opacity: 0.35 }} />
           ))}
         </div>
       </div>

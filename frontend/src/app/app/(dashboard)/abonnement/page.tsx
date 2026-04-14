@@ -20,14 +20,14 @@ const stripePromise = loadStripe(
 );
 
 const S = {
-  bg:       "var(--althy-bg)",
-  surface:  "var(--althy-surface)",
+  bg:       "var(--cream)",
+  surface:  "var(--background-card)",
   surface2: "var(--althy-surface-2)",
-  border:   "var(--althy-border)",
-  text:     "var(--althy-text)",
-  text2:    "var(--althy-text-2)",
-  text3:    "var(--althy-text-3)",
-  orange:   "var(--althy-orange)",
+  border:   "var(--border-subtle)",
+  text:     "var(--charcoal)",
+  text2:    "var(--text-secondary)",
+  text3:    "var(--text-tertiary)",
+  orange:   "var(--terracotta-primary)",
   orangeBg: "var(--althy-orange-bg)",
   green:    "var(--althy-green)",
   greenBg:  "var(--althy-green-bg)",
@@ -37,7 +37,7 @@ const S = {
 
 const PLAN_META: Record<string, { icon: React.ReactNode; color: string }> = {
   decouverte: { icon: <Sparkles size={20} />, color: S.text2 },
-  proprio:    { icon: <Zap size={20} />,      color: "var(--althy-orange)" },
+  proprio:    { icon: <Zap size={20} />,      color: "var(--terracotta-primary)" },
   agence:     { icon: <Building2 size={20} />, color: S.text },
   expert:     { icon: <Crown size={20} />,    color: "var(--althy-amber)" },
 };
@@ -140,7 +140,7 @@ function CheckoutForm({ planId, planNom, clientSecret, onSuccess, onCancel }: Ch
         disabled={!stripe || processing}
         style={{
           padding: "12px 0", borderRadius: 10, border: "none",
-          background: "var(--althy-orange)", color: "#fff",
+          background: "var(--terracotta-primary)", color: "#fff",
           fontSize: 14, fontWeight: 700, cursor: processing ? "not-allowed" : "pointer",
           opacity: processing ? 0.7 : 1,
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -283,10 +283,10 @@ function AbonnementContent() {
         marginBottom: 32,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Shield size={18} color="var(--althy-orange)" />
+          <Shield size={18} color="var(--terracotta-primary)" />
           <div>
             <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: S.text }}>
-              Plan actuel : <span style={{ color: "var(--althy-orange)", textTransform: "capitalize" }}>{currentPlan}</span>
+              Plan actuel : <span style={{ color: "var(--terracotta-primary)", textTransform: "capitalize" }}>{currentPlan}</span>
             </p>
             <p style={{ margin: "2px 0 0", fontSize: 12, color: S.text3 }}>
               {subscription?.current_period_end
@@ -325,7 +325,7 @@ function AbonnementContent() {
           onClick={() => setAnnual(v => !v)}
           style={{
             width: 44, height: 24, borderRadius: 12, border: "none",
-            backgroundColor: annual ? "var(--althy-orange)" : S.surface2,
+            backgroundColor: annual ? "var(--terracotta-primary)" : S.surface2,
             cursor: "pointer", position: "relative", transition: "background 0.2s",
           }}
         >
@@ -355,9 +355,9 @@ function AbonnementContent() {
               style={{
                 backgroundColor: S.surface,
                 border: isSelected
-                  ? `2px solid var(--althy-orange)`
+                  ? `2px solid var(--terracotta-primary)`
                   : plan.vedette
-                    ? `2px solid var(--althy-orange)`
+                    ? `2px solid var(--terracotta-primary)`
                     : `1px solid ${S.border}`,
                 borderRadius: 20, padding: 24, position: "relative",
                 boxShadow: plan.vedette ? "0 8px 32px rgba(232,96,44,0.15)" : S.shadow,
@@ -366,7 +366,7 @@ function AbonnementContent() {
               {plan.vedette && (
                 <div style={{
                   position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
-                  backgroundColor: "var(--althy-orange)", color: "#fff",
+                  backgroundColor: "var(--terracotta-primary)", color: "#fff",
                   padding: "3px 12px", borderRadius: 20,
                   fontSize: 11, fontWeight: 700, whiteSpace: "nowrap",
                 }}>
@@ -387,7 +387,7 @@ function AbonnementContent() {
               <ul style={{ listStyle: "none", padding: 0, margin: "0 0 20px", display: "flex", flexDirection: "column", gap: 8 }}>
                 {plan.fonctionnalites.map(f => (
                   <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: S.text2 }}>
-                    <Check size={14} color="var(--althy-orange)" style={{ flexShrink: 0, marginTop: 2 }} />
+                    <Check size={14} color="var(--terracotta-primary)" style={{ flexShrink: 0, marginTop: 2 }} />
                     {f}
                   </li>
                 ))}
@@ -400,7 +400,7 @@ function AbonnementContent() {
                   : undefined}
                 style={{
                   width: "100%", padding: "10px 0",
-                  backgroundColor: isCurrent ? S.surface2 : isSelected ? "var(--althy-orange)" : plan.vedette ? "var(--althy-orange)" : S.surface2,
+                  backgroundColor: isCurrent ? S.surface2 : isSelected ? "var(--terracotta-primary)" : plan.vedette ? "var(--terracotta-primary)" : S.surface2,
                   color: isCurrent ? S.text3 : (isSelected || plan.vedette) ? "#fff" : S.text,
                   border: isCurrent ? `1px solid ${S.border}` : (isSelected || plan.vedette) ? "none" : `1px solid ${S.border}`,
                   borderRadius: 10, fontSize: 13, fontWeight: 600,
@@ -430,7 +430,7 @@ function AbonnementContent() {
               <tr style={{ backgroundColor: S.surface2 }}>
                 <th style={{ padding: "12px 20px", textAlign: "left", fontSize: 12, fontWeight: 600, color: S.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>Fonctionnalité</th>
                 {["Starter", "Proprio", "Agence"].map(h => (
-                  <th key={h} style={{ padding: "12px 16px", textAlign: "center", fontSize: 12, fontWeight: 600, color: h === "Proprio" ? "var(--althy-orange)" : S.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
+                  <th key={h} style={{ padding: "12px 16px", textAlign: "center", fontSize: 12, fontWeight: 600, color: h === "Proprio" ? "var(--terracotta-primary)" : S.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -439,7 +439,7 @@ function AbonnementContent() {
                 <tr key={row.name} style={{ borderTop: `1px solid ${S.border}`, backgroundColor: i % 2 === 0 ? "transparent" : S.surface2 }}>
                   <td style={{ padding: "10px 20px", fontSize: 13, color: S.text2 }}>{row.name}</td>
                   {[row.starter, row.proprio, row.agence].map((val, j) => (
-                    <td key={j} style={{ padding: "10px 16px", textAlign: "center", fontSize: 13, color: val === "✓" ? "var(--althy-green)" : val === "—" ? S.text3 : j === 1 ? "var(--althy-orange)" : S.text, fontWeight: val === "✓" || j === 1 ? 600 : 400 }}>
+                    <td key={j} style={{ padding: "10px 16px", textAlign: "center", fontSize: 13, color: val === "✓" ? "var(--althy-green)" : val === "—" ? S.text3 : j === 1 ? "var(--terracotta-primary)" : S.text, fontWeight: val === "✓" || j === 1 ? 600 : 400 }}>
                       {val}
                     </td>
                   ))}

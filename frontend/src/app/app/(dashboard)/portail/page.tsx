@@ -6,14 +6,14 @@ import { api } from "@/lib/api";
 import { PlusCircle, Trash2, Users2, Eye, Link2, MessageSquare, Send, CheckCircle2 } from "lucide-react";
 
 const S = {
-  bg:      "var(--althy-bg)",
-  surface: "var(--althy-surface)",
+  bg:      "var(--cream)",
+  surface: "var(--background-card)",
   surface2:"var(--althy-surface-2)",
-  border:  "var(--althy-border)",
-  text:    "var(--althy-text)",
-  text2:   "var(--althy-text-2)",
-  text3:   "var(--althy-text-3)",
-  orange:  "var(--althy-orange)",
+  border:  "var(--border-subtle)",
+  text:    "var(--charcoal)",
+  text2:   "var(--text-secondary)",
+  text3:   "var(--text-tertiary)",
+  orange:  "var(--terracotta-primary)",
   orangeBg:"var(--althy-orange-bg)",
   amber:   "var(--althy-amber)",
   amberBg: "var(--althy-amber-bg)",
@@ -295,7 +295,7 @@ export default function PortailPage() {
                     width: "100%", padding: "9px 12px", borderRadius: 8,
                     border: `1px solid ${S.border}`, fontSize: 13.5,
                     outline: "none", boxSizing: "border-box",
-                    color: S.text, background: "var(--althy-bg)",
+                    color: S.text, background: "var(--cream)",
                   }}
                 />
               </div>
@@ -312,7 +312,7 @@ export default function PortailPage() {
                 width: "100%", padding: "9px 12px", borderRadius: 8,
                 border: `1px solid ${S.border}`, fontSize: 13.5,
                 outline: "none", boxSizing: "border-box",
-                color: S.text, background: "var(--althy-bg)",
+                color: S.text, background: "var(--cream)",
               }}
             />
           </div>

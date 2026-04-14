@@ -7,13 +7,13 @@ import { api } from "@/lib/api";
 import Link from "next/link";
 
 const S = {
-  orange:   "var(--althy-orange)",
+  orange:   "var(--terracotta-primary)",
   orangeBg: "var(--althy-orange-bg, rgba(232,96,44,0.08))",
-  surface:  "var(--althy-surface)",
-  border:   "var(--althy-border)",
-  text:     "var(--althy-text)",
-  text2:    "var(--althy-text-2)",
-  text3:    "var(--althy-text-3)",
+  surface:  "var(--background-card)",
+  border:   "var(--border-subtle)",
+  text:     "var(--charcoal)",
+  text2:    "var(--text-secondary)",
+  text3:    "var(--text-tertiary)",
   greenBg:  "var(--althy-green-bg, #EBF4E8)",
   green:    "var(--althy-green, #2E5E22)",
   redBg:    "var(--althy-red-bg, #FDECEA)",
@@ -78,7 +78,7 @@ export default function LocatairePage() {
 
       {/* Search */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", background: S.surface, border: `1px solid ${S.border}`, borderRadius: 10, marginBottom: 20 }}>
-        <Users size={13} color="var(--althy-text-3)" />
+        <Users size={13} color="var(--text-tertiary)" />
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -91,12 +91,12 @@ export default function LocatairePage() {
       {isLoading ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} style={{ height: 72, borderRadius: 12, background: "var(--althy-border)", opacity: 0.3 }} />
+            <div key={i} style={{ height: 72, borderRadius: 12, background: "var(--border-subtle)", opacity: 0.3 }} />
           ))}
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: "56px 24px", textAlign: "center" }}>
-          <Users size={40} color="var(--althy-border)" style={{ margin: "0 auto 16px" }} />
+          <Users size={40} color="var(--border-subtle)" style={{ margin: "0 auto 16px" }} />
           <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600, color: S.text }}>
             {search ? "Aucun résultat" : "Aucun locataire"}
           </h3>
@@ -148,7 +148,7 @@ export default function LocatairePage() {
                     {st.label}
                   </span>
 
-                  <ChevronRight size={16} color="var(--althy-text-3)" />
+                  <ChevronRight size={16} color="var(--text-tertiary)" />
                 </div>
               </Link>
             );

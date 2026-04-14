@@ -111,6 +111,20 @@
   --urgent-bg:          #FEF0EF;
   --info-bg:            #EEF3FE;
   --warning-bg:         #FFF6E5;
+
+  /* ── Aliases legacy → V2 (backward compat) ── */
+  --althy-green:        #22B573;
+  --althy-green-bg:     #E8F8F0;
+  --althy-red:          #E53E3E;
+  --althy-red-bg:       #FEF0EF;
+  --althy-amber:        #B45309;
+  --althy-amber-bg:     #FFF6E5;
+  --althy-blue:         #4B8BF5;
+  --althy-blue-bg:      #EEF3FE;
+  --althy-orange-light: rgba(232,96,44,0.08);
+  --althy-surface-2:    var(--cream);
+  --althy-shadow:       none;
+  --althy-shadow-md:    0 4px 24px rgba(0,0,0,0.06);
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────────── */

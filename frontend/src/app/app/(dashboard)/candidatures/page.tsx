@@ -153,13 +153,13 @@ export default function CandidaturesPage() {
   ];
 
   const S = {
-    orange: "var(--althy-orange)",
-    surface: "var(--althy-surface)",
-    border: "var(--althy-border)",
-    text: "var(--althy-text)",
-    text2: "var(--althy-text-2)",
-    text3: "var(--althy-text-3)",
-    bg: "var(--althy-bg)",
+    orange: "var(--terracotta-primary)",
+    surface: "var(--background-card)",
+    border: "var(--border-subtle)",
+    text: "var(--charcoal)",
+    text2: "var(--text-secondary)",
+    text3: "var(--text-tertiary)",
+    bg: "var(--cream)",
     radius: "var(--radius-card)",
   };
 
@@ -298,7 +298,7 @@ export default function CandidaturesPage() {
               {/* Summary */}
               {selected.score_details?.summary && (
                 <div style={{
-                  background: "var(--althy-bg)", borderRadius: 8, padding: "10px 12px",
+                  background: "var(--cream)", borderRadius: 8, padding: "10px 12px",
                   fontSize: 13, color: S.text2, marginBottom: 16,
                 }}>
                   {selected.score_details.summary}
@@ -329,13 +329,13 @@ export default function CandidaturesPage() {
                       rel="noopener noreferrer"
                       style={{
                         display: "flex", alignItems: "center", gap: 8,
-                        background: "var(--althy-bg)", borderRadius: 6, padding: "8px 10px",
+                        background: "var(--cream)", borderRadius: 6, padding: "8px 10px",
                         textDecoration: "none", color: S.text,
                       }}
                     >
                       <span style={{ fontSize: 16 }}>📄</span>
                       <span style={{ flex: 1, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.nom}</span>
-                      <span style={{ fontSize: 11, background: "var(--althy-orange-bg)", color: "var(--althy-orange)", borderRadius: 4, padding: "2px 6px", flexShrink: 0 }}>
+                      <span style={{ fontSize: 11, background: "var(--althy-orange-bg)", color: "var(--terracotta-primary)", borderRadius: 4, padding: "2px 6px", flexShrink: 0 }}>
                         {DOC_TYPE_LABELS[doc.type] ?? doc.type}
                       </span>
                     </a>
@@ -348,7 +348,7 @@ export default function CandidaturesPage() {
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: S.text, marginBottom: 6 }}>Message</div>
                   <div style={{
-                    background: "var(--althy-bg)", borderRadius: 8, padding: "10px 12px",
+                    background: "var(--cream)", borderRadius: 8, padding: "10px 12px",
                     fontSize: 13, color: S.text2, fontStyle: "italic",
                   }}>
                     "{selected.message}"

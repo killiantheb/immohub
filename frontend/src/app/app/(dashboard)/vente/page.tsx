@@ -6,14 +6,14 @@ import { api } from "@/lib/api";
 import { Plus, TrendingUp, Home, Users, FileText, CheckCircle, Loader2, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 
 const S = {
-  bg:       "var(--althy-bg)",
-  surface:  "var(--althy-surface)",
+  bg:       "var(--cream)",
+  surface:  "var(--background-card)",
   surface2: "var(--althy-surface-2)",
-  border:   "var(--althy-border)",
-  text:     "var(--althy-text)",
-  text2:    "var(--althy-text-2)",
-  text3:    "var(--althy-text-3)",
-  orange:   "var(--althy-orange)",
+  border:   "var(--border-subtle)",
+  text:     "var(--charcoal)",
+  text2:    "var(--text-secondary)",
+  text3:    "var(--text-tertiary)",
+  orange:   "var(--terracotta-primary)",
   orangeBg: "var(--althy-orange-bg)",
   green:    "var(--althy-green)",
   greenBg:  "var(--althy-green-bg)",
@@ -21,7 +21,7 @@ const S = {
   redBg:    "var(--althy-red-bg)",
   amber:    "var(--althy-amber)",
   amberBg:  "var(--althy-amber-bg)",
-  border2:  "var(--althy-border)",
+  border2:  "var(--border-subtle)",
   shadow:   "var(--althy-shadow)",
 } as const;
 
