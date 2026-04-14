@@ -24,6 +24,7 @@ from app.models.user import User
 from app.services.marketplace_service import (
     MAX_CANDIDATURE_FILES,
     TYPE_LABEL,
+    PublierRequest,
     get_owned_listing,
     notify_owner_new_candidature,
     publier_bien_service,
@@ -45,31 +46,7 @@ OptUserDep  = Annotated[User | None, Depends(get_optional_current_user)]
 
 # ── Schémas ───────────────────────────────────────────────────────────────────
 
-class PublierRequest(BaseModel):
-    property_id: uuid.UUID | None = None
-    type: str = "apartment"
-    transaction_type: str = "location"
-    adresse: str
-    ville: str
-    code_postal: str
-    canton: str | None = None
-    surface: float | None = None
-    pieces: int | None = None
-    prix: float
-    charges: float | None = None
-    caution: float | None = None
-    is_furnished: bool = False
-    has_parking: bool = False
-    has_balcony: bool = False
-    has_terrace: bool = False
-    has_garden: bool = False
-    pets_allowed: bool = False
-    titre: str | None = None
-    description: str | None = None
-    tags_ia: list[str] = []
-    photos: list[str] = []
-    adresse_affichee: str | None = None
-
+# PublierRequest est défini dans marketplace_service.py (importé ci-dessus)
 
 class ModifierRequest(BaseModel):
     titre: str | None = None

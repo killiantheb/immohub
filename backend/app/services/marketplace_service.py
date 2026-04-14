@@ -16,11 +16,40 @@ from app.models.listing import Listing
 from app.models.property import Property
 from app.models.user import User
 from fastapi import HTTPException
+from pydantic import BaseModel
 from sqlalchemy import select, text as sa_text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
     from fastapi import UploadFile
+
+
+# ── Schéma PublierRequest (défini ici pour éviter les forward references cross-module) ──
+
+class PublierRequest(BaseModel):
+    property_id: uuid.UUID | None = None
+    type: str = "apartment"
+    transaction_type: str = "location"
+    adresse: str
+    ville: str
+    code_postal: str
+    canton: str | None = None
+    surface: float | None = None
+    pieces: int | None = None
+    prix: float
+    charges: float | None = None
+    caution: float | None = None
+    is_furnished: bool = False
+    has_parking: bool = False
+    has_balcony: bool = False
+    has_terrace: bool = False
+    has_garden: bool = False
+    pets_allowed: bool = False
+    titre: str | None = None
+    description: str | None = None
+    tags_ia: list[str] = []
+    photos: list[str] = []
+    adresse_affichee: str | None = None
 
 # ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -202,7 +231,7 @@ async def score_candidature_ia(
 
 # ── Publication d'un bien (logique métier) ────────────────────────────────────
 
-async def publier_bien_service(body: "PublierRequest", user: User, db: AsyncSession) -> Listing:  # type: ignore[name-defined]
+async def publier_bien_service(body: PublierRequest, user: User, db: AsyncSession) -> Listing:
     """
     Crée ou met à jour un Listing sur la marketplace.
     - Si body.property_id fourni → upsert sur le bien existant (vérifie l'ownership).
