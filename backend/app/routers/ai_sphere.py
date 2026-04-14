@@ -279,7 +279,7 @@ async def get_briefing(
         today = date.today()
         uid = current_user.id
 
-        if role in ("owner", "agency", "super_admin"):
+        if role in ("owner", "agency", "proprio_solo", "agence", "super_admin"):
             res = await db.execute(
                 select(Txn).where(
                     Txn.owner_id == uid, Txn.status.in_(["pending", "late"]),
@@ -378,6 +378,10 @@ async def get_briefing(
         )
     except RuntimeError as exc:
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).error("Briefing generation failed: %s", exc, exc_info=True)
+        return {"status": f"Bonjour {first_name} !", "cards": []}
 
 
 @router.post("/agency-advisor")

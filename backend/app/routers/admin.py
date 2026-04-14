@@ -462,16 +462,21 @@ async def get_revenue(
         .order_by(func.date_trunc("month", Transaction.paid_at))
     )
 
-    rows = (await db.execute(stmt)).all()
-    return [
-        MonthlyRevenue(
-            month=row.month,
-            revenue=float(row.revenue),
-            commissions=float(row.commissions),
-            transaction_count=row.transaction_count,
-        )
-        for row in rows
-    ]
+    try:
+        rows = (await db.execute(stmt)).all()
+        return [
+            MonthlyRevenue(
+                month=row.month,
+                revenue=float(row.revenue),
+                commissions=float(row.commissions),
+                transaction_count=row.transaction_count,
+            )
+            for row in rows
+        ]
+    except Exception:
+        # Table transactions peut ne pas exister encore en DB
+        await db.rollback()
+        return []
 
 
 # ── 6. Audit logs ─────────────────────────────────────────────────────────────
