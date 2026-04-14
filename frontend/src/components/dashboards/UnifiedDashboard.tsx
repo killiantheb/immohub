@@ -1076,39 +1076,42 @@ function HKpiCard({ icon: Icon, iconColor, iconBg, value, label, sub, isUrgent }
 // ── H-care Orange highlight card ──────────────────────────────────────────────
 
 function HHighlightCard({ value, label }: { value: string; label: string }) {
-  const pts = [28, 18, 38, 22, 48, 30, 44, 42, 58, 36, 70, 50, 100]
-    .map((v, i, a) => `${(i / (a.length - 1)) * 100},${50 - ((v - 18) / 32) * 38}`)
-    .join(" ");
-
   return (
-    <div style={{
-      background: "linear-gradient(135deg, var(--terracotta-primary) 0%, var(--terracotta-deep) 100%)",
-      borderRadius: 24,
-      border: "none",
-      boxShadow: "0 8px 32px rgba(232,96,44,0.30)",
-      padding: 24, color: "#fff",
+    <Link href="/app/sphere" style={{
+      background: "linear-gradient(145deg, var(--terracotta-primary), var(--terracotta-deep, #C84E1E))",
+      borderRadius: 24, padding: "28px 24px",
+      color: "#fff", textDecoration: "none",
       display: "flex", flexDirection: "column", justifyContent: "space-between",
-      minHeight: 180,
-    }}>
-      <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.8, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-        {label}
-      </div>
+      position: "relative", overflow: "hidden", minHeight: 200,
+      transition: "transform 0.2s, box-shadow 0.2s",
+    }}
+      onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(232,96,44,0.3)"; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
+    >
+      {/* Cercle décoratif */}
+      <div style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
+
       <div>
-        <div style={{ fontSize: 36, fontWeight: 600, lineHeight: 1, marginBottom: 10, fontFamily: "var(--font-display)" }}>{value}</div>
-        <svg width="100%" height="32" viewBox="0 0 100 50" preserveAspectRatio="none">
-          <polyline points={pts} fill="none" stroke="rgba(255,255,255,0.40)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.12em", opacity: 0.75, marginBottom: 6 }}>
+          {label}
+        </div>
+        <div style={{ fontSize: 40, fontWeight: 600, fontFamily: "var(--font-display)", lineHeight: 1 }}>
+          {value}
+        </div>
       </div>
-      <Link href="/app/sphere" style={{
-        display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10,
-        background: "rgba(255,255,255,0.18)", borderRadius: 12,
-        padding: "8px 16px", fontSize: 12, fontWeight: 600, color: "#fff",
-        textDecoration: "none", width: "fit-content",
-        backdropFilter: "blur(8px)",
-      }}>
-        <Sparkles size={13} /> Ouvrir la Sphère IA
-      </Link>
-    </div>
+
+      {/* Sparkline */}
+      <svg width="100%" height="40" viewBox="0 0 120 40" preserveAspectRatio="none" style={{ margin: "16px 0", opacity: 0.5 }}>
+        <path d="M0,30 Q15,28 30,24 T60,16 T90,18 T120,8" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="120" cy="8" r="3" fill="#fff" />
+      </svg>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 500 }}>
+        <Sparkles size={16} />
+        Ouvrir la Sphère IA
+        <ArrowRight size={14} style={{ marginLeft: "auto" }} />
+      </div>
+    </Link>
   );
 }
 
