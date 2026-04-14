@@ -7,8 +7,6 @@ Routes authentifiées :           POST /publier  PATCH /{id}  DELETE /{id}
                                  POST /candidature  GET /mes-candidatures
 """
 
-from __future__ import annotations
-
 import uuid
 from datetime import datetime, timezone
 from typing import Annotated
