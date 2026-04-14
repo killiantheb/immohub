@@ -1310,15 +1310,19 @@ export function UnifiedDashboard() {
           </p>
         </div>
 
-        {/* KPI grid + highlight card */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.25rem" }}>
+        {/* KPI grid — managers : 2 KPIs + highlight card / autres : auto-fill */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: isManager ? "1fr 1fr 1fr" : "repeat(auto-fill, minmax(220px, 1fr))",
+          gap: "1rem", marginBottom: "1.25rem",
+        }}>
           {data.isLoading ? (
-            <KpiSkeleton count={config.kpis.length + (isManager ? 1 : 0)} />
+            <KpiSkeleton count={isManager ? 3 : config.kpis.length} />
           ) : (
             <>
-              {config.kpis.map(kpi => {
-                const kv  = kpiValues[kpi.key] ?? { value: "—", isUrgent: false };
-                const st  = kpiIconStyle(kpi.key, kv.isUrgent);
+              {(isManager ? config.kpis.slice(0, 2) : config.kpis).map(kpi => {
+                const kv = kpiValues[kpi.key] ?? { value: "—", isUrgent: false };
+                const st = kpiIconStyle(kpi.key, kv.isUrgent);
                 return (
                   <HKpiCard
                     key={kpi.key}
@@ -1332,7 +1336,7 @@ export function UnifiedDashboard() {
                   />
                 );
               })}
-              {/* Orange highlight card — managers uniquement */}
+              {/* Highlight card orange — 3e colonne, managers uniquement */}
               {isManager && (
                 <HHighlightCard
                   value={kpiValues["loyers_mois"]?.value ?? "—"}
