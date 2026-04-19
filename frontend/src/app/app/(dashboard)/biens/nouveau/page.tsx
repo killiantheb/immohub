@@ -32,10 +32,10 @@ const schema = z.object({
     "appartement", "villa", "studio", "maison",
     "commerce", "bureau", "parking", "garage", "cave", "autre",
   ] as const),
-  surface: z.coerce.number().min(1, "Surface requise").optional().or(z.literal("")),
-  pieces: z.coerce.number().min(1).optional().or(z.literal("")),
-  loyer: z.coerce.number().min(0).optional().or(z.literal("")),
-  etage: z.coerce.number().optional().or(z.literal("")),
+  surface: z.union([z.coerce.number().min(1, "Surface requise"), z.literal("")]).optional(),
+  pieces: z.union([z.coerce.number().min(1), z.literal("")]).optional(),
+  loyer: z.union([z.coerce.number().min(0), z.literal("")]).optional(),
+  etage: z.union([z.coerce.number(), z.literal("")]).optional(),
 });
 
 type FormValues = z.infer<typeof schema>;

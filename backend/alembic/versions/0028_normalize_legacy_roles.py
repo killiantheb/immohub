@@ -53,10 +53,12 @@ def upgrade():
     """)
 
     # 4. Remove legacy values from the PostgreSQL ENUM type
-    #    Strategy: create new enum, alter column, drop old enum
+    #    Strategy: create new enum, drop default, alter column, drop old enum, restore default
     #    (PostgreSQL does not support DROP VALUE from enum directly)
+    #    Must drop DEFAULT first — PostgreSQL cannot auto-cast it to the new enum type.
     new_values = ", ".join(f"'{r}'" for r in CANONICAL_ROLES)
     op.execute(f"CREATE TYPE user_role_enum_v2 AS ENUM ({new_values});")
+    op.execute("ALTER TABLE users ALTER COLUMN role DROP DEFAULT;")
     op.execute("""
         ALTER TABLE users
         ALTER COLUMN role TYPE user_role_enum_v2
@@ -64,6 +66,7 @@ def upgrade():
     """)
     op.execute("DROP TYPE IF EXISTS user_role_enum;")
     op.execute("ALTER TYPE user_role_enum_v2 RENAME TO user_role_enum;")
+    op.execute("ALTER TABLE users ALTER COLUMN role SET DEFAULT 'proprio_solo';")
 
 
 def downgrade():
@@ -71,6 +74,7 @@ def downgrade():
     all_roles = list(CANONICAL_ROLES) + list(LEGACY_MAP.keys())
     all_values = ", ".join(f"'{r}'" for r in all_roles)
     op.execute(f"CREATE TYPE user_role_enum_v2 AS ENUM ({all_values});")
+    op.execute("ALTER TABLE users ALTER COLUMN role DROP DEFAULT;")
     op.execute("""
         ALTER TABLE users
         ALTER COLUMN role TYPE user_role_enum_v2
@@ -78,6 +82,7 @@ def downgrade():
     """)
     op.execute("DROP TYPE IF EXISTS user_role_enum;")
     op.execute("ALTER TYPE user_role_enum_v2 RENAME TO user_role_enum;")
+    op.execute("ALTER TABLE users ALTER COLUMN role SET DEFAULT 'proprio_solo';")
 
     # Drop the CHECK constraint
     op.execute("ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_role_canonical;")
