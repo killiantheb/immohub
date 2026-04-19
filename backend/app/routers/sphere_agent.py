@@ -1540,7 +1540,7 @@ async def agency_advisor(
 
     role_label = "agence immobilière" if current_user.role == "agency" else "propriétaire"
     system = f"""Tu es AlthyLegal, conseiller IA expert en droit immobilier suisse (CO, LDTR, bail à loyer).
-Tu conseilles {current_user.first_name or 'l\\'utilisateur'}, {role_label}.
+Tu conseilles {current_user.first_name or "l'utilisateur"}, {role_label}.
 
 Données de son portefeuille :
 {json.dumps(context_data, ensure_ascii=False)}
