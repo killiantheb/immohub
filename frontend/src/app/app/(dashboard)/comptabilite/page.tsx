@@ -35,7 +35,7 @@ const AFFECTATION_LABELS: Record<string, string> = {
 
 // ── ScanSection ───────────────────────────────────────────────────────────────
 
-function ScanSection({ S }: { S: Record<string, string> }) {
+function ScanSection() {
   const fileRef  = useRef<HTMLInputElement>(null);
   const [dragging,  setDragging]  = useState(false);
   const [scanning,  setScanning]  = useState(false);
@@ -322,7 +322,7 @@ const ACTION_ENDPOINTS: Record<ExportAction, (year: number) => string> = {
   rapport_gestion:  (y) => `/export/rapport-gestion?year=${y}`,
 };
 
-function ExportSection({ S, year }: { S: Record<string, string>; year: number }) {
+function ExportSection({ year }: { year: number }) {
   const [loading, setLoading] = useState<ExportAction | null>(null);
   const [error, setError]     = useState<string | null>(null);
 
@@ -511,7 +511,7 @@ export default function ComptabilitePage() {
       )}
 
       {/* Scan section */}
-      <ScanSection S={S} />
+      <ScanSection />
 
       {/* Revenue chart */}
       <div style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, marginBottom: 24 }}>
@@ -578,7 +578,7 @@ export default function ComptabilitePage() {
       </div>
 
       {/* Export section */}
-      <ExportSection S={S} year={year} />
+      <ExportSection year={year} />
     </div>
   );
 }
