@@ -15,7 +15,7 @@ class RegisterRequest(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
     phone:      str = ""
-    role: Literal["owner", "tenant", "agency", "opener", "company"] = "owner"
+    role: Literal["proprio_solo", "locataire", "agence", "opener", "artisan", "portail_proprio", "expert", "hunter", "acheteur_premium"] = "proprio_solo"
     # Contexte onboarding — optionnels, transmis au scanner
     ville:      str = ""   # "Crans-Montana"
     agence_nom: str = ""   # "Sunimmo Riviera"

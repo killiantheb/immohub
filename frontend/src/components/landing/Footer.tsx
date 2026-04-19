@@ -61,8 +61,9 @@ export function Footer() {
           >
             {[
               { label: "Mentions légales", href: "/legal" },
-              { label: "Confidentialité", href: "/privacy" },
-              { label: "CGU", href: "/terms" },
+              { label: "Confidentialité", href: "/legal/confidentialite" },
+              { label: "CGU", href: "/legal/cgu" },
+              { label: "Cookies", href: "/legal/cookies" },
               { label: "Contact", href: "/contact" },
             ].map((link) => (
               <Link
@@ -114,7 +115,7 @@ export function Footer() {
           }}
         >
           <p style={{ color: C.textMuted, fontSize: "0.75rem", margin: 0 }}>
-            © 2026 Althy · Tous droits réservés
+            © {new Date().getFullYear()} Althy — Killian Thébaud · Tous droits réservés
           </p>
           <p style={{ color: C.textMuted, fontSize: "0.75rem", margin: 0 }}>
             Fabriqué en Suisse Romande ·{" "}

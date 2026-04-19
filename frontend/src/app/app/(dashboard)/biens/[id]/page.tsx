@@ -7,19 +7,22 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   AlertTriangle, CheckCircle2, Clock, Download,
-  ExternalLink, FileText, Mail, Wrench, XCircle,
+  ExternalLink, FileText, Loader2, Mail, Wrench, XCircle,
 } from "lucide-react";
+import { api } from "@/lib/api";
 import {
   useBien, useUpdateBien, useLocataireActuel,
   usePaiements, useInterventions, useDocuments,
   type Bien,
 } from "@/lib/hooks/useBiens";
 import {
-  S, Card, Badge, Skel,
+  Card, Badge, Skel,
   fmtDate, fmtCHF, initials,
   INTER_STATUT, PAI_STATUT, DOC_LABELS, BIEN_TYPE_LABELS,
   daysUntil,
 } from "./_shared";
+import { NotificationDraft } from "@/components/NotificationDraft";
+import { C } from "@/lib/design-tokens";
 
 // ── Design constants ──────────────────────────────────────────────────────────
 
@@ -33,7 +36,7 @@ const LABEL: React.CSSProperties = {
   display: "block",
   fontSize: 12,
   fontWeight: 500,
-  color: S.text3,
+  color: C.text3,
   textTransform: "uppercase",
   letterSpacing: "0.06em",
   marginBottom: 6,
@@ -46,7 +49,7 @@ const INPUT: React.CSSProperties = {
   borderRadius: 12,
   padding: "10px 14px",
   fontSize: 14,
-  color: S.text,
+  color: C.text,
   fontFamily: "inherit",
   outline: "none",
 };
@@ -57,7 +60,7 @@ const BTN_PRIMARY: React.CSSProperties = {
   padding: "9px 20px",
   borderRadius: 10,
   border: "none",
-  background: S.orange,
+  background: C.orange,
   color: "#fff",
   fontSize: 13,
   fontWeight: 600,
@@ -72,7 +75,7 @@ const BTN_GHOST: React.CSSProperties = {
   borderRadius: 9,
   border: `1px solid var(--border-subtle)`,
   background: "transparent",
-  color: S.text2,
+  color: C.text2,
   fontSize: 13,
   textDecoration: "none",
   fontFamily: "inherit",
@@ -81,8 +84,8 @@ const BTN_GHOST: React.CSSProperties = {
 const SEC_TITLE: React.CSSProperties = {
   fontSize: 16,
   fontWeight: 600,
-  fontFamily: "var(--font-display)",
-  color: S.text,
+  fontFamily: "var(--font-serif)",
+  color: C.text,
   marginBottom: 20,
   marginTop: 0,
 };
@@ -292,7 +295,7 @@ function SectionFinances({ bienId }: { bienId: string }) {
               onChange={e => set("loyer", e.target.value)}
               placeholder="1500"
             />
-            <span style={{ fontSize: 12, color: S.text3, whiteSpace: "nowrap" }}>CHF</span>
+            <span style={{ fontSize: 12, color: C.text3, whiteSpace: "nowrap" }}>CHF</span>
           </div>
         </div>
         <div style={FIELD}>
@@ -306,7 +309,7 @@ function SectionFinances({ bienId }: { bienId: string }) {
               onChange={e => set("charges", e.target.value)}
               placeholder="150"
             />
-            <span style={{ fontSize: 12, color: S.text3, whiteSpace: "nowrap" }}>CHF</span>
+            <span style={{ fontSize: 12, color: C.text3, whiteSpace: "nowrap" }}>CHF</span>
           </div>
         </div>
       </div>
@@ -314,7 +317,7 @@ function SectionFinances({ bienId }: { bienId: string }) {
       {locataire?.depot_garantie != null && (
         <div style={{ marginBottom: 16 }}>
           <p style={LABEL}>Caution (dépôt garantie)</p>
-          <p style={{ fontSize: 14, fontWeight: 600, color: S.text, margin: 0 }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: 0 }}>
             {fmtCHF(locataire.depot_garantie)}
           </p>
         </div>
@@ -328,14 +331,14 @@ function SectionFinances({ bienId }: { bienId: string }) {
           marginBottom: dirty ? 16 : 0,
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontSize: 12, color: S.text2 }}>Loyer net (après commission 3%)</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: S.text }}>
+            <span style={{ fontSize: 12, color: C.text2 }}>Loyer net (après commission 3%)</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>
               CHF {loyerNet.toLocaleString("fr-CH")}/mois
             </span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 12, color: S.text2 }}>Revenu annuel estimé</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: S.green }}>
+            <span style={{ fontSize: 12, color: C.text2 }}>Revenu annuel estimé</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: C.green }}>
               CHF {revenuAnnuel.toLocaleString("fr-CH")}
             </span>
           </div>
@@ -371,7 +374,7 @@ function SectionBail({ bienId }: { bienId: string }) {
     return (
       <div style={CARD}>
         <p style={SEC_TITLE}>Bail en cours</p>
-        <p style={{ fontSize: 13, color: S.text3, margin: 0 }}>
+        <p style={{ fontSize: 13, color: C.text3, margin: 0 }}>
           Aucun bail actif — ce bien est vacant.
         </p>
       </div>
@@ -388,13 +391,13 @@ function SectionBail({ bienId }: { bienId: string }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 20px", marginBottom: 20 }}>
         <div>
           <p style={{ ...LABEL, marginBottom: 4 }}>Début</p>
-          <p style={{ fontSize: 14, fontWeight: 600, color: S.text, margin: 0 }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: 0 }}>
             {fmtDate(locataire.date_entree)}
           </p>
         </div>
         <div>
           <p style={{ ...LABEL, marginBottom: 4 }}>Fin prévue</p>
-          <p style={{ fontSize: 14, fontWeight: 600, color: S.text, margin: 0 }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: 0 }}>
             {locataire.date_sortie ? fmtDate(locataire.date_sortie) : "Indéterminé"}
           </p>
         </div>
@@ -403,7 +406,7 @@ function SectionBail({ bienId }: { bienId: string }) {
             <p style={{ ...LABEL, marginBottom: 4 }}>Durée restante</p>
             <p style={{
               fontSize: 14, fontWeight: 600, margin: 0,
-              color: joursRestants != null && joursRestants <= 60 ? S.red : S.text,
+              color: joursRestants != null && joursRestants <= 60 ? C.red : C.text,
             }}>
               {moisRestants} mois
             </p>
@@ -411,7 +414,7 @@ function SectionBail({ bienId }: { bienId: string }) {
         )}
         <div>
           <p style={{ ...LABEL, marginBottom: 4 }}>Renouvellement</p>
-          <p style={{ fontSize: 14, fontWeight: 600, color: S.text, margin: 0 }}>Automatique</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: 0 }}>Automatique</p>
         </div>
       </div>
 
@@ -425,8 +428,8 @@ function SectionBail({ bienId }: { bienId: string }) {
           gap: 8,
           alignItems: "flex-start",
         }}>
-          <AlertTriangle size={14} style={{ color: S.red, flexShrink: 0, marginTop: 1 }} />
-          <p style={{ fontSize: 12, color: S.red, margin: 0 }}>
+          <AlertTriangle size={14} style={{ color: C.red, flexShrink: 0, marginTop: 1 }} />
+          <p style={{ fontSize: 12, color: C.red, margin: 0 }}>
             Bail se termine dans <strong>{joursRestants} jours</strong>. Pensez au renouvellement.
           </p>
         </div>
@@ -452,17 +455,82 @@ function SectionBail({ bienId }: { bienId: string }) {
 
 // ── SectionStatutLoyer ────────────────────────────────────────────────────────
 
+function downloadBase64Pdf(base64: string, filename: string) {
+  const bin = atob(base64);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  const blob = new Blob([buf], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank");
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
 function SectionStatutLoyer({ bienId }: { bienId: string }) {
   const { data: paiements, isLoading } = usePaiements(bienId);
+  const { data: locataire } = useLocataireActuel(bienId);
+  const [draftChannel, setDraftChannel] = useState<"email" | "whatsapp" | null>(null);
+  const [genLoading, setGenLoading] = useState<"qr" | "quittance" | null>(null);
+  const [genError, setGenError] = useState<string | null>(null);
+
   const moisCourant = new Date().toISOString().slice(0, 7);
   const paiement = paiements?.find(p => p.mois === moisCourant) ?? null;
   const ps = paiement ? PAI_STATUT[paiement.statut] : null;
 
   const accentColor = paiement?.statut === "recu"
-    ? S.green
+    ? C.green
     : paiement?.statut === "retard"
-    ? S.red
-    : S.border;
+    ? C.red
+    : C.border;
+
+  // Nom du locataire (note_interne contient souvent "Prénom Nom" via import CSV)
+  const locNom = locataire?.note_interne?.split("\n")[0]?.trim() || "Locataire";
+
+  // Contexte IA pour le draft
+  const draftContext = paiement
+    ? `Loyer en retard de ${paiement.jours_retard} jour${paiement.jours_retard > 1 ? "s" : ""}, montant ${fmtCHF(paiement.montant)}, échéance ${new Date(paiement.date_echeance).toLocaleDateString("fr-CH")}`
+    : "";
+
+  async function handleGenererQR() {
+    setGenLoading("qr");
+    setGenError(null);
+    try {
+      const { data } = await api.post("/loyers/generer-qr", {
+        property_id: bienId,
+        mois: moisCourant,
+      });
+      if (data.download_url) {
+        window.open(data.download_url, "_blank");
+      } else {
+        downloadBase64Pdf(data.pdf_base64, `qr-facture-${moisCourant}.pdf`);
+      }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setGenError(msg ?? "Erreur lors de la génération de la QR-facture");
+    } finally {
+      setGenLoading(null);
+    }
+  }
+
+  async function handleGenererQuittance() {
+    setGenLoading("quittance");
+    setGenError(null);
+    try {
+      const { data } = await api.post("/loyers/quittance", {
+        property_id: bienId,
+        mois: moisCourant,
+      });
+      if (data.download_url) {
+        window.open(data.download_url, "_blank");
+      } else {
+        downloadBase64Pdf(data.pdf_base64, `quittance-${moisCourant}.pdf`);
+      }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setGenError(msg ?? "Erreur lors de la génération de la quittance");
+    } finally {
+      setGenLoading(null);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -480,28 +548,28 @@ function SectionStatutLoyer({ bienId }: { bienId: string }) {
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
             {paiement.statut === "recu" ? (
-              <CheckCircle2 size={28} style={{ color: S.green, flexShrink: 0 }} />
+              <CheckCircle2 size={28} style={{ color: C.green, flexShrink: 0 }} />
             ) : paiement.statut === "retard" ? (
-              <XCircle size={28} style={{ color: S.red, flexShrink: 0 }} />
+              <XCircle size={28} style={{ color: C.red, flexShrink: 0 }} />
             ) : (
-              <Clock size={28} style={{ color: S.amber, flexShrink: 0 }} />
+              <Clock size={28} style={{ color: C.amber, flexShrink: 0 }} />
             )}
             <div>
-              <p style={{ fontSize: 22, fontWeight: 800, color: S.text, margin: "0 0 4px" }}>
+              <p style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: "0 0 4px" }}>
                 {fmtCHF(paiement.montant)}
               </p>
               <Badge label={ps.label} color={ps.color} bg={ps.bg} />
             </div>
           </div>
 
-          <p style={{ fontSize: 13, color: S.text2, margin: "0 0 4px" }}>
+          <p style={{ fontSize: 13, color: C.text2, margin: "0 0 4px" }}>
             Dû le {new Date(paiement.date_echeance).toLocaleDateString("fr-CH", {
               day: "numeric", month: "long", year: "numeric",
             })}
           </p>
 
           {paiement.jours_retard > 0 && (
-            <p style={{ fontSize: 12, color: S.red, margin: "0 0 12px" }}>
+            <p style={{ fontSize: 12, color: C.red, margin: "0 0 12px" }}>
               <strong>{paiement.jours_retard}</strong> jour{paiement.jours_retard > 1 ? "s" : ""} de retard
             </p>
           )}
@@ -509,38 +577,70 @@ function SectionStatutLoyer({ bienId }: { bienId: string }) {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
             {paiement.statut === "retard" && (
               <>
-                <button style={{ ...BTN_PRIMARY, fontSize: 12, padding: "7px 12px" }}>
+                <button
+                  onClick={() => setDraftChannel("email")}
+                  style={{ ...BTN_PRIMARY, fontSize: 12, padding: "7px 12px" }}
+                >
                   <Mail size={12} /> Email
                 </button>
-                <button style={{
-                  ...BTN_PRIMARY, fontSize: 12, padding: "7px 12px",
-                  background: "#25D366",
-                }}>
+                <button
+                  onClick={() => setDraftChannel("whatsapp")}
+                  style={{
+                    ...BTN_PRIMARY, fontSize: 12, padding: "7px 12px",
+                    background: "var(--whatsapp-green)",
+                  }}
+                >
                   WhatsApp
                 </button>
               </>
             )}
             {paiement.statut === "en_attente" && (
-              <button style={{ ...BTN_PRIMARY, fontSize: 12, padding: "7px 12px" }}>
-                Générer QR-facture
+              <button
+                onClick={handleGenererQR}
+                disabled={genLoading === "qr"}
+                style={{ ...BTN_PRIMARY, fontSize: 12, padding: "7px 12px", opacity: genLoading === "qr" ? 0.6 : 1 }}
+              >
+                {genLoading === "qr" ? <><Loader2 size={12} className="animate-spin" /> Génération…</> : "Générer QR-facture"}
               </button>
             )}
             {paiement.statut === "recu" && (
-              <button style={{ ...BTN_PRIMARY, fontSize: 12, padding: "7px 12px" }}>
-                Générer quittance
+              <button
+                onClick={handleGenererQuittance}
+                disabled={genLoading === "quittance"}
+                style={{ ...BTN_PRIMARY, fontSize: 12, padding: "7px 12px", opacity: genLoading === "quittance" ? 0.6 : 1 }}
+              >
+                {genLoading === "quittance" ? <><Loader2 size={12} className="animate-spin" /> Génération…</> : "Générer quittance"}
               </button>
             )}
           </div>
+          {genError && (
+            <p style={{ fontSize: 12, color: C.red, margin: "8px 0 0" }}>{genError}</p>
+          )}
         </>
       ) : (
         <div>
-          <p style={{ fontSize: 13, color: S.text3, margin: "0 0 14px" }}>
+          <p style={{ fontSize: 13, color: C.text3, margin: "0 0 14px" }}>
             Aucun paiement enregistré pour ce mois.
           </p>
-          <button style={{ ...BTN_PRIMARY, fontSize: 12, padding: "7px 12px" }}>
-            Générer QR-facture
+          <button
+            onClick={handleGenererQR}
+            disabled={genLoading === "qr"}
+            style={{ ...BTN_PRIMARY, fontSize: 12, padding: "7px 12px", opacity: genLoading === "qr" ? 0.6 : 1 }}
+          >
+            {genLoading === "qr" ? <><Loader2 size={12} className="animate-spin" /> Génération…</> : "Générer QR-facture"}
           </button>
+          {genError && (
+            <p style={{ fontSize: 12, color: C.red, margin: "8px 0 0" }}>{genError}</p>
+          )}
         </div>
+      )}
+
+      {draftChannel && (
+        <NotificationDraft
+          recipientName={locNom}
+          context={draftContext}
+          onClose={() => setDraftChannel(null)}
+        />
       )}
     </div>
   );
@@ -567,7 +667,7 @@ function SectionLocataire({ bienId }: { bienId: string }) {
     return (
       <div style={CARD}>
         <p style={SEC_TITLE}>Locataire actuel</p>
-        <p style={{ fontSize: 13, color: S.text3, margin: "0 0 14px" }}>
+        <p style={{ fontSize: 13, color: C.text3, margin: "0 0 14px" }}>
           Aucun locataire — ce bien est vacant.
         </p>
         <Link
@@ -575,7 +675,7 @@ function SectionLocataire({ bienId }: { bienId: string }) {
           style={{
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "9px 16px", borderRadius: 10,
-            background: S.orange, color: "#fff",
+            background: C.orange, color: "#fff",
             fontSize: 13, fontWeight: 600, textDecoration: "none",
           }}
         >
@@ -597,23 +697,23 @@ function SectionLocataire({ bienId }: { bienId: string }) {
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
         <div style={{
           width: 48, height: 48, borderRadius: "50%",
-          background: S.orangeBg,
+          background: C.orangeBg,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 16, fontWeight: 700, color: S.orange,
+          fontSize: 16, fontWeight: 700, color: C.orange,
           flexShrink: 0,
         }}>
           {inis}
         </div>
         <div>
-          <p style={{ fontWeight: 600, color: S.text, margin: "0 0 2px", fontSize: 15 }}>{nom}</p>
-          <p style={{ fontSize: 12, color: S.text3, margin: 0 }}>
+          <p style={{ fontWeight: 600, color: C.text, margin: "0 0 2px", fontSize: 15 }}>{nom}</p>
+          <p style={{ fontSize: 12, color: C.text3, margin: 0 }}>
             Depuis le {fmtDate(locataire.date_entree)}
           </p>
         </div>
       </div>
 
       {locataire.date_sortie && (
-        <p style={{ fontSize: 12, color: S.text2, margin: "0 0 12px" }}>
+        <p style={{ fontSize: 12, color: C.text2, margin: "0 0 12px" }}>
           Départ prévu : {fmtDate(locataire.date_sortie)}
         </p>
       )}
@@ -624,7 +724,7 @@ function SectionLocataire({ bienId }: { bienId: string }) {
           style={{
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "8px 14px", borderRadius: 9,
-            background: S.orangeBg, color: S.orange,
+            background: C.orangeBg, color: C.orange,
             fontSize: 13, fontWeight: 600, textDecoration: "none",
           }}
         >
@@ -636,7 +736,7 @@ function SectionLocataire({ bienId }: { bienId: string }) {
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "8px 14px", borderRadius: 9,
             border: `1px solid var(--border-subtle)`,
-            color: S.text2, fontSize: 13, textDecoration: "none",
+            color: C.text2, fontSize: 13, textDecoration: "none",
           }}
         >
           <ExternalLink size={13} /> Profil complet
@@ -667,17 +767,17 @@ function SectionInterventions({ bienId }: { bienId: string }) {
     <div style={CARD}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <p style={{ ...SEC_TITLE, marginBottom: 0 }}>Interventions</p>
-        <Link href={`/app/biens/${bienId}/interventions`} style={{ fontSize: 12, color: S.orange, textDecoration: "none", fontWeight: 500 }}>
+        <Link href={`/app/biens/${bienId}/interventions`} style={{ fontSize: 12, color: C.orange, textDecoration: "none", fontWeight: 500 }}>
           Voir tout →
         </Link>
       </div>
 
       {dernieres.length === 0 ? (
-        <p style={{ fontSize: 13, color: S.text3, margin: 0 }}>Aucune intervention</p>
+        <p style={{ fontSize: 13, color: C.text3, margin: 0 }}>Aucune intervention</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {dernieres.map(inter => {
-            const is = INTER_STATUT[inter.statut] ?? { label: inter.statut, color: S.text2, bg: S.border };
+            const is = INTER_STATUT[inter.statut] ?? { label: inter.statut, color: C.text2, bg: C.border };
             return (
               <div
                 key={inter.id}
@@ -687,10 +787,10 @@ function SectionInterventions({ bienId }: { bienId: string }) {
                   border: `1px solid var(--border-subtle)`,
                 }}
               >
-                <Wrench size={14} style={{ color: S.amber, flexShrink: 0 }} />
+                <Wrench size={14} style={{ color: C.amber, flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{
-                    fontSize: 13, fontWeight: 600, color: S.text,
+                    fontSize: 13, fontWeight: 600, color: C.text,
                     margin: "0 0 3px",
                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                   }}>
@@ -734,13 +834,13 @@ function SectionDocuments({ bienId }: { bienId: string }) {
     <div style={CARD}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <p style={{ ...SEC_TITLE, marginBottom: 0 }}>Documents récents</p>
-        <Link href={`/app/biens/${bienId}/documents`} style={{ fontSize: 12, color: S.orange, textDecoration: "none", fontWeight: 500 }}>
+        <Link href={`/app/biens/${bienId}/documents`} style={{ fontSize: 12, color: C.orange, textDecoration: "none", fontWeight: 500 }}>
           Voir tout →
         </Link>
       </div>
 
       {derniers.length === 0 ? (
-        <p style={{ fontSize: 13, color: S.text3, margin: 0 }}>Aucun document</p>
+        <p style={{ fontSize: 13, color: C.text3, margin: 0 }}>Aucun document</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {derniers.map(doc => (
@@ -752,16 +852,16 @@ function SectionDocuments({ bienId }: { bienId: string }) {
                 border: `1px solid var(--border-subtle)`,
               }}
             >
-              <FileText size={14} style={{ color: S.blue, flexShrink: 0 }} />
+              <FileText size={14} style={{ color: C.blue, flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{
-                  fontSize: 13, fontWeight: 600, color: S.text,
+                  fontSize: 13, fontWeight: 600, color: C.text,
                   margin: "0 0 2px",
                   overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                 }}>
                   {DOC_LABELS[doc.type] ?? doc.type}
                 </p>
-                <p style={{ fontSize: 11, color: S.text3, margin: 0 }}>
+                <p style={{ fontSize: 11, color: C.text3, margin: 0 }}>
                   {fmtDate(doc.date_document ?? doc.created_at)}
                 </p>
               </div>
@@ -770,7 +870,7 @@ function SectionDocuments({ bienId }: { bienId: string }) {
                   href={doc.url_storage}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ color: S.text3, flexShrink: 0, lineHeight: 0 }}
+                  style={{ color: C.text3, flexShrink: 0, lineHeight: 0 }}
                 >
                   <Download size={14} />
                 </a>

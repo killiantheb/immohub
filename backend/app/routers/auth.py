@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
@@ -45,10 +46,16 @@ def _bearer_token(request: Request) -> str:
 )
 async def register(payload: RegisterRequest, db: DbDep, _=rate_limit(5, 60)) -> AuthResponse:
     """
-    1. Crée l'utilisateur dans Supabase Auth (Admin API).
-    2. Signe l'utilisateur pour obtenir les tokens JWT.
-    3. Crée/met à jour le profil dans la DB.
+    1. Vérifie que le rôle est autorisé (feature flags).
+    2. Crée l'utilisateur dans Supabase Auth (Admin API).
+    3. Signe l'utilisateur pour obtenir les tokens JWT.
+    4. Crée/met à jour le profil dans la DB.
     """
+    if settings.FEATURE_FLAGS_STRICT and payload.role not in settings.ALLOWED_SIGNUP_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Le rôle « {payload.role} » n'est pas encore disponible. Inscription en liste d'attente sur althy.ch/bientot/{payload.role}.",
+        )
     return await AuthService(db).register(payload)
 
 

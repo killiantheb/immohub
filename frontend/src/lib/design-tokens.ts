@@ -4,6 +4,11 @@
  * Chaque valeur est un pointeur vers une CSS variable définie dans globals.css.
  * Usage : import { C } from "@/lib/design-tokens"
  *         style={{ color: C.orange, background: C.orangeBg }}
+ *
+ * RÈGLE : ne jamais déclarer `const S = { orange: "...", ... }` ou
+ *         `const ORANGE = "#E8602C"` dans un fichier composant.
+ *         Toujours importer C depuis ce fichier.
+ *         Exception : `const ORANGE_HEX` dans les fichiers map/ (Mapbox exige du hex).
  */
 
 export const C = {
@@ -18,6 +23,8 @@ export const C = {
 
   // ── Texte ───────────────────────────────────────────────────────────────────
   text:         "var(--althy-text)",
+  text2:        "var(--althy-text-2)",
+  text3:        "var(--althy-text-3)",
   textMid:      "var(--althy-text-2)",
   textMuted:    "var(--althy-text-3)",
 
@@ -35,6 +42,8 @@ export const C = {
   redBg:        "var(--althy-red-bg)",
   amber:        "var(--althy-amber)",
   amberBg:      "var(--althy-amber-bg)",
+  warning:      "var(--althy-warning)",
+  warningBg:    "var(--althy-warning-bg)",
   blue:         "var(--althy-blue)",
   blueBg:       "var(--althy-blue-bg)",
   purple:       "var(--althy-purple)",
@@ -64,6 +73,10 @@ export const C = {
   shadow:       "var(--althy-shadow)",
   shadowMd:     "var(--althy-shadow-md)",
   shadowLg:     "var(--althy-shadow-lg)",
+
+  // ── Rayons ──────────────────────────────────────────────────────────────────
+  radiusCard:   "var(--radius-card)",
+  radiusElem:   "var(--radius-elem)",
 } as const;
 
-export type ColorKey = keyof typeof C;
+export type TokenKey = keyof typeof C;

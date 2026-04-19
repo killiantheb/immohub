@@ -10,6 +10,7 @@ import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { AlthyLogo } from "@/components/AlthyLogo";
 import { useAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase";
+import { isRoleEnabled } from "@/lib/flags";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -334,7 +335,7 @@ function RegisterForm() {
               )}
 
               <div className="space-y-3">
-                {ROLE_OPTIONS.map(({ role, icon, label, sub }) => (
+                {ROLE_OPTIONS.filter(({ role }) => isRoleEnabled(role)).map(({ role, icon, label, sub }) => (
                   <button
                     key={role}
                     onClick={() => pickRole(role)}
@@ -355,15 +356,24 @@ function RegisterForm() {
                 ))}
               </div>
 
-              {/* Agence — lien discret */}
+              {/* Agence — lien discret ou waitlist */}
               <div className="mt-6 text-center">
-                <button
-                  onClick={() => pickRole("agence")}
-                  disabled={roleLoading}
-                  className="text-sm text-gray-400 hover:text-primary-600 transition-colors disabled:opacity-60"
-                >
-                  Je suis une agence immobilière →
-                </button>
+                {isRoleEnabled("agence") ? (
+                  <button
+                    onClick={() => pickRole("agence")}
+                    disabled={roleLoading}
+                    className="text-sm text-gray-400 hover:text-primary-600 transition-colors disabled:opacity-60"
+                  >
+                    Je suis une agence immobilière →
+                  </button>
+                ) : (
+                  <Link
+                    href="/bientot/agence"
+                    className="text-sm text-gray-400 hover:text-primary-600 transition-colors"
+                  >
+                    Agence immobilière ? Rejoignez la liste d'attente →
+                  </Link>
+                )}
               </div>
 
               <button

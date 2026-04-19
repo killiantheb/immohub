@@ -23,8 +23,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/login`,                changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE}/publier`,              changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/contact`,              changeFrequency: "monthly", priority: 0.4 },
+    { url: `${BASE}/legal`,                 changeFrequency: "yearly",  priority: 0.2 },
     { url: `${BASE}/legal/cgu`,            changeFrequency: "yearly",  priority: 0.2 },
     { url: `${BASE}/legal/confidentialite`,changeFrequency: "yearly",  priority: 0.2 },
+    { url: `${BASE}/legal/cookies`,        changeFrequency: "yearly",  priority: 0.1 },
+    { url: `${BASE}/legal/disclaimer-ia`,  changeFrequency: "yearly",  priority: 0.1 },
   ];
 
   // ── Biens actifs (dynamique) ─────────────────────────────────────────────────

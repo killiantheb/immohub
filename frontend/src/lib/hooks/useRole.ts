@@ -3,6 +3,7 @@
 import { useAuthStore } from "@/lib/store/authStore";
 import { useUser } from "@/lib/auth";
 import { type UserRole, ROLE_LABELS, LEGACY_ROLE_MAP } from "@/lib/types";
+import { isRoleEnabled, isSectionEnabled } from "@/lib/flags";
 
 // AppRole = UserRole — ré-exporté pour rétrocompatibilité des imports existants.
 export type AppRole = UserRole;
@@ -11,21 +12,21 @@ export { ROLE_LABELS };
 /** Sections accessibles par rôle (mirrors backend ROLE_SECTIONS) */
 export const ROLE_SECTIONS: Record<UserRole, string[]> = {
   super_admin:      ["*"],
-  proprio_solo:     ["dashboard", "sphere", "carte", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "ouvreurs", "vente", "settings", "communication", "profile"],
-  agence:           ["dashboard", "sphere", "carte", "biens", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail", "ouvreurs", "vente", "settings", "communication", "artisans", "onboarding", "profile"],
+  proprio_solo:     ["dashboard", "sphere", "carte", "biens", "candidatures", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "ouvreurs", "vente", "settings", "communication", "profile"],
+  agence:           ["dashboard", "sphere", "carte", "biens", "candidatures", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail", "ouvreurs", "vente", "settings", "communication", "artisans", "onboarding", "profile"],
   portail_proprio:  ["dashboard", "carte", "biens", "finances", "documents", "settings", "communication", "profile"],
   opener:           ["dashboard", "sphere", "carte", "ouvreurs", "interventions", "finances", "abonnement", "settings", "communication", "profile"],
   artisan:          ["dashboard", "sphere", "carte", "interventions", "finances", "abonnement", "artisans", "settings", "communication", "profile"],
   expert:           ["dashboard", "sphere", "carte", "biens", "finances", "abonnement", "settings", "communication", "profile"],
   hunter:           ["dashboard", "sphere", "carte", "hunters", "abonnement", "vente", "settings", "communication", "profile"],
-  locataire:        ["dashboard", "sphere", "carte", "biens", "finances", "documents", "settings", "communication", "profile"],
-  acheteur_premium: ["dashboard", "sphere", "carte", "listings", "settings", "vente", "communication", "profile"],
+  locataire:        ["dashboard", "sphere", "carte", "biens", "mes_candidatures", "finances", "documents", "settings", "communication", "profile"],
+  acheteur_premium: ["dashboard", "sphere", "carte", "listings", "mes_candidatures", "settings", "vente", "communication", "profile"],
 };
 
 /** Plan tarifaire par rôle */
 export const ROLE_PRICE: Record<UserRole, string | null> = {
-  proprio_solo:     "Gratuit · Pro CHF 29/mois",
-  agence:           "CHF 29/agent/mois",
+  proprio_solo:     "Gratuit · Starter CHF 14 · Pro CHF 29/mois",
+  agence:           "CHF 79/agent/mois · Premium CHF 129",
   portail_proprio:  "CHF 9/mois (facturé à l'agence)",
   opener:           "Gratuit · Pro CHF 19/mois",
   artisan:          "Profil gratuit · Commission 10%",
@@ -53,6 +54,8 @@ export function useRole() {
 
   const can = (section: string): boolean => {
     if (!role) return false;
+    if (!isRoleEnabled(role)) return false;
+    if (!isSectionEnabled(section)) return false;
     const sections = ROLE_SECTIONS[role] ?? [];
     return sections.includes("*") || sections.includes(section);
   };

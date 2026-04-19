@@ -40,9 +40,13 @@ class Settings(BaseSettings):
     STRIPE_ARTISAN_FEE_PCT: float = 10.0         # 10% artisans
     STRIPE_APPLICATION_FEE_CHF: int = 90         # CHF 90 frais dossier locataire
     # Stripe Billing — prix des plans (IDs Stripe Price)
-    STRIPE_PRICE_PROPRIO_MONTHLY: str = ""       # CHF 29/mois
-    STRIPE_PRICE_PRO_MONTHLY: str = ""           # CHF 19/mois
-    STRIPE_PRICE_AGENCY_MONTHLY: str = ""        # CHF 29/agent/mois
+    # Proprio solo
+    STRIPE_PRICE_STARTER_MONTHLY: str = ""       # CHF 14/mois (1 bien, fonctions complètes)
+    STRIPE_PRICE_PRO_MONTHLY: str = ""           # CHF 29/mois (2-5 biens)
+    STRIPE_PRICE_PROPRIO_MONTHLY: str = ""       # Legacy CHF 29/mois → mappé sur "pro" (grandfathered)
+    # Agence
+    STRIPE_PRICE_AGENCY_MONTHLY: str = ""        # CHF 79/agent/mois (standard)
+    STRIPE_PRICE_AGENCY_PREMIUM_MONTHLY: str = "" # CHF 129/agent/mois (premium)
     STRIPE_PRICE_PORTAL_MONTHLY: str = ""        # CHF 9/mois portail proprio
 
     # AI
@@ -101,10 +105,16 @@ class Settings(BaseSettings):
     ALTHY_QR_IBAN: str = ""                    # QR-IBAN du compte Althy (CH…)
     ALTHY_COMMISSION_PCT: float = 0.03         # 3% sur loyers en transit
     ALTHY_BANK_NAME: str = "PostFinance"       # Pour en-tête QR-factures
-    ALTHY_CREDITOR_NAME: str = "Althy SA"
+    ALTHY_CREDITOR_NAME: str = "Killian Thébaud — Althy"
     ALTHY_CREDITOR_STREET: str = "Rue de Rive 1"
     ALTHY_CREDITOR_CITY: str = "1204 Genève"
     ALTHY_CREDITOR_COUNTRY: str = "CH"
+
+    # Feature flags — rôles autorisés à l'inscription
+    # En prod Phase 1 : seuls proprio_solo + locataire + super_admin peuvent s'inscrire.
+    # Les autres rôles sont en liste d'attente.
+    FEATURE_FLAGS_STRICT: bool = True  # True en prod, False en staging/dev
+    ALLOWED_SIGNUP_ROLES: list[str] = ["proprio_solo", "locataire", "super_admin"]
 
     @property
     def is_production(self) -> bool:

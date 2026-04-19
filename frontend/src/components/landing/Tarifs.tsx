@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { PLANS } from "@/lib/plans.config"
+import { PLANS_PROPRIO } from "@/lib/plans.config"
 import { C } from "@/lib/design-tokens"
 import Link from "next/link"
 
@@ -28,7 +28,7 @@ export function Tarifs() {
           style={{ marginBottom: "1.25rem", textAlign: "center" }}
         >
           <span style={{ color: C.orange, fontSize: "0.75rem", fontWeight: 500, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-            Tarifs
+            Tarifs propriétaire
           </span>
         </motion.div>
 
@@ -37,7 +37,7 @@ export function Tarifs() {
           viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }}
           style={{ color: C.text, fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 700, lineHeight: 1.1, letterSpacing: "-0.02em", margin: "0 0 0.875rem 0", textAlign: "center" }}
         >
-          Simple. Transparent. Sans surprise.
+          Gratuit à vie pour votre premier bien.
         </motion.h2>
 
         <motion.p
@@ -45,12 +45,12 @@ export function Tarifs() {
           viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.2 }}
           style={{ color: C.textMuted, fontSize: "0.9375rem", textAlign: "center", margin: "0 0 4rem 0", letterSpacing: "0.02em" }}
         >
-          14 jours gratuits · Pas de carte de crédit · Sans engagement
+          30 jours d&apos;essai sur tous les plans · Sans carte bancaire · Sans engagement
         </motion.p>
 
-        {/* Cards */}
+        {/* Cards — 3 paliers proprio */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem", alignItems: "start" }}>
-          {PLANS.map((plan, i) => (
+          {PLANS_PROPRIO.map((plan, i) => (
             <motion.div
               key={plan.id}
               initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
@@ -69,7 +69,7 @@ export function Tarifs() {
                 <div style={{
                   position: "absolute", top: "-1px", left: "50%",
                   transform: "translateX(-50%) translateY(-50%)",
-                  background: C.orange, color: "#FFFFFF",
+                  background: C.orange, color: "var(--althy-surface)",
                   fontSize: "0.65rem", fontWeight: 700,
                   padding: "0.3rem 0.9rem", borderRadius: "100px",
                   letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap",
@@ -88,15 +88,15 @@ export function Tarifs() {
                 </span>
               </div>
               <div style={{ color: C.textMuted, fontSize: "0.8125rem", marginBottom: "2rem" }}>
-                {plan.periode}
+                {plan.prix === 0 ? "Pour toujours · 1 bien" : plan.periode}
               </div>
 
               <Link
-                href={plan.id === "agence" ? "/contact?source=agence" : "/register"}
+                href={plan.prix === 0 ? "/register?role=proprio_solo" : "/register?role=proprio_solo&plan=" + plan.id}
                 style={{
                   display: "block", textAlign: "center",
                   background: plan.vedette ? C.orange : "transparent",
-                  color: plan.vedette ? "#FFFFFF" : C.text,
+                  color: plan.vedette ? "var(--althy-surface)" : C.text,
                   border: plan.vedette ? "none" : `1px solid ${C.border}`,
                   borderRadius: "100px", padding: "0.75rem 1.5rem",
                   fontSize: "0.9375rem", fontWeight: plan.vedette ? 700 : 500,
@@ -128,12 +128,45 @@ export function Tarifs() {
           ))}
         </div>
 
+        {/* Agence teaser */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.5 }}
+          style={{
+            marginTop: "2.5rem", padding: "1.5rem 2rem",
+            background: C.surface, border: `1px solid ${C.border}`, borderRadius: "1rem",
+            display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "1rem",
+          }}
+        >
+          <div>
+            <p style={{ margin: "0 0 4px", fontSize: 15, fontWeight: 700, color: C.text }}>
+              Vous êtes une agence ?
+            </p>
+            <p style={{ margin: 0, fontSize: 13, color: C.textMuted }}>
+              À partir de CHF 79/agent/mois · Multi-agents · CRM · Portail proprio
+            </p>
+          </div>
+          <Link
+            href="/contact?source=agence"
+            style={{
+              padding: "0.6rem 1.5rem", borderRadius: "100px",
+              border: `1px solid ${C.border}`, color: C.text,
+              fontSize: "0.875rem", fontWeight: 600, textDecoration: "none",
+              transition: "border-color 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.orange)}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = C.border)}
+          >
+            Demander une démo →
+          </Link>
+        </motion.div>
+
         <motion.p
           initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}
           viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.5 }}
           style={{ color: C.textMuted, fontSize: "0.8rem", textAlign: "center", marginTop: "2.5rem", lineHeight: 1.7 }}
         >
-          Tous les prix sont en CHF, TVA non applicable (art. 10 LTVA). Commission Ouvreur/Artisan prélevée uniquement sur missions conclues.
+          Tous les prix sont en CHF, TVA non applicable (art. 10 LTVA). Commission 3% sur loyers encaissés, prélevée uniquement sur les flux effectifs.
         </motion.p>
       </div>
     </section>

@@ -8,16 +8,16 @@ export const metadata: Metadata = {
 const LAST_UPDATE = "Avril 2026";
 
 function H2({ children }: { children: React.ReactNode }) {
-  return <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 19, fontWeight: 400, color: "#3D3830", margin: "2.5rem 0 0.75rem", paddingBottom: "0.5rem", borderBottom: "1px solid #E8E4DC" }}>{children}</h2>;
+  return <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 19, fontWeight: 400, color: "var(--althy-text)", margin: "2.5rem 0 0.75rem", paddingBottom: "0.5rem", borderBottom: "1px solid var(--althy-border)" }}>{children}</h2>;
 }
 function H3({ children }: { children: React.ReactNode }) {
-  return <h3 style={{ fontSize: 14, fontWeight: 700, color: "#3D3830", margin: "1.25rem 0 0.4rem" }}>{children}</h3>;
+  return <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--althy-text)", margin: "1.25rem 0 0.4rem" }}>{children}</h3>;
 }
 function P({ children }: { children: React.ReactNode }) {
-  return <p style={{ fontSize: 14, lineHeight: 1.75, color: "#4A4440", margin: "0.6rem 0" }}>{children}</p>;
+  return <p style={{ fontSize: 14, lineHeight: 1.75, color: "var(--althy-text)", margin: "0.6rem 0" }}>{children}</p>;
 }
 function Li({ children }: { children: React.ReactNode }) {
-  return <li style={{ fontSize: 14, lineHeight: 1.75, color: "#4A4440", marginBottom: "0.25rem" }}>{children}</li>;
+  return <li style={{ fontSize: 14, lineHeight: 1.75, color: "var(--althy-text)", marginBottom: "0.25rem" }}>{children}</li>;
 }
 function Table({ rows }: { rows: [string, string, string, string][] }) {
   const headers = ["Catégorie", "Données", "Finalité", "Durée"];
@@ -25,14 +25,14 @@ function Table({ rows }: { rows: [string, string, string, string][] }) {
     <div style={{ overflowX: "auto", margin: "0.75rem 0" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
         <thead>
-          <tr style={{ background: "#F5F2EE" }}>
-            {headers.map(h => <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "#7A7469", fontWeight: 600, borderBottom: "1px solid #E8E4DC" }}>{h}</th>)}
+          <tr style={{ background: "var(--althy-surface-2)" }}>
+            {headers.map(h => <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "var(--althy-text-3)", fontWeight: 600, borderBottom: "1px solid var(--althy-border)" }}>{h}</th>)}
           </tr>
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={i} style={{ borderBottom: "1px solid #E8E4DC", background: i % 2 === 0 ? "#fff" : "#FAFAF8" }}>
-              {row.map((cell, j) => <td key={j} style={{ padding: "8px 12px", color: "#4A4440", verticalAlign: "top" }}>{cell}</td>)}
+            <tr key={i} style={{ borderBottom: "1px solid var(--althy-border)", background: i % 2 === 0 ? "#fff" : "var(--althy-bg)" }}>
+              {row.map((cell, j) => <td key={j} style={{ padding: "8px 12px", color: "var(--althy-text)", verticalAlign: "top" }}>{cell}</td>)}
             </tr>
           ))}
         </tbody>
@@ -45,20 +45,20 @@ export default function ConfidentialitePage() {
   return (
     <>
       <div style={{ marginBottom: "2.5rem" }}>
-        <p style={{ fontSize: 11, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#7A7469", marginBottom: "1rem" }}>Althy — Informations légales</p>
-        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.75rem,4vw,2.5rem)", fontWeight: 300, color: "#3D3830", marginBottom: "0.5rem" }}>
+        <p style={{ fontSize: 11, letterSpacing: "2px", textTransform: "uppercase" as const, color: "var(--althy-text-3)", marginBottom: "1rem" }}>Althy — Informations légales</p>
+        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.75rem,4vw,2.5rem)", fontWeight: 300, color: "var(--althy-text)", marginBottom: "0.5rem" }}>
           Politique de confidentialité
         </h1>
-        <p style={{ fontSize: 12, color: "#7A7469" }}>Dernière mise à jour : {LAST_UPDATE} · Conforme LPD suisse (2023) et RGPD</p>
+        <p style={{ fontSize: 12, color: "var(--althy-text-3)" }}>Dernière mise à jour : {LAST_UPDATE} · Conforme LPD suisse (2023) et RGPD</p>
       </div>
 
-      <div style={{ padding: "1rem", background: "#EBF2EA", borderRadius: 10, border: "1px solid #A8C9A4", marginBottom: "2rem", fontSize: 13 }}>
+      <div style={{ padding: "1rem", background: "var(--althy-green-bg)", borderRadius: 10, border: "1px solid #A8C9A4", marginBottom: "2rem", fontSize: 13 }}>
         <p style={{ fontWeight: 700, color: "#2D5A28", marginBottom: 4 }}>Vos droits en résumé</p>
         <p style={{ color: "#3D5A3A" }}>Vous pouvez accéder, rectifier, exporter ou supprimer vos données à tout moment. Contactez <a href="mailto:privacy@althy.ch" style={{ color: "#2D5A28", fontWeight: 600 }}>privacy@althy.ch</a> — délai de réponse : 30 jours maximum.</p>
       </div>
 
       <H2>1. Responsable du traitement</H2>
-      <P><strong>Althy Sàrl</strong> (en cours de constitution), Genève, Suisse</P>
+      <P><strong>Killian Thébaud — Althy</strong> (raison individuelle, Sàrl en cours de constitution), Genève, Suisse</P>
       <P><strong>DPO (Délégué à la Protection des Données) :</strong> <a href="mailto:privacy@althy.ch" style={{ color: "var(--althy-orange)" }}>privacy@althy.ch</a></P>
       <P>Base légale principale : LPD suisse (RS 235.1, en vigueur depuis le 1er septembre 2023) et RGPD européen (Règlement 2016/679) pour les utilisateurs résidant dans l'UE.</P>
 
@@ -97,7 +97,7 @@ export default function ConfidentialitePage() {
         ["Sentry Inc.", "Monitoring erreurs", "USA — SCCs", "Logs d'erreurs anonymisés"],
         ["PostHog Inc.", "Analytics (opt-in)", "USA/EU — SCCs", "Comportement utilisateur (si consentement)"],
       ]} />
-      <p style={{ fontSize: 12, color: "#7A7469", fontStyle: "italic", margin: "0.5rem 0" }}>* Les questions posées à l&apos;IA sont minimisées avant envoi à Anthropic : les noms propres, adresses et données financières sont remplacés par des pseudonymes. Les données ne sont jamais utilisées pour entraîner les modèles d&apos;Anthropic.</p>
+      <p style={{ fontSize: 12, color: "var(--althy-text-3)", fontStyle: "italic", margin: "0.5rem 0" }}>* Les questions posées à l&apos;IA sont minimisées avant envoi à Anthropic : les noms propres, adresses et données financières sont remplacés par des pseudonymes. Les données ne sont jamais utilisées pour entraîner les modèles d&apos;Anthropic.</p>
       <P><strong>Althy ne vend jamais vos données à des tiers à des fins commerciales.</strong></P>
 
       <H2>5. Transferts hors Suisse / UE</H2>
@@ -114,9 +114,9 @@ export default function ConfidentialitePage() {
           { droit: "Opposition (art. 21 RGPD)", desc: "S'opposer au traitement fondé sur l'intérêt légitime" },
           { droit: "Retrait du consentement", desc: "Retirer votre consentement à tout moment (analytics, marketing)" },
         ].map(r => (
-          <div key={r.droit} style={{ padding: "0.75rem 1rem", background: "#fff", borderRadius: 10, border: "1px solid #E8E4DC", display: "flex", gap: "1rem", alignItems: "flex-start" }}>
+          <div key={r.droit} style={{ padding: "0.75rem 1rem", background: "#fff", borderRadius: 10, border: "1px solid var(--althy-border)", display: "flex", gap: "1rem", alignItems: "flex-start" }}>
             <p style={{ fontSize: 13, fontWeight: 700, color: "var(--althy-orange)", minWidth: 200, flexShrink: 0 }}>{r.droit}</p>
-            <p style={{ fontSize: 13, color: "#4A4440" }}>{r.desc}</p>
+            <p style={{ fontSize: 13, color: "var(--althy-text)" }}>{r.desc}</p>
           </div>
         ))}
       </div>

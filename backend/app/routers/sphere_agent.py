@@ -51,18 +51,13 @@ _ROLE_FR: dict[str, str] = {
     "hunter":          "hunter / apporteur de leads",
     "locataire":       "locataire",
     "acheteur_premium":"acheteur premium",
-    # legacy
-    "owner":           "propriétaire",
-    "agency":          "agence immobilière",
-    "tenant":          "locataire",
-    "company":         "artisan",
 }
 
-_MANAGER_ROLES = {"proprio_solo", "agence", "portail_proprio", "owner", "agency"}
+_MANAGER_ROLES = {"proprio_solo", "agence", "portail_proprio"}
 _OPENER_ROLES  = {"opener"}
-_ARTISAN_ROLES = {"artisan", "company"}
+_ARTISAN_ROLES = {"artisan"}
 _HUNTER_ROLES  = {"hunter"}
-_TENANT_ROLES  = {"locataire", "tenant"}
+_TENANT_ROLES  = {"locataire"}
 _BUYER_ROLES   = {"acheteur_premium"}
 _EXPERT_ROLES  = {"expert"}
 
@@ -1511,7 +1506,7 @@ async def agency_advisor(
     from app.models.transaction import Transaction
     from sqlalchemy import select as sa_sel, and_
 
-    if current_user.role not in ("agency", "owner", "super_admin"):
+    if current_user.role not in ("agence", "proprio_solo", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux agences et propriétaires")
 
     client = _client()
@@ -1538,7 +1533,7 @@ async def agency_advisor(
         **(payload.context or {}),
     }
 
-    role_label = "agence immobilière" if current_user.role == "agency" else "propriétaire"
+    role_label = "agence immobilière" if current_user.role == "agence" else "propriétaire"
     system = f"""Tu es AlthyLegal, conseiller IA expert en droit immobilier suisse (CO, LDTR, bail à loyer).
 Tu conseilles {current_user.first_name or "l'utilisateur"}, {role_label}.
 
@@ -1573,7 +1568,7 @@ async def parse_contract_params(
     _=rate_limit(20, 60),
 ):
     """Parse une description en langage naturel → paramètres de contrat structurés."""
-    if current_user.role not in ("agency", "owner", "super_admin"):
+    if current_user.role not in ("agence", "proprio_solo", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux agences et propriétaires")
 
     client = _client()

@@ -1,0 +1,40 @@
+name: Integrity Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "frontend/src/**"
+      - "backend/app/**"
+      - "frontend/scripts/check-integrity.js"
+
+jobs:
+  integrity:
+    name: Check routes, buttons, colors, constants
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run integrity check
+        run: node scripts/check-integrity.js
+
+      - name: Run integrity check (JSON artifact)
+        if: always()
+        run: node scripts/check-integrity.js --json > integrity-report.json || true
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrity-report
+          path: frontend/integrity-report.json
+          retention-days: 7

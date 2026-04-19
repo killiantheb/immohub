@@ -8,7 +8,13 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "check": "node scripts/check-integrity.js",
+    "check:strict": "node scripts/check-integrity.js --strict",
+    "check:json": "node scripts/check-integrity.js --json",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:critical": "playwright test proprio-onboarding proprio-quittance locataire-signalement"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

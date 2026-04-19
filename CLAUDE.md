@@ -1,542 +1,410 @@
 # ALTHY — L'assistant immobilier suisse
-> github.com/killiantheb/immohub · althy.ch · Stack : Next.js 14 + FastAPI + Supabase
-> Dernière mise à jour : 2026-04-12 — plans mis à jour (VITRINE/SOLO/PRO/AGENCE)
+
+> **Repo :** github.com/killiantheb/immohub · **Prod :** althy.ch
+> **Stack :** Next.js 14 App Router + FastAPI + Supabase (PostgreSQL + Auth + Storage)
+> **Branche canonique :** `main`
+> **Dernière mise à jour :** 2026-04-19 — feature flags Phase 1, pricing 5 paliers, storage PDF
 
 ---
 
-## L'esprit du projet
+## A. Vision produit
 
-Althy n'est pas un logiciel de gestion. C'est un assistant immobilier disponible 24h/24, 7j/7, pour tous les acteurs de l'immobilier suisse — propriétaires, agences, artisans, ouvreurs, locataires, hunters, experts.
+Althy est un assistant immobilier suisse disponible 24h/24 pour propriétaires, agences, artisans, ouvreurs, locataires, hunters et experts. Il ne remplace personne — il simplifie, connecte, génère. L'humain décide toujours. **Maître mot : simplicité.** 2 clics maximum. Un grand-père doit pouvoir utiliser Althy sans formation.
 
-Il ne remplace personne. Il simplifie, connecte, génère. L'humain décide toujours. Althy propose, l'humain valide.
-
-**Maître mot : simplicité.** 2 clics maximum. Un grand-père doit pouvoir utiliser Althy sans formation.
+**Phase 1 (actuelle) :** gestion locative complète pour `proprio_solo` + `locataire`. Les autres rôles sont en waitlist (`/bientot/[role]`).
 
 ---
 
-## Design system — tokens actifs dans globals.css
+## B. Design system — état réel du code
+
+### Tokens CSS — source unique : `frontend/src/app/globals.css`
 
 ```css
-/* Couleur principale — orange vif Althy */
---althy-orange:       #E8602C;   ← COULEUR OFFICIELLE (unifiée partout)
---althy-orange-light: #FEF2EB;
---althy-orange-bg:    rgba(232,96,44,0.08);
---althy-orange-hover: #C84E1E;
+/* Orange — couleur principale */
+--althy-orange:        #E8602C;
+--althy-orange-light:  rgba(232,96,44,0.08);
+--althy-orange-bg:     rgba(232,96,44,0.08);
+--althy-orange-hover:  #C84E1E;
+--althy-orange-border: rgba(232,96,44,0.22);
 
 /* Surfaces */
---althy-bg:      #FAFAF8;
---althy-surface: #FFFFFF;
---althy-border:  #E8E4DC;
+--althy-bg:        #FAFAF8;
+--althy-surface:   #FFFFFF;
+--althy-surface-2: #F5F2ED;
+--althy-border:    #E8E4DC;
+--althy-border-2:  rgba(61,56,48,0.06);
 
 /* Texte */
 --althy-text:   #3D3830;
 --althy-text-2: #5C5650;
 --althy-text-3: #7A7469;
 
+/* Sémantique */
+--althy-green / --althy-red / --althy-amber / --althy-warning / --althy-blue / --althy-purple
+/* + leurs variantes -bg */
+
 /* Sidebar */
---sidebar-bg:     #FFFFFF;
---sidebar-gold:   #E8602C;
---sidebar-active: rgba(232,96,44,0.08);
---sidebar-hover:  rgba(232,96,44,0.04);
+--sidebar-bg / --sidebar-border / --sidebar-text / --sidebar-text-on / --sidebar-active / --sidebar-hover / --sidebar-gold
 
 /* Radius */
 --radius-card: 12px;
 --radius-elem: 8px;
 ```
 
-### Cohérences garanties ✓
-- ✓ Orange unifié : `#E8602C` partout via `var(--althy-orange)` — zéro `#B55A30` dans le code
-- ✓ Composants map (`CarteMapboxPage`, `LandingHeroMap`) utilisent la constante `ORANGE = "#E8602C"` pour les couches Mapbox (nécessite hex — CSS vars non supportés par Mapbox GL)
-- ✓ Tout le reste utilise `var(--althy-orange)` — inline styles, SVG, gradients
+### Tokens JS — `import { C } from "@/lib/design-tokens"`
+
+Le fichier `lib/design-tokens.ts` expose `C.orange`, `C.text`, `C.border`, `C.radiusCard`, etc. — tous pointent vers des `var(--althy-*)`. **Toujours utiliser `C.xxx` dans le code TypeScript.**
+
+### Ticker hex — état réel
+
+```
+grep -rn '#[0-9A-Fa-f]{6}' frontend/src --include="*.tsx" → ~294 occurrences (cible : <100)
+```
+
+**Répartition des hex résiduels (top 5) :** `#A05C28` (8), `#FFFFFF` (6), `#E8602C` (6), `#E8E4DC` (5), `#FEF2EB` (4). Beaucoup sont dans des composants legacy non encore migrés vers `C.*`. La tendance est à la baisse (était ~500+ avant Sprint 3).
+
+### Exceptions hex documentées
+
+| Fichier | Constante | Raison |
+|---------|-----------|--------|
+| `components/map/AlthyMap.tsx` | `ORANGE = "#E8602C"` | Mapbox GL exige du hex brut |
+| `components/map/CarteMapboxPage.tsx` | `ORANGE = "#E8602C"` | idem |
+| `components/map/ZoneMap.tsx` | `ORANGE` / `ORANGE_FILL` / `ORANGE_DASH_BORDER` | idem |
+| `app/page.tsx` | `ORANGE_HEX = "#E8602C"` | Landing Mapbox layers |
+| `globals.css` | Toutes les définitions `--althy-*` | Source des tokens |
+| Stripe `appearance` | Hex dans l'objet Stripe Elements | API Stripe exige du hex |
+
+### Alias legacy dans globals.css (ne pas étendre)
+
+```css
+--font-display: var(--font-serif);       /* alias → Fraunces */
+--terracotta-primary: var(--althy-orange);
+--charcoal: var(--althy-text);
+--cream: var(--althy-bg);
+```
+
+### `const S = { ... }` résiduels (4 fichiers structurels — garder tels quels)
+
+- `DashboardSidebar.tsx` — S contient des fonctions CSSProperties, pas un simple map de couleurs
+- `communication/AgendaContent.tsx`, `MessagerieContent.tsx`, `WhatsAppContent.tsx` — S.card = CSSProperties
 
 ### Typographie
-- Titres : `var(--font-serif)` → Cormorant Garamond ou Fraunces, weight 300
-- Corps : `var(--font-sans)` → DM Sans, system-ui
-- Taille base : `font-size: 15px` sur `html`
 
-### Sidebar — état réel et règle absolue
-La `DashboardSidebar.tsx` filtre les items via `can(section)` depuis `useRole.ts`.
-Structure : `NAV_GROUPS` (5 groupes) + `NAV_BOTTOM` (3 items fixes bas).
-
-**En bas de la sidebar, pour TOUS les rôles, dans cet ordre :**
-```
-(séparateur bordure)
-◉  Althy IA    → /app/sphere   section: "sphere"    ← point orange animé
-👤 Mon profil  → /app/profile  section: "profile"
-⚙  Paramètres  → /app/settings section: "settings"
-🚪 Déconnexion
-```
+- **Serif (titres) :** `var(--font-serif)` → Fraunces variable, weight 300
+- **Sans (corps) :** `var(--font-sans)` → DM Sans, system-ui
+- **Taille base :** `font-size: 15px` sur `html`
+- Zéro Cormorant Garamond, zéro Playfair Display — tout est Fraunces
 
 ---
 
-## Stack technique — état réel du repo
+## C. Stack technique
 
 ```
-frontend/   Next.js 14 App Router + TypeScript → Vercel
-backend/    FastAPI Python + Celery + Redis → Railway
-mobile/     React Native / Expo
+frontend/   Next.js 14 App Router + TypeScript          → Vercel
+backend/    FastAPI + Celery + Redis (53 routers)       → Railway
+mobile/     React Native / Expo                          → (en pause)
 supabase/   PostgreSQL + Auth + Storage + Realtime
-            28 migrations actives (0001 → 0028)
+            13 migrations actives (004 → 0030)
 ```
 
 ### Dépendances clés (frontend)
-- `mapbox-gl` + `@types/mapbox-gl` — carte interactive
-- `recharts` — graphiques dashboards
-- `framer-motion` — animations
-- `zustand` — état global (authStore, sphereStore)
-- `@tanstack/react-query` — data fetching
-- `posthog-js` — analytics
 
-### Variables d'environnement requises
+`mapbox-gl` · `recharts` · `framer-motion` · `zustand` · `@tanstack/react-query` · `posthog-js` · `react-hook-form` + `zod` · `lucide-react`
+
+### Variables d'environnement
+
 ```bash
 # frontend/.env.local
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-NEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ1...    ← TOKEN MAPBOX — jamais en dur dans le code
+NEXT_PUBLIC_MAPBOX_TOKEN=            # jamais en dur dans le code
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 NEXT_PUBLIC_POSTHOG_KEY=
 NEXT_PUBLIC_POSTHOG_HOST=https://eu.posthog.com
+# Feature flags (Phase 1 : tout à false en prod)
+NEXT_PUBLIC_FLAG_AGENCE=false
+NEXT_PUBLIC_FLAG_PORTAIL=false
+NEXT_PUBLIC_FLAG_ARTISAN=false
+NEXT_PUBLIC_FLAG_OPENER=false
 
-# frontend/.env.local (à ajouter)
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...  ← Clé publique pour Payment Element
-
-# backend/.env (voir .env.example)
-ANTHROPIC_API_KEY=sk-ant-...
-STRIPE_SECRET_KEY=          ← Utilisé UNIQUEMENT pour les abonnements (SOLO/PRO/AGENCE)
-STRIPE_WEBHOOK_SECRET=      ← Webhook abonnements (checkout.session.completed, subscription.updated…)
+# backend/.env
+DATABASE_URL=
+SUPABASE_URL=
+SUPABASE_SERVICE_KEY=
+SUPABASE_JWT_SECRET=
+SECRET_KEY=
+ANTHROPIC_API_KEY=
+STRIPE_SECRET_KEY=                   # abonnements uniquement
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_STARTER_MONTHLY=        # CHF 14
+STRIPE_PRICE_PRO_MONTHLY=            # CHF 29
+STRIPE_PRICE_AGENCY_MONTHLY=         # CHF 79
+STRIPE_PRICE_AGENCY_PREMIUM_MONTHLY= # CHF 129
 RESEND_API_KEY=
-TWILIO_ACCOUNT_SID=
-TWILIO_AUTH_TOKEN=
-TWILIO_FROM_NUMBER=
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-MICROSOFT_CLIENT_ID=
-MICROSOFT_CLIENT_SECRET=
-WHATSAPP_TOKEN=
-FIREBASE_SERVER_KEY=
+TWILIO_ACCOUNT_SID= / TWILIO_AUTH_TOKEN= / TWILIO_FROM_NUMBER=
+GOOGLE_CLIENT_ID= / GOOGLE_CLIENT_SECRET=
+MICROSOFT_CLIENT_ID= / MICROSOFT_CLIENT_SECRET=
+WHATSAPP_API_TOKEN= / WHATSAPP_PHONE_ID= / META_APP_SECRET=
+FEATURE_FLAGS_STRICT=true            # Phase 1 : refuse inscription rôles secondaires
+ALLOWED_SIGNUP_ROLES=["proprio_solo","locataire","super_admin"]
 ```
 
 ---
 
-## Les 9 rôles — état dans useRole.ts
+## D. Architecture
 
-| Rôle | Label affiché | Plan / Prix | Dashboard actif |
-|------|--------------|-------------|----------------|
-| `proprio_solo` | Propriétaire | VITRINE (0) / SOLO (29) / PRO (59) CHF/mois | `DashboardManager` |
-| `agence` | Agence | AGENCE CHF 29/agent/mois | `DashboardAgence` |
-| `portail_proprio` | Portail Proprio | CHF 9/mois (add-on AGENCE) | `DashboardPortail` |
-| `opener` | Ouvreur | Gratuit / CHF 19 Pro | `DashboardOpener` |
-| `artisan` | Artisan | Gratuit / CHF 19 Pro | `DashboardArtisan` |
-| `expert` | Expert | Gratuit / CHF 19 Pro | `DashboardExpert` |
-| `hunter` | Hunter | Referral fee (0.5% vente) | `DashboardHunter` |
-| `locataire` | Locataire | Gratuit + CHF 90 si retenu | `DashboardTenant` |
-| `acheteur_premium` | Acheteur | CHF 9/mois | `DashboardAcheteur` |
-| `super_admin` | Admin | — | (admin pages) |
+### Les 9 rôles
 
-**Legacy roles mappés automatiquement :** `owner` → `proprio_solo`, `agency` → `agence`, `tenant` → `locataire`, `company` → `artisan`
+| Rôle | Phase | Flag | Dashboard |
+|------|-------|------|-----------|
+| `proprio_solo` | **1 (actif)** | aucun | `DashboardManager` |
+| `locataire` | **1 (actif)** | aucun | `DashboardTenant` |
+| `super_admin` | **1 (actif)** | aucun | admin pages |
+| `agence` | 2 | `ROLE_AGENCE` | `DashboardAgence` |
+| `portail_proprio` | 2 | `ROLE_PORTAIL_PROPRIO` | `DashboardPortail` |
+| `artisan` | 3 | `ROLE_ARTISAN` | `DashboardArtisan` |
+| `opener` | 3 | `ROLE_OPENER` | `DashboardOpener` |
+| `expert` | hors phase | hardcodé `false` | `DashboardExpert` |
+| `hunter` | hors phase | hardcodé `false` | `DashboardHunter` |
+| `acheteur_premium` | hors phase | hardcodé `false` | `DashboardAcheteur` |
 
-### ROLE_SECTIONS — état actuel ✓
-Toutes les sections incluent `"profile"` et `"carte"` pour tous les rôles non-admin.
-`super_admin` a accès à tout via `"*"`.
+**Legacy mappings :** `owner` → `proprio_solo`, `agency` → `agence`, `tenant` → `locataire`, `company` → `artisan`
+
+### Pricing — source unique : `lib/plans.config.ts`
+
+| ID | Nom | Prix |
+|----|-----|------|
+| `gratuit` | Gratuit | CHF 0 (1 bien) |
+| `starter` | Starter | CHF 14/mois (1 bien complet) |
+| `pro` | Pro | CHF 29/mois (2-5 biens) |
+| `agence` | Standard | CHF 79/agent/mois (≤30 biens) |
+| `agence_premium` | Premium | CHF 129/agent/mois (illimité) |
+
+Legacy IDs mappés via `LEGACY_PLAN_MAP` : `decouverte`/`vitrine` → `gratuit`, `solo` → `starter`, `proprio` → `pro`.
+Grandfathering : colonne `is_grandfathered` en DB (migration 0029).
+
+### Pages publiques (existent)
+
+```
+/                      Landing (map hero + sections)
+/estimation            Estimation IA
+/login                 Connexion
+/register              Inscription (rôles filtrés par flags)
+/bienvenue             Onboarding post-inscription
+/onboarding            Onboarding alternatif
+/onboarding/scan       Scan onboarding agence
+/rejoindre/[token]     Lien magique
+/portail/[token]       Portail proprio public
+/portail/accept        Acceptation portail
+/bientot/[role]        Waitlist rôles désactivés (Phase 1)
+/biens                 Marketplace publique
+/biens/[id]            Fiche bien publique
+/biens/{ville}         SEO local (geneve, lausanne, fribourg, neuchatel, sion, valais, vaud)
+/biens/swipe           Swipe biens
+/postuler/[listing_id] Candidature locataire
+/publier               Publier un bien
+/contact               Contact
+/legal                 Mentions légales
+/legal/cgu             CGU
+/legal/confidentialite Confidentialité
+/legal/cookies         Cookies
+/legal/disclaimer-ia   Disclaimer IA
+/sitemap.ts            Sitemap
+```
+
+**Legacy routes encore présentes (à supprimer) :** `/privacy/page.tsx`, `/terms/page.tsx` — remplacées par `/legal/*`.
+
+### Pages app (dashboard) — 61 pages
+
+```
+/app                 Dashboard routé par rôle
+/app/sphere          Sphère IA (immersive, pas de sidebar)
+/app/carte           Carte Mapbox plein écran
+/app/biens           Liste biens + onglets
+/app/biens/[id]      Fiche bien (vue d'ensemble 2 colonnes + édition inline)
+/app/biens/nouveau   Créer un bien
+/app/finances        Finances
+/app/comptabilite    Comptabilité + OCR
+/app/communication   Hub communication (messagerie + agenda + WhatsApp)
+/app/messagerie      Messagerie
+/app/agenda          Agenda
+/app/whatsapp        WhatsApp
+/app/crm             CRM locataires
+/app/contracts       Contrats
+/app/contracts/new   Nouveau contrat
+/app/contracts/[id]  Détail contrat
+/app/documents       Documents
+/app/interventions   Interventions
+/app/candidatures    Candidatures (côté proprio)
+/app/mes-candidatures Candidatures (côté locataire)
+/app/artisans        Marketplace artisans
+/app/artisans/{sous-pages}  devis, chantiers, paiements, historique
+/app/ouvreurs        Marketplace ouvreurs
+/app/ouvreurs/{sous-pages}  missions, revenus, historique
+/app/listings        Annonces
+/app/publications    → redirect → /app/listings
+/app/vente           Vente (flag-gated)
+/app/hunters         Hunters (flag-gated)
+/app/portail         Portail proprio (flag-gated)
+/app/insurance       Assurance (flag-gated)
+/app/transactions    Transactions (flag-gated)
+/app/settings        Paramètres + sous-pages (notifs, paiement, preferences, zone)
+/app/profile         Profil (legacy URL, devrait être /profil)
+/app/abonnement      Abonnement + comparaison plans
+/app/admin           Admin
+/app/admin/users     Admin utilisateurs
+/app/admin/transactions Admin transactions
+/app/admin/integration Admin intégrations
+```
+
+**Redirections actives :** `/app/overview` → `/app`, `/app/companies` → `/app/agence`, `/app/favorites` → `/app/biens?tab=favoris`, `/app/rfqs` → `/app/artisans/devis`, `/app/publications` → `/app/listings`
+
+### Feature flags — `lib/flags.ts`
+
+| Flag | Phase | Env var | État prod |
+|------|-------|---------|-----------|
+| `ROLE_AGENCE` | 2 | `NEXT_PUBLIC_FLAG_AGENCE` | `false` |
+| `ROLE_PORTAIL_PROPRIO` | 2 | `NEXT_PUBLIC_FLAG_PORTAIL` | `false` |
+| `ROLE_ARTISAN` | 3 | `NEXT_PUBLIC_FLAG_ARTISAN` | `false` |
+| `ROLE_OPENER` | 3 | `NEXT_PUBLIC_FLAG_OPENER` | `false` |
+| `ROLE_EXPERT` | - | hardcodé | `false` |
+| `ROLE_HUNTER` | - | hardcodé | `false` |
+| `ROLE_ACHETEUR_PREMIUM` | - | hardcodé | `false` |
+| `FEATURE_INSURANCE` | - | hardcodé | `false` |
+| `FEATURE_VENTE` | - | hardcodé | `false` |
+| `FEATURE_TRANSACTIONS` | - | hardcodé | `false` |
+
+**Fichiers impactés :** `flags.ts` → `useRole.ts` (can()) → `DashboardSidebar.tsx` (nav) → `DashboardLayoutClient.tsx` (gate pages + écran "en préparation") → `register/page.tsx` (filtre rôles) → `backend/auth.py` (ALLOWED_SIGNUP_ROLES)
 
 ---
 
-## Architecture des pages — état réel
+## E. Règles absolues
 
-### Pages publiques ✅ (existent)
-```
-/                  Landing — map hero + cards biens flottantes + rôles + CTA
-/estimation        Estimation IA gratuite
-/login             Connexion
-/register          Inscription + sélection rôle
-/bienvenue         Onboarding post-inscription
-/onboarding        Onboarding alternatif
-/rejoindre/[token] Lien magique zero-friction
-/tenant/*          Portail locataire public
-/portail/[token]   Portail proprio public
-/opener            Espace ouvreur
-/legal/*           CGU, confidentialité, cookies, disclaimer-IA
-/contact           Contact
-/sitemap.ts        Sitemap
-```
+### 1. Couleurs
+- **Toujours** `var(--althy-*)` en CSS ou `C.xxx` en inline styles.
+- **Interdit** de hardcoder un hex dans un `.tsx` — sauf Mapbox GL (`map/` uniquement) et Stripe `appearance`.
+- **Interdit** de déclarer `const ORANGE`, `const S = { orange: "..." }` ou toute map locale de couleurs. Importer `C` depuis `@/lib/design-tokens`.
+- Exception map : `const ORANGE = "#E8602C"` dans `components/map/` uniquement (Mapbox GL ne supporte pas les CSS vars).
 
-### Pages app ✅ (existent dans /app/(dashboard)/)
-```
-/app               Dashboard (routé selon useRole())
-/app/sphere        Sphère IA — hub central ✅
-/app/carte         Map Mapbox plein écran ✅ (1ère page post-connexion)
-/app/biens         Liste biens + onglets Tous / Favoris / Archivés ✅
-/app/biens/[id]    Fiche bien ✅
-/app/biens/[id]/documents, /finances, /locataire, /interventions, /historique ✅
-/app/finances      Finances ✅
-/app/comptabilite  Comptabilité + OCR ✅
-/app/messagerie    Messagerie ✅
-/app/agenda        Agenda ✅
-/app/whatsapp      WhatsApp ✅
-/app/crm           CRM ✅
-/app/artisans      Marketplace artisans ✅
-/app/artisans/devis, /chantiers, /paiements, /historique ✅
-/app/ouvreurs      Marketplace ouvreurs ✅
-/app/ouvreurs/missions, /revenus, /historique ✅
-/app/listings      Annonces ✅
-/app/vente         Vente ✅
-/app/hunters       Hunters ✅
-/app/portail       Portail proprio (dashboard) ✅
-/app/settings      Paramètres ✅
-/app/settings/notifs, /paiement, /preferences, /zone ✅
-/app/profile       Profil ✅ (URL: /profile — legacy, à migrer vers /profil un jour)
-/app/abonnement    Abonnement ✅
-/app/admin         Admin ✅
-/app/admin/integration ✅
-/app/admin/users, /transactions ✅
-/app/contracts     Contrats ✅
-/app/documents     Documents ✅
-/app/interventions Interventions ✅
-```
+### 2. Boutons
+- Chaque `<button>` doit avoir `onClick`, `type="submit"`, ou `disabled={true}`. Pas de boutons décoratifs sans handler.
 
-### Pages archivées (redirections actives) ✓
-```
-/app/overview      → redirect → /app
-/app/companies     → redirect → /app/agence
-/app/favorites     → redirect → /app/biens?tab=favoris
-/app/rfqs          → redirect → /app/artisans/devis
-/app/publications  → redirect → /app/listings
-```
+### 3. Liens internes
+- Chaque `href="/app/…"` doit pointer vers une route qui existe. Vérifier que la page `.tsx` correspondante existe.
 
-### Pages encore à traiter
-```
-/app/insurance     → fusionner dans /app/settings ou /app/abonnement
-/app/transactions  → fusionner dans /app/finances
-```
+### 4. Backend — pas de faux statuts
+- **Interdit** de retourner `"status": "sent"` ou `"success": true` quand l'implémentation est un TODO/stub.
+- Un endpoint non implémenté doit lever `HTTPException(501, "Non implémenté")`.
 
-### Composants landing — état actuel (`/components/landing/`)
-Tous importés par `page.tsx`. Aucun orphelin. Tous utilisent `C` depuis `@/lib/design-tokens`.
-```
-CTAFinal.tsx          CTA final "Commencer gratuitement" + "Nous contacter"
-FeatureBiens.tsx      Section "Tous vos biens" + mockup dashboard (id="features")
-FeatureIA.tsx         Section "Althy parle. Vous décidez." + bulles chat IA
-FeatureReseau.tsx     Section ouvreurs + artisans, 2 colonnes
-Footer.tsx            Footer global (logo, liens légaux, contact)
-Garanties.tsx         Bandeau 4 garanties (icônes Lucide)
-LandingBiens.tsx      Grille 6 biens réels depuis /marketplace/biens
-LandingEstimation.tsx Formulaire estimation rapide IA
-LandingPreuve.tsx     Témoignage + chiffres clés (130 biens, 5 villes)
-PourQui.tsx           5 cartes rôles (id="pour-qui")
-SocialProof.tsx       Bandeau marquee défilant (react-fast-marquee)
-Tarifs.tsx            Grille tarifs depuis plans.config.ts (id="tarifs")
-Testimonials.tsx      5 témoignages scroll horizontal
-```
+### 5. Pas de fausses données
+- **Interdit** de fabriquer des données qui se présentent comme réelles (faux loyers, faux KPIs). Les données de démo doivent être marquées `[DEMO]` ou provenir d'un seed explicite.
 
----
+### 6. Ajout de rôle — checklist obligatoire
+Tout nouveau rôle nécessite la mise à jour simultanée de :
+- `useRole.ts` → `ROLE_SECTIONS`
+- `DashboardSidebar.tsx` → items nav
+- `flags.ts` → `ROLE_FLAG` + `FLAGS`
+- `DashboardLayoutClient.tsx` → `RESTRICTED_PAGES` si nécessaire
+- `backend/schemas/auth.py` → `RegisterRequest.role` Literal
+- `backend/core/config.py` → `ALLOWED_SIGNUP_ROLES` (si Phase 1)
 
-## Parcours utilisateur — chaîne complète
+### 7. Langue
+- Tout en français : URLs, labels, boutons, messages d'erreur.
+- **Exceptions legacy :** `/app/profile`, `/app/listings`, `/app/insurance`, `/app/transactions` — à corriger progressivement.
 
-```
-/ (landing map + cards biens flottantes)
-  → "Se connecter" → /login → /app/carte → /app/sphere → /app
-  → "Commencer gratuitement" → /register → /bienvenue → /app/carte → /app/sphere → /app
-  → "Estimer mon bien" → /estimation → capture email → /register?source=estimation
-  → Lien magique reçu → /rejoindre/[token] → /bienvenue (pré-rempli) → /app/carte
+### 8. Entité légale
+- Source unique : `lib/legal-entity.ts` → `LEGAL.name`, `LEGAL.form`, etc.
+- Nom actuel : **"Killian Thébaud — Althy"** (raison individuelle, Sàrl en cours).
+- Ne jamais écrire "Althy SA" ou "Althy Sàrl" en dur.
 
-Après connexion — TOUJOURS dans cet ordre :
-/app/carte  (map immersive plein écran, bouton "Voir les biens disponibles →")
-  → /app/sphere  (Sphère IA, briefing du jour, actions à valider)
-    → /app  (dashboard selon le rôle, avec DTopNav ← Sphère IA)
-      → /app/biens, /app/finances, /app/messagerie... (pages spécifiques)
-```
+### 9. Navigation
+- Logo ALTHY → `/` partout
+- `← Retour à althy.ch` sur les pages auth
+- SphereWidget visible sur `/app/*` SAUF `/app/sphere` et `/app/carte`
+- `DTopNav` en haut de chaque dashboard
+- Sidebar : `NAV_GROUPS` + `NAV_BOTTOM` (Althy IA / Profil / Paramètres / Déconnexion)
 
-**Implémenté dans `middleware.ts` :** connexion réussie → `/app/carte` ✓
-
----
-
-## La Sphère IA — architecture actuelle
-
-### Composants existants (sphere/)
-```
-AlthySphereCore.tsx   Rendu SVG animé de la sphère
-SphereInput.tsx       Barre de saisie avec micro et envoi
-SphereStream.tsx      Affichage streaming SSE
-ActionCard.tsx        Card d'action à valider (urgent / normale / info)
-NotationModal.tsx     Modal notation après transaction
-SuggestionChips.tsx   Chips de suggestions rapides
-SphereWidget.tsx      Widget flottant (bas-droite toutes pages /app/*)
-```
-
-### Endpoints backend actifs
-```
-GET  /api/v1/sphere/contexte         Contexte utilisateur (Redis 5min)
-GET  /api/v1/sphere/briefing         Briefing streaming SSE
-POST /api/v1/sphere/executer         Exécuter action validée
-POST /api/v1/sphere/parse-location   Parser ville pour carte (Claude Sonnet)
-POST /api/v1/sphere/ocr-facture      OCR facture photo/PDF
-POST /api/v1/ai/chat                 Chat streaming SSE (utilisé par SphereWidget)
-```
-
-### SphereWidget — règles d'affichage ✓
-Visible sur toutes les pages `/app/*` SAUF :
-- `/app/sphere` (on est déjà dans la Sphère)
-- `/app/carte` (plein écran, pas de widget)
-
-Implémenté via `if (pathname === '/app/sphere' || pathname === '/app/carte') return null`
-
-### États de la Sphère
-```typescript
-type SphereState = "idle" | "listening" | "thinking" | "speaking"
-// Géré dans sphereStore.ts via Zustand
-```
-
----
-
-## La carte Mapbox — configuration exacte
-
-### Token
-```
-NEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ1...
-```
-**Jamais en dur dans le code.** Toujours `process.env.NEXT_PUBLIC_MAPBOX_TOKEN`.
-
-### Config map (identique landing et /app/carte)
-```javascript
-style:  'mapbox://styles/mapbox/light-v11'
-center: [7.5, 46.8]
-zoom:   7.2
-minZoom: 5.5, maxZoom: 16
-```
-
-### GeoJSON cantons
-```
-frontend/public/cantons-suisse.json
-```
-
-### Zones colorées (cantons actifs)
-```javascript
-ACTIVE_CANTONS = ["Genève", "Vaud", "Valais", "Fribourg", "Neuchâtel", "Jura"]
-fill-color:   "#E8602C"  // hex obligatoire — Mapbox GL ne supporte pas CSS vars
-fill-opacity: 0.10
-line-color:   "#E8602C"
-line-width:   2
-line-opacity: 0.5
-```
-
-### Villes actives (punaises oranges + animation ping)
-```javascript
-{ id: "geneve",    name: "Genève",    lng: 6.143, lat: 46.204, biens: 47 }
-{ id: "lausanne",  name: "Lausanne",  lng: 6.632, lat: 46.519, biens: 83 }
-{ id: "fribourg",  name: "Fribourg",  lng: 7.161, lat: 46.806, biens: 31 }
-{ id: "neuchatel", name: "Neuchâtel", lng: 6.931, lat: 46.992, biens: 24 }
-{ id: "sion",      name: "Sion",      lng: 7.359, lat: 46.233, biens: 19 }
-```
-
-### Villes inactives (punaises grises, opacity 0.4, label "An 2")
-```javascript
-{ id: "berne",  name: "Berne",  lng: 7.447, lat: 46.948 }
-{ id: "zurich", name: "Zürich", lng: 8.541, lat: 47.376 }
-{ id: "bale",   name: "Bâle",   lng: 7.589, lat: 47.560 }
-```
-
-### Landing vs /app/carte — différences
-| | Landing `/` | Post-connexion `/app/carte` |
-|---|---|---|
-| Search bar | Centre bas, sous la map | Topbar centrée |
-| Cards biens | Flottantes sur la map, reliées aux punaises par lignes SVG pointillées | Non (bouton "Voir les biens") |
-| Filtres pills | Sous la map | Non |
-| Stats | Pill bas centrée | Card stats haut-gauche (totalBiens + nbVilles) |
-| CTA | Grille biens en dessous | Bouton dark "Voir les biens disponibles →" bas centré |
-| Sidebar | Non (landing publique) | Oui (DashboardShell) |
-| SphereWidget | Non | Non (exception) |
-
----
-
-## Modèle économique — source de vérité : plans.config.ts
-
-### Nomenclature officielle des plans (source : `plans.config.ts`)
-
-| ID code | Nom affiché | Prix | Ce qui est inclus |
-|---------|-------------|------|-------------------|
-| **`gratuit`** | Gratuit | CHF 0 | 3 biens marketplace, QR-facture loyers, estimation IA, chat basique |
-| **`pro`** | Pro | CHF 29/mois (CHF 23 annuel) | 15 biens, Sphère IA complète, relance impayés, docs IA 10/mois, artisans, rapport mensuel |
-| **`agence`** | Agence | CHF 29/agent/mois | Biens illimités, multi-agents, portail proprio (CHF 9/proprio/mois), CRM |
-
-**IDs dans Stripe / DB / frontend :** toujours `gratuit`, `pro`, `agence`. Les anciens noms (`decouverte`, `starter`, `vitrine`, `proprio`, `solo`) sont mappés automatiquement vers ces 3 IDs.
-
-**Dégressif AGENCE :** -10% dès 5 agents, -20% dès 10 agents.
-
-### Plans DEMANDE — Acheteurs & Locataires
-
-| Profil | Prix | Détail |
-|--------|------|--------|
-| **Locataire** | Gratuit | Recherche + contact + dossier digital complet. CHF 90 frais dossier UNIQUEMENT si retenu (4% Althy = CHF 3.60) |
-| **Acheteur Premium** | CHF 9/mois | Alertes instantanées, matching IA, biens off-market, historique prix quartier |
-| **Vendeur particulier** | Gratuit 30j | Boost premium CHF 49/mois. Diffusion portails CHF 99/mois (Phase 2) |
-
-### Revenus sur flux (la vraie scalabilité)
-
-```
-4%     sur loyers réconciliés (QR-facture SPC 2.0 + CAMT.054 — hors Stripe)
-4%     sur frais dossier, paiements artisans, missions ouvreurs (via Stripe Connect)
-15%    commission ouvreurs (par mission)
-10%    commission artisans (sur devis acceptés)
-10%    commission cautions (SwissCaution / Firstcaution)
-~CHF 40  referral assurances RC (Helvetia / AXA)
-0.5%   sur prix de vente si transaction immobilière via Althy
-```
-
-**Règle absolue : zéro marge cachée.**
-Le client paie le tarif du service directement. Althy facture ses 4% séparément.
-
-**Clause fondateur (dans les statuts) :**
-L'agence du fondateur (130 biens annuels + 30 saisonniers + 20/semaine) → accès permanent gratuit.
-
-### Stripe — abonnements uniquement ✓
-Stripe est utilisé **uniquement pour les abonnements** (`pro`/`agence`).
-Les loyers passent par QR-facture SPC 2.0 + réconciliation CAMT.054 (app/routers/loyers.py).
-
-- `POST /api/v1/stripe/create-subscription-intent` — crée Subscription + retourne client_secret
-  → utilisé par Stripe Payment Element (card + TWINT + Apple Pay + Google Pay)
-- `GET  /api/v1/stripe/subscription` — abonnement actif de l'utilisateur
-- `POST /api/v1/stripe/connect/onboard` — onboarding Stripe Connect Express (proprio)
-- Webhook `checkout.session.completed` → active l'abonnement
-- Webhook `customer.subscription.updated/deleted` → met à jour le plan
-- Webhook `invoice.payment_failed` → crée `ai_action` urgente `relancer_loyer` + SMS Twilio
-- Webhook `payment_intent.succeeded` → traite uniquement `metadata.type == 'frais_dossier'`
-
----
-
-## Système de notation
-
-Tables DB : `notations` + `notation_stats` (vue matérialisée).
-Badge "Vérifié Althy" : note ≥ 4.5 + ≥ 10 avis vérifiés.
-Composant : `RatingWidget.tsx` + `NotationModal.tsx`.
-Notation créée automatiquement après chaque transaction terminée.
-
-Acteurs notés : artisan, ouvreur, agence, expert, proprio, hunter, locataire.
-
----
-
-## Règles de développement — ABSOLUES
-
-### Langue
-Tout en français. URLs, labels, boutons, messages d'erreur. Zéro anglais visible.
-
-**Exceptions legacy encore présentes (à corriger progressivement) :**
-- `/app/profile` (devrait être `/app/profil`)
-- `/app/listings` (devrait être `/app/annonces`)
-- `insurance`, `transactions` dans certaines routes
-
-### Navigation
-- Logo ALTHY → `/` sur toutes les pages
-- `← Retour à althy.ch` sur `/login`, `/register`, `/forgot-password`, `/reset-password`
-- Header minimal (logo + "Se connecter") sur `/tenant/*`, `/portail/[token]`, `/opener`
-- Fil d'ariane sur `/app/biens/[id]/*` — composant `FilAriane.tsx` existe ✅
-- SphereWidget flottant sur `/app/*` SAUF `/app/sphere` et `/app/carte` ✅
-- `DTopNav` en haut de chaque dashboard : pills "← Sphère IA" et "Carte" ✅
-- Bouton "Tableau de bord →" sur `/app/sphere` ✅
-
-### Typographie — règle finale
-- **Landing hero** (`page.tsx`) : `var(--font-serif)` → Fraunces, weight 300
-- **Titres dashboards** : `var(--font-serif)` → Cormorant Garamond, weight 300
-- **Corps partout** : `var(--font-sans)` → DM Sans, system-ui
-- **Landing composants** (`/components/landing/`) : `C.text`, `C.orange`, etc. depuis `@/lib/design-tokens`
-- Les deux polices serif sont servies par `var(--font-serif)` — la font-face active dépend du layout (landing = Fraunces, dashboard = Cormorant Garamond)
-
-### Code
+### 10. Code
 - Composants `Althy*` uniquement — aucun `Cathy*`
-- Plans depuis `plans.config.ts` — source unique ✅ (IDs : `gratuit`, `pro`, `agence`)
-- Une seule URL par page, toujours en français
-- Une seule entrée "Althy IA" dans sidebar → `/app/sphere` ✅
-- Sidebar settings : entrée unique `/app/settings`, sous-pages dans la page elle-même ✅
-- `var(--althy-*)` partout — jamais de couleurs en dur (exception : couches Mapbox GL + Stripe appearance)
-- Token Mapbox : `process.env.NEXT_PUBLIC_MAPBOX_TOKEN` — jamais en dur ✅
-- Design tokens JS : `import { C } from "@/lib/design-tokens"` — utiliser `C.orange`, `C.text`, etc.
+- Plans depuis `plans.config.ts` — source unique
+- Token Mapbox : `process.env.NEXT_PUBLIC_MAPBOX_TOKEN` — jamais en dur
 - RLS activé sur toutes les tables Supabase
 - Maximum 2 clics pour toute action courante
 - Chaque action irréversible → écran de confirmation
+- Dashboards : utiliser `DCard`, `DKpi`, `DRoleHeader`, `DSectionTitle`, `DEmptyState`, `DTopNav` depuis `DashBoardShared.tsx`
 
 ---
 
-## Structure des dashboards — DashBoardShared.tsx
+## F. Workflow
 
-Composants partagés exportés :
-```typescript
-DC            // Design constants — tous via CSS vars (var(--althy-*))
-DCard         // Card wrapper standard
-DKpi          // KPI metric card (icon: React.ElementType, iconColor, iconBg, trend)
-DRoleHeader   // Header de page avec nom + rôle + lien ← Sphère IA
-DSectionTitle // Titre de section avec barre orange
-DEmptyState   // État vide illustré avec CTA optionnel
-DTopNav       // Navigation haut de page : "← Sphère IA" + "Carte"
+### Branches
+```
+main                      Production
+sprintN-taskId-description  Branches de travail (ex: sprint3-S3.2-design-tokens)
 ```
 
-**Règle :** tous les nouveaux dashboards doivent utiliser ces composants.
-**Ne pas** recréer des cards custom — utiliser `DCard` et `DKpi`.
-**Chaque dashboard** commence par `<DTopNav />` puis `<DRoleHeader />`.
+### PR requirements
+- Tests passent (ou justification si nouveau code non testable)
+- Screenshot si changement UI
+- Commit message conventionnel : `feat:`, `fix:`, `refactor:`, `docs:`
+
+### Déploiement
+- Frontend : push sur `main` → Vercel auto-deploy
+- Backend : push sur `main` → Railway auto-deploy
+- Migrations : appliquer manuellement via `supabase db push` avant le deploy backend
 
 ---
 
-## Migrations DB — état actuel
+## G. Anti-patterns à traquer
 
-28 migrations actives (0001 → 0028).
-- 0006 : tables Althy core
-- 0022 : communication, onboarding, notation
-- 0023 : briefing cache + context hash
-- 0024 : type et affectation sur dépenses
-- 0025 : index partiels messagerie/whatsapp non-lus (performances < 10ms)
-- 0026 : loyer_transactions (QR-facture SPC 2.0, transit Althy, CAMT.054)
-- 0027 : email_sequence_logs
-- 0028 : changements_locataire (cycle check-in/check-out/EDL, 4 phases)
-
-**schema.sql** : 22 tables (synchronisé avec les migrations 0026–0028).
-
-**Prochaine migration à créer si besoin :**
-- Table `ai_user_preferences` (apprentissage Sphère) — vérifier si existe déjà en 0003/0006
+| Pattern | Pourquoi c'est un problème | Comment corriger |
+|---------|---------------------------|------------------|
+| `const S = { orange: "#E8602C", ... }` dans un .tsx | Dilue les tokens DS, couleurs dupliquées | Importer `C` depuis `@/lib/design-tokens` |
+| Hex brut (`#E8602C`) hors `map/` et `globals.css` | Bypass des CSS vars, impossible de themer | Utiliser `var(--althy-orange)` ou `C.orange` |
+| Deux composants qui font la même chose | Confusion, maintenance double | Supprimer le doublon, garder le canonique |
+| Page dashboard sans lien dans la sidebar | Page orpheline, inatteignable | Ajouter dans `NAV_GROUPS` ou supprimer la page |
+| `"status": "sent"` quand rien n'est envoyé | L'UI affiche un succès mensonger | Lever 501 ou implémenter réellement |
+| Données fabriquées présentées comme réelles | L'utilisateur prend des décisions sur du faux | Marquer `[DEMO]` ou utiliser un seed |
+| `window.posthog?.capture()` direct | Pas de null-check robuste | Utiliser `trackEvent()` depuis `@/lib/analytics.ts` |
 
 ---
 
-## Endpoints backend — référence rapide
+## H. Endpoints backend — référence rapide
 
-### Sphere (unique router : `sphere_agent.py`)
+### Sphere (router : `sphere_agent.py`)
 ```
-GET  /api/v1/sphere/contexte
-GET  /api/v1/sphere/briefing          (SSE streaming — seul endpoint briefing, les anciens /dashboard/briefing et /briefing-quotidien sont supprimés)
-POST /api/v1/sphere/executer
-POST /api/v1/sphere/parse-location    (Claude Sonnet, fallback CITY_FALLBACK local)
-POST /api/v1/sphere/ocr-facture
-POST /api/v1/sphere/chat              (SSE streaming — ancien /ai/chat)
-GET  /api/v1/sphere/chat              (SSE streaming — ancien /ai/chat GET)
-POST /api/v1/sphere/copilot
-POST /api/v1/sphere/voice-action
-POST /api/v1/sphere/agency-advisor
-POST /api/v1/sphere/parse-contract-params
-POST /api/v1/sphere/rediger-description
-```
-**Routes supprimées :** `ai_sphere.py` et `sphere.py` — toutes les routes migrées vers `sphere_agent.py`.
-
-### Messagerie & WhatsApp (badges sidebar)
-```
-GET /api/v1/messagerie/non-lus        → { count: int }  (email_cache non traités)
-GET /api/v1/whatsapp/non-lus          → { count: int }  (somme unread_count)
-```
-Appelés toutes les 60s par DashboardSidebar avec `.catch(() => { count: 0 })`.
-
-### Abonnements Stripe (Payment Element inline)
-```
-POST /api/v1/stripe/create-subscription-intent → Subscription + client_secret (card/TWINT/ApplePay/GooglePay)
-GET  /api/v1/stripe/subscription               → abonnement actif
-POST /api/v1/stripe/connect/onboard            → onboarding Stripe Connect Express
-POST /api/v1/webhooks/webhook                  → Stripe webhook (subscription events, frais_dossier)
+GET  /sphere/contexte · /sphere/briefing (SSE)
+POST /sphere/executer · /sphere/chat (SSE) · /sphere/parse-location
+POST /sphere/ocr-facture · /sphere/copilot · /sphere/voice-action
+POST /sphere/agency-advisor · /sphere/parse-contract-params · /sphere/rediger-description
 ```
 
 ### Loyers (QR-facture SPC 2.0 — hors Stripe)
 ```
-POST /api/v1/loyers/generer-qr    → génère QR-facture PDF + insère loyer_transaction
-POST /api/v1/loyers/reconcilier   → parse CAMT.054 XML ou liste manuelle, réconcilie
-GET  /api/v1/loyers               → liste loyer_transactions du proprio
-PATCH /api/v1/loyers/{id}/statut  → forcer statut (admin)
+POST /loyers/generer-qr       → QR-facture PDF + loyer_transaction + Storage upload
+POST /loyers/quittance         → Quittance PDF + Storage upload
+POST /loyers/reconcilier       → CAMT.054 / liste manuelle
+GET  /loyers                   → liste loyer_transactions du proprio
+PATCH /loyers/{id}/statut      → forcer statut (admin)
 ```
 
-### Routers actifs dans `main.py` (état final)
-55 routers enregistrés. Zéro import orphelin. Les fichiers `ai_sphere.py` et `sphere.py` sont supprimés.
+### Stripe (abonnements uniquement)
+```
+POST /stripe/create-subscription-intent → Subscription + client_secret
+GET  /stripe/subscription               → abonnement actif
+POST /stripe/connect/onboard            → Stripe Connect Express
+POST /webhooks/webhook                  → Stripe webhook
+```
+
+### Auth
+```
+POST /auth/register → inscription (garde ALLOWED_SIGNUP_ROLES en Phase 1)
+POST /auth/login · /auth/refresh · /auth/logout
+GET  /auth/me · PUT /auth/me
+```
+
+### 53 routers au total dans `main.py`
 ```
 auth · properties · contracts · transactions · openers · missions · companies · dashboard
 ai_documents · ai_scoring · ai_listings · rfq · admin · smart_onboarding · tenants
@@ -544,77 +412,96 @@ ratings · favorites · agency_settings · insurance · crm · documents
 biens · locataires · docs_althy · paiements · interventions_althy · missions_ouvreurs
 profiles_artisans · scoring · notifications · matching · geocode · listings · marketplace
 hunters · stripe_webhooks · portail · integrations · vente · rgpd
-sphere_agent (→ /sphere/*) · notations · oauth · factures · messagerie · agenda
+sphere_agent · notations · oauth · factures · messagerie · agenda
 whatsapp · onboarding · sphere_carte · contact · estimation · loyers · changements
 ```
 
 ---
 
-## Priorités produit — Phase de lancement actuelle
+## I. Migrations DB
 
-### FOCUS ACTUEL (Phase 1-2) — Location + All-in-one
-**Ce sur quoi on se concentre à fond :**
-- Gestion locative complète (biens, contrats, loyers, locataires)
-- Sphère IA comme assistant central
-- Documents légaux (bail, EDL, quittances)
-- Ouvreurs + artisans (services autour de la location)
-- Dossiers locataires scorés
-- QR-factures loyers (SPC 2.0) + réconciliation CAMT.054
+13 fichiers dans `supabase/migrations/` (004 → 0030).
 
-### EN PAUSE — code gardé, modules cachés dans l'UI
-Ces fonctionnalités **existent dans le code** mais ne sont **pas mis en avant** pour l'instant.
-Ne pas les supprimer. Les garder en état mais ne pas les développer davantage.
+| Migration | Contenu |
+|-----------|---------|
+| 004-011 | Settings, zones, consents, integrations, marketplace, interests, candidatures, estimation_logs |
+| 0026 | `loyer_transactions` (QR-facture SPC 2.0, transit Althy, CAMT.054) |
+| 0027 | `email_sequence_logs` |
+| 0028 | `changements_locataire` (cycle check-in/check-out/EDL) |
+| 0029 | Pricing v2 : `is_grandfathered` + mapping legacy plans |
+| 0030 | Bucket Storage "documents" (PDF) + RLS |
+
+---
+
+## J. Carte Mapbox
+
+```javascript
+style:   'mapbox://styles/mapbox/light-v11'
+center:  [7.5, 46.8]
+zoom:    7.2
+minZoom: 5.5, maxZoom: 16
+```
+
+**GeoJSON :** `frontend/public/cantons-suisse.json`
+**Cantons actifs :** Genève, Vaud, Valais, Fribourg, Neuchâtel, Jura
+**Villes actives :** Genève, Lausanne, Fribourg, Neuchâtel, Sion
+**Villes inactives (An 2) :** Berne, Zürich, Bâle
+
+---
+
+## K. Stratégie lancement
 
 ```
-⏸  Hunters          → /app/hunters     (viendra en Phase 3-4)
-⏸  Vente            → /app/vente       (viendra en Phase 3-4)
-⏸  Vendeur part.    → /app/listings    (viendra en Phase 3-4)
-⏸  Acheteur Premium → fonctionnel mais pas promu
-```
-
-**Règle :** si une nouvelle page/feature touche à la vente ou aux hunters, la mettre en place mais la masquer dans la sidebar avec `hidden: true` — ne pas la supprimer.
-
-### Stratégie lancement (phases)
-```
-Phase 1 (Mois 1) — Agence fondateur : 130 biens publiés en 1 semaine → marketplace peuplée Jour 1
-Phase 2 (Mois 2) — Early adopters solo Genève/Lausanne : 3 mois gratuits, objectif 20 biens externes
-Phase 3 (Mois 3) — 1ère agence partenaire : 20-30 biens supplémentaires
-Phase 4 (Mois 4-6) — SEO local (/biens/geneve, /biens/lausanne, /louer/vaud) + LinkedIn 1 post/semaine
+Phase 1 (actuelle) — Agence fondateur : 130 biens → marketplace peuplée Jour 1
+Phase 2            — Early adopters solo + rôle agence activé
+Phase 3            — Artisans + ouvreurs activés
+Phase 4            — SEO local + LinkedIn + hunters/vente
 ```
 
 ---
 
-## Ce qui est déjà construit — NE PAS RECONSTRUIRE
+## Annexe — TODO connus
 
-```
-✅ Auth Supabase (login / register / roles / magic link)
-✅ Dashboards multi-rôles (9 rôles, DashBoardShared.tsx)
-✅ Sphère IA (chat streaming SSE + briefing + widget flottant)
-✅ Génération documents (bail, EDL, quittances, devis — 10 types)
-✅ Scoring locataire IA
-✅ Ouvreurs géolocalisés + missions
-✅ Artisans + devis comparés
-✅ Abonnements Stripe — Payment Element inline (card + TWINT + Apple Pay + Google Pay)
-✅ QR-factures loyers SPC 2.0 + réconciliation CAMT.054 (Prompt 14)
-✅ Carte Mapbox (landing + /app/carte)
-✅ Notifications WhatsApp / SMS (Twilio)
-✅ CRM locataires
-✅ Modèle Property + Listing en DB
-✅ Estimation IA (/estimation)
-✅ CI/CD GitHub Actions
-✅ Mobile React Native / Expo
-✅ Layout responsive (sidebar drawer mobile)
-✅ Endpoints non-lus messagerie + WhatsApp (badges sidebar)
-✅ 28 migrations Supabase actives (0001 → 0028)
-```
+### Backend : endpoints stub ou partiels
 
----
+| Endpoint/Service | État | Fichier |
+|------------------|------|---------|
+| WhatsApp webhook (réception messages) | Webhook route existe, traitement partiel | `routers/whatsapp.py` |
+| SMS Twilio (envoi réel) | Config présente, envoi non testé en prod | `routers/notifications.py` |
+| Réconciliation CAMT.054 | Parser existe, non testé avec fichier bancaire réel | `services/reconciliation.py` |
+| Stripe Connect onboarding | Route existe, flow complet non testé | `routers/stripe_webhooks.py` |
+| OCR facture | Route existe, dépend d'Anthropic vision | `routers/sphere_agent.py` |
+| Email sequences | Table `email_sequence_logs` existe, worker Celery à brancher | migration 0027 |
 
-## Ce qu'Althy n'est PAS
+### Pages legacy à supprimer
 
-- Pas un concurrent des agences — il les aide à être meilleures
-- Pas responsable des actions — l'utilisateur valide et assume
-- Pas opaque — 4% visible partout, rien d'autre caché
-- Pas complexe — si > 2 clics, c'est à simplifier
-- Pas générique — chaque page pensée pour le rôle précis de l'utilisateur
-- Pas en anglais — tout en français, toujours
+| Page | Raison |
+|------|--------|
+| `/privacy/page.tsx` | Remplacée par `/legal/confidentialite` |
+| `/terms/page.tsx` | Remplacée par `/legal/cgu` |
+| `/app/overview/page.tsx` | Redirect vers `/app` — garder la redirect, supprimer si plus nécessaire |
+| `/app/companies/page.tsx` | Redirect vers `/app/agence` |
+| `/app/favorites/page.tsx` | Redirect vers `/app/biens?tab=favoris` |
+| `/app/rfqs/*` | Redirect vers `/app/artisans/devis` |
+| `/app/publications/*` | Redirect vers `/app/listings` |
+
+### Intégrations non finalisées
+
+| Intégration | État | Prochaine étape |
+|-------------|------|-----------------|
+| Google OAuth (Gmail/Calendar) | Client ID configuré, sync non implémentée | Implémenter `oauth.py` sync endpoints |
+| Microsoft OAuth (Outlook) | Client ID configuré, sync non implémentée | idem |
+| WhatsApp Business API | Webhook enregistré, messages sortants OK, entrants partiels | Compléter le handler incoming |
+| Firebase Push | `FIREBASE_SERVER_KEY` en env, envoi non implémenté | Implémenter dans `notifications.py` |
+| PostHog analytics | Wrapper `trackEvent()` existe, événements à compléter | Ajouter tracking sur actions clés |
+| Supabase Realtime | Configuré pour messagerie, pas encore utilisé côté frontend | Brancher sur `MessagerieContent.tsx` |
+
+### Dette technique identifiée
+
+| Sujet | Détails |
+|-------|---------|
+| ~294 hex dans `.tsx` | Cible <100 — continuer migration vers `C.*` |
+| 4 `const S` résiduels | Structurels (CSSProperties) — garder tels quels |
+| `comptabilite/page.tsx` | 2 références `S` cassées (TS error) — à corriger |
+| URLs legacy anglaises | `/app/profile`, `/app/listings`, `/app/insurance`, `/app/transactions` |
+| `/bientot` waitlist POST | Formulaire email sans backend — implémenter table `waitlist` ou Resend list |

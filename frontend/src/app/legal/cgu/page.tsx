@@ -11,37 +11,37 @@ const CGU_VERSION = "2026-04";
 
 function H2({ num, children }: { num: number; children: React.ReactNode }) {
   return (
-    <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 19, fontWeight: 400, color: "#3D3830", margin: "2.5rem 0 0.75rem", paddingBottom: "0.5rem", borderBottom: "1px solid #E8E4DC" }}>
+    <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 19, fontWeight: 400, color: "var(--althy-text)", margin: "2.5rem 0 0.75rem", paddingBottom: "0.5rem", borderBottom: "1px solid var(--althy-border)" }}>
       Article {num} — {children}
     </h2>
   );
 }
 function P({ children }: { children: React.ReactNode }) {
-  return <p style={{ fontSize: 14, lineHeight: 1.75, color: "#4A4440", margin: "0.6rem 0" }}>{children}</p>;
+  return <p style={{ fontSize: 14, lineHeight: 1.75, color: "var(--althy-text)", margin: "0.6rem 0" }}>{children}</p>;
 }
 function Important({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ margin: "0.75rem 0", padding: "0.875rem 1rem", background: "#FAE4D6", borderRadius: 8, border: "1px solid #F0C4A8", fontSize: 13, lineHeight: 1.65 }}>
+    <div style={{ margin: "0.75rem 0", padding: "0.875rem 1rem", background: "var(--althy-orange-light)", borderRadius: 8, border: "1px solid #F0C4A8", fontSize: 13, lineHeight: 1.65 }}>
       {children}
     </div>
   );
 }
 function Li({ children }: { children: React.ReactNode }) {
-  return <li style={{ fontSize: 14, lineHeight: 1.75, color: "#4A4440", marginBottom: "0.25rem" }}>{children}</li>;
+  return <li style={{ fontSize: 14, lineHeight: 1.75, color: "var(--althy-text)", marginBottom: "0.25rem" }}>{children}</li>;
 }
 
 export default function CguPage() {
   return (
     <>
       <div style={{ marginBottom: "2.5rem" }}>
-        <p style={{ fontSize: 11, letterSpacing: "2px", textTransform: "uppercase" as const, color: "#7A7469", marginBottom: "1rem" }}>Althy — Informations légales</p>
-        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.75rem,4vw,2.5rem)", fontWeight: 300, color: "#3D3830", marginBottom: "0.5rem" }}>
+        <p style={{ fontSize: 11, letterSpacing: "2px", textTransform: "uppercase" as const, color: "var(--althy-text-3)", marginBottom: "1rem" }}>Althy — Informations légales</p>
+        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.75rem,4vw,2.5rem)", fontWeight: 300, color: "var(--althy-text)", marginBottom: "0.5rem" }}>
           Conditions Générales d'Utilisation
         </h1>
-        <p style={{ fontSize: 12, color: "#7A7469" }}>Version {CGU_VERSION} · Dernière mise à jour : {LAST_UPDATE}</p>
+        <p style={{ fontSize: 12, color: "var(--althy-text-3)" }}>Version {CGU_VERSION} · Dernière mise à jour : {LAST_UPDATE}</p>
       </div>
 
-      <P>Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme Althy, accessible à l'adresse <strong>althy.ch</strong>, exploitée par Althy Sàrl (ci-après « Althy »).</P>
+      <P>Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme Althy, accessible à l'adresse <strong>althy.ch</strong>, exploitée par Killian Thébaud — Althy (ci-après « Althy »).</P>
       <P><strong>En créant un compte ou en utilisant les services d'Althy, vous acceptez intégralement les présentes CGU.</strong></P>
 
       <H2 num={1}>Objet et acceptation</H2>

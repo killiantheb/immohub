@@ -1,0 +1,75 @@
+name: E2E — Critical Paths
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "frontend/src/**"
+      - "frontend/e2e/**"
+      - "backend/app/**"
+
+jobs:
+  e2e-critical:
+    name: E2E — 3 critical paths
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    env:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY }}
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_POSTHOG_KEY: ""
+      E2E_PROPRIO_EMAIL: ${{ secrets.E2E_PROPRIO_EMAIL }}
+      E2E_PROPRIO_PASSWORD: ${{ secrets.E2E_PROPRIO_PASSWORD }}
+      E2E_LOCATAIRE_EMAIL: ${{ secrets.E2E_LOCATAIRE_EMAIL }}
+      E2E_LOCATAIRE_PASSWORD: ${{ secrets.E2E_LOCATAIRE_PASSWORD }}
+      PLAYWRIGHT_BASE_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Next.js
+        run: npm run build
+
+      - name: Start Next.js server
+        run: npm run start &
+        env:
+          PORT: 3000
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:3000 --timeout 30000
+
+      - name: Run critical E2E tests
+        run: npx playwright test proprio-onboarding proprio-quittance locataire-signalement --reporter=github --project=chromium
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-critical-report
+          path: frontend/playwright-report
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-critical-results
+          path: frontend/test-results
+          retention-days: 7

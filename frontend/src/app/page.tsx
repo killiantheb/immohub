@@ -18,13 +18,14 @@ import { Testimonials }      from "@/components/landing/Testimonials";
 import { Garanties }         from "@/components/landing/Garanties";
 import { Tarifs }            from "@/components/landing/Tarifs";
 import { CTAFinal }          from "@/components/landing/CTAFinal";
+import { ProprioSolo }       from "@/components/landing/ProprioSolo";
 
 // ── Tokens ─────────────────────────────────────────────────────────────────────
-// Mapbox GL requires literal hex — CSS vars not supported in GL paint properties
+// Mapbox GL requires hex — do not replace with CSS var
 const ORANGE_HEX = "#E8602C";
 
-const serif  = "var(--font-serif, 'Fraunces', Georgia, serif)";
-const sans   = "var(--font-sans, 'DM Sans', system-ui, sans-serif)";
+const serif  = "var(--font-serif)";
+const sans   = "var(--font-sans)";
 const API    = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
 const ACTIVE_CANTONS = ["Genève", "Vaud", "Valais", "Fribourg", "Neuchâtel", "Jura"];
@@ -163,7 +164,7 @@ export default function LandingPage() {
               </span>
             </Link>
             <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}>
-              <span className="lp-nav-tag" style={{ fontFamily: sans, fontSize: 11, letterSpacing: "0.14em", color: "#FFFFFF" }}>
+              <span className="lp-nav-tag" style={{ fontFamily: sans, fontSize: 11, letterSpacing: "0.14em", color: "var(--althy-surface)" }}>
                 Votre agent personnel
               </span>
             </div>
@@ -208,12 +209,15 @@ export default function LandingPage() {
 
           {/* H1 */}
           <div style={{ position: "absolute", top: "26%", left: "50%", transform: "translateX(-50%)", textAlign: "center", zIndex: 10, pointerEvents: "none", width: "min(680px, calc(100vw - 48px))", opacity: mapInteracted ? 0 : 1, transition: "opacity 0.5s ease" }}>
-            <h1 style={{ fontFamily: serif, fontSize: "clamp(40px,6vw,82px)", fontWeight: 300, color: "#FFFFFF", margin: 0, letterSpacing: "-0.03em", lineHeight: 1.02, textShadow: "0 2px 32px rgba(0,0,0,0.45)" }}>
-              Trouvez votre<br />
-              <span style={{ color: C.orange, textShadow: "0 2px 24px rgba(232,96,44,0.35)" }}>chez‑vous.</span>
+            {/* A/B variant A (active) — propriétaire solo */}
+            <h1 style={{ fontFamily: serif, fontSize: "clamp(40px,6vw,82px)", fontWeight: 300, color: "var(--althy-surface)", margin: 0, letterSpacing: "-0.03em", lineHeight: 1.02, textShadow: "0 2px 32px rgba(0,0,0,0.45)" }}>
+              Votre bien, géré<br />
+              <span style={{ color: C.orange, textShadow: "0 2px 24px rgba(232,96,44,0.35)" }}>sans agence.</span>
             </h1>
+            {/* A/B variant B: « Gérez vos biens<br/>sans vous compliquer la vie. » */}
+            {/* A/B variant C: « L'immobilier simplifié<br/>pour les propriétaires. » */}
             <p style={{ fontFamily: serif, fontSize: "clamp(13px,1.5vw,17px)", color: "rgba(255,255,255,0.65)", margin: "18px 0 0", fontWeight: 300, fontStyle: "italic", letterSpacing: "0.06em", textShadow: "0 1px 10px rgba(0,0,0,0.30)" }}>
-              Suisse romande — Althy gère, vous décidez.
+              Suisse romande — Propriétaire, sans charge mentale.
             </p>
           </div>
 
@@ -230,16 +234,23 @@ export default function LandingPage() {
             </div>
           </div>
 
+          {/* Micro-copy proprio */}
+          <div style={{ position: "absolute", bottom: 100, left: "50%", transform: "translateX(-50%)", zIndex: 10, textAlign: "center", opacity: mapInteracted ? 0 : 1, transition: "opacity 0.5s ease" }}>
+            <Link href="/register?role=proprio_solo" style={{ fontSize: 13, color: "rgba(255,255,255,0.70)", textDecoration: "none", fontFamily: sans, fontWeight: 500, textShadow: "0 1px 6px rgba(0,0,0,0.30)" }}>
+              Déjà propriétaire ? <span style={{ color: C.orange, fontWeight: 600 }}>Commencer gratuitement →</span>
+            </Link>
+          </div>
+
           {/* Search bar */}
           <div style={{ position: "absolute", bottom: 52, left: "50%", transform: "translateX(-50%)", zIndex: 10, width: "min(580px, calc(100vw - 32px))" }}>
             <form onSubmit={handleSearch} style={{ position: "relative", width: "100%", display: "flex", alignItems: "center" }}>
               <input type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder="Ville, quartier, adresse…"
                 style={{ width: "100%", boxSizing: "border-box" as const, padding: "14px 160px 14px 20px", borderRadius: 32, border: "1.5px solid rgba(255,255,255,0.6)", background: "rgba(255,255,255,0.82)", backdropFilter: "blur(20px)", fontSize: 14, color: C.text, outline: "none", boxShadow: "0 8px 32px rgba(26,22,18,0.18)", fontFamily: sans }} />
               <div style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", gap: 4 }}>
-                <button type="button" style={{ width: 34, height: 34, borderRadius: "50%", background: "transparent", border: "none", color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <button type="button" disabled title="Bientôt disponible" style={{ width: 34, height: 34, borderRadius: "50%", background: "transparent", border: "none", color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center", cursor: "not-allowed", opacity: 0.4 }}>
                   <Mic size={15} />
                 </button>
-                <button type="button" style={{ width: 34, height: 34, borderRadius: "50%", background: "transparent", border: "none", color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <button type="button" disabled title="Bientôt disponible" style={{ width: 34, height: 34, borderRadius: "50%", background: "transparent", border: "none", color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center", cursor: "not-allowed", opacity: 0.4 }}>
                   <SlidersHorizontal size={15} />
                 </button>
                 <div style={{ width: 1, height: 18, background: "rgba(26,22,18,0.15)" }} />
@@ -282,6 +293,9 @@ export default function LandingPage() {
             </p>
           </div>
         )}
+
+        {/* ── Proprio solo — douleur + valeur ── */}
+        <ProprioSolo />
 
         {/* ── Vrais biens ── */}
         <LandingBiens />

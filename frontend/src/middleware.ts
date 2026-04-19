@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // Routes accessibles sans authentification
-const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password", "/reset-password", "/terms", "/privacy", "/legal", "/contact"];
+const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password", "/reset-password", "/legal", "/legal/cgu", "/legal/confidentialite", "/legal/cookies", "/legal/disclaimer-ia", "/contact", "/bientot"];
 // Préfixes qui nécessitent une session
 const PROTECTED_PREFIXES = ["/app"];
 // Préfixes anciens (portails séparés) → redirigés vers /app

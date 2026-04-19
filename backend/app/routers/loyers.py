@@ -22,6 +22,7 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.services.qr_facture import generate_qr_bill_pdf, generate_qr_reference
 from app.services.reconciliation import parse_camt054, reconcile_payments
+from app.services.storage import upload_pdf, get_signed_url
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -51,6 +52,19 @@ class GenererQRResponse(BaseModel):
     commission_montant: float
     montant_reverse: float
     pdf_base64: str
+    download_url: str | None = None
+
+
+class GenererQuittanceRequest(BaseModel):
+    property_id: _uuid.UUID
+    mois: str  # "YYYY-MM"
+
+
+class GenererQuittanceResponse(BaseModel):
+    pdf_base64: str
+    mois: str
+    montant: float
+    download_url: str | None = None
 
 
 class ReconcilierRequest(BaseModel):
@@ -157,11 +171,123 @@ async def generer_qr_facture(
         commission_montant=commission_montant, montant_reverse=montant_reverse,
     )
 
+    # ── Upload Supabase Storage ──
+    download_url: str | None = None
+    try:
+        key = await upload_pdf(
+            user_id=str(current_user.id),
+            property_id=str(payload.property_id),
+            doc_type="qr-facture",
+            mois=payload.mois,
+            pdf_bytes=pdf_bytes,
+        )
+        download_url = await get_signed_url(key)
+    except Exception:
+        pass  # fallback: le client utilise pdf_base64
+
     return GenererQRResponse(
         transaction_id=str(tx_id), qr_reference=qr_ref,
         montant_total=montant_total, commission_montant=commission_montant,
         montant_reverse=montant_reverse,
         pdf_base64=base64.b64encode(pdf_bytes).decode("utf-8"),
+        download_url=download_url,
+    )
+
+
+# ── POST /loyers/quittance ────────────────────────────────────────────────────
+
+@router.post("/quittance", response_model=GenererQuittanceResponse)
+async def generer_quittance(
+    payload: GenererQuittanceRequest,
+    current_user: AuthDep,
+    db: DbDep,
+) -> GenererQuittanceResponse:
+    """Génère une quittance de loyer PDF (art. 88 CO)."""
+    if current_user.role not in _MANAGER_ROLES:
+        raise HTTPException(status_code=403, detail="Accès réservé aux propriétaires et agences.")
+    try:
+        mois_date = datetime.strptime(payload.mois + "-01", "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Format mois invalide (attendu: YYYY-MM).")
+
+    # ── Bien ──
+    prop = (await db.execute(
+        text("SELECT id, address, monthly_rent, charges, owner_id FROM properties WHERE id = :id AND is_active = true"),
+        {"id": str(payload.property_id)},
+    )).one_or_none()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Bien introuvable.")
+    if str(prop.owner_id) != str(current_user.id) and current_user.role not in {"super_admin"}:
+        raise HTTPException(status_code=403, detail="Ce bien ne vous appartient pas.")
+
+    montant = float(prop.monthly_rent or 0)
+    if montant <= 0:
+        raise HTTPException(status_code=400, detail="Le bien n'a pas de loyer mensuel défini.")
+    charges = float(getattr(prop, "charges", 0) or 0)
+
+    # ── Locataire actif ──
+    tenant_row = (await db.execute(
+        text("""
+            SELECT l.id, l.note_interne
+            FROM locataires l
+            WHERE l.bien_id = :bid AND l.statut = 'actif'
+            ORDER BY l.created_at DESC LIMIT 1
+        """),
+        {"bid": str(payload.property_id)},
+    )).one_or_none()
+    tenant_name = "Locataire"
+    if tenant_row and tenant_row.note_interne:
+        first_line = tenant_row.note_interne.split("\n")[0].strip()
+        if first_line:
+            tenant_name = first_line
+
+    # ── Proprio ──
+    proprio_name = current_user.first_name or ""
+    if current_user.last_name:
+        proprio_name = f"{proprio_name} {current_user.last_name}".strip()
+    if not proprio_name:
+        proprio_name = current_user.email.split("@")[0].capitalize()
+
+    # Adresse du proprio (profil)
+    proprio_addr_row = (await db.execute(
+        text("SELECT address FROM profiles WHERE user_id = :uid"),
+        {"uid": str(current_user.id)},
+    )).one_or_none()
+    proprio_address = proprio_addr_row.address if proprio_addr_row and proprio_addr_row.address else ""
+
+    mois_label = mois_date.strftime("%B %Y").capitalize()
+
+    # ── PDF ──
+    from app.services.quittance import generate_quittance_pdf
+    pdf_bytes = generate_quittance_pdf(
+        proprio_name=proprio_name,
+        proprio_address=proprio_address,
+        tenant_name=tenant_name,
+        property_address=prop.address,
+        mois_label=mois_label,
+        montant=montant,
+        charges=charges,
+    )
+
+    # ── Upload Supabase Storage ──
+    download_url: str | None = None
+    try:
+        key = await upload_pdf(
+            user_id=str(current_user.id),
+            property_id=str(payload.property_id),
+            doc_type="quittance",
+            mois=payload.mois,
+            pdf_bytes=pdf_bytes,
+        )
+        download_url = await get_signed_url(key)
+    except Exception:
+        pass  # fallback: le client utilise pdf_base64
+
+    return GenererQuittanceResponse(
+        pdf_base64=base64.b64encode(pdf_bytes).decode("utf-8"),
+        mois=payload.mois,
+        montant=montant,
+        download_url=download_url,
     )
 
 

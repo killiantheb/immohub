@@ -105,13 +105,15 @@ async def get_connect_status(db: DbDep, user: AuthDep):
 
 
 class SubscriptionIntentRequest(BaseModel):
-    plan: Literal["pro", "agence", "portail"]
+    plan: Literal["starter", "pro", "agence", "agence_premium", "portail"]
 
 
 PLAN_PRICE_MAP = {
-    "pro":     "STRIPE_PRICE_PROPRIO_MONTHLY",   # CHF 29/mois (env var legacy "PROPRIO" = plan "pro")
-    "agence":  "STRIPE_PRICE_AGENCY_MONTHLY",
-    "portail": "STRIPE_PRICE_PORTAL_MONTHLY",
+    "starter":        "STRIPE_PRICE_STARTER_MONTHLY",          # CHF 14/mois
+    "pro":            "STRIPE_PRICE_PRO_MONTHLY",              # CHF 29/mois
+    "agence":         "STRIPE_PRICE_AGENCY_MONTHLY",           # CHF 79/agent/mois
+    "agence_premium": "STRIPE_PRICE_AGENCY_PREMIUM_MONTHLY",   # CHF 129/agent/mois
+    "portail":        "STRIPE_PRICE_PORTAL_MONTHLY",           # CHF 9/mois
 }
 
 # Méthodes de paiement acceptées pour les abonnements
@@ -482,9 +484,11 @@ async def _handle_invoice_payment_failed(
 
 def _price_to_plan(price_id: str | None) -> str:
     mapping = {
-        settings.STRIPE_PRICE_PROPRIO_MONTHLY: "pro",
-        settings.STRIPE_PRICE_PRO_MONTHLY: "pro",       # legacy price ID → same plan
+        settings.STRIPE_PRICE_STARTER_MONTHLY: "starter",
+        settings.STRIPE_PRICE_PRO_MONTHLY: "pro",
+        settings.STRIPE_PRICE_PROPRIO_MONTHLY: "pro",              # legacy CHF 29 → grandfathered as "pro"
         settings.STRIPE_PRICE_AGENCY_MONTHLY: "agence",
+        settings.STRIPE_PRICE_AGENCY_PREMIUM_MONTHLY: "agence_premium",
         settings.STRIPE_PRICE_PORTAL_MONTHLY: "portail",
     }
     return mapping.get(price_id or "", "gratuit")
