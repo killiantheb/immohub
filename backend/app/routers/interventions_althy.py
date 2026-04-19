@@ -58,7 +58,7 @@ async def create_intervention(
     payload: InterventionCreate,
     current_user: AuthDep,
     db: DbDep,
-    bg: BackgroundTasks = Depends(),
+    bg: BackgroundTasks,
 ) -> InterventionRead:
     data = payload.model_dump()
     data["signale_par_id"] = current_user.id

@@ -90,9 +90,9 @@ export default function NouveauBienPage() {
         cp: data.cp,
         type: data.type,
       };
-      if (data.surface && data.surface !== "") payload.surface = Number(data.surface);
-      if (data.loyer && data.loyer !== "") payload.loyer = Number(data.loyer);
-      if (data.etage && data.etage !== "") payload.etage = Number(data.etage);
+      if (data.surface != null && data.surface !== "") payload.surface = Number(data.surface);
+      if (data.loyer != null && data.loyer !== "") payload.loyer = Number(data.loyer);
+      if (data.etage != null && data.etage !== "") payload.etage = Number(data.etage);
 
       const res = await api.post("/biens", payload);
       router.push(`/app/biens/${res.data.id}`);
