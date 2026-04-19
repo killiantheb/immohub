@@ -36,23 +36,22 @@ const S = {
 } as const;
 
 const PLAN_META: Record<string, { icon: React.ReactNode; color: string }> = {
-  decouverte: { icon: <Sparkles size={20} />, color: S.text2 },
-  proprio:    { icon: <Zap size={20} />,      color: "var(--terracotta-primary)" },
-  agence:     { icon: <Building2 size={20} />, color: S.text },
-  expert:     { icon: <Crown size={20} />,    color: "var(--althy-amber)" },
+  gratuit: { icon: <Sparkles size={20} />, color: S.text2 },
+  pro:     { icon: <Zap size={20} />,      color: "var(--terracotta-primary)" },
+  agence:  { icon: <Building2 size={20} />, color: S.text },
 };
 
 const FEATURES_COMPARE = [
-  { name: "Biens gérés",                 starter: "2",    proprio: "15",           agence: "Illimité" },
-  { name: "Documents IA",                starter: "Illimité", proprio: "Illimité", agence: "Illimité" },
-  { name: "Interactions sphère IA/jour", starter: "5",    proprio: "30",           agence: "100" },
-  { name: "QR-factures loyers",          starter: "—",    proprio: "✓",            agence: "✓" },
-  { name: "Marketplace ouvreurs",        starter: "—",    proprio: "✓",            agence: "✓" },
-  { name: "Marketplace artisans",        starter: "—",    proprio: "✓",            agence: "✓" },
-  { name: "Annonces portails",           starter: "—",    proprio: "✓ (CHF 49+)",  agence: "✓ (CHF 49+)" },
-  { name: "Comptabilité avancée (PPE)",  starter: "—",    proprio: "+CHF 19/mois", agence: "✓ inclus" },
-  { name: "API B2B données marché",      starter: "—",    proprio: "—",            agence: "✓ (CHF 600+/mois)" },
-  { name: "Utilisateurs",                starter: "1",    proprio: "1",            agence: "2–50" },
+  { name: "Biens gérés",                 gratuit: "3",        pro: "15",           agence: "Illimité" },
+  { name: "Documents IA",                gratuit: "Illimité", pro: "Illimité",     agence: "Illimité" },
+  { name: "Interactions sphère IA/jour", gratuit: "5",        pro: "30",           agence: "100" },
+  { name: "QR-factures loyers",          gratuit: "—",        pro: "✓",            agence: "✓" },
+  { name: "Marketplace ouvreurs",        gratuit: "—",        pro: "✓",            agence: "✓" },
+  { name: "Marketplace artisans",        gratuit: "—",        pro: "✓",            agence: "✓" },
+  { name: "Annonces portails",           gratuit: "\u2014",    pro: "\u2713 (CHF 49+)",  agence: "\u2713 (CHF 49+)" },
+  { name: "Comptabilité avancée (PPE)",  gratuit: "—",        pro: "+CHF 19/mois", agence: "✓ inclus" },
+  { name: "API B2B données marché",      gratuit: "—",        pro: "—",            agence: "✓ (CHF 600+/mois)" },
+  { name: "Utilisateurs",                gratuit: "1",        pro: "1",            agence: "2–50" },
 ];
 
 interface SubscriptionData {
@@ -128,8 +127,8 @@ function CheckoutForm({ planId, planNom, clientSecret, onSuccess, onCancel }: Ch
 
       {errorMsg && (
         <div style={{
-          padding: "10px 14px", borderRadius: 8, fontSize: 13, color: "#b91c1c",
-          background: "#fef2f2", border: "1px solid rgba(185,28,28,0.2)",
+          padding: "10px 14px", borderRadius: 8, fontSize: 13, color: "var(--althy-red)",
+          background: "var(--althy-red-bg)", border: "1px solid rgba(185,28,28,0.2)",
         }}>
           {errorMsg}
         </div>
@@ -171,10 +170,10 @@ function StripeCheckout({ clientSecret, planId, planNom, onSuccess, onCancel }: 
   const appearance = {
     theme: "stripe" as const,
     variables: {
-      colorPrimary: "#E8602C",
-      colorBackground: "#FFFFFF",
-      colorText: "#3D3830",
-      colorDanger: "#b91c1c",
+      colorPrimary: "#E8602C",    // --althy-orange
+      colorBackground: "#FFFFFF", // --althy-surface
+      colorText: "#2B2B2B",       // --althy-text
+      colorDanger: "#E53E3E",     // --althy-red
       borderRadius: "8px",
       fontFamily: "var(--font-sans), system-ui, sans-serif",
     },
@@ -218,11 +217,11 @@ function AbonnementContent() {
     staleTime: 60_000,
   });
 
-  const currentPlan = subscription?.plan ?? "starter";
+  const currentPlan = subscription?.plan ?? "gratuit";
   const subStatus = subscription?.status ?? "no_subscription";
 
   const handleSubscribe = useCallback(async (planId: string, planNom: string) => {
-    if (planId === "decouverte") return;
+    if (planId === "gratuit") return;
     setSubscribing(planId);
     try {
       const res = await api.post("/stripe/create-subscription-intent", { plan: planId });
@@ -395,7 +394,7 @@ function AbonnementContent() {
 
               <button
                 disabled={isCurrent || subscribing === plan.id || !!checkoutPlan}
-                onClick={() => !isCurrent && plan.id !== "decouverte" && !checkoutPlan
+                onClick={() => !isCurrent && plan.id !== "gratuit" && !checkoutPlan
                   ? handleSubscribe(plan.id, plan.nom)
                   : undefined}
                 style={{
@@ -404,7 +403,7 @@ function AbonnementContent() {
                   color: isCurrent ? S.text3 : (isSelected || plan.vedette) ? "#fff" : S.text,
                   border: isCurrent ? `1px solid ${S.border}` : (isSelected || plan.vedette) ? "none" : `1px solid ${S.border}`,
                   borderRadius: 10, fontSize: 13, fontWeight: 600,
-                  cursor: (isCurrent || plan.id === "decouverte" || !!checkoutPlan) ? "default" : "pointer",
+                  cursor: (isCurrent || plan.id === "gratuit" || !!checkoutPlan) ? "default" : "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                   opacity: subscribing && subscribing !== plan.id ? 0.6 : 1,
                 }}
@@ -429,8 +428,8 @@ function AbonnementContent() {
             <thead>
               <tr style={{ backgroundColor: S.surface2 }}>
                 <th style={{ padding: "12px 20px", textAlign: "left", fontSize: 12, fontWeight: 600, color: S.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>Fonctionnalité</th>
-                {["Starter", "Proprio", "Agence"].map(h => (
-                  <th key={h} style={{ padding: "12px 16px", textAlign: "center", fontSize: 12, fontWeight: 600, color: h === "Proprio" ? "var(--terracotta-primary)" : S.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
+                {["Gratuit", "Pro", "Agence"].map(h => (
+                  <th key={h} style={{ padding: "12px 16px", textAlign: "center", fontSize: 12, fontWeight: 600, color: h === "Pro" ? "var(--terracotta-primary)" : S.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -438,7 +437,7 @@ function AbonnementContent() {
               {FEATURES_COMPARE.map((row, i) => (
                 <tr key={row.name} style={{ borderTop: `1px solid ${S.border}`, backgroundColor: i % 2 === 0 ? "transparent" : S.surface2 }}>
                   <td style={{ padding: "10px 20px", fontSize: 13, color: S.text2 }}>{row.name}</td>
-                  {[row.starter, row.proprio, row.agence].map((val, j) => (
+                  {[row.gratuit, row.pro, row.agence].map((val, j) => (
                     <td key={j} style={{ padding: "10px 16px", textAlign: "center", fontSize: 13, color: val === "✓" ? "var(--althy-green)" : val === "—" ? S.text3 : j === 1 ? "var(--terracotta-primary)" : S.text, fontWeight: val === "✓" || j === 1 ? 600 : 400 }}>
                       {val}
                     </td>

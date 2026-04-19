@@ -127,7 +127,7 @@ class UserCtx:
     first_name: str
     role: str
     registered_at: datetime
-    plan: str = "starter"
+    plan: str = "gratuit"
     nb_biens: int = 0
     nb_docs: int = 0
     nb_loyers: int = 0
@@ -467,7 +467,7 @@ _SEQUENCES: list[SequenceDef] = [
         cta_url=f"{APP_URL}/app/abonnement",
         cta_label="Découvrir le plan Pro →",
         condition_fn=lambda ctx: ctx.plan in (
-            "starter", "decouverte", "vitrine", "free", ""
+            "gratuit", "starter", "decouverte", "vitrine", "free", ""
         ),
     ),
     SequenceDef(
@@ -605,7 +605,7 @@ async def _build_user_ctx(db, candidate: dict, now: datetime) -> UserCtx:
     # Plan actif
     plan_row = (await db.execute(
         text("""
-            SELECT COALESCE(plan, 'starter') AS plan
+            SELECT COALESCE(plan, 'gratuit') AS plan
             FROM subscriptions
             WHERE user_id = :uid AND status = 'active'
             ORDER BY created_at DESC
@@ -613,7 +613,7 @@ async def _build_user_ctx(db, candidate: dict, now: datetime) -> UserCtx:
         """),
         {"uid": uid},
     )).fetchone()
-    plan = plan_row[0] if plan_row else "starter"
+    plan = plan_row[0] if plan_row else "gratuit"
 
     # Nombre de biens
     nb_biens_row = (await db.execute(

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re as _re
 import uuid as _uuid
 from datetime import date, datetime, timedelta, timezone
 from typing import Annotated, Any
@@ -24,7 +25,9 @@ from app.core.database import get_db
 from app.core.limiter import rate_limit
 from app.core.security import get_current_user
 from app.models.user import User
-from fastapi import APIRouter, Depends, HTTPException, status
+from app.services.ai_service import chat_stream
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -773,6 +776,16 @@ async def get_contexte(current_user: AuthDep, db: DbDep) -> dict:
     }
 
 
+def _enrich_briefing(result: dict, today: date) -> dict:
+    """Add legacy BriefingData fields (titre, message, date, is_today)
+    so callers that expect the old /dashboard/briefing shape still work."""
+    result.setdefault("titre", result.get("salutation", f"Briefing du {today.strftime('%d/%m/%Y')}"))
+    result.setdefault("message", result.get("resume", ""))
+    result.setdefault("date", today.isoformat())
+    result.setdefault("is_today", True)
+    return result
+
+
 # ── GET /sphere/briefing ──────────────────────────────────────────────────────
 
 @router.get("/briefing")
@@ -791,7 +804,7 @@ async def get_briefing(
     # Try MD5-keyed cache
     cached = await _get_cached_briefing(_uid(current_user), hash_, db)
     if cached:
-        return cached
+        return _enrich_briefing(cached, today)
 
     # Generate via Claude
     result = await _call_claude(current_user, ctx, prefs, db)
@@ -800,7 +813,10 @@ async def get_briefing(
     await _save_briefing_cache(_uid(current_user), today, hash_, result, db)
     await _persist_actions(_uid(current_user), result.get("actions", []), db)
 
-    return {**result, "from_cache": False, "generated_at": _now_utc().isoformat()}
+    return _enrich_briefing(
+        {**result, "from_cache": False, "generated_at": _now_utc().isoformat()},
+        today,
+    )
 
 
 # ── GET /sphere/pending-count ─────────────────────────────────────────────────
@@ -1240,3 +1256,422 @@ Conserve le sens original. Adapte selon l'instruction. Sois concis."""
     )
 
     return {"ok": True, "action": updated}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ROUTES MIGRÉES DEPUIS ai_sphere.py (prefix /ai → /sphere)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class ChatRequest(BaseModel):
+    message: str
+    context: dict = {}
+
+
+class CopilotResponse(BaseModel):
+    response: str
+
+
+class VoiceActionRequest(BaseModel):
+    transcript: str
+
+
+class AdvisorRequest(BaseModel):
+    question: str
+    context: dict = {}
+
+
+class ContractParamsRequest(BaseModel):
+    description: str
+
+
+class RedigerDescriptionRequest(BaseModel):
+    type_publication: str
+    type_intervention: str
+    adresse_bien: str | None = None
+    description_contexte: str | None = None
+
+
+# ── POST /sphere/copilot ─────────────────────────────────────────────────────
+
+@router.post("/copilot", response_model=CopilotResponse)
+async def copilot(
+    payload: ChatRequest,
+    current_user: AuthDep,
+    db: DbDep,
+) -> CopilotResponse:
+    """Non-streaming copilot — collects the full Claude response and returns it."""
+    user_name = current_user.first_name or (current_user.email or "").split("@")[0]
+    context = {**payload.context, "role": current_user.role, "user_name": user_name}
+    parts: list[str] = []
+    async for chunk in chat_stream(
+        message=payload.message,
+        context=context,
+        db=db,
+        user_id=str(current_user.id),
+    ):
+        if chunk.startswith("data: ") and chunk.strip() != "data: [DONE]":
+            try:
+                parsed = json.loads(chunk[6:].strip())
+                if "text" in parsed:
+                    parts.append(parsed["text"].replace("\\n", "\n"))
+            except Exception:
+                pass
+    return CopilotResponse(response="".join(parts))
+
+
+# ── POST /sphere/chat ────────────────────────────────────────────────────────
+
+@router.post("/chat")
+async def chat(
+    payload: ChatRequest,
+    current_user: AuthDep,
+    db: DbDep,
+    _=rate_limit(20, 60),
+) -> StreamingResponse:
+    """Conversational copilot — streams SSE events."""
+    user_name = current_user.first_name or (current_user.email or "").split("@")[0]
+    context = {**payload.context, "role": current_user.role, "user_name": user_name}
+
+    async def _generate():
+        async for chunk in chat_stream(
+            message=payload.message, context=context, db=db, user_id=str(current_user.id),
+        ):
+            yield chunk
+
+    return StreamingResponse(
+        _generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ── GET /sphere/chat ─────────────────────────────────────────────────────────
+
+@router.get("/chat")
+async def chat_get(
+    current_user: AuthDep,
+    db: DbDep,
+    message: str = Query(..., description="Message de l'utilisateur"),
+    _=rate_limit(20, 60),
+) -> StreamingResponse:
+    """SSE streaming chat avec contexte auto-injecté (biens, locataires, interventions)."""
+    from app.models.bien import Bien
+    from app.models.intervention import Intervention
+    from app.models.locataire import Locataire
+    from sqlalchemy import and_, func, select as sa_sel
+
+    uid = current_user.id
+    ctx: dict = {"role": current_user.role, "user_name": current_user.first_name or ""}
+
+    try:
+        biens_count = (await db.execute(
+            sa_sel(func.count()).select_from(Bien).where(Bien.owner_id == uid)
+        )).scalar() or 0
+        ctx["nb_biens"] = biens_count
+
+        biens_res = await db.execute(sa_sel(Bien).where(Bien.owner_id == uid).limit(10))
+        biens = biens_res.scalars().all()
+        bien_ids = [b.id for b in biens]
+        ctx["biens"] = [{"adresse": b.adresse, "ville": b.ville, "statut": b.statut} for b in biens]
+
+        if bien_ids:
+            loc_res = await db.execute(
+                sa_sel(func.count()).select_from(Locataire).where(
+                    and_(Locataire.bien_id.in_(bien_ids), Locataire.statut == "actif")
+                )
+            )
+            ctx["nb_locataires_actifs"] = loc_res.scalar() or 0
+
+            inter_res = await db.execute(
+                sa_sel(Intervention).where(
+                    and_(
+                        Intervention.bien_id.in_(bien_ids),
+                        Intervention.statut.in_(["nouveau", "en_cours"]),
+                    )
+                ).limit(5)
+            )
+            interventions = inter_res.scalars().all()
+            ctx["interventions_en_cours"] = [
+                {"titre": i.titre, "categorie": i.categorie, "urgence": i.urgence, "statut": i.statut}
+                for i in interventions
+            ]
+    except Exception:
+        pass
+
+    async def _generate():
+        async for chunk in chat_stream(
+            message=message, context=ctx, db=db, user_id=str(current_user.id),
+        ):
+            yield chunk
+
+    return StreamingResponse(
+        _generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ── POST /sphere/voice-action ────────────────────────────────────────────────
+
+@router.post("/voice-action")
+async def voice_action(
+    payload: VoiceActionRequest,
+    current_user: AuthDep,
+    db: DbDep,
+    _=rate_limit(10, 60),
+):
+    """Analyse un message vocal et exécute l'action détectée."""
+    client = _client()
+
+    response = await client.messages.create(
+        model=_MODEL,
+        max_tokens=800,
+        messages=[{"role": "user", "content": f"""
+Tu es Althy, assistant immobilier suisse. L'utilisateur a dit :
+"{payload.transcript}"
+
+Détecte l'intention et retourne UNIQUEMENT ce JSON :
+{{
+  "intent": "create_property|navigate|question|unknown",
+  "message": "ta réponse courte en français (1 phrase)",
+  "navigate_path": null,
+  "property": {{
+    "type": "apartment|house|studio|commercial|parking|land",
+    "address": null, "city": null, "zip_code": null,
+    "surface": null, "rooms": null, "monthly_rent": null,
+    "charges": null, "deposit": null,
+    "status": "available", "is_furnished": false, "has_parking": false, "country": "CH"
+  }}
+}}
+
+Règles :
+- "create_property" si l'utilisateur veut ajouter/créer un bien immobilier
+- "navigate" si l'utilisateur veut aller sur une page
+- "question" pour toute autre demande
+- Extrais les détails du bien si intent=create_property
+- type : "apartment"=appartement, "house"=maison/villa, "studio"=studio
+"""}]
+    )
+
+    raw = response.content[0].text.strip()
+    if "```" in raw:
+        raw = raw.split("```")[1].lstrip("json").strip()
+
+    try:
+        result = json.loads(raw)
+    except Exception:
+        return {"intent": "question", "message": "Je n'ai pas compris. Reformulez votre demande.", "property": None}
+
+    if result.get("intent") == "create_property" and result.get("property"):
+        prop_data = result["property"]
+        if prop_data.get("address") or prop_data.get("city"):
+            from app.models.property import Property
+            new_prop = Property(
+                id=_uuid.uuid4(),
+                type=prop_data.get("type", "apartment"),
+                address=prop_data.get("address") or "",
+                city=prop_data.get("city") or "",
+                zip_code=prop_data.get("zip_code") or "",
+                country=prop_data.get("country") or "CH",
+                surface=prop_data.get("surface"),
+                rooms=prop_data.get("rooms"),
+                monthly_rent=prop_data.get("monthly_rent"),
+                charges=prop_data.get("charges"),
+                deposit=prop_data.get("deposit"),
+                status=prop_data.get("status", "available"),
+                is_furnished=bool(prop_data.get("is_furnished", False)),
+                has_parking=bool(prop_data.get("has_parking", False)),
+                owner_id=current_user.id,
+                created_by_id=current_user.id,
+                is_active=True,
+            )
+            db.add(new_prop)
+            await db.commit()
+            result["property_id"] = str(new_prop.id)
+            result["message"] = f"Bien créé : {new_prop.type} à {new_prop.city or new_prop.address}."
+        else:
+            result["intent"] = "need_more_info"
+            result["message"] = "J'ai besoin d'une adresse ou d'une ville pour créer le bien."
+
+    return result
+
+
+# ── POST /sphere/agency-advisor ──────────────────────────────────────────────
+
+@router.post("/agency-advisor")
+async def agency_advisor(
+    payload: AdvisorRequest,
+    current_user: AuthDep,
+    db: DbDep,
+    _=rate_limit(15, 60),
+):
+    """Conseiller IA spécialisé pour agences et propriétaires."""
+    from app.models.contract import Contract
+    from app.models.transaction import Transaction
+    from sqlalchemy import select as sa_sel, and_
+
+    if current_user.role not in ("agency", "owner", "super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux agences et propriétaires")
+
+    client = _client()
+
+    contracts = (await db.execute(
+        sa_sel(Contract).where(
+            and_(Contract.is_active.is_(True),
+                 (Contract.owner_id == current_user.id) | (Contract.agency_id == current_user.id))
+        ).limit(20)
+    )).scalars().all()
+
+    late_tx = (await db.execute(
+        sa_sel(Transaction).where(
+            and_(Transaction.owner_id == current_user.id,
+                 Transaction.status == "late", Transaction.is_active.is_(True))
+        ).limit(10)
+    )).scalars().all()
+
+    context_data = {
+        "nb_contrats_actifs":   len([c for c in contracts if c.status == "active"]),
+        "nb_contrats_brouillon": len([c for c in contracts if c.status == "draft"]),
+        "nb_loyers_en_retard":  len(late_tx),
+        "types_contrats":       list({c.type for c in contracts}),
+        **(payload.context or {}),
+    }
+
+    role_label = "agence immobilière" if current_user.role == "agency" else "propriétaire"
+    system = f"""Tu es AlthyLegal, conseiller IA expert en droit immobilier suisse (CO, LDTR, bail à loyer).
+Tu conseilles {current_user.first_name or 'l\\'utilisateur'}, {role_label}.
+
+Données de son portefeuille :
+{json.dumps(context_data, ensure_ascii=False)}
+
+Tu peux conseiller sur :
+- Conformité juridique des baux (durée, loyer initial, hausses, résiliation)
+- Qualité des états des lieux et ce qui doit être documenté
+- Optimisation des paiements et gestion des retards
+- Commissions de gérance (taux légaux suisses)
+- Dépôts de garantie (max 3 mois selon CO art. 257e)
+- Baux saisonniers vs longue durée
+
+Réponds en français, cite les articles de loi suisses si pertinent. Sois direct et actionnable. Max 300 mots."""
+
+    response = await client.messages.create(
+        model=_MODEL,
+        max_tokens=600,
+        system=system,
+        messages=[{"role": "user", "content": payload.question}],
+    )
+    return {"advice": response.content[0].text.strip()}
+
+
+# ── POST /sphere/parse-contract-params ───────────────────────────────────────
+
+@router.post("/parse-contract-params")
+async def parse_contract_params(
+    payload: ContractParamsRequest,
+    current_user: AuthDep,
+    _=rate_limit(20, 60),
+):
+    """Parse une description en langage naturel → paramètres de contrat structurés."""
+    if current_user.role not in ("agency", "owner", "super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux agences et propriétaires")
+
+    client = _client()
+    response = await client.messages.create(
+        model=_MODEL,
+        max_tokens=500,
+        messages=[{"role": "user", "content": f"""
+Tu es un expert en droit du bail suisse. Analyse cette description et extrait les paramètres du contrat.
+
+Description : "{payload.description}"
+
+Retourne UNIQUEMENT ce JSON :
+{{
+  "type": "long_term|seasonal|short_term|management",
+  "commission_pct": <pourcentage de commission ou null>,
+  "deposit_months": <nombre de mois (max 3 selon CO) ou null>,
+  "notice_months": <préavis en mois ou null>,
+  "min_duration_months": <durée minimale en mois ou null>,
+  "rent_increase_pct": <hausse annuelle max en % ou null>,
+  "included_charges": true/false,
+  "management_fee_pct": <honoraires de gérance % ou null>,
+  "ai_recommendations": ["recommandation 1", "recommandation 2"],
+  "warnings": ["avertissement si paramètre hors norme suisse"]
+}}
+
+Droit suisse : dépôt max 3 mois, préavis standard 3 mois longue durée, bail saisonnier < 1 an.
+"""}]
+    )
+
+    raw = response.content[0].text.strip()
+    if "```" in raw:
+        raw = _re.sub(r"```(?:json)?", "", raw).strip()
+    try:
+        return json.loads(raw)
+    except Exception:
+        return {"type": "long_term", "ai_recommendations": [], "warnings": ["Impossible de parser les paramètres"]}
+
+
+# ── POST /sphere/briefing-quotidien ──────────────────────────────────────────
+
+@router.post("/briefing-quotidien")
+async def briefing_quotidien(
+    current_user: AuthDep,
+    db: DbDep,
+) -> dict:
+    """Déclenche la génération du briefing quotidien. Réservé aux super_admin."""
+    if current_user.role != "super_admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux super_admin")
+
+    from app.tasks.ai_tasks import daily_briefing_all_users
+    task = daily_briefing_all_users.delay()
+    return {"task_id": task.id, "status": "queued"}
+
+
+# ── POST /sphere/rediger-description ─────────────────────────────────────────
+
+@router.post(
+    "/rediger-description",
+    summary="Rédige une description de mission ou devis (SSE streaming)",
+)
+async def rediger_description(
+    payload: RedigerDescriptionRequest,
+    current_user: AuthDep,
+    db: DbDep,
+    _=rate_limit(15, 60),
+) -> StreamingResponse:
+    """Génère une description professionnelle pour une mission ou devis en streaming SSE."""
+    if payload.type_publication == "mission":
+        prompt = (
+            f"Rédige une description professionnelle et concise (3-5 lignes) pour une mission ouvreur de type "
+            f"'{payload.type_intervention}'"
+            + (f" au bien situé à {payload.adresse_bien}" if payload.adresse_bien else "")
+            + (f". Contexte : {payload.description_contexte}" if payload.description_contexte else "")
+            + ". La description doit être claire, attrayante pour un ouvreur qualifié, "
+            "et mentionner le type de mission, les attentes principales et le niveau de service attendu. "
+            "Réponds uniquement avec la description, sans titre ni introduction."
+        )
+    else:
+        prompt = (
+            f"Rédige une description professionnelle pour une demande de devis de travaux : "
+            f"type '{payload.type_intervention}'"
+            + (f" au bien situé à {payload.adresse_bien}" if payload.adresse_bien else "")
+            + (f". Contexte supplémentaire : {payload.description_contexte}" if payload.description_contexte else "")
+            + ". La description doit être précise pour un artisan, mentionner la nature du problème, "
+            "les contraintes éventuelles et les attentes en termes de qualité. "
+            "Réponds uniquement avec la description, sans titre ni introduction."
+        )
+
+    context = {"page": "publications/new", "role": current_user.role, "user_name": current_user.first_name or ""}
+
+    async def _generate():
+        async for chunk in chat_stream(
+            message=prompt, context=context, db=db, user_id=str(current_user.id),
+        ):
+            yield chunk
+
+    return StreamingResponse(
+        _generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

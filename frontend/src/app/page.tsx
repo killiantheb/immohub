@@ -3,18 +3,26 @@
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Search, Mic, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { Search, Mic, SlidersHorizontal, ChevronDown, Menu, X } from "lucide-react";
+import { C } from "@/lib/design-tokens";
 import { Footer } from "@/components/landing/Footer";
 import { LandingEstimation } from "@/components/landing/LandingEstimation";
 import { LandingBiens }      from "@/components/landing/LandingBiens";
 import { LandingPreuve }     from "@/components/landing/LandingPreuve";
+import { SocialProof }       from "@/components/landing/SocialProof";
+import { FeatureIA }         from "@/components/landing/FeatureIA";
+import { FeatureBiens }      from "@/components/landing/FeatureBiens";
+import { FeatureReseau }     from "@/components/landing/FeatureReseau";
+import { PourQui }           from "@/components/landing/PourQui";
+import { Testimonials }      from "@/components/landing/Testimonials";
+import { Garanties }         from "@/components/landing/Garanties";
+import { Tarifs }            from "@/components/landing/Tarifs";
+import { CTAFinal }          from "@/components/landing/CTAFinal";
 
 // ── Tokens ─────────────────────────────────────────────────────────────────────
+// Mapbox GL requires literal hex — CSS vars not supported in GL paint properties
+const ORANGE_HEX = "#E8602C";
 
-const ORANGE = "#E8602C";
-const DARK   = "#1A1612";
-const MUTED  = "#6B5E52";
-const BG     = "#FAFAF8";
 const serif  = "var(--font-serif, 'Fraunces', Georgia, serif)";
 const sans   = "var(--font-sans, 'DM Sans', system-ui, sans-serif)";
 const API    = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
@@ -36,14 +44,12 @@ const ETAPES = [
 ] as const;
 
 const CSS = `
-  .lp-grid-valeurs { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
   .lp-grid-etapes  { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
-  @media (max-width:1024px) { .lp-grid-valeurs { grid-template-columns:repeat(2,1fr); } }
   @media (max-width:640px)  {
-    .lp-grid-valeurs { grid-template-columns:repeat(2,1fr); }
     .lp-grid-etapes  { grid-template-columns:1fr; }
     .lp-nav-tag      { display:none !important; }
     .lp-nav-cta      { display:none !important; }
+    .lp-nav-burger   { display:flex !important; }
   }
   @media (max-width:768px) { .lp-stats-card { display:none !important; } }
   @keyframes lp-bounce {
@@ -62,6 +68,7 @@ export default function LandingPage() {
   const [mapMode,      setMapMode]     = useState<"standard" | "satellite">("standard");
   const [mapInteracted, setMapInteracted] = useState(false);
   const [stats, setStats] = useState<{ total_biens: number; total_villes: number } | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Fetch stats marketplace
   useEffect(() => {
@@ -101,13 +108,13 @@ export default function LandingPage() {
         map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
         map.addLayer({ id: "romande-fill", type: "fill", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "fill-color": "#E8602C", "fill-opacity": 0.10 } });
+          paint: { "fill-color": ORANGE_HEX, "fill-opacity": 0.10 } });
         map.addLayer({ id: "romande-border-glow", type: "line", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "line-color": "#E8602C", "line-width": 8, "line-opacity": 0.18, "line-blur": 6 } });
+          paint: { "line-color": ORANGE_HEX, "line-width": 8, "line-opacity": 0.18, "line-blur": 6 } });
         map.addLayer({ id: "romande-border", type: "line", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "line-color": "#E8602C", "line-width": 2, "line-opacity": 0.85 } });
+          paint: { "line-color": ORANGE_HEX, "line-width": 2, "line-opacity": 0.85 } });
       });
     })();
     return () => { ro?.disconnect(); map?.remove(); mapRef.current = null; };
@@ -133,7 +140,7 @@ export default function LandingPage() {
       if (!map.getSource("cantons")) map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
       if (!map.getLayer("romande-fill")) map.addLayer({ id: "romande-fill", type: "fill", source: "cantons",
         filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-        paint: { "fill-color": "#E8602C", "fill-opacity": next === "satellite" ? 0.18 : 0.09 } });
+        paint: { "fill-color": ORANGE_HEX, "fill-opacity": next === "satellite" ? 0.18 : 0.09 } });
     });
     setMapMode(next);
   }, [mapMode]);
@@ -145,28 +152,50 @@ export default function LandingPage() {
   return (
     <>
       <style>{CSS}</style>
-      <div style={{ fontFamily: sans, background: BG, width: "100%", overflowX: "hidden" }}>
+      <div style={{ fontFamily: sans, background: C.bg, width: "100%", overflowX: "hidden" }}>
 
         {/* ── Navbar ── */}
-        <nav style={{ position: "fixed", top: 0, left: 0, right: 0, height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", zIndex: 30, background: "transparent" }}>
-          <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
-            <span style={{ fontFamily: serif, fontSize: 28, fontWeight: 400, letterSpacing: "0.22em", color: ORANGE, textShadow: "0 2px 16px rgba(255,255,255,0.50)" }}>
-              ALTHY
-            </span>
-          </Link>
-          <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}>
-            <span className="lp-nav-tag" style={{ fontFamily: sans, fontSize: 11, letterSpacing: "0.14em", color: "#FFFFFF" }}>
-              Votre agent personnel
-            </span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-            <Link href="/login" style={{ fontSize: 11, textDecoration: "none", padding: "7px 16px", borderRadius: 100, border: "1px solid rgba(26,18,8,0.20)", background: "rgba(255,255,255,0.60)", backdropFilter: "blur(12px)", color: "#1A1208", fontFamily: sans }}>
-              Se connecter
+        <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 30 }}>
+          <div style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", background: "transparent" }}>
+            <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
+              <span style={{ fontFamily: serif, fontSize: 28, fontWeight: 400, letterSpacing: "0.22em", color: C.orange, textShadow: "0 2px 16px rgba(255,255,255,0.50)" }}>
+                ALTHY
+              </span>
             </Link>
-            <Link href="/register" className="lp-nav-cta" style={{ fontSize: 11, fontWeight: 500, textDecoration: "none", padding: "7px 16px", borderRadius: 100, background: ORANGE, color: "#fff", boxShadow: "0 2px 10px rgba(232,96,44,0.35)", fontFamily: sans }}>
-              Commencer gratuitement
-            </Link>
+            <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}>
+              <span className="lp-nav-tag" style={{ fontFamily: sans, fontSize: 11, letterSpacing: "0.14em", color: "#FFFFFF" }}>
+                Votre agent personnel
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+              <Link href="/login" style={{ fontSize: 11, textDecoration: "none", padding: "7px 16px", borderRadius: 100, border: "1px solid rgba(26,18,8,0.20)", background: "rgba(255,255,255,0.60)", backdropFilter: "blur(12px)", color: "#1A1208", fontFamily: sans }}>
+                Se connecter
+              </Link>
+              <Link href="/register" className="lp-nav-cta" style={{ fontSize: 11, fontWeight: 500, textDecoration: "none", padding: "7px 16px", borderRadius: 100, background: C.orange, color: "#fff", boxShadow: "0 2px 10px rgba(232,96,44,0.35)", fontFamily: sans }}>
+                Commencer gratuitement
+              </Link>
+              <button
+                className="lp-nav-burger"
+                onClick={() => setMenuOpen(o => !o)}
+                aria-label="Menu"
+                style={{ display: "none", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 10, border: "none", background: "rgba(255,255,255,0.60)", backdropFilter: "blur(12px)", cursor: "pointer", color: C.text }}
+              >
+                {menuOpen ? <X size={18} /> : <Menu size={18} />}
+              </button>
+            </div>
           </div>
+
+          {/* Mobile menu */}
+          {menuOpen && (
+            <div style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", padding: "16px 28px 20px", display: "flex", flexDirection: "column", gap: 10, borderBottom: `1px solid ${C.border}` }}>
+              <Link href="/login" onClick={() => setMenuOpen(false)} style={{ fontSize: 14, textDecoration: "none", padding: "10px 16px", borderRadius: 10, border: `1px solid ${C.border}`, color: C.text, fontFamily: sans, textAlign: "center" }}>
+                Se connecter
+              </Link>
+              <Link href="/register" onClick={() => setMenuOpen(false)} style={{ fontSize: 14, fontWeight: 600, textDecoration: "none", padding: "10px 16px", borderRadius: 10, background: C.orange, color: "#fff", fontFamily: sans, textAlign: "center" }}>
+                Commencer gratuitement
+              </Link>
+            </div>
+          )}
         </nav>
 
         {/* ── Hero — 60vh Mapbox ── */}
@@ -181,7 +210,7 @@ export default function LandingPage() {
           <div style={{ position: "absolute", top: "26%", left: "50%", transform: "translateX(-50%)", textAlign: "center", zIndex: 10, pointerEvents: "none", width: "min(680px, calc(100vw - 48px))", opacity: mapInteracted ? 0 : 1, transition: "opacity 0.5s ease" }}>
             <h1 style={{ fontFamily: serif, fontSize: "clamp(40px,6vw,82px)", fontWeight: 300, color: "#FFFFFF", margin: 0, letterSpacing: "-0.03em", lineHeight: 1.02, textShadow: "0 2px 32px rgba(0,0,0,0.45)" }}>
               Trouvez votre<br />
-              <span style={{ color: ORANGE, textShadow: "0 2px 24px rgba(232,96,44,0.35)" }}>chez‑vous.</span>
+              <span style={{ color: C.orange, textShadow: "0 2px 24px rgba(232,96,44,0.35)" }}>chez‑vous.</span>
             </h1>
             <p style={{ fontFamily: serif, fontSize: "clamp(13px,1.5vw,17px)", color: "rgba(255,255,255,0.65)", margin: "18px 0 0", fontWeight: 300, fontStyle: "italic", letterSpacing: "0.06em", textShadow: "0 1px 10px rgba(0,0,0,0.30)" }}>
               Suisse romande — Althy gère, vous décidez.
@@ -190,13 +219,13 @@ export default function LandingPage() {
 
           {/* Stats card */}
           <div className="lp-stats-card" style={{ position: "absolute", top: "4.25rem", left: "1.25rem", zIndex: 20, background: "rgba(255,255,255,0.75)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.85)", borderRadius: 14, padding: "14px 18px", boxShadow: "0 4px 20px rgba(0,0,0,0.07)", minWidth: 140 }}>
-            <div style={{ fontFamily: serif, fontSize: 30, fontWeight: 300, color: "#1A1208", lineHeight: 1 }}>
+            <div style={{ fontFamily: serif, fontSize: 30, fontWeight: 300, color: C.text, lineHeight: 1 }}>
               {stats?.total_biens ?? "—"}
             </div>
-            <div style={{ fontSize: 10, letterSpacing: "0.06em", color: "rgba(26,18,8,0.45)", fontFamily: sans, marginTop: 2 }}>
+            <div style={{ fontSize: 10, letterSpacing: "0.06em", color: C.textMuted, fontFamily: sans, marginTop: 2 }}>
               biens disponibles
             </div>
-            <div style={{ fontSize: 11, color: ORANGE, fontWeight: 700, marginTop: 5 }}>
+            <div style={{ fontSize: 11, color: C.orange, fontWeight: 700, marginTop: 5 }}>
               {stats?.total_villes ?? 5} villes actives
             </div>
           </div>
@@ -205,16 +234,16 @@ export default function LandingPage() {
           <div style={{ position: "absolute", bottom: 52, left: "50%", transform: "translateX(-50%)", zIndex: 10, width: "min(580px, calc(100vw - 32px))" }}>
             <form onSubmit={handleSearch} style={{ position: "relative", width: "100%", display: "flex", alignItems: "center" }}>
               <input type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder="Ville, quartier, adresse…"
-                style={{ width: "100%", boxSizing: "border-box" as const, padding: "14px 160px 14px 20px", borderRadius: 32, border: "1.5px solid rgba(255,255,255,0.6)", background: "rgba(255,255,255,0.82)", backdropFilter: "blur(20px)", fontSize: 14, color: DARK, outline: "none", boxShadow: "0 8px 32px rgba(26,22,18,0.18)", fontFamily: sans }} />
+                style={{ width: "100%", boxSizing: "border-box" as const, padding: "14px 160px 14px 20px", borderRadius: 32, border: "1.5px solid rgba(255,255,255,0.6)", background: "rgba(255,255,255,0.82)", backdropFilter: "blur(20px)", fontSize: 14, color: C.text, outline: "none", boxShadow: "0 8px 32px rgba(26,22,18,0.18)", fontFamily: sans }} />
               <div style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", gap: 4 }}>
-                <button type="button" style={{ width: 34, height: 34, borderRadius: "50%", background: "transparent", border: "none", color: MUTED, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <button type="button" style={{ width: 34, height: 34, borderRadius: "50%", background: "transparent", border: "none", color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                   <Mic size={15} />
                 </button>
-                <button type="button" style={{ width: 34, height: 34, borderRadius: "50%", background: "transparent", border: "none", color: MUTED, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <button type="button" style={{ width: 34, height: 34, borderRadius: "50%", background: "transparent", border: "none", color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                   <SlidersHorizontal size={15} />
                 </button>
                 <div style={{ width: 1, height: 18, background: "rgba(26,22,18,0.15)" }} />
-                <button type="submit" style={{ padding: "7px 16px", borderRadius: 24, background: ORANGE, color: "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: sans, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 10px rgba(232,96,44,0.35)" }}>
+                <button type="submit" style={{ padding: "7px 16px", borderRadius: 24, background: C.orange, color: "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: sans, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 10px rgba(232,96,44,0.35)" }}>
                   <Search size={14} />
                 </button>
               </div>
@@ -224,7 +253,7 @@ export default function LandingPage() {
           {/* Toggle carte */}
           <div style={{ position: "absolute", bottom: "2.5rem", left: "1.25rem", zIndex: 20, display: "flex", flexDirection: "column", gap: 3 }}>
             {(["standard", "satellite"] as const).map(mode => (
-              <button key={mode} onClick={() => toggleMapMode(mode)} style={{ background: mapMode === mode ? "#1A1208" : "rgba(255,255,255,0.80)", backdropFilter: "blur(16px)", color: mapMode === mode ? "#fff" : "rgba(26,18,8,0.60)", border: mapMode === mode ? "1px solid #1A1208" : "1px solid rgba(255,255,255,0.90)", borderRadius: 9, padding: "7px 13px", fontSize: 9, fontWeight: 600, fontFamily: sans, letterSpacing: "0.09em", textTransform: "uppercase" as const, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.10)", transition: "all 0.18s" }}>
+              <button key={mode} onClick={() => toggleMapMode(mode)} style={{ background: mapMode === mode ? C.text : "rgba(255,255,255,0.80)", backdropFilter: "blur(16px)", color: mapMode === mode ? "#fff" : C.textMuted, border: mapMode === mode ? `1px solid ${C.text}` : "1px solid rgba(255,255,255,0.90)", borderRadius: 9, padding: "7px 13px", fontSize: 9, fontWeight: 600, fontFamily: sans, letterSpacing: "0.09em", textTransform: "uppercase" as const, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.10)", transition: "all 0.18s" }}>
                 {mode === "standard" ? "Standard" : "Satellite"}
               </button>
             ))}
@@ -239,12 +268,15 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ── Social Proof marquee ── */}
+        <SocialProof />
+
         {/* ── Estimation IA ── */}
         <LandingEstimation />
 
         {/* ── Bandeau stats dynamique ── */}
         {stats && (
-          <div style={{ background: ORANGE, padding: "18px 24px", textAlign: "center" }}>
+          <div style={{ background: C.orange, padding: "18px 24px", textAlign: "center" }}>
             <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#fff", letterSpacing: "0.06em", fontFamily: sans }}>
               {stats.total_biens} biens gérés · {stats.total_villes} villes actives · 100% Suisse romande
             </p>
@@ -254,50 +286,51 @@ export default function LandingPage() {
         {/* ── Vrais biens ── */}
         <LandingBiens />
 
+        {/* ── Feature : Assistant IA ── */}
+        <FeatureIA />
+
+        {/* ── Feature : Tableau de bord biens ── */}
+        <FeatureBiens />
+
+        {/* ── Feature : Réseau ouvreurs + artisans ── */}
+        <FeatureReseau />
+
         {/* ── Comment ça marche ── */}
         <section style={{ maxWidth: 1100, margin: "0 auto", padding: "88px 24px" }}>
           <div style={{ textAlign: "center", marginBottom: 52 }}>
-            <h2 style={{ fontFamily: serif, fontSize: "clamp(26px,3.5vw,38px)", fontWeight: 300, color: DARK, margin: "0 0 12px" }}>
+            <h2 style={{ fontFamily: serif, fontSize: "clamp(26px,3.5vw,38px)", fontWeight: 300, color: C.text, margin: "0 0 12px" }}>
               Comment ça marche
             </h2>
-            <p style={{ fontSize: 15, color: MUTED, margin: 0 }}>Trois étapes — deux minutes.</p>
+            <p style={{ fontSize: 15, color: C.textMuted, margin: 0 }}>Trois étapes — deux minutes.</p>
           </div>
           <div className="lp-grid-etapes">
             {ETAPES.map(e => (
-              <div key={e.n} style={{ background: "#fff", border: "0.5px solid rgba(26,22,18,0.07)", borderRadius: 14, padding: "32px 28px", boxShadow: "0 2px 16px rgba(26,22,18,0.05)" }}>
+              <div key={e.n} style={{ background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 14, padding: "32px 28px", boxShadow: C.shadow }}>
                 <div style={{ fontFamily: serif, fontSize: 48, fontWeight: 300, color: "rgba(232,96,44,0.15)", lineHeight: 1, marginBottom: 16 }}>{e.n}</div>
-                <h3 style={{ fontFamily: serif, fontSize: 20, fontWeight: 400, color: DARK, margin: "0 0 10px" }}>{e.titre}</h3>
-                <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.65, margin: 0 }}>{e.desc}</p>
+                <h3 style={{ fontFamily: serif, fontSize: 20, fontWeight: 400, color: C.text, margin: "0 0 10px" }}>{e.titre}</h3>
+                <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.65, margin: 0 }}>{e.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ── Preuve sociale ── */}
+        {/* ── Pour qui ── */}
+        <PourQui />
+
+        {/* ── Témoignages ── */}
+        <Testimonials />
+
+        {/* ── Preuve sociale (chiffres) ── */}
         <LandingPreuve />
 
+        {/* ── Garanties ── */}
+        <Garanties />
+
+        {/* ── Tarifs ── */}
+        <Tarifs />
+
         {/* ── CTA final ── */}
-        <section style={{ background: DARK, padding: "88px 24px", textAlign: "center" }}>
-          <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "rgba(250,250,248,0.40)", marginBottom: 20 }}>
-              Disponible maintenant
-            </p>
-            <h2 style={{ fontFamily: serif, fontSize: "clamp(28px,4.5vw,48px)", fontWeight: 300, lineHeight: 1.15, color: "#FAFAF8", margin: "0 0 16px" }}>
-              Rejoignez l&apos;immobilier<br />qui vous ressemble
-            </h2>
-            <p style={{ fontSize: 15, color: "rgba(250,250,248,0.55)", margin: "0 0 36px", lineHeight: 1.6 }}>
-              Propriétaires, agences, artisans, locataires — un seul écosystème.
-            </p>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" as const }}>
-              <Link href="/register" style={{ padding: "13px 30px", borderRadius: 12, background: ORANGE, color: "#fff", fontSize: 15, fontWeight: 700, textDecoration: "none", boxShadow: "0 4px 20px rgba(232,96,44,0.35)" }}>
-                Commencer gratuitement
-              </Link>
-              <Link href="/estimation" style={{ padding: "13px 28px", borderRadius: 12, border: "1.5px solid rgba(250,250,248,0.20)", color: "rgba(250,250,248,0.80)", fontSize: 15, fontWeight: 500, textDecoration: "none" }}>
-                Estimer mon bien
-              </Link>
-            </div>
-          </div>
-        </section>
+        <CTAFinal />
 
         <Footer />
       </div>

@@ -206,8 +206,8 @@ function EdlCard({
                 {piece.etat && (
                   <span style={{
                     fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 20,
-                    background: piece.etat === "bon" ? "#DCFCE7" : piece.etat === "usure_normale" ? "#FEF9C3" : "#FEE2E2",
-                    color: piece.etat === "bon" ? S.green : piece.etat === "usure_normale" ? "#92400E" : S.red,
+                    background: piece.etat === "bon" ? "var(--althy-green-bg)" : piece.etat === "usure_normale" ? "var(--althy-amber-bg)" : "var(--althy-red-bg)",
+                    color: piece.etat === "bon" ? S.green : piece.etat === "usure_normale" ? "var(--althy-amber)" : S.red,
                   }}>
                     {ETAT_OPTIONS.find(e => e.value === piece.etat)?.label}
                   </span>
@@ -235,7 +235,7 @@ function EdlCard({
                       style={{
                         flex: 1, padding: "6px 0", borderRadius: 8, cursor: "pointer",
                         border: `2px solid ${piece.etat === opt.value ? opt.color : S.border}`,
-                        background: piece.etat === opt.value ? (opt.value === "bon" ? "#DCFCE7" : opt.value === "usure_normale" ? "#FEF9C3" : "#FEE2E2") : S.surface,
+                        background: piece.etat === opt.value ? (opt.value === "bon" ? "var(--althy-green-bg)" : opt.value === "usure_normale" ? "var(--althy-amber-bg)" : "var(--althy-red-bg)") : S.surface,
                         color: piece.etat === opt.value ? opt.color : S.text3,
                         fontSize: 11, fontWeight: 600,
                       }}
@@ -467,7 +467,7 @@ export default function ChangementPage() {
         </p>
 
         {error && (
-          <div style={{ background: "#FEE2E2", border: `1px solid ${S.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: S.red, marginBottom: "1rem", display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{ background: "var(--althy-red-bg)", border: `1px solid ${S.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: S.red, marginBottom: "1rem", display: "flex", gap: 8, alignItems: "center" }}>
             <AlertTriangle size={14} /> {error}
           </div>
         )}
@@ -514,10 +514,10 @@ export default function ChangementPage() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {changement.bail_signe && <Badge label="Bail signé" color={S.green} bg="#DCFCE7" />}
-          {changement.premier_loyer_envoye && <Badge label="1er QR-loyer envoyé" color={S.blue} bg="#DBEAFE" />}
+          {changement.bail_signe && <Badge label="Bail signé" color={S.green} bg="var(--althy-green-bg)" />}
+          {changement.premier_loyer_envoye && <Badge label="1er QR-loyer envoyé" color={S.blue} bg="var(--althy-blue-bg)" />}
           {changement.caution_retenue != null && changement.caution_retenue > 0 && (
-            <Badge label={`Caution retenue : ${fmtCHF(changement.caution_retenue)}`} color={S.amber} bg="#FEF9C3" />
+            <Badge label={`Caution retenue : ${fmtCHF(changement.caution_retenue)}`} color={S.amber} bg="var(--althy-amber-bg)" />
           )}
         </div>
       </div>
@@ -536,7 +536,7 @@ export default function ChangementPage() {
       </div>
 
       {error && (
-        <div style={{ background: "#FEE2E2", border: `1px solid ${S.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: S.red, marginBottom: "1rem", display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ background: "var(--althy-red-bg)", border: `1px solid ${S.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: S.red, marginBottom: "1rem", display: "flex", gap: 8, alignItems: "center" }}>
           <AlertTriangle size={14} /> {error}
           <button onClick={() => setError(null)} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: S.red, fontSize: 16 }}>×</button>
         </div>
@@ -655,10 +655,10 @@ export default function ChangementPage() {
       {/* ── Phase 3 : Check-out ── */}
       {phase === "checkout" && (
         <div>
-          <Card style={{ marginBottom: "1rem", background: "#FEF9C3", borderColor: "#FDE68A" }}>
+          <Card style={{ marginBottom: "1rem", background: "var(--althy-amber-bg)", borderColor: "var(--althy-amber)" }}>
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              <ClipboardList size={16} color="#92400E" />
-              <span style={{ fontSize: 13, color: "#92400E", fontWeight: 500 }}>
+              <ClipboardList size={16} color="var(--althy-amber)" />
+              <span style={{ fontSize: 13, color: "var(--althy-amber)", fontWeight: 500 }}>
                 Check-out effectué{changement.date_checkout ? ` le ${fmtDate(changement.date_checkout)}` : ""}
                 {changement.caution_retenue ? ` — Caution retenue : ${fmtCHF(changement.caution_retenue)}` : ""}
               </span>
@@ -745,7 +745,7 @@ function CheckinPhase({
         </div>
       </Card>
 
-      <div style={{ background: "#DCFCE7", border: "1px solid #86EFAC", borderRadius: 10, padding: "12px 14px", marginBottom: "1rem", fontSize: 12, color: "#166534", lineHeight: 1.6 }}>
+      <div style={{ background: "var(--althy-green-bg)", border: "1px solid var(--althy-green)", borderRadius: 10, padding: "12px 14px", marginBottom: "1rem", fontSize: 12, color: "var(--althy-green)", lineHeight: 1.6 }}>
         <strong>Tout est prêt ?</strong> En finalisant le check-in, le cycle de changement sera marqué comme terminé et l&apos;onglet revient à la gestion normale.
       </div>
 

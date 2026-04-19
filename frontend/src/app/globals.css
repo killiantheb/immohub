@@ -2,49 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Althy — Design tokens (CLAUDE.md v1) ──────────────────────────────────── */
+/* ── Althy — Design tokens (source unique de vérité) ─────────────────────── */
 :root {
   /* Surfaces */
-  --althy-bg:          #FAFAF8;   /* stone */
+  --althy-bg:          #FAF9F6;
   --althy-surface:     #FFFFFF;
-  --althy-surface-2:   #F5F2EC;
-  --althy-border:      #E8E4DC;
+  --althy-surface-2:   #FAF9F6;
+  --althy-border:      #EDE9E3;
   --althy-border-2:    rgba(61,56,48,0.06);
 
   /* Text */
-  --althy-text:        #3D3830;
-  --althy-text-2:      #5C5650;
-  --althy-text-3:      #7A7469;   /* muted */
+  --althy-text:        #2B2B2B;
+  --althy-text-2:      #6E6A65;
+  --althy-text-3:      #A8A29E;
 
   /* Orange vif — couleur principale */
   --althy-orange:        #E8602C;
-  --althy-orange-light:  #FEF2EB;
+  --althy-orange-light:  rgba(232,96,44,0.08);
   --althy-orange-bg:     rgba(232,96,44,0.08);
   --althy-orange-hover:  #C84E1E;
   --althy-orange-border: rgba(232,96,44,0.22);
 
-  /* Sage — succès */
-  --althy-green:       #5A7D54;
-  --althy-green-bg:    #EBF2EA;
+  /* Succès */
+  --althy-green:       #22B573;
+  --althy-green-bg:    #E8F8F0;
 
   /* Sémantique */
-  --althy-red:         #9E2A18;
-  --althy-red-bg:      rgba(158,42,24,0.07);
-  --althy-amber:       #8A5210;
-  --althy-amber-bg:    rgba(138,82,16,0.07);
-  --althy-blue:        #1E4A7A;
-  --althy-blue-bg:     rgba(30,74,122,0.07);
+  --althy-red:         #E53E3E;
+  --althy-red-bg:      #FEF0EF;
+  --althy-amber:       #B45309;
+  --althy-amber-bg:    #FFF6E5;
+  --althy-blue:        #4B8BF5;
+  --althy-blue-bg:     #EEF3FE;
   --althy-purple:      #5A3870;
   --althy-purple-bg:   rgba(90,56,112,0.07);
 
   /* Sidebar */
   --sidebar-bg:        #FFFFFF;
-  --sidebar-border:    #E8E4DC;
-  --sidebar-text:      #5C5650;
-  --sidebar-text-on:   #3D3830;
+  --sidebar-border:    var(--althy-border);
+  --sidebar-text:      var(--althy-text-2);
+  --sidebar-text-on:   var(--althy-text);
   --sidebar-active:    rgba(232,96,44,0.08);
   --sidebar-hover:     rgba(232,96,44,0.04);
-  --sidebar-gold:      #E8602C;
+  --sidebar-gold:      var(--althy-orange);
 
   /* Night mode (futur dark mode) */
   --althy-night:          #0F0E0D;
@@ -52,7 +52,7 @@
   --althy-night-border:   rgba(255,255,255,0.06);
   --althy-night-text:     #F0EDE8;
 
-  /* Navbar (légèrement translucide sur fond clair) */
+  /* Navbar */
   --althy-navbar-bg:      rgba(250,250,248,0.92);
 
   /* Map overlay */
@@ -70,8 +70,8 @@
   --althy-gold-bg:        rgba(184,134,11,0.08);
 
   /* Ombres */
-  --althy-shadow:      0 1px 3px rgba(61,56,48,0.06), 0 1px 2px rgba(61,56,48,0.04);
-  --althy-shadow-md:   0 4px 18px rgba(61,56,48,0.08), 0 1px 4px rgba(61,56,48,0.04);
+  --althy-shadow:      none;
+  --althy-shadow-md:   0 4px 24px rgba(0,0,0,0.06);
   --althy-shadow-lg:   0 8px 36px rgba(61,56,48,0.10), 0 2px 8px rgba(61,56,48,0.05);
 
   /* Border-radius */
@@ -81,50 +81,36 @@
   /* ── Fonts ── */
   --font-display: var(--font-display, 'Playfair Display', Georgia, serif);
 
-  /* ── Design System Figma V2 ── */
-  --terracotta-primary: #E8602C;
-  --terracotta-deep:    #C84E1E;
+  /* ── Aliases Figma V2 → tokens Althy (compatibilité composants existants) ── */
+  --terracotta-primary: var(--althy-orange);
+  --terracotta-deep:    var(--althy-orange-hover);
   --terracotta-light:   #F0997B;
-  --terracotta-ghost:   rgba(232,96,44,0.06);
+  --terracotta-ghost:   var(--althy-orange-bg);
 
-  --cream:              #FAF9F6;
-  --charcoal:           #2B2B2B;
+  --cream:              var(--althy-bg);
+  --charcoal:           var(--althy-text);
   --gray-warm:          #8B8B8B;
-  --gray-light:         #E8E6E3;
+  --gray-light:         var(--althy-border);
 
-  --sage:               #22B573;
-  --sage-light:         #E8F8F0;
-  --sky:                #4B8BF5;
+  --sage:               var(--althy-green);
+  --sage-light:         var(--althy-green-bg);
+  --sky:                var(--althy-blue);
   --sand:               #E4D5C9;
 
-  --background-page:    #FAF9F6;
-  --background-sphere:  #FFFFFF;
-  --background-card:    #FFFFFF;
+  --background-page:    var(--althy-bg);
+  --background-sphere:  var(--althy-surface);
+  --background-card:    var(--althy-surface);
 
-  --text-primary:       #2B2B2B;
-  --text-secondary:     #6E6A65;
-  --text-tertiary:      #A8A29E;
+  --text-primary:       var(--althy-text);
+  --text-secondary:     var(--althy-text-2);
+  --text-tertiary:      var(--althy-text-3);
 
-  --border-subtle:      #EDE9E3;
+  --border-subtle:      var(--althy-border);
 
-  --success-bg:         #E8F8F0;
-  --urgent-bg:          #FEF0EF;
-  --info-bg:            #EEF3FE;
-  --warning-bg:         #FFF6E5;
-
-  /* ── Aliases legacy → V2 (backward compat) ── */
-  --althy-green:        #22B573;
-  --althy-green-bg:     #E8F8F0;
-  --althy-red:          #E53E3E;
-  --althy-red-bg:       #FEF0EF;
-  --althy-amber:        #B45309;
-  --althy-amber-bg:     #FFF6E5;
-  --althy-blue:         #4B8BF5;
-  --althy-blue-bg:      #EEF3FE;
-  --althy-orange-light: rgba(232,96,44,0.08);
-  --althy-surface-2:    var(--cream);
-  --althy-shadow:       none;
-  --althy-shadow-md:    0 4px 24px rgba(0,0,0,0.06);
+  --success-bg:         var(--althy-green-bg);
+  --urgent-bg:          var(--althy-red-bg);
+  --info-bg:            var(--althy-blue-bg);
+  --warning-bg:         var(--althy-amber-bg);
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────────── */

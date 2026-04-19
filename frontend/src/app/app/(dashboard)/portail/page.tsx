@@ -438,7 +438,7 @@ export default function PortailPage() {
                   title="Révoquer l'accès"
                   style={{
                     background: "none", border: "none", cursor: "pointer",
-                    color: "#C0392B", padding: 4, borderRadius: 6,
+                    color: "var(--althy-red)", padding: 4, borderRadius: 6,
                     display: "flex", alignItems: "center",
                     opacity: revoke.isPending ? 0.5 : 1,
                   }}

@@ -135,7 +135,7 @@ export default function NewContractPage() {
         included_charges?: boolean;
         ai_recommendations?: string[];
         warnings?: string[];
-      }>("/ai/parse-contract-params", { description: nlpInput });
+      }>("/sphere/parse-contract-params", { description: nlpInput });
 
       if (data.type && TYPE_OPTIONS.find((t) => t.value === data.type)) {
         set("type", data.type as ContractType);

@@ -69,7 +69,7 @@ export default function AlthyHome() {
   const fetchBriefing = useCallback(async () => {
     setLoadingBriefing(true);
     try {
-      const { data } = await api.get<Briefing>("/ai/briefing");
+      const { data } = await api.get<Briefing>("/sphere/briefing");
       setBriefing(data);
       setStatusText(data.status);
     } catch {
@@ -143,7 +143,7 @@ export default function AlthyHome() {
     setIsThinking(true);
     setStatusText("Althy réfléchit…");
     try {
-      const { data } = await api.post<{ response: string }>("/ai/chat", {
+      const { data } = await api.post<{ response: string }>("/sphere/chat", {
         message: msg,
         context: {
           role: profile?.role,

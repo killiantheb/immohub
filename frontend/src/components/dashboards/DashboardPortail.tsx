@@ -101,7 +101,7 @@ export function DashboardPortail({ firstName = "" }: Props) {
     if (!iaInput.trim() || iaLoading) return;
     setIaLoading(true); setIaReply("");
     try {
-      const { data: r } = await api.post<{ reply: string }>("/ai/chat", { message: iaInput, context: "portail_proprio" });
+      const { data: r } = await api.post<{ reply: string }>("/sphere/chat", { message: iaInput, context: "portail_proprio" });
       setIaReply(r.reply ?? "Je n'ai pas pu répondre, réessayez.");
     } catch { setIaReply("Service temporairement indisponible."); }
     finally { setIaLoading(false); }

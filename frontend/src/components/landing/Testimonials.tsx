@@ -96,7 +96,7 @@ export function Testimonials() {
                 color: C.orange,
                 fontSize: "3rem",
                 lineHeight: 0.8,
-                fontFamily: "Georgia, serif",
+                fontFamily: "var(--font-serif)",
                 opacity: 0.5,
               }}
             >

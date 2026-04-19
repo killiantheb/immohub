@@ -139,7 +139,7 @@ export function AlthyShell({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token ?? ''
 
-      const actionRes = await fetch(`${baseURL}/ai/voice-action`, {
+      const actionRes = await fetch(`${baseURL}/sphere/voice-action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ transcript: msg }),
@@ -160,7 +160,7 @@ export function AlthyShell({ children }: { children: React.ReactNode }) {
           return
         }
         if (action.intent === 'question') {
-          const res = await fetch(`${baseURL}/ai/chat`, {
+          const res = await fetch(`${baseURL}/sphere/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify({ message: msg, context: { session_id: sessionIdRef.current } }),

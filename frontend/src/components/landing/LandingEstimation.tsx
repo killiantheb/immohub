@@ -2,27 +2,25 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { C } from "@/lib/design-tokens";
 
 const API   = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
-const ORANGE = "#E8602C";
-const DARK   = "#1A1612";
-const MUTED  = "#6B5E52";
-const serif  = "var(--font-serif, 'Fraunces', Georgia, serif)";
-const sans   = "var(--font-sans, 'DM Sans', system-ui, sans-serif)";
+const serif = "var(--font-serif, 'Fraunces', Georgia, serif)";
+const sans  = "var(--font-sans, 'DM Sans', system-ui, sans-serif)";
 
 interface EstimResult { min: number; max: number; moyen: number }
 
 const FIELD: React.CSSProperties = {
   width: "100%", boxSizing: "border-box",
   padding: "11px 14px", borderRadius: 9,
-  border: "1px solid rgba(26,22,18,0.14)",
-  fontSize: 14, fontFamily: sans, color: DARK,
-  outline: "none", background: "#FAFAF8",
+  border: `1px solid ${C.border}`,
+  fontSize: 14, fontFamily: sans, color: C.text,
+  outline: "none", background: C.bg,
 };
 
 const LABEL: React.CSSProperties = {
   fontSize: 11, fontWeight: 600, letterSpacing: "0.08em",
-  color: MUTED, textTransform: "uppercase", display: "block", marginBottom: 6,
+  color: C.textMuted, textTransform: "uppercase", display: "block", marginBottom: 6,
 };
 
 export function LandingEstimation() {
@@ -55,22 +53,22 @@ export function LandingEstimation() {
   function reset() { setResult(null); setAdresse(""); setPieces(""); setSurface(""); setError(null); }
 
   return (
-    <section style={{ background: "#fff", borderTop: "1px solid rgba(26,22,18,0.06)", borderBottom: "1px solid rgba(26,22,18,0.06)", padding: "72px 24px" }}>
+    <section style={{ background: C.surface, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: "72px 24px" }}>
       <div style={{ maxWidth: 700, margin: "0 auto" }}>
 
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: ORANGE, textTransform: "uppercase", marginBottom: 10, margin: "0 0 10px" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: C.orange, textTransform: "uppercase", marginBottom: 10, margin: "0 0 10px" }}>
             Estimation IA
           </p>
-          <h2 style={{ fontFamily: serif, fontSize: "clamp(24px,3vw,36px)", fontWeight: 300, color: DARK, margin: "8px 0 10px" }}>
+          <h2 style={{ fontFamily: serif, fontSize: "clamp(24px,3vw,36px)", fontWeight: 300, color: C.text, margin: "8px 0 10px" }}>
             Combien vaut votre bien ?
           </h2>
-          <p style={{ fontSize: 14, color: MUTED, margin: 0 }}>
+          <p style={{ fontSize: 14, color: C.textMuted, margin: 0 }}>
             Obtenez une estimation en 30 secondes — sans inscription.
           </p>
         </div>
 
-        <div style={{ background: "#fff", border: "1px solid rgba(26,22,18,0.10)", borderRadius: 16, padding: "32px 36px", boxShadow: "0 4px 24px rgba(26,22,18,0.06)" }}>
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "32px 36px", boxShadow: C.shadow }}>
 
           {!result ? (
             <form onSubmit={handleSubmit}>
@@ -100,9 +98,9 @@ export function LandingEstimation() {
               </div>
 
               {error && (
-                <p style={{ fontSize: 13, color: "#B91C1C", marginBottom: 12 }}>
+                <p style={{ fontSize: 13, color: C.red, marginBottom: 12 }}>
                   {error}{" "}
-                  <Link href="/estimation" style={{ color: ORANGE, fontWeight: 600 }}>
+                  <Link href="/estimation" style={{ color: C.orange, fontWeight: 600 }}>
                     Rapport complet →
                   </Link>
                 </p>
@@ -110,38 +108,38 @@ export function LandingEstimation() {
 
               <button type="submit" disabled={loading} style={{
                 width: "100%", padding: "13px 0", borderRadius: 10,
-                background: loading ? "rgba(232,96,44,0.5)" : ORANGE,
+                background: loading ? "rgba(232,96,44,0.5)" : C.orange,
                 color: "#fff", border: "none", fontSize: 15, fontWeight: 600,
                 fontFamily: sans, cursor: loading ? "default" : "pointer",
               }}>
                 {loading ? "Analyse en cours…" : "Estimer gratuitement →"}
               </button>
 
-              <p style={{ textAlign: "center", fontSize: 12, color: MUTED, marginTop: 12, marginBottom: 0 }}>
+              <p style={{ textAlign: "center", fontSize: 12, color: C.textMuted, marginTop: 12, marginBottom: 0 }}>
                 📊 2 847 estimations réalisées
               </p>
             </form>
           ) : (
             <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: ORANGE, textTransform: "uppercase", marginBottom: 8 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: C.orange, textTransform: "uppercase", marginBottom: 8 }}>
                 Résultat estimation
               </p>
-              <div style={{ fontFamily: serif, fontSize: "clamp(28px,4vw,44px)", fontWeight: 300, color: DARK, margin: "0 0 8px" }}>
+              <div style={{ fontFamily: serif, fontSize: "clamp(28px,4vw,44px)", fontWeight: 300, color: C.text, margin: "0 0 8px" }}>
                 CHF {result.min.toLocaleString("fr-CH")} — {result.max.toLocaleString("fr-CH")}
-                <span style={{ fontSize: 16, color: MUTED, marginLeft: 6 }}>/mois</span>
+                <span style={{ fontSize: 16, color: C.textMuted, marginLeft: 6 }}>/mois</span>
               </div>
-              <p style={{ fontSize: 13, color: MUTED, marginBottom: 28 }}>
+              <p style={{ fontSize: 13, color: C.textMuted, marginBottom: 28 }}>
                 Estimation pour {surface} m² · {pieces} pièces · {adresse}
               </p>
               <Link href="/register?source=estimation" style={{
                 display: "inline-block", padding: "12px 28px", borderRadius: 10,
-                background: ORANGE, color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none",
+                background: C.orange, color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none",
               }}>
                 Recevez le rapport complet → Inscription
               </Link>
               <button onClick={reset} style={{
                 display: "block", margin: "16px auto 0",
-                background: "none", border: "none", fontSize: 13, color: MUTED,
+                background: "none", border: "none", fontSize: 13, color: C.textMuted,
                 cursor: "pointer", fontFamily: sans,
               }}>
                 Nouvelle estimation

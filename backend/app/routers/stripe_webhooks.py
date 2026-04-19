@@ -12,7 +12,7 @@ Routes supprimées (loyers via Stripe) :
   POST /loyer/{id}      → loyers gérés par QR-facture SPC 2.0 + CAMT.054
                           voir app/routers/loyers.py
 
-Stripe utilisé UNIQUEMENT pour les abonnements Althy (SOLO/PRO/AGENCE).
+Stripe utilisé UNIQUEMENT pour les abonnements Althy (gratuit/pro/agence).
 Les loyers passent par QR-facture (SPC 2.0) + réconciliation bancaire.
 """
 
@@ -105,12 +105,11 @@ async def get_connect_status(db: DbDep, user: AuthDep):
 
 
 class SubscriptionIntentRequest(BaseModel):
-    plan: Literal["proprio", "pro", "agence", "portail"]
+    plan: Literal["pro", "agence", "portail"]
 
 
 PLAN_PRICE_MAP = {
-    "proprio": "STRIPE_PRICE_PROPRIO_MONTHLY",
-    "pro":     "STRIPE_PRICE_PRO_MONTHLY",
+    "pro":     "STRIPE_PRICE_PROPRIO_MONTHLY",   # CHF 29/mois (env var legacy "PROPRIO" = plan "pro")
     "agence":  "STRIPE_PRICE_AGENCY_MONTHLY",
     "portail": "STRIPE_PRICE_PORTAL_MONTHLY",
 }
@@ -230,7 +229,7 @@ async def get_subscription(db: DbDep, user: AuthDep):
     )).fetchone()
 
     if not row:
-        return {"plan": "starter", "status": "no_subscription", "current_period_end": None}
+        return {"plan": "gratuit", "status": "no_subscription", "current_period_end": None}
 
     return {
         "plan": row[0],
@@ -280,7 +279,7 @@ async def stripe_webhook(
         sub_id = data.get("subscription")
         metadata = data.get("metadata", {})
         user_id = metadata.get("user_id")
-        plan = metadata.get("plan", "proprio")
+        plan = metadata.get("plan", "pro")
         if customer_id and user_id:
             await db.execute(
                 text("""
@@ -483,9 +482,9 @@ async def _handle_invoice_payment_failed(
 
 def _price_to_plan(price_id: str | None) -> str:
     mapping = {
-        settings.STRIPE_PRICE_PROPRIO_MONTHLY: "proprio",
-        settings.STRIPE_PRICE_PRO_MONTHLY: "pro",
+        settings.STRIPE_PRICE_PROPRIO_MONTHLY: "pro",
+        settings.STRIPE_PRICE_PRO_MONTHLY: "pro",       # legacy price ID → same plan
         settings.STRIPE_PRICE_AGENCY_MONTHLY: "agence",
         settings.STRIPE_PRICE_PORTAL_MONTHLY: "portail",
     }
-    return mapping.get(price_id or "", "proprio")
+    return mapping.get(price_id or "", "gratuit")

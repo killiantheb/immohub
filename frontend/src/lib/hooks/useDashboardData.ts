@@ -151,7 +151,7 @@ export function useBriefing() {
   return useQuery<BriefingData>({
     queryKey: ["dashboard", "briefing"],
     queryFn: async () => {
-      const { data } = await api.get<BriefingData>("/dashboard/briefing");
+      const { data } = await api.get<BriefingData>("/sphere/briefing");
       return data;
     },
     staleTime: 300_000,

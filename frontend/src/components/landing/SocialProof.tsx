@@ -22,7 +22,7 @@ export function SocialProof() {
     >
       <Marquee
         gradient
-        gradientColor="#F2EDE5"
+        gradientColor="#FAF9F6"
         gradientWidth={120}
         speed={38}
         pauseOnHover

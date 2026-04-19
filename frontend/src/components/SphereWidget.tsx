@@ -55,7 +55,7 @@ export function SphereWidget() {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token ?? '';
-      const resp = await fetch(`${baseURL}/ai/chat`, {
+      const resp = await fetch(`${baseURL}/sphere/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

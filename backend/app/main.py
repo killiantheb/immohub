@@ -16,7 +16,6 @@ from app.routers import (
     rfq,
     transactions,
 )
-from app.routers.ai_sphere import router as ai_sphere_router
 from app.routers.ai_documents import router as ai_documents_router
 from app.routers.ai_scoring import router as ai_scoring_router
 from app.routers.ai_listings import router as ai_listings_router
@@ -160,7 +159,6 @@ app.include_router(openers.router, prefix="/api/v1/openers", tags=["openers"])
 app.include_router(missions.router, prefix="/api/v1/missions", tags=["missions"])
 app.include_router(companies.router, prefix="/api/v1/companies", tags=["companies"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
-app.include_router(ai_sphere_router, prefix="/api/v1", tags=["ai"])
 app.include_router(ai_documents_router, prefix="/api/v1", tags=["ai"])
 app.include_router(ai_scoring_router, prefix="/api/v1", tags=["ai"])
 app.include_router(ai_listings_router, prefix="/api/v1", tags=["ai"])

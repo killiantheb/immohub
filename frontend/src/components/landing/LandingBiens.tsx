@@ -2,13 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { C } from "@/lib/design-tokens";
 
 const API   = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
-const ORANGE = "#E8602C";
-const DARK   = "#1A1612";
-const MUTED  = "#6B5E52";
-const serif  = "var(--font-serif, 'Fraunces', Georgia, serif)";
-const sans   = "var(--font-sans, 'DM Sans', system-ui, sans-serif)";
+const serif = "var(--font-serif, 'Fraunces', Georgia, serif)";
+const sans  = "var(--font-sans, 'DM Sans', system-ui, sans-serif)";
 
 const FALLBACK_GRADIENTS = [
   "linear-gradient(135deg,#E8D8C4,#C8A880)",
@@ -59,29 +57,29 @@ export function LandingBiens() {
       `}</style>
 
       <div style={{ textAlign: "center", marginBottom: 48 }}>
-        <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.14em", color: ORANGE, textTransform: "uppercase" as const, marginBottom: 10, margin: "0 0 10px" }}>
+        <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.14em", color: C.orange, textTransform: "uppercase" as const, marginBottom: 10, margin: "0 0 10px" }}>
           Suisse romande · Genève · Vaud · Valais
         </p>
-        <h2 style={{ fontFamily: serif, fontSize: "clamp(26px,3.5vw,40px)", fontWeight: 300, color: DARK, margin: "8px 0 0" }}>
+        <h2 style={{ fontFamily: serif, fontSize: "clamp(26px,3.5vw,40px)", fontWeight: 300, color: C.text, margin: "8px 0 0" }}>
           Biens disponibles maintenant
         </h2>
       </div>
 
       {loading && (
-        <div style={{ textAlign: "center", padding: "48px 0", color: MUTED, fontSize: 14, fontFamily: sans }}>
+        <div style={{ textAlign: "center", padding: "48px 0", color: C.textMuted, fontSize: 14, fontFamily: sans }}>
           Chargement des biens…
         </div>
       )}
 
       {!loading && biens.length === 0 && (
-        <div style={{ textAlign: "center", padding: "64px 24px", background: "#fff", borderRadius: 16, border: "1px dashed rgba(26,22,18,0.12)" }}>
-          <p style={{ fontFamily: serif, fontSize: 24, fontWeight: 300, color: DARK, margin: "0 0 10px" }}>Biens à venir</p>
-          <p style={{ fontSize: 14, color: MUTED, marginBottom: 24 }}>
+        <div style={{ textAlign: "center", padding: "64px 24px", background: C.surface, borderRadius: 16, border: `1px dashed ${C.border}` }}>
+          <p style={{ fontFamily: serif, fontSize: 24, fontWeight: 300, color: C.text, margin: "0 0 10px" }}>Biens à venir</p>
+          <p style={{ fontSize: 14, color: C.textMuted, marginBottom: 24 }}>
             Les premiers biens arrivent bientôt. Inscrivez-vous pour être notifié en priorité.
           </p>
           <Link href="/register" style={{
             display: "inline-block", padding: "11px 26px", borderRadius: 9,
-            background: ORANGE, color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none",
+            background: C.orange, color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none",
           }}>
             M&apos;inscrire →
           </Link>
@@ -93,7 +91,7 @@ export function LandingBiens() {
           <div className="lp-grid-biens">
             {biens.map((b, i) => {
               const statut     = b.statut ?? "À louer";
-              const badgeColor = statut === "À louer" ? "#3A7A5A" : statut === "À vendre" ? "#2563EB" : MUTED;
+              const badgeColor = statut === "À louer" ? C.green : statut === "À vendre" ? C.blue : C.textMuted;
               const photoStyle = b.cover
                 ? { backgroundImage: `url(${b.cover})`, backgroundSize: "cover", backgroundPosition: "center" }
                 : { background: FALLBACK_GRADIENTS[i % FALLBACK_GRADIENTS.length] };
@@ -102,9 +100,9 @@ export function LandingBiens() {
                 <Link key={b.id} href={`/biens/${b.id}`} style={{ textDecoration: "none", color: "inherit" }}>
                   <div
                     style={{
-                      background: "#fff", borderRadius: 14, overflow: "hidden",
-                      border: "0.5px solid rgba(26,22,18,0.07)",
-                      boxShadow: "0 2px 16px rgba(26,22,18,0.05)",
+                      background: C.surface, borderRadius: 14, overflow: "hidden",
+                      border: `0.5px solid ${C.border}`,
+                      boxShadow: C.shadow,
                       transition: "transform 0.15s ease, box-shadow 0.15s ease",
                     }}
                     onMouseEnter={e => {
@@ -113,7 +111,7 @@ export function LandingBiens() {
                     }}
                     onMouseLeave={e => {
                       (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
-                      (e.currentTarget as HTMLElement).style.boxShadow = "0 2px 16px rgba(26,22,18,0.05)";
+                      (e.currentTarget as HTMLElement).style.boxShadow = C.shadow;
                     }}
                   >
                     {/* Photo / Gradient */}
@@ -131,27 +129,27 @@ export function LandingBiens() {
                     <div style={{ padding: "14px 16px 18px" }}>
                       {b.prix != null && (
                         <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
-                          <span style={{ fontFamily: serif, fontSize: 22, fontWeight: 400, color: DARK }}>
+                          <span style={{ fontFamily: serif, fontSize: 22, fontWeight: 400, color: C.text }}>
                             CHF {b.prix.toLocaleString("fr-CH")}
                           </span>
-                          {b.periode && <span style={{ fontSize: 13, color: MUTED }}>{b.periode}</span>}
+                          {b.periode && <span style={{ fontSize: 13, color: C.textMuted }}>{b.periode}</span>}
                         </div>
                       )}
-                      <p style={{ margin: "0 0 10px", fontSize: 12, color: MUTED }}>
+                      <p style={{ margin: "0 0 10px", fontSize: 12, color: C.textMuted }}>
                         {b.ville}{b.canton ? ` · ${b.canton}` : ""}
                       </p>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" as const }}>
                         {b.pieces != null && (
-                          <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 5, background: "rgba(26,22,18,0.05)", color: MUTED }}>
+                          <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 5, background: C.orangeBg, color: C.textMuted }}>
                             {b.pieces}p
                           </span>
                         )}
                         {b.surface != null && (
-                          <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 5, background: "rgba(26,22,18,0.05)", color: MUTED }}>
+                          <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 5, background: C.orangeBg, color: C.textMuted }}>
                             {b.surface} m²
                           </span>
                         )}
-                        <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 5, background: "rgba(26,22,18,0.05)", color: MUTED }}>
+                        <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 5, background: C.orangeBg, color: C.textMuted }}>
                           {TYPE_LABEL[b.type] ?? b.type}
                         </span>
                       </div>
@@ -165,8 +163,8 @@ export function LandingBiens() {
           <div style={{ textAlign: "center", marginTop: 40 }}>
             <Link href="/biens" style={{
               display: "inline-block", padding: "12px 30px", borderRadius: 10,
-              border: "1.5px solid rgba(26,22,18,0.14)",
-              fontSize: 14, fontWeight: 600, color: DARK, textDecoration: "none",
+              border: `1.5px solid ${C.border}`,
+              fontSize: 14, fontWeight: 600, color: C.text, textDecoration: "none",
             }}>
               Voir tous les biens →
             </Link>

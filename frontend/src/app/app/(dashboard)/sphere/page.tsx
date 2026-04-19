@@ -567,7 +567,7 @@ export default function SpherePage() {
       abortRef.current = new AbortController();
 
       try {
-        const resp = await fetch(`${baseURL}/ai/chat`, {
+        const resp = await fetch(`${baseURL}/sphere/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
           body: JSON.stringify({ message: text, context: { session_id: store.sessionId ?? crypto.randomUUID(), page: "sphere", role: roleKey } }),

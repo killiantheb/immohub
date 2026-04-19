@@ -210,6 +210,24 @@ Toutes les sections incluent `"profile"` et `"carte"` pour tous les rôles non-a
 /app/transactions  → fusionner dans /app/finances
 ```
 
+### Composants landing — état actuel (`/components/landing/`)
+Tous importés par `page.tsx`. Aucun orphelin. Tous utilisent `C` depuis `@/lib/design-tokens`.
+```
+CTAFinal.tsx          CTA final "Commencer gratuitement" + "Nous contacter"
+FeatureBiens.tsx      Section "Tous vos biens" + mockup dashboard (id="features")
+FeatureIA.tsx         Section "Althy parle. Vous décidez." + bulles chat IA
+FeatureReseau.tsx     Section ouvreurs + artisans, 2 colonnes
+Footer.tsx            Footer global (logo, liens légaux, contact)
+Garanties.tsx         Bandeau 4 garanties (icônes Lucide)
+LandingBiens.tsx      Grille 6 biens réels depuis /marketplace/biens
+LandingEstimation.tsx Formulaire estimation rapide IA
+LandingPreuve.tsx     Témoignage + chiffres clés (130 biens, 5 villes)
+PourQui.tsx           5 cartes rôles (id="pour-qui")
+SocialProof.tsx       Bandeau marquee défilant (react-fast-marquee)
+Tarifs.tsx            Grille tarifs depuis plans.config.ts (id="tarifs")
+Testimonials.tsx      5 témoignages scroll horizontal
+```
+
 ---
 
 ## Parcours utilisateur — chaîne complète
@@ -332,14 +350,15 @@ line-opacity: 0.5
 
 ## Modèle économique — source de vérité : plans.config.ts
 
-### Plans OFFRE — Propriétaires & Agences (récurrent)
+### Nomenclature officielle des plans (source : `plans.config.ts`)
 
-| Plan | Mensuel | Annuel | Ce qui est inclus |
-|------|---------|--------|-------------------|
-| **VITRINE** | CHF 0 | — | 1 bien marketplace, estimation IA, page bien + QR code |
-| **SOLO** | CHF 29 | CHF 23 | 10 biens, Sphère IA illimitée, docs légaux IA (bail/EDL/quittances), ouvreurs sur demande, dossiers locataires scorés, WhatsApp/SMS |
-| **PRO** | CHF 59 | CHF 49 | Biens illimités, 2 comptes utilisateurs, comptabilité basique (sans open banking), rapports mensuels auto, export PDF fiduciaire |
-| **AGENCE** | CHF 29/agent | — | Tout PRO + CRM propriétaires + portail proprio white-label (CHF 9/proprio/mois) + badge "Agence Certifiée Althy" |
+| ID code | Nom affiché | Prix | Ce qui est inclus |
+|---------|-------------|------|-------------------|
+| **`gratuit`** | Gratuit | CHF 0 | 3 biens marketplace, QR-facture loyers, estimation IA, chat basique |
+| **`pro`** | Pro | CHF 29/mois (CHF 23 annuel) | 15 biens, Sphère IA complète, relance impayés, docs IA 10/mois, artisans, rapport mensuel |
+| **`agence`** | Agence | CHF 29/agent/mois | Biens illimités, multi-agents, portail proprio (CHF 9/proprio/mois), CRM |
+
+**IDs dans Stripe / DB / frontend :** toujours `gratuit`, `pro`, `agence`. Les anciens noms (`decouverte`, `starter`, `vitrine`, `proprio`, `solo`) sont mappés automatiquement vers ces 3 IDs.
 
 **Dégressif AGENCE :** -10% dès 5 agents, -20% dès 10 agents.
 
@@ -370,7 +389,7 @@ Le client paie le tarif du service directement. Althy facture ses 4% séparémen
 L'agence du fondateur (130 biens annuels + 30 saisonniers + 20/semaine) → accès permanent gratuit.
 
 ### Stripe — abonnements uniquement ✓
-Stripe est utilisé **uniquement pour les abonnements** (SOLO/PRO/AGENCE).
+Stripe est utilisé **uniquement pour les abonnements** (`pro`/`agence`).
 Les loyers passent par QR-facture SPC 2.0 + réconciliation CAMT.054 (app/routers/loyers.py).
 
 - `POST /api/v1/stripe/create-subscription-intent` — crée Subscription + retourne client_secret
@@ -414,14 +433,22 @@ Tout en français. URLs, labels, boutons, messages d'erreur. Zéro anglais visib
 - `DTopNav` en haut de chaque dashboard : pills "← Sphère IA" et "Carte" ✅
 - Bouton "Tableau de bord →" sur `/app/sphere` ✅
 
+### Typographie — règle finale
+- **Landing hero** (`page.tsx`) : `var(--font-serif)` → Fraunces, weight 300
+- **Titres dashboards** : `var(--font-serif)` → Cormorant Garamond, weight 300
+- **Corps partout** : `var(--font-sans)` → DM Sans, system-ui
+- **Landing composants** (`/components/landing/`) : `C.text`, `C.orange`, etc. depuis `@/lib/design-tokens`
+- Les deux polices serif sont servies par `var(--font-serif)` — la font-face active dépend du layout (landing = Fraunces, dashboard = Cormorant Garamond)
+
 ### Code
 - Composants `Althy*` uniquement — aucun `Cathy*`
-- Plans depuis `plans.config.ts` — source unique ✅ (existe)
+- Plans depuis `plans.config.ts` — source unique ✅ (IDs : `gratuit`, `pro`, `agence`)
 - Une seule URL par page, toujours en français
 - Une seule entrée "Althy IA" dans sidebar → `/app/sphere` ✅
 - Sidebar settings : entrée unique `/app/settings`, sous-pages dans la page elle-même ✅
-- `var(--althy-*)` partout — jamais de couleurs en dur (exception : couches Mapbox GL)
+- `var(--althy-*)` partout — jamais de couleurs en dur (exception : couches Mapbox GL + Stripe appearance)
 - Token Mapbox : `process.env.NEXT_PUBLIC_MAPBOX_TOKEN` — jamais en dur ✅
+- Design tokens JS : `import { C } from "@/lib/design-tokens"` — utiliser `C.orange`, `C.text`, etc.
 - RLS activé sur toutes les tables Supabase
 - Maximum 2 clics pour toute action courante
 - Chaque action irréversible → écran de confirmation
@@ -468,14 +495,22 @@ DTopNav       // Navigation haut de page : "← Sphère IA" + "Carte"
 
 ## Endpoints backend — référence rapide
 
-### Sphere
+### Sphere (unique router : `sphere_agent.py`)
 ```
 GET  /api/v1/sphere/contexte
-GET  /api/v1/sphere/briefing          (SSE streaming)
+GET  /api/v1/sphere/briefing          (SSE streaming — seul endpoint briefing, les anciens /dashboard/briefing et /briefing-quotidien sont supprimés)
 POST /api/v1/sphere/executer
 POST /api/v1/sphere/parse-location    (Claude Sonnet, fallback CITY_FALLBACK local)
 POST /api/v1/sphere/ocr-facture
+POST /api/v1/sphere/chat              (SSE streaming — ancien /ai/chat)
+GET  /api/v1/sphere/chat              (SSE streaming — ancien /ai/chat GET)
+POST /api/v1/sphere/copilot
+POST /api/v1/sphere/voice-action
+POST /api/v1/sphere/agency-advisor
+POST /api/v1/sphere/parse-contract-params
+POST /api/v1/sphere/rediger-description
 ```
+**Routes supprimées :** `ai_sphere.py` et `sphere.py` — toutes les routes migrées vers `sphere_agent.py`.
 
 ### Messagerie & WhatsApp (badges sidebar)
 ```
@@ -498,6 +533,19 @@ POST /api/v1/loyers/generer-qr    → génère QR-facture PDF + insère loyer_tr
 POST /api/v1/loyers/reconcilier   → parse CAMT.054 XML ou liste manuelle, réconcilie
 GET  /api/v1/loyers               → liste loyer_transactions du proprio
 PATCH /api/v1/loyers/{id}/statut  → forcer statut (admin)
+```
+
+### Routers actifs dans `main.py` (état final)
+55 routers enregistrés. Zéro import orphelin. Les fichiers `ai_sphere.py` et `sphere.py` sont supprimés.
+```
+auth · properties · contracts · transactions · openers · missions · companies · dashboard
+ai_documents · ai_scoring · ai_listings · rfq · admin · smart_onboarding · tenants
+ratings · favorites · agency_settings · insurance · crm · documents
+biens · locataires · docs_althy · paiements · interventions_althy · missions_ouvreurs
+profiles_artisans · scoring · notifications · matching · geocode · listings · marketplace
+hunters · stripe_webhooks · portail · integrations · vente · rgpd
+sphere_agent (→ /sphere/*) · notations · oauth · factures · messagerie · agenda
+whatsapp · onboarding · sphere_carte · contact · estimation · loyers · changements
 ```
 
 ---

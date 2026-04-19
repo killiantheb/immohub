@@ -40,17 +40,17 @@ interface Candidature {
 }
 
 const STATUT_CONFIG = {
-  en_attente: { label: "En attente de réponse", icon: "⏳", color: "#d97706", bg: "#fef9f0" },
-  acceptee:   { label: "Candidature acceptée",   icon: "✅", color: "#16a34a", bg: "#f0fdf4" },
-  refusee:    { label: "Candidature refusée",    icon: "❌", color: "#dc2626", bg: "#fef2f2" },
-  retiree:    { label: "Retirée",                icon: "↩",  color: "#6b7280", bg: "#f9fafb" },
+  en_attente: { label: "En attente de réponse", icon: "⏳", color: "var(--althy-amber)", bg: "var(--althy-amber-bg)" },
+  acceptee:   { label: "Candidature acceptée",   icon: "✅", color: "var(--althy-green)", bg: "var(--althy-green-bg)" },
+  refusee:    { label: "Candidature refusée",    icon: "❌", color: "var(--althy-red)",   bg: "var(--althy-red-bg)" },
+  retiree:    { label: "Retirée",                icon: "↩",  color: "var(--althy-text-3)", bg: "var(--althy-surface-2)" },
 };
 
 const SCORE_COLOR = (s: number | null) => {
-  if (s === null) return "#9ca3af";
-  if (s >= 70) return "#16a34a";
-  if (s >= 50) return "#d97706";
-  return "#dc2626";
+  if (s === null) return "var(--althy-text-3)";
+  if (s >= 70) return "var(--althy-green)";
+  if (s >= 50) return "var(--althy-amber)";
+  return "var(--althy-red)";
 };
 
 export default function MesCandidaturesPage() {
@@ -228,13 +228,13 @@ export default function MesCandidaturesPage() {
                   <div style={{
                     borderTop: `1px solid ${S.border}`, padding: "12px 16px",
                     display: "flex", alignItems: "center", justifyContent: "space-between",
-                    gap: 12, background: "#f0fdf4",
+                    gap: 12, background: "var(--althy-green-bg)",
                   }}>
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: "#15803d" }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--althy-green)" }}>
                         Félicitations ! Votre candidature a été acceptée 🎉
                       </div>
-                      <div style={{ fontSize: 13, color: "#16a34a" }}>
+                      <div style={{ fontSize: 13, color: "var(--althy-green)" }}>
                         Réglez les frais de dossier pour finaliser votre candidature.
                       </div>
                     </div>
@@ -242,7 +242,7 @@ export default function MesCandidaturesPage() {
                       onClick={() => handlePayerFrais(c.id)}
                       disabled={payingId === c.id}
                       style={{
-                        background: "#16a34a", color: "#fff", border: "none",
+                        background: "var(--althy-green)", color: "#fff", border: "none",
                         borderRadius: 8, padding: "10px 20px", fontSize: 14, fontWeight: 600,
                         cursor: payingId === c.id ? "not-allowed" : "pointer",
                         opacity: payingId === c.id ? 0.7 : 1, flexShrink: 0,
@@ -261,7 +261,7 @@ export default function MesCandidaturesPage() {
                 {c.statut === "acceptee" && c.frais_payes && (
                   <div style={{
                     borderTop: `1px solid ${S.border}`, padding: "12px 16px",
-                    background: "#f0fdf4", fontSize: 13, color: "#15803d", fontWeight: 600,
+                    background: "var(--althy-green-bg)", fontSize: 13, color: "var(--althy-green)", fontWeight: 600,
                   }}>
                     ✓ Frais de dossier réglés — le propriétaire va vous contacter pour la suite.
                   </div>

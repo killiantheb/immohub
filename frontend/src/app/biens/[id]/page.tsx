@@ -339,7 +339,7 @@ function AlthyIAWidget({ bien }: { bien: BienDetail }) {
     setQuestion("");
     setThinking(true);
     try {
-      const res = await fetch(`${API}/ai/chat`, {
+      const res = await fetch(`${API}/sphere/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

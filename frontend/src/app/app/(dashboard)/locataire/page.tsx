@@ -14,12 +14,12 @@ const S = {
   text:     "var(--charcoal)",
   text2:    "var(--text-secondary)",
   text3:    "var(--text-tertiary)",
-  greenBg:  "var(--althy-green-bg, #EBF4E8)",
-  green:    "var(--althy-green, #2E5E22)",
-  redBg:    "var(--althy-red-bg, #FDECEA)",
-  red:      "var(--althy-red, #C0392B)",
-  amberBg:  "var(--althy-amber-bg, #FEF3C7)",
-  amber:    "var(--althy-amber, #B45309)",
+  greenBg:  "var(--althy-green-bg)",
+  green:    "var(--althy-green)",
+  redBg:    "var(--althy-red-bg)",
+  red:      "var(--althy-red)",
+  amberBg:  "var(--althy-amber-bg)",
+  amber:    "var(--althy-amber)",
 } as const;
 
 interface Locataire {

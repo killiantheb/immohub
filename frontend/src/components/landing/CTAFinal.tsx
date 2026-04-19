@@ -114,7 +114,7 @@ export function CTAFinal() {
           }}
         >
           <Link
-            href="/app"
+            href="/register"
             style={{
               background: C.orange,
               color: "#FFFFFF",
@@ -135,7 +135,7 @@ export function CTAFinal() {
               e.currentTarget.style.transform = "translateY(0)"
             }}
           >
-            Démarrer gratuitement
+            Commencer gratuitement
           </Link>
           <Link
             href="/contact"

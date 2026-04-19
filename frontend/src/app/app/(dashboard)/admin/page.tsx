@@ -78,10 +78,10 @@ function formatMonth(m: string) {
 const ROLE_COLORS: Record<string, string> = {
   owner: "var(--terracotta-primary)",
   agency: "var(--terracotta-primary)",
-  tenant: "#10b981",
-  company: "#f59e0b",
+  tenant: "var(--althy-green)",
+  company: "var(--althy-amber)",
   opener: "var(--terracotta-primary)",
-  super_admin: "#ef4444",
+  super_admin: "var(--althy-red)",
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -214,7 +214,7 @@ export default function AdminPage() {
     ? Object.entries(stats.users_by_role).map(([role, count]) => ({
         name: ROLE_LABELS[role] ?? role,
         value: count,
-        color: ROLE_COLORS[role] ?? "#6b7280",
+        color: ROLE_COLORS[role] ?? "var(--althy-text-3)",
       }))
     : [];
 

@@ -132,7 +132,7 @@ export function FeatureIA() {
           transition={{ duration: 0.5, delay: 0.4 }}
         >
           <Link
-            href="/app"
+            href="/register"
             style={{
               color: C.orange,
               textDecoration: "none",

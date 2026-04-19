@@ -44,14 +44,14 @@ const S = {
   border:   "var(--border-subtle)",
   text:     "var(--charcoal)",
   text3:    "var(--text-tertiary)",
-  greenBg:  "var(--althy-green-bg, #EBF4E8)",
-  green:    "var(--althy-green, #2E5E22)",
-  blueBg:   "var(--althy-blue-bg, #EFF6FF)",
-  blue:     "var(--althy-blue, #1D4ED8)",
-  amberBg:  "var(--althy-amber-bg, #FEF3C7)",
-  amber:    "var(--althy-amber, #B45309)",
-  redBg:    "var(--althy-red-bg, #FDECEA)",
-  red:      "var(--althy-red, #C0392B)",
+  greenBg:  "var(--althy-green-bg)",
+  green:    "var(--althy-green)",
+  blueBg:   "var(--althy-blue-bg)",
+  blue:     "var(--althy-blue)",
+  amberBg:  "var(--althy-amber-bg)",
+  amber:    "var(--althy-amber)",
+  redBg:    "var(--althy-red-bg)",
+  red:      "var(--althy-red)",
 };
 
 const TYPE_LABEL: Record<string, string> = {

@@ -343,7 +343,7 @@ export function AICopilot() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token ?? "";
 
-      const url = new URL(`${baseURL}/ai/chat`);
+      const url = new URL(`${baseURL}/sphere/chat`);
       url.searchParams.set("message", text);
 
       const response = await fetch(url.toString(), {

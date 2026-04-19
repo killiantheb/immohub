@@ -92,7 +92,7 @@ export function Tarifs() {
               </div>
 
               <Link
-                href="/register"
+                href={plan.id === "agence" ? "/contact?source=agence" : "/register"}
                 style={{
                   display: "block", textAlign: "center",
                   background: plan.vedette ? C.orange : "transparent",

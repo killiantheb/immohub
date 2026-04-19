@@ -53,17 +53,17 @@ interface Candidature {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const STATUT_CONFIG = {
-  en_attente: { label: "En attente", color: "#d97706", bg: "#fef9f0" },
-  acceptee:   { label: "Acceptée",   color: "#16a34a", bg: "#f0fdf4" },
-  refusee:    { label: "Refusée",    color: "#dc2626", bg: "#fef2f2" },
-  retiree:    { label: "Retirée",    color: "#6b7280", bg: "#f9fafb" },
+  en_attente: { label: "En attente", color: "var(--althy-amber)", bg: "var(--althy-amber-bg)" },
+  acceptee:   { label: "Acceptée",   color: "var(--althy-green)", bg: "var(--althy-green-bg)" },
+  refusee:    { label: "Refusée",    color: "var(--althy-red)",   bg: "var(--althy-red-bg)" },
+  retiree:    { label: "Retirée",    color: "var(--althy-text-3)", bg: "var(--althy-surface-2)" },
 };
 
 const SCORE_COLOR = (s: number | null) => {
-  if (s === null) return "#9ca3af";
-  if (s >= 70) return "#16a34a";
-  if (s >= 50) return "#d97706";
-  return "#dc2626";
+  if (s === null) return "var(--althy-text-3)";
+  if (s >= 70) return "var(--althy-green)";
+  if (s >= 50) return "var(--althy-amber)";
+  return "var(--althy-red)";
 };
 
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -239,7 +239,7 @@ export default function CandidaturesPage() {
                         background: cfg.bg, color: cfg.color,
                       }}>{cfg.label}</span>
                       {c.frais_payes && (
-                        <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 600 }}>✓ Frais payés</span>
+                        <span style={{ fontSize: 11, color: "var(--althy-green)", fontWeight: 600 }}>✓ Frais payés</span>
                       )}
                     </div>
                     <div style={{ fontSize: 13, color: S.text2 }}>
@@ -284,8 +284,8 @@ export default function CandidaturesPage() {
                   {selected.score_details?.recommendation && (
                     <div style={{
                       fontSize: 12,
-                      color: selected.score_details.recommendation === "approve" ? "#16a34a"
-                        : selected.score_details.recommendation === "reject" ? "#dc2626" : "#d97706",
+                      color: selected.score_details.recommendation === "approve" ? "var(--althy-green)"
+                        : selected.score_details.recommendation === "reject" ? "var(--althy-red)" : "var(--althy-amber)",
                     }}>
                       {selected.score_details.recommendation === "approve" ? "Dossier recommandé"
                         : selected.score_details.recommendation === "reject" ? "Dossier risqué"
@@ -364,8 +364,8 @@ export default function CandidaturesPage() {
                     disabled={processing}
                     style={{
                       flex: 1, padding: "10px 0", borderRadius: 8,
-                      border: "1.5px solid #fca5a5", background: "#fef2f2",
-                      color: "#dc2626", fontSize: 14, fontWeight: 600,
+                      border: "1.5px solid var(--althy-red-bg)", background: "var(--althy-red-bg)",
+                      color: "var(--althy-red)", fontSize: 14, fontWeight: 600,
                       cursor: processing ? "not-allowed" : "pointer", opacity: processing ? 0.6 : 1,
                     }}
                   >
@@ -376,7 +376,7 @@ export default function CandidaturesPage() {
                     disabled={processing}
                     style={{
                       flex: 1, padding: "10px 0", borderRadius: 8,
-                      background: "#16a34a", border: "none",
+                      background: "var(--althy-green)", border: "none",
                       color: "#fff", fontSize: 14, fontWeight: 600,
                       cursor: processing ? "not-allowed" : "pointer", opacity: processing ? 0.6 : 1,
                     }}
@@ -388,9 +388,9 @@ export default function CandidaturesPage() {
 
               {selected.statut === "acceptee" && !selected.frais_payes && (
                 <div style={{
-                  background: "#f0fdf4", border: "1px solid #86efac",
+                  background: "var(--althy-green-bg)", border: "1px solid var(--althy-green)",
                   borderRadius: 8, padding: "12px 14px", marginTop: 16,
-                  fontSize: 13, color: "#15803d",
+                  fontSize: 13, color: "var(--althy-green)",
                 }}>
                   ✓ Candidature acceptée. Le candidat doit régler CHF 90 de frais de dossier.
                 </div>
@@ -398,9 +398,9 @@ export default function CandidaturesPage() {
 
               {selected.statut === "acceptee" && selected.frais_payes && (
                 <div style={{
-                  background: "#f0fdf4", border: "1px solid #86efac",
+                  background: "var(--althy-green-bg)", border: "1px solid var(--althy-green)",
                   borderRadius: 8, padding: "12px 14px", marginTop: 16,
-                  fontSize: 13, color: "#15803d",
+                  fontSize: 13, color: "var(--althy-green)",
                 }}>
                   ✓ Frais de dossier réglés — procédez à la signature du bail.
                 </div>

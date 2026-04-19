@@ -374,7 +374,7 @@ function useUnifiedData(role: UserRole | null): UnifiedData {
 
   const briefingQ = useQuery({
     queryKey: ["ud", "briefing"],
-    queryFn: async () => { const { data } = await api.get<BriefingData>("/dashboard/briefing"); return data; },
+    queryFn: async () => { const { data } = await api.get<BriefingData>("/sphere/briefing"); return data; },
     enabled: isManager, staleTime: 300_000,
   });
 
