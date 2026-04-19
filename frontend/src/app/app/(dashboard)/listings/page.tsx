@@ -426,7 +426,6 @@ export default function ListingsPage() {
               <span style={{ fontSize: 22 }}>{p.logo}</span>
               <div>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: C.text }}>{p.name}</div>
-                <div style={{ fontSize: 12, color: C.orange, fontWeight: 600 }}>{p.price}</div>
                 <div style={{ fontSize: 10.5, color: C.text3 }}>{p.note}</div>
               </div>
             </div>
