@@ -24,7 +24,7 @@ interface ParseResult {
 }
 
 // ── Constantes ────────────────────────────────────────────────────────────────
-
+// Mapbox GL requires hex — do not replace with CSS var
 const ORANGE = "#E8602C";
 const ACTIVE_CANTONS = ["Genève", "Vaud", "Valais", "Fribourg", "Neuchâtel", "Jura"];
 
@@ -300,7 +300,7 @@ export default function CarteMapboxPage() {
           {/* Logo */}
           <Link href="/" style={{
             flexShrink: 0, textDecoration: "none",
-            fontFamily: "var(--font-serif, Cormorant Garamond, serif)",
+            fontFamily: "var(--font-serif)",
             fontWeight: 300, fontSize: 22, letterSpacing: "5px",
             color: "var(--althy-orange)",
           }}>

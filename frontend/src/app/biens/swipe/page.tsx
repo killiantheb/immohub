@@ -21,13 +21,13 @@ import {
   type BienSwipe,
   fmtPrix,
 } from "@/components/marketplace/SwipeCard";
+import { C } from "@/lib/design-tokens";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const API   = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
-const ORANGE = "#E8602C";
-const serif  = "var(--font-serif, Fraunces, Georgia, serif)";
-const sans   = "var(--font-sans, 'DM Sans', system-ui, sans-serif)";
+const serif  = "var(--font-serif)";
+const sans   = "var(--font-sans)";
 
 // ── Session anonyme ────────────────────────────────────────────────────────────
 
@@ -116,7 +116,7 @@ function GalleryOverlay({
             <button
               key={i}
               onClick={() => setIdx(i)}
-              style={{ width: i === idx ? 20 : 8, height: 8, borderRadius: 4, background: i === idx ? ORANGE : "rgba(255,255,255,0.30)", border: "none", cursor: "pointer", transition: "all 0.2s", padding: 0 }}
+              style={{ width: i === idx ? 20 : 8, height: 8, borderRadius: 4, background: i === idx ? C.orange : "rgba(255,255,255,0.30)", border: "none", cursor: "pointer", transition: "all 0.2s", padding: 0 }}
             />
           ))}
         </div>
@@ -150,13 +150,13 @@ function FilterDrawer({
         fontFamily: sans,
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1A1612" }}>Filtrer les biens</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#7A7469" }}>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--althy-text)" }}>Filtrer les biens</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--althy-text-3)" }}>
             <X size={20} />
           </button>
         </div>
 
-        <p style={{ margin: "0 0 10px", fontSize: 12, fontWeight: 600, color: "#7A7469", textTransform: "uppercase", letterSpacing: "0.06em" }}>Type de transaction</p>
+        <p style={{ margin: "0 0 10px", fontSize: 12, fontWeight: 600, color: "var(--althy-text-3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Type de transaction</p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
           {TX.map(t => (
             <button
@@ -164,9 +164,9 @@ function FilterDrawer({
               onClick={() => onTx(t)}
               style={{
                 padding: "8px 16px", borderRadius: 20,
-                border: `1.5px solid ${tx === t ? ORANGE : "rgba(26,22,18,0.15)"}`,
-                background: tx === t ? ORANGE : "#fff",
-                color: tx === t ? "#fff" : "#3D3830",
+                border: `1.5px solid ${tx === t ? C.orange : "rgba(26,22,18,0.15)"}`,
+                background: tx === t ? C.orange : "#fff",
+                color: tx === t ? "#fff" : "var(--althy-text)",
                 fontSize: 13, fontWeight: 600, cursor: "pointer",
                 transition: "all 0.15s",
               }}
@@ -178,7 +178,7 @@ function FilterDrawer({
 
         <button
           onClick={onClose}
-          style={{ width: "100%", padding: "12px", background: ORANGE, color: "#fff", border: "none", borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: sans }}
+          style={{ width: "100%", padding: "12px", background: C.orange, color: "#fff", border: "none", borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: sans }}
         >
           Appliquer
         </button>
@@ -191,11 +191,13 @@ function FilterDrawer({
 
 function EmptyState({
   liked,
+  likedIds,
   passed,
   isLoggedIn,
   onReset,
 }: {
   liked: number;
+  likedIds: string[];
   passed: number;
   isLoggedIn: boolean;
   onReset: () => void;
@@ -204,20 +206,20 @@ function EmptyState({
     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: sans }}>
       <div style={{ textAlign: "center", maxWidth: 320 }}>
         <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(232,96,44,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
-          <Heart size={32} color={ORANGE} />
+          <Heart size={32} color={C.orange} />
         </div>
 
-        <h2 style={{ fontFamily: serif, fontWeight: 300, fontSize: 26, color: "#1A1612", margin: "0 0 10px" }}>
+        <h2 style={{ fontFamily: serif, fontWeight: 300, fontSize: 26, color: "var(--althy-text)", margin: "0 0 10px" }}>
           Vous avez tout vu !
         </h2>
 
         {liked > 0 && (
           <div style={{ background: "rgba(76,175,80,0.08)", borderRadius: 12, padding: "12px 18px", marginBottom: 18, border: "1px solid rgba(76,175,80,0.20)" }}>
-            <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#2E7D32" }}>
+            <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--althy-green)" }}>
               {liked} bien{liked > 1 ? "s" : ""} aimé{liked > 1 ? "s" : ""}
             </p>
             {!isLoggedIn && (
-              <p style={{ margin: "4px 0 0", fontSize: 12, color: "#5C5650" }}>
+              <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--althy-text-2)" }}>
                 Connectez-vous pour les retrouver.
               </p>
             )}
@@ -225,7 +227,7 @@ function EmptyState({
         )}
 
         {passed > 0 && (
-          <p style={{ color: "#7A7469", fontSize: 13, margin: "0 0 24px" }}>
+          <p style={{ color: "var(--althy-text-3)", fontSize: 13, margin: "0 0 24px" }}>
             {passed} bien{passed > 1 ? "s" : ""} passé{passed > 1 ? "s" : ""}
           </p>
         )}
@@ -234,7 +236,7 @@ function EmptyState({
           {!isLoggedIn && liked > 0 && (
             <Link
               href="/login?callbackUrl=/biens/swipe"
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: ORANGE, color: "#fff", padding: "12px 20px", borderRadius: 12, textDecoration: "none", fontSize: 14, fontWeight: 600, fontFamily: sans }}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: C.orange, color: "#fff", padding: "12px 20px", borderRadius: 12, textDecoration: "none", fontSize: 14, fontWeight: 600, fontFamily: sans }}
             >
               <LogIn size={15} /> Se connecter pour voir mes favoris
             </Link>
@@ -242,26 +244,36 @@ function EmptyState({
           {isLoggedIn && liked > 0 && (
             <Link
               href="/app/biens"
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: ORANGE, color: "#fff", padding: "12px 20px", borderRadius: 12, textDecoration: "none", fontSize: 14, fontWeight: 600, fontFamily: sans }}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: C.orange, color: "#fff", padding: "12px 20px", borderRadius: 12, textDecoration: "none", fontSize: 14, fontWeight: 600, fontFamily: sans }}
             >
               Voir mes favoris ({liked})
             </Link>
           )}
-          {isLoggedIn && liked > 0 && (
-            <Link
-              href="/postuler"
-              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1.5px solid rgba(26,22,18,0.15)", background: "#fff", color: "#3D3830", padding: "11px 20px", borderRadius: 12, textDecoration: "none", fontSize: 13, fontFamily: sans }}
-            >
-              Compléter mon dossier de candidature
-            </Link>
+          {isLoggedIn && liked > 0 && likedIds[0] && (
+            <div style={{ textAlign: "center" }}>
+              <Link
+                href={`/postuler/${likedIds[0]}`}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1.5px solid rgba(26,22,18,0.15)", background: "#fff", color: "var(--althy-text)", padding: "11px 20px", borderRadius: 12, textDecoration: "none", fontSize: 13, fontFamily: sans }}
+              >
+                Compléter mon dossier de candidature
+              </Link>
+              {liked > 1 && (
+                <p style={{ margin: "6px 0 0", fontSize: 11, color: "var(--althy-text-3)" }}>
+                  Vous avez liké {liked} biens — ce bouton vous emmène vers le plus récent.{" "}
+                  <Link href="/app/biens?tab=favoris" style={{ color: C.orange, textDecoration: "none" }}>
+                    Voir tous mes favoris
+                  </Link>
+                </p>
+              )}
+            </div>
           )}
           <button
             onClick={onReset}
-            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1.5px solid rgba(26,22,18,0.14)", background: "transparent", color: "#5C5650", padding: "11px 20px", borderRadius: 12, cursor: "pointer", fontSize: 13, fontFamily: sans }}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1.5px solid rgba(26,22,18,0.14)", background: "transparent", color: "var(--althy-text-2)", padding: "11px 20px", borderRadius: 12, cursor: "pointer", fontSize: 13, fontFamily: sans }}
           >
             <RefreshCw size={14} /> Recommencer
           </button>
-          <Link href="/biens" style={{ fontSize: 13, color: "#7A7469", textDecoration: "none" }}>
+          <Link href="/biens" style={{ fontSize: 13, color: "var(--althy-text-3)", textDecoration: "none" }}>
             Voir tous les biens →
           </Link>
         </div>
@@ -276,6 +288,7 @@ export default function SwipePage() {
   const [deck,        setDeck]        = useState<BienSwipe[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [liked,       setLiked]       = useState(0);
+  const [likedIds,    setLikedIds]    = useState<string[]>([]);
   const [passed,      setPassed]      = useState(0);
   const [totalSeen,   setTotalSeen]   = useState(0);
   const [token,       setToken]       = useState<string | null>(null);
@@ -346,6 +359,7 @@ export default function SwipePage() {
 
     if (dir === "right") {
       setLiked(n => n + 1);
+      setLikedIds(prev => [bien.id, ...prev]);
       Analytics.swipeRight(bien.id);
       if (toastTimer.current) clearTimeout(toastTimer.current);
       setToast(`♥ ${bien.ville} ajouté aux favoris`);
@@ -373,6 +387,7 @@ export default function SwipePage() {
     setLoading(true);
     setDeck([]);
     setLiked(0);
+    setLikedIds([]);
     setPassed(0);
     setTotalSeen(0);
     fetchDeck();
@@ -410,7 +425,7 @@ export default function SwipePage() {
         {/* Logo */}
         <Link href="/" style={{ textDecoration: "none" }}>
           <span style={{ fontFamily: serif, fontSize: 19, fontWeight: 300, color: "#fff", letterSpacing: "0.14em" }}>
-            ALT<span style={{ color: ORANGE }}>H</span>Y
+            ALT<span style={{ color: C.orange }}>H</span>Y
           </span>
         </Link>
 
@@ -421,7 +436,7 @@ export default function SwipePage() {
               {current} / {total} biens
             </span>
           )}
-          <span style={{ fontSize: 10, background: ORANGE, color: "#fff", padding: "2px 7px", borderRadius: 20, fontWeight: 700, letterSpacing: "0.05em" }}>
+          <span style={{ fontSize: 10, background: C.orange, color: "#fff", padding: "2px 7px", borderRadius: 20, fontWeight: 700, letterSpacing: "0.05em" }}>
             SWIPE
           </span>
         </div>
@@ -431,7 +446,7 @@ export default function SwipePage() {
           {/* Filtres */}
           <button
             onClick={() => setShowFilter(true)}
-            style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: txFilter ? ORANGE : "rgba(255,255,255,0.55)", display: "flex", alignItems: "center" }}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: txFilter ? C.orange : "rgba(255,255,255,0.55)", display: "flex", alignItems: "center" }}
             title="Filtres"
           >
             <SlidersHorizontal size={17} />
@@ -449,22 +464,22 @@ export default function SwipePage() {
           {/* Compteurs */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 4 }}>
             <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
-              <Heart size={13} color="#4CAF50" fill="#4CAF50" /> {liked}
+              <Heart size={13} color="var(--althy-green)" fill="var(--althy-green)" /> {liked}
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "rgba(255,255,255,0.70)" }}>
-              <X size={13} color="#E74C3C" /> {passed}
+              <X size={13} color="var(--althy-red)" /> {passed}
             </span>
           </div>
 
           {/* Connexion */}
           {!isLoggedIn && (
-            <Link href="/login?callbackUrl=/biens/swipe" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: ORANGE, textDecoration: "none" }}>
+            <Link href="/login?callbackUrl=/biens/swipe" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: C.orange, textDecoration: "none" }}>
               <LogIn size={13} />
               {!isMobile && <span>Connexion</span>}
             </Link>
           )}
           {isLoggedIn && (
-            <Link href="/app/biens" style={{ fontSize: 12, color: ORANGE, textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}>
+            <Link href="/app/biens" style={{ fontSize: 12, color: C.orange, textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}>
               {isMobile ? "↗" : "Favoris →"}
             </Link>
           )}
@@ -476,7 +491,7 @@ export default function SwipePage() {
         <div style={{
           position: "fixed", top: 66, left: "50%",
           transform: "translateX(-50%)",
-          background: "#2E5E22", color: "#fff",
+          background: "var(--althy-green)", color: "#fff",
           padding: "8px 18px", borderRadius: 24,
           fontSize: 13, fontWeight: 600,
           zIndex: 300,
@@ -496,12 +511,12 @@ export default function SwipePage() {
       {/* ── Main content ─────────────────────────────────────────────── */}
       {loading ? (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}>
-          <div style={{ width: 40, height: 40, borderRadius: "50%", border: `3px solid ${ORANGE}`, borderTopColor: "transparent", animation: "sw-spin 0.8s linear infinite" }} />
+          <div style={{ width: 40, height: 40, borderRadius: "50%", border: `3px solid ${C.orange}`, borderTopColor: "transparent", animation: "sw-spin 0.8s linear infinite" }} />
           <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 14 }}>Chargement des biens…</p>
         </div>
       ) : deck.length === 0 ? (
-        <div style={{ flex: 1, background: "#FAFAF8", display: "flex" }}>
-          <EmptyState liked={liked} passed={passed} isLoggedIn={isLoggedIn} onReset={handleReset} />
+        <div style={{ flex: 1, background: "var(--althy-bg)", display: "flex" }}>
+          <EmptyState liked={liked} likedIds={likedIds} passed={passed} isLoggedIn={isLoggedIn} onReset={handleReset} />
         </div>
       ) : (
         <SwipeCard

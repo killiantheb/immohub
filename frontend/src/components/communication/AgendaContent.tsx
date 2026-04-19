@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarDays, Link2, RefreshCw, Clock, MapPin } from "lucide-react";
+import { CalendarDays, Link2, RefreshCw, Clock, MapPin, Info } from "lucide-react";
 import { api, baseURL } from "@/lib/api";
 import { createClient } from "@/lib/supabase";
 
@@ -76,6 +76,7 @@ export function AgendaContent() {
   const [events,  setEvents]  = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [syncToast, setSyncToast] = useState<string | null>(null);
   const [today]               = useState(new Date());
 
   const isConnected = statuts.some(s => s.connected && !s.expired);
@@ -101,12 +102,17 @@ export function AgendaContent() {
 
   async function handleSync() {
     setSyncing(true);
+    setSyncToast(null);
     try {
       await api.post("/agenda/synchroniser");
+      setSyncToast("Synchronisation en cours, cela peut prendre quelques minutes.");
+      setTimeout(() => setSyncToast(null), 6000);
       const r = await api.get<CalendarEvent[]>("/agenda/");
       setEvents(r.data);
-    } catch { /* ignore */ }
-    finally { setSyncing(false); }
+    } catch {
+      setSyncToast("Erreur lors de la synchronisation.");
+      setTimeout(() => setSyncToast(null), 5000);
+    } finally { setSyncing(false); }
   }
 
   const upcomingEvents = events
@@ -125,6 +131,28 @@ export function AgendaContent() {
 
   return (
     <div style={{ maxWidth: 860 }}>
+
+      {/* Banner — sync pas encore implémentée */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "12px 16px", marginBottom: 16,
+        background: "rgba(232,96,44,0.06)", border: "1px solid rgba(232,96,44,0.15)",
+        borderRadius: 10, fontSize: 13, color: "var(--althy-text-2)",
+      }}>
+        <Info size={15} color="var(--althy-orange)" style={{ flexShrink: 0 }} />
+        Synchronisation calendrier bientôt disponible. Nous vous enverrons un email dès l&apos;activation.
+      </div>
+
+      {/* Toast sync */}
+      {syncToast && (
+        <div style={{
+          padding: "10px 16px", marginBottom: 12,
+          background: "var(--althy-surface)", border: "1px solid var(--althy-border)",
+          borderRadius: 10, fontSize: 13, color: "var(--althy-text)",
+        }}>
+          {syncToast}
+        </div>
+      )}
 
       {/* Toolbar */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
@@ -155,7 +183,7 @@ export function AgendaContent() {
               <span style={{ fontSize: 20 }}>{icon}</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "var(--althy-text)" }}>{label}</div>
-                <div style={{ fontSize: 11, color: connected ? "#16a34a" : "var(--althy-text-3)", marginTop: 2 }}>
+                <div style={{ fontSize: 11, color: connected ? "var(--althy-green)" : "var(--althy-text-3)", marginTop: 2 }}>
                   {connected ? "Synchronisé" : "Non connecté"}
                 </div>
               </div>
@@ -176,7 +204,7 @@ export function AgendaContent() {
       {Object.keys(grouped).length === 0 ? (
         <div style={{ ...S.card, textAlign: "center", padding: "48px 24px" }}>
           <CalendarDays size={40} color="var(--althy-border)" style={{ marginBottom: 16 }} />
-          <h3 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 22, fontWeight: 300, color: "var(--althy-text)", margin: "0 0 8px" }}>
+          <h3 style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 300, color: "var(--althy-text)", margin: "0 0 8px" }}>
             Aucun événement à venir
           </h3>
           <p style={{ fontSize: 13, color: "var(--althy-text-3)", maxWidth: 400, margin: "0 auto 24px" }}>

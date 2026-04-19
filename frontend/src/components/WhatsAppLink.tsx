@@ -28,7 +28,7 @@ export function WhatsAppLink({ phone, message, children, className, style }: Wha
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        color: "#25D366",
+        color: "var(--whatsapp-green)",
         textDecoration: "none",
         ...style,
       }}

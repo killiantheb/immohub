@@ -17,7 +17,7 @@ import { createClient } from "@/lib/supabase";
 // ── Constantes ────────────────────────────────────────────────────────────────
 
 const URGENCE_COLOR: Record<Urgence, string> = {
-  haute:   "#DC3545",
+  haute:   "var(--althy-red)",
   normale: "var(--terracotta-primary)",
   info:    "var(--sky)",
 };
@@ -173,9 +173,9 @@ function ModifiableText({ text, actionId, onRegenerate, onModified }: Modifiable
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(43,43,43,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ background: "#FFFFFF", borderRadius: 20, width: "100%", maxWidth: 680, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(43,43,43,0.20)" }}>
+      <div style={{ background: "var(--althy-surface)", borderRadius: 20, width: "100%", maxWidth: 680, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 24px 80px rgba(43,43,43,0.20)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", borderBottom: "1px solid var(--border-subtle)" }}>
-          <span style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>{title}</span>
+          <span style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-serif)" }}>{title}</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-tertiary)", padding: 4 }}><X size={18} /></button>
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>{children}</div>
@@ -190,9 +190,9 @@ function RightPanel({ title, onClose, children }: { title: string; onClose: () =
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 2000 }}>
       <div style={{ position: "absolute", inset: 0, background: "rgba(43,43,43,0.4)" }} onClick={onClose} />
-      <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 400, background: "#FFFFFF", boxShadow: "-8px 0 40px rgba(43,43,43,0.12)", display: "flex", flexDirection: "column" }}>
+      <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 400, background: "var(--althy-surface)", boxShadow: "-8px 0 40px rgba(43,43,43,0.12)", display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", borderBottom: "1px solid var(--border-subtle)" }}>
-          <span style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>{title}</span>
+          <span style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-serif)" }}>{title}</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-tertiary)", padding: 4 }}><X size={18} /></button>
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>{children}</div>
@@ -252,7 +252,7 @@ function ActionCardItem({ action, onDismiss, onRegenerate }: ActionCardProps) {
     const acteurNom    = action.acteur_nom?.split(" ").slice(1).join(" ") ?? undefined;
     return (
       <>
-        <div style={{ background: "#FFFFFF", borderRadius: 16, padding: 24, border: "1px solid var(--border-subtle)", boxShadow: "0 2px 8px rgba(43,43,43,0.04)" }}>
+        <div style={{ background: "var(--althy-surface)", borderRadius: 16, padding: 24, border: "1px solid var(--border-subtle)", boxShadow: "0 2px 8px rgba(43,43,43,0.04)" }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: action.acteur_id ? 16 : 0 }}>
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
@@ -291,7 +291,7 @@ function ActionCardItem({ action, onDismiss, onRegenerate }: ActionCardProps) {
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
         style={{
-          background: "#FFFFFF",
+          background: "var(--althy-surface)",
           borderRadius: 16,
           border: "1px solid var(--border-subtle)",
           overflow: "hidden",
@@ -313,7 +313,7 @@ function ActionCardItem({ action, onDismiss, onRegenerate }: ActionCardProps) {
           </div>
 
           {/* Title */}
-          <p style={{ fontSize: 20, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 6px", fontFamily: "var(--font-display)", lineHeight: 1.3 }}>
+          <p style={{ fontSize: 20, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 6px", fontFamily: "var(--font-serif)", lineHeight: 1.3 }}>
             {action.titre ?? action.label}
           </p>
           {/* Description */}
@@ -414,7 +414,7 @@ function ActionCardItem({ action, onDismiss, onRegenerate }: ActionCardProps) {
           </p>
           <ModifiableText text={suggestedText || String(action.payload?.message ?? "Bonjour,")} actionId={action.id} onRegenerate={onRegenerate} onModified={setModifications} />
           <button onClick={() => { execute(); setPanel(null); }} disabled={executing}
-            style={{ marginTop: 16, width: "100%", padding: "12px 0", borderRadius: 12, background: "#25D366", color: "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            style={{ marginTop: 16, width: "100%", padding: "12px 0", borderRadius: 12, background: "var(--whatsapp-green)", color: "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             Envoyer via WhatsApp
           </button>
         </RightPanel>
@@ -659,7 +659,7 @@ export default function SpherePage() {
 
             <h1
               className="text-[56px] leading-[1.1] font-semibold text-[var(--charcoal)] mb-4"
-              style={{ fontFamily: "var(--font-display)" }}
+              style={{ fontFamily: "var(--font-serif)" }}
             >
               Bonjour{firstName ? `, ${firstName}` : ""}
             </h1>

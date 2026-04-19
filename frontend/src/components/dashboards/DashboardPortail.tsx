@@ -51,7 +51,7 @@ function KpiCard({ icon: Icon, iconColor, iconBg, value, label, sub }: {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        background: "#FFFFFF",
+        background: "var(--althy-surface)",
         borderRadius: 24,
         border: "1px solid var(--border-subtle)",
         boxShadow: hov ? CARD_SHADOW_HOV : CARD_SHADOW,
@@ -63,7 +63,7 @@ function KpiCard({ icon: Icon, iconColor, iconBg, value, label, sub }: {
       <div style={{ width: 48, height: 48, borderRadius: 16, background: iconBg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
         <Icon size={22} color={iconColor} strokeWidth={1.6} />
       </div>
-      <div style={{ fontSize: 36, fontWeight: 600, color: "var(--charcoal)", lineHeight: 1, marginBottom: 6, fontFamily: "var(--font-display)" }}>{value}</div>
+      <div style={{ fontSize: 36, fontWeight: 600, color: "var(--charcoal)", lineHeight: 1, marginBottom: 6, fontFamily: "var(--font-serif)" }}>{value}</div>
       <div style={{ fontSize: 13, color: "var(--text-secondary)", fontWeight: 500 }}>{label}</div>
       {sub && <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 3 }}>{sub}</div>}
     </div>
@@ -113,7 +113,7 @@ export function DashboardPortail({ firstName = "" }: Props) {
     <div style={{ minHeight: "100vh", background: "var(--cream)" }}>
 
       {/* ── Top bar ── */}
-      <div style={{ height: 80, background: "#FFFFFF", borderBottom: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 48px", flexShrink: 0 }}>
+      <div style={{ height: 80, background: "var(--althy-surface)", borderBottom: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 48px", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--cream)", borderRadius: 16, padding: "12px 20px", border: "1px solid var(--border-subtle)", width: 280 }}>
           <span style={{ fontSize: 14, color: "var(--text-tertiary)" }}>Portail propriétaire</span>
         </div>
@@ -126,7 +126,7 @@ export function DashboardPortail({ firstName = "" }: Props) {
 
         {/* Greeting */}
         <div style={{ marginBottom: "2rem" }}>
-          <h1 style={{ fontSize: 48, fontWeight: 600, fontFamily: "var(--font-display)", color: "var(--charcoal)", marginBottom: 6, lineHeight: 1.1 }}>
+          <h1 style={{ fontSize: 48, fontWeight: 600, fontFamily: "var(--font-serif)", color: "var(--charcoal)", marginBottom: 6, lineHeight: 1.1 }}>
             Bonjour{name ? `, ${name}` : ""}
           </h1>
           <p style={{ fontSize: 15, color: "var(--text-secondary)" }}>
@@ -155,11 +155,11 @@ export function DashboardPortail({ firstName = "" }: Props) {
                 const isRecu   = b.loyer_statut === "recu";
                 const isRetard = b.loyer_statut === "retard";
                 return (
-                  <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", background: "#FFFFFF", borderRadius: 16, border: "1px solid var(--border-subtle)", boxShadow: CARD_SHADOW }}>
+                  <div key={b.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", background: "var(--althy-surface)", borderRadius: 16, border: "1px solid var(--border-subtle)", boxShadow: CARD_SHADOW }}>
                     <div style={{ width: 40, height: 40, borderRadius: 12, flexShrink: 0, background: isRecu ? "var(--success-bg)" : isRetard ? "var(--urgent-bg)" : "var(--warning-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {isRecu
                         ? <CheckCircle2 size={18} color="var(--sage)" strokeWidth={1.8} />
-                        : <AlertTriangle size={18} color={isRetard ? "#DC3545" : "#D97706"} strokeWidth={1.8} />}
+                        : <AlertTriangle size={18} color={isRetard ? "var(--althy-red)" : "var(--althy-warning)"} strokeWidth={1.8} />}
                     </div>
                     <div style={{ flex: 1 }}>
                       <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", margin: "0 0 2px" }}>{b.adresse}</p>
@@ -168,7 +168,7 @@ export function DashboardPortail({ firstName = "" }: Props) {
                     <span style={{
                       fontSize: 11, fontWeight: 600, padding: "4px 12px", borderRadius: 99, flexShrink: 0,
                       background: isRecu ? "var(--success-bg)" : isRetard ? "var(--urgent-bg)" : "var(--warning-bg)",
-                      color: isRecu ? "var(--sage)" : isRetard ? "#DC3545" : "#D97706",
+                      color: isRecu ? "var(--sage)" : isRetard ? "var(--althy-red)" : "var(--althy-warning)",
                     }}>
                       {isRecu ? "Reçu ✓" : isRetard ? "En retard" : "En attente"}
                     </span>
@@ -202,7 +202,7 @@ export function DashboardPortail({ firstName = "" }: Props) {
               {docsFiltres.map(doc => (
                 <div key={doc.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", background: "var(--cream)", borderRadius: 16, border: "1px solid var(--border-subtle)" }}>
                   <div style={{ width: 40, height: 40, borderRadius: 12, background: "var(--urgent-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <FileText size={16} color="#DC3545" strokeWidth={1.8} />
+                    <FileText size={16} color="var(--althy-red)" strokeWidth={1.8} />
                   </div>
                   <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)", flex: 1, margin: 0 }}>{doc.label}</p>
                   <a href={doc.url} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 14px", borderRadius: 99, border: "1px solid var(--border-subtle)", fontSize: 12, fontWeight: 500, color: "var(--terracotta-primary)", textDecoration: "none", background: "#fff", flexShrink: 0 }}>
@@ -217,7 +217,7 @@ export function DashboardPortail({ firstName = "" }: Props) {
         {/* Section 3 — Messagerie agence */}
         <div style={{ marginBottom: "2rem" }}>
           <DSectionTitle><MessageSquare size={14} style={{ marginRight: 6, display: "inline" }} />Contacter mon agence</DSectionTitle>
-          <div style={{ background: "#FFFFFF", borderRadius: 20, border: "1px solid var(--border-subtle)", padding: 24, boxShadow: CARD_SHADOW }}>
+          <div style={{ background: "var(--althy-surface)", borderRadius: 20, border: "1px solid var(--border-subtle)", padding: 24, boxShadow: CARD_SHADOW }}>
             {d.messages.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: "1rem", maxHeight: 200, overflowY: "auto" }}>
                 {d.messages.map(m => (
@@ -252,7 +252,7 @@ export function DashboardPortail({ firstName = "" }: Props) {
         {/* Section 4 — Althy IA FAQ */}
         <div style={{ marginBottom: "2rem" }}>
           <DSectionTitle><Sparkles size={14} style={{ marginRight: 6, display: "inline" }} />Question à Althy IA</DSectionTitle>
-          <div style={{ background: "#FFFFFF", borderRadius: 20, border: "1px solid var(--border-subtle)", padding: 24, boxShadow: CARD_SHADOW }}>
+          <div style={{ background: "var(--althy-surface)", borderRadius: 20, border: "1px solid var(--border-subtle)", padding: 24, boxShadow: CARD_SHADOW }}>
             <p style={{ fontSize: 13, color: "var(--text-tertiary)", margin: "0 0 14px" }}>Posez une question sur vos biens, loyers ou contrats.</p>
             <div style={{ display: "flex", gap: 8, marginBottom: iaReply ? 12 : 0 }}>
               <input

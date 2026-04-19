@@ -56,7 +56,7 @@ Règles rôle :
         except Exception:
             pass
     return {
-        "role": "owner",
+        "role": "proprio_solo",
         "name": None,
         "confidence": 0.0,
         "althy_response": "Pouvez-vous me donner votre nom ?",
@@ -77,7 +77,7 @@ async def deep_search(
     Utilise web_search pour trouver toutes les infos publiques disponibles.
     """
 
-    if role == "agency":
+    if role == "agence":
         search_prompt = f"""
 Fais une recherche exhaustive sur cette agence immobilière suisse.
 
@@ -109,7 +109,7 @@ Retourne ce JSON complet (null si introuvable) :
 }}
 UNIQUEMENT le JSON."""
 
-    elif role == "company":
+    elif role == "artisan":
         search_prompt = f"""
 Fais une recherche exhaustive sur cette entreprise artisanale suisse.
 
@@ -140,7 +140,7 @@ Retourne ce JSON :
 }}
 UNIQUEMENT le JSON."""
 
-    elif role == "owner":
+    elif role == "proprio_solo":
         search_prompt = f"""
 Recherche des informations PUBLIQUES sur ce propriétaire immobilier en Suisse.
 

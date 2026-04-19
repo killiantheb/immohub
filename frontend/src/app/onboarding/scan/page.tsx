@@ -1,17 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { C } from "@/lib/design-tokens";
 
-const S = {
-  orange:  "var(--althy-orange)",
-  dark:    "var(--althy-text)",
-  muted:   "var(--althy-text-3)",
-  bg:      "var(--althy-bg)",
-  surf:    "var(--althy-surface)",
-  border:  "var(--althy-border)",
-  green:   "#22C55E",
-  greenBg: "rgba(34,197,94,0.07)",
-} as const;
 
 interface ScanElement {
   source_site: string;
@@ -104,9 +95,9 @@ export default function OnboardingScanPage() {
   if (status === "loading" || status === "pending") return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      <div style={{ width: 44, height: 44, borderRadius: "50%", border: `3px solid var(--althy-border)`, borderTopColor: S.orange, animation: "spin 0.9s linear infinite" }} />
-      <p style={{ color: S.muted, fontSize: 15, margin: 0 }}>Althy recherche vos annonces sur internet…</p>
-      <p style={{ color: S.muted, fontSize: 13, opacity: 0.7, margin: 0 }}>Homegate · ImmoScout24 · Immobilier.ch · votre site</p>
+      <div style={{ width: 44, height: 44, borderRadius: "50%", border: `3px solid var(--althy-border)`, borderTopColor: C.orange, animation: "spin 0.9s linear infinite" }} />
+      <p style={{ color: C.text3, fontSize: 15, margin: 0 }}>Althy recherche vos annonces sur internet…</p>
+      <p style={{ color: C.text3, fontSize: 13, opacity: 0.7, margin: 0 }}>Homegate · ImmoScout24 · Immobilier.ch · votre site</p>
     </div>
   );
 
@@ -114,10 +105,10 @@ export default function OnboardingScanPage() {
   if (status === "done") return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
       <div style={{ fontSize: 52, lineHeight: 1 }}>✓</div>
-      <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 300, color: S.dark, margin: 0 }}>
+      <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 300, color: C.text, margin: 0 }}>
         {confirmes.size} élément{confirmes.size > 1 ? "s" : ""} importé{confirmes.size > 1 ? "s" : ""}
       </h2>
-      <a href="/app/biens" style={{ padding: "12px 28px", background: S.orange, color: "#fff", borderRadius: 12, textDecoration: "none", fontWeight: 600 }}>
+      <a href="/app/biens" style={{ padding: "12px 28px", background: C.orange, color: "#fff", borderRadius: 12, textDecoration: "none", fontWeight: 600 }}>
         Voir mes biens →
       </a>
     </div>
@@ -129,13 +120,13 @@ export default function OnboardingScanPage() {
 
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
-        <p style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: S.orange, fontWeight: 700, marginBottom: 8 }}>
+        <p style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: C.orange, fontWeight: 700, marginBottom: 8 }}>
           Althy a trouvé {elements.length} élément{elements.length > 1 ? "s" : ""}
         </p>
         <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 34, fontWeight: 300, lineHeight: 1.1, marginBottom: 10 }}>
           Ces résultats vous<br />appartiennent-ils ?
         </h1>
-        <p style={{ color: S.muted, fontSize: 14, margin: 0 }}>
+        <p style={{ color: C.text3, fontSize: 14, margin: 0 }}>
           Confirmez ce qui est à vous — Althy l&apos;importe automatiquement avec toutes les informations trouvées.
         </p>
       </div>
@@ -144,11 +135,11 @@ export default function OnboardingScanPage() {
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
         <button
           onClick={toutConfirmer}
-          style={{ padding: "7px 16px", borderRadius: 8, border: `1px solid ${S.border}`, background: S.surf, color: S.muted, cursor: "pointer", fontSize: 13 }}
+          style={{ padding: "7px 16px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.surface, color: C.text3, cursor: "pointer", fontSize: 13 }}
         >
           Tout confirmer
         </button>
-        <span style={{ marginLeft: "auto", color: S.muted, fontSize: 13 }}>
+        <span style={{ marginLeft: "auto", color: C.text3, fontSize: 13 }}>
           {confirmes.size} sélectionné{confirmes.size > 1 ? "s" : ""}
         </span>
       </div>
@@ -164,29 +155,29 @@ export default function OnboardingScanPage() {
             <div key={el.source_id ?? i} style={{
               display: "flex", alignItems: "center", gap: 14,
               padding: "14px 18px",
-              background: isC ? S.greenBg : isR ? "var(--althy-orange-bg)" : S.surf,
-              border: `1px solid ${isC ? S.green : isR ? S.orange : S.border}`,
+              background: isC ? C.greenBg : isR ? "var(--althy-orange-bg)" : C.surface,
+              border: `1px solid ${isC ? C.green : isR ? C.orange : C.border}`,
               borderRadius: 14, transition: "all 0.18s",
             }}>
 
               {/* Photo */}
               {el.photos?.[0]
                 ? <img src={el.photos[0]} alt="" style={{ width: 72, height: 54, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
-                : <div style={{ width: 72, height: 54, background: "var(--althy-surface)", border: `1px solid ${S.border}`, borderRadius: 8, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: S.muted }}>🏠</div>
+                : <div style={{ width: 72, height: 54, background: "var(--althy-surface)", border: `1px solid ${C.border}`, borderRadius: 8, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: C.text3 }}>🏠</div>
               }
 
               {/* Infos */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: S.dark, marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {el.titre}
                 </div>
-                <div style={{ fontSize: 12, color: S.muted }}>
+                <div style={{ fontSize: 12, color: C.text3 }}>
                   {[d.ville, d.pieces && `${d.pieces}p`, d.surface && `${d.surface}m²`].filter(Boolean).join(" · ")}
                 </div>
                 {d.prix_texte && (
-                  <div style={{ fontSize: 13, fontWeight: 700, color: S.orange, marginTop: 2 }}>{String(d.prix_texte)}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.orange, marginTop: 2 }}>{String(d.prix_texte)}</div>
                 )}
-                <div style={{ fontSize: 11, color: S.muted, marginTop: 2 }}>
+                <div style={{ fontSize: 11, color: C.text3, marginTop: 2 }}>
                   Source : {el.source_site}
                 </div>
               </div>
@@ -198,9 +189,9 @@ export default function OnboardingScanPage() {
                   title="C'est le mien"
                   style={{
                     width: 38, height: 38, borderRadius: "50%",
-                    background: isC ? S.green : "transparent",
-                    border: `1.5px solid ${isC ? S.green : S.border}`,
-                    color: isC ? "#fff" : S.muted,
+                    background: isC ? C.green : "transparent",
+                    border: `1.5px solid ${isC ? C.green : C.border}`,
+                    color: isC ? "#fff" : C.text3,
                     fontSize: 16, cursor: "pointer", transition: "all 0.15s",
                   }}
                 >✓</button>
@@ -209,9 +200,9 @@ export default function OnboardingScanPage() {
                   title="Pas à moi"
                   style={{
                     width: 38, height: 38, borderRadius: "50%",
-                    background: isR ? S.orange : "transparent",
-                    border: `1.5px solid ${isR ? S.orange : S.border}`,
-                    color: isR ? "#fff" : S.muted,
+                    background: isR ? C.orange : "transparent",
+                    border: `1.5px solid ${isR ? C.orange : C.border}`,
+                    color: isR ? "#fff" : C.text3,
                     fontSize: 16, cursor: "pointer", transition: "all 0.15s",
                   }}
                 >✗</button>
@@ -228,8 +219,8 @@ export default function OnboardingScanPage() {
           disabled={confirmes.size === 0 || importing}
           style={{
             padding: "12px 32px", borderRadius: 12, border: "none",
-            background: confirmes.size > 0 ? S.orange : S.border,
-            color: confirmes.size > 0 ? "#fff" : S.muted,
+            background: confirmes.size > 0 ? C.orange : C.border,
+            color: confirmes.size > 0 ? "#fff" : C.text3,
             fontSize: 15, fontWeight: 600,
             cursor: confirmes.size > 0 && !importing ? "pointer" : "default",
             transition: "all 0.15s",

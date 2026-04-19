@@ -8,10 +8,10 @@ import { C } from "@/lib/design-tokens"
 const sectionBg = C.surface2
 
 const MOCK_BIENS = [
-  { adresse: "Rue de Rive 12", ville: "Genève", loyer: "2 400", statut: "Loué", color: "#2E5E22" },
-  { adresse: "Av. de la Gare 8", ville: "Lausanne", loyer: "1 850", statut: "Loué", color: "#2E5E22" },
+  { adresse: "Rue de Rive 12", ville: "Genève", loyer: "2 400", statut: "Loué", color: "var(--althy-green)" },
+  { adresse: "Av. de la Gare 8", ville: "Lausanne", loyer: "1 850", statut: "Loué", color: "var(--althy-green)" },
   { adresse: "Chemin des Fleurs 4", ville: "Nyon", loyer: "1 600", statut: "Vacant", color: "#8A5210" },
-  { adresse: "Grand-Rue 21", ville: "Sion", loyer: "1 200", statut: "Loué", color: "#2E5E22" },
+  { adresse: "Grand-Rue 21", ville: "Sion", loyer: "1 200", statut: "Loué", color: "var(--althy-green)" },
 ]
 
 export function FeatureBiens() {

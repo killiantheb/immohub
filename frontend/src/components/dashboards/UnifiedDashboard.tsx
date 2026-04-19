@@ -256,45 +256,45 @@ export const DASHBOARD_CONFIGS: Record<UserRole, DashboardConfig> = {
 interface IconStyle { iconColor: string; iconBg: string }
 
 function kpiIconStyle(key: string, isUrgent: boolean): IconStyle {
-  if (isUrgent) return { iconColor: "#EF4444", iconBg: "#FEF0EF" };
+  if (isUrgent) return { iconColor: "var(--althy-red)", iconBg: "#FEF0EF" };
   const MAP: Record<string, IconStyle> = {
-    biens_actifs:          { iconColor: "#E8602C", iconBg: "#FEF0EA" },
-    biens_geres:           { iconColor: "#E8602C", iconBg: "#FEF0EA" },
-    loyers_mois:           { iconColor: "#16A34A", iconBg: "#E8F8F0" },
-    loyers_recus:          { iconColor: "#16A34A", iconBg: "#E8F8F0" },
-    impayes:               { iconColor: "#EF4444", iconBg: "#FEF0EF" },
-    interventions_actives: { iconColor: "#3B82F6", iconBg: "#EEF3FE" },
-    bail_statut:           { iconColor: "#16A34A", iconBg: "#E8F8F0" },
-    prochain_loyer:        { iconColor: "#3B82F6", iconBg: "#EEF3FE" },
-    documents:             { iconColor: "#3B82F6", iconBg: "#EEF3FE" },
-    revenus_mois:          { iconColor: "#16A34A", iconBg: "#E8F8F0" },
-    revenus_ouvreur:       { iconColor: "#16A34A", iconBg: "#E8F8F0" },
-    devis_attente:         { iconColor: "#D97706", iconBg: "#FEF9C3" },
-    missions_actives:      { iconColor: "#16A34A", iconBg: "#E8F8F0" },
-    agents_actifs:         { iconColor: "#E8602C", iconBg: "#FEF0EA" },
-    missions_mois:         { iconColor: "#E8602C", iconBg: "#FEF0EA" },
-    note_moyenne:          { iconColor: "#D97706", iconBg: "#FEF9C3" },
+    biens_actifs:          { iconColor: "var(--althy-orange)", iconBg: "var(--althy-orange-light)" },
+    biens_geres:           { iconColor: "var(--althy-orange)", iconBg: "var(--althy-orange-light)" },
+    loyers_mois:           { iconColor: "var(--althy-green)", iconBg: "var(--althy-green-bg)" },
+    loyers_recus:          { iconColor: "var(--althy-green)", iconBg: "var(--althy-green-bg)" },
+    impayes:               { iconColor: "var(--althy-red)", iconBg: "#FEF0EF" },
+    interventions_actives: { iconColor: "var(--althy-blue)", iconBg: "var(--althy-blue-bg)" },
+    bail_statut:           { iconColor: "var(--althy-green)", iconBg: "var(--althy-green-bg)" },
+    prochain_loyer:        { iconColor: "var(--althy-blue)", iconBg: "var(--althy-blue-bg)" },
+    documents:             { iconColor: "var(--althy-blue)", iconBg: "var(--althy-blue-bg)" },
+    revenus_mois:          { iconColor: "var(--althy-green)", iconBg: "var(--althy-green-bg)" },
+    revenus_ouvreur:       { iconColor: "var(--althy-green)", iconBg: "var(--althy-green-bg)" },
+    devis_attente:         { iconColor: "var(--althy-warning)", iconBg: "#FEF9C3" },
+    missions_actives:      { iconColor: "var(--althy-green)", iconBg: "var(--althy-green-bg)" },
+    agents_actifs:         { iconColor: "var(--althy-orange)", iconBg: "var(--althy-orange-light)" },
+    missions_mois:         { iconColor: "var(--althy-orange)", iconBg: "var(--althy-orange-light)" },
+    note_moyenne:          { iconColor: "var(--althy-warning)", iconBg: "#FEF9C3" },
   };
-  return MAP[key] ?? { iconColor: "#E8602C", iconBg: "#FEF0EA" };
+  return MAP[key] ?? { iconColor: "var(--althy-orange)", iconBg: "var(--althy-orange-light)" };
 }
 
 // ── Shared status badge ────────────────────────────────────────────────────────
 
 const STATUT_MAP: Record<string, { label: string; color: string; bg: string }> = {
   loue:        { label: "Loué",       color: "var(--althy-green)", bg: "var(--althy-green-bg)" },
-  vacant:      { label: "Vacant",     color: "#D97706",            bg: "rgba(217,119,6,0.10)" },
-  en_vente:    { label: "En vente",   color: "#2563EB",            bg: "rgba(37,99,235,0.10)" },
+  vacant:      { label: "Vacant",     color: "var(--althy-warning)",            bg: "var(--althy-warning-bg)" },
+  en_vente:    { label: "En vente",   color: "var(--althy-blue)",            bg: "rgba(37,99,235,0.10)" },
   en_travaux:  { label: "En travaux", color: "#0891B2",            bg: "rgba(8,145,178,0.10)" },
   recu:        { label: "Reçu ✓",     color: "var(--althy-green)", bg: "var(--althy-green-bg)" },
-  en_attente:  { label: "En attente", color: "#D97706",            bg: "rgba(217,119,6,0.10)" },
+  en_attente:  { label: "En attente", color: "var(--althy-warning)",            bg: "var(--althy-warning-bg)" },
   retard:      { label: "En retard",  color: "var(--althy-red)",   bg: "rgba(239,68,68,0.10)" },
   "en cours":  { label: "En cours",   color: DC.orange,            bg: "rgba(232,96,44,0.10)" },
   confirmée:   { label: "Confirmée",  color: "var(--althy-green)", bg: "var(--althy-green-bg)" },
   terminée:    { label: "Terminée",   color: DC.muted,             bg: "rgba(107,94,82,0.10)" },
-  proposee:    { label: "Proposée",   color: "#2563EB",            bg: "rgba(37,99,235,0.10)" },
+  proposee:    { label: "Proposée",   color: "var(--althy-blue)",            bg: "rgba(37,99,235,0.10)" },
   acceptee:    { label: "Acceptée",   color: "var(--althy-green)", bg: "var(--althy-green-bg)" },
   effectuee:   { label: "Effectuée",  color: DC.muted,             bg: "rgba(107,94,82,0.10)" },
-  "en attente": { label: "En attente", color: "#D97706",           bg: "rgba(217,119,6,0.10)" },
+  "en attente": { label: "En attente", color: "var(--althy-warning)",           bg: "var(--althy-warning-bg)" },
   "accepté":    { label: "Accepté",    color: "var(--althy-green)", bg: "var(--althy-green-bg)" },
   "refusé":     { label: "Refusé",     color: "var(--althy-red)",  bg: "rgba(239,68,68,0.10)" },
 };
@@ -539,7 +539,7 @@ function computeKpiValues(
 
 const URGENCE_COLOR: Record<string, string> = {
   haute: "var(--althy-red)",
-  moyenne: "#D97706",
+  moyenne: "var(--althy-warning)",
   basse: "var(--althy-green)",
 };
 
@@ -662,7 +662,7 @@ function SectionLoyersStatus({ data }: SectionProps) {
                 }}>
                   {isRecu
                     ? <CheckCircle2 size={18} color="var(--sage)" strokeWidth={1.8} />
-                    : <AlertTriangle size={18} color={isRetard ? "#DC3545" : "var(--sky)"} strokeWidth={1.8} />}
+                    : <AlertTriangle size={18} color={isRetard ? "var(--althy-red)" : "var(--sky)"} strokeWidth={1.8} />}
                 </div>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: DC.text, marginBottom: 2 }}>
@@ -744,9 +744,22 @@ function SectionMonBail({ data }: SectionProps) {
 }
 
 function SectionMesDocuments({ data }: SectionProps) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const docsAffichees = data.documents.length > 0
-    ? data.documents.slice(0, 6).map(d => ({ id: d.id, nom: (d as { type?: string }).type ?? "Document", date: (d as { date_document?: string }).date_document ?? null }))
+    ? data.documents.slice(0, 6).map(d => ({
+        id: d.id,
+        nom: (d as { type?: string }).type ?? "Document",
+        date: (d as { date_document?: string }).date_document ?? null,
+        url: d.url_storage,
+      }))
     : DOCS_MOCK;
+
+  function handleDownload(url?: string) {
+    if (!url) return;
+    const finalUrl = url.startsWith("http") ? url : `${supabaseUrl}/storage/v1/object/public/${url}`;
+    window.open(finalUrl, "_blank");
+  }
+
   return (
     <div style={{ marginBottom: "2rem" }}>
       <DSectionTitle>Mes documents</DSectionTitle>
@@ -754,44 +767,136 @@ function SectionMesDocuments({ data }: SectionProps) {
         <DEmptyState icon={FileText} title="Aucun document" subtitle="Vos documents apparaîtront ici." />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          {docsAffichees.map(doc => (
-            <DCard key={doc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "0.85rem 1.25rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(239,68,68,0.10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <FileText size={15} style={{ color: "var(--althy-red, #ef4444)" }} />
+          {docsAffichees.map(doc => {
+            const url = (doc as { url?: string }).url;
+            return (
+              <DCard key={doc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "0.85rem 1.25rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(239,68,68,0.10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <FileText size={15} style={{ color: "var(--althy-red, #ef4444)" }} />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: DC.text, marginBottom: 1 }}>{doc.nom}</p>
+                    <p style={{ fontSize: 11, color: DC.muted }}>{fmtDate(doc.date)}</p>
+                  </div>
                 </div>
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: DC.text, marginBottom: 1 }}>{doc.nom}</p>
-                  <p style={{ fontSize: 11, color: DC.muted }}>{fmtDate(doc.date)}</p>
-                </div>
-              </div>
-              <button style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: `1px solid ${DC.border}`, background: DC.surface, color: DC.muted, fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
-                <Download size={12} /> Télécharger
-              </button>
-            </DCard>
-          ))}
+                <button
+                  onClick={() => handleDownload(url)}
+                  disabled={!url}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8,
+                    border: `1px solid ${DC.border}`, background: DC.surface,
+                    color: url ? DC.orange : DC.muted,
+                    fontSize: 12, fontWeight: 600, cursor: url ? "pointer" : "default", flexShrink: 0,
+                    opacity: url ? 1 : 0.5,
+                  }}
+                >
+                  <Download size={12} /> Télécharger
+                </button>
+              </DCard>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
-function SectionSignalerProbleme() {
+const SIGNALER_CATS = [
+  { value: "plomberie",   label: "Fuite d'eau",   urgent: true },
+  { value: "electricite", label: "Électricité",    urgent: false },
+  { value: "chauffage",   label: "Chauffage",      urgent: true },
+  { value: "autre",       label: "Autre",          urgent: false },
+] as const;
+
+function SectionSignalerProbleme({ data }: SectionProps) {
   const [probleme, setProbleme] = useState("");
   const [categorie, setCategorie] = useState("autre");
-  const CATS = [{ value: "fuite", label: "Fuite d'eau" }, { value: "electricite", label: "Électricité" }, { value: "chauffage", label: "Chauffage" }, { value: "autre", label: "Autre" }];
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const bienId = data.bien?.id ?? null;
+  const cat = SIGNALER_CATS.find(c => c.value === categorie);
+
+  async function handleSubmit() {
+    if (!bienId) { setError("Aucun bien associé à votre compte. Contactez votre agence ou propriétaire."); return; }
+    if (!probleme.trim()) { setError("Veuillez décrire le problème."); return; }
+    setSending(true);
+    setError(null);
+    try {
+      await api.post("/interventions", {
+        bien_id: bienId,
+        titre: `${cat?.label ?? "Problème"} — signalé par le locataire`,
+        description: probleme,
+        categorie,
+        urgence: cat?.urgent ? "urgente" : "moderee",
+      });
+      setSent(true);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setError(msg ?? "Erreur lors de l'envoi du signalement");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  if (sent) {
+    return (
+      <div style={{ marginBottom: "2rem" }}>
+        <DSectionTitle>Signaler un problème</DSectionTitle>
+        <DCard>
+          <div style={{ textAlign: "center", padding: "1.5rem 1rem" }}>
+            <CheckCircle2 size={36} style={{ color: "var(--althy-green)", marginBottom: 10 }} />
+            <p style={{ fontSize: 15, fontWeight: 700, color: DC.text, margin: "0 0 6px" }}>
+              Signalement envoyé
+            </p>
+            <p style={{ fontSize: 13, color: DC.muted, margin: "0 0 16px" }}>
+              Votre propriétaire a été notifié. Vous recevrez une réponse sous 24h.
+            </p>
+            <Link
+              href="/app/interventions"
+              style={{ fontSize: 13, fontWeight: 600, color: DC.orange, textDecoration: "none" }}
+            >
+              Suivre le signalement →
+            </Link>
+          </div>
+        </DCard>
+      </div>
+    );
+  }
+
   return (
     <div style={{ marginBottom: "2rem" }}>
       <DSectionTitle>Signaler un problème</DSectionTitle>
       <DCard>
+        {!bienId && (
+          <p style={{ fontSize: 12, color: "var(--althy-red)", margin: "0 0 10px" }}>
+            Aucun bien associé à votre compte. Contactez votre agence ou propriétaire.
+          </p>
+        )}
         <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
           <select value={categorie} onChange={e => setCategorie(e.target.value)} style={{ padding: "9px 14px", borderRadius: 10, border: `1px solid ${DC.border}`, fontSize: 13, color: DC.text, background: DC.bg, outline: "none", cursor: "pointer" }}>
-            {CATS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            {SIGNALER_CATS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
         </div>
         <textarea value={probleme} onChange={e => setProbleme(e.target.value)} placeholder="Décrivez le problème en quelques mots…" rows={3} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${DC.border}`, fontSize: 13, color: DC.text, background: DC.bg, outline: "none", resize: "vertical", fontFamily: "inherit", marginBottom: "0.75rem", boxSizing: "border-box" }} />
-        <button style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 20px", borderRadius: 10, border: "none", background: DC.orange, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-          <Send size={14} /> Envoyer à mon propriétaire
+        {error && (
+          <p style={{ fontSize: 12, color: "var(--althy-red)", margin: "0 0 10px" }}>{error}</p>
+        )}
+        <button
+          onClick={handleSubmit}
+          disabled={sending || !bienId}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            padding: "10px 20px", borderRadius: 10, border: "none",
+            background: !bienId ? DC.muted : DC.orange, color: "#fff",
+            fontSize: 13, fontWeight: 700,
+            cursor: sending || !bienId ? "not-allowed" : "pointer",
+            opacity: sending ? 0.6 : 1,
+          }}
+        >
+          <Send size={14} /> {sending ? "Envoi en cours…" : "Envoyer à mon propriétaire"}
         </button>
       </DCard>
     </div>
@@ -880,7 +985,7 @@ function SectionAgents() {
                   <td style={{ padding: "12px 16px", fontWeight: 600, color: DC.text }}>{agent.nom}</td>
                   <td style={{ padding: "12px 16px", color: DC.muted }}>{agent.missions}</td>
                   <td style={{ padding: "12px 16px" }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 9px", borderRadius: 20, color: agent.taux >= 90 ? "var(--althy-green)" : "#D97706", background: agent.taux >= 90 ? "var(--althy-green-bg)" : "rgba(217,119,6,0.10)" }}>{agent.taux}%</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 9px", borderRadius: 20, color: agent.taux >= 90 ? "var(--althy-green)" : "var(--althy-warning)", background: agent.taux >= 90 ? "var(--althy-green-bg)" : "var(--althy-warning-bg)" }}>{agent.taux}%</span>
                   </td>
                   <td style={{ padding: "12px 16px", fontWeight: 600, color: DC.text }}>CHF {agent.ca.toLocaleString("fr-CH")}</td>
                 </tr>
@@ -950,15 +1055,120 @@ function SectionPortailPaiements({ data }: SectionProps) {
   );
 }
 
+function fmtElapsed(startTime: string): string {
+  const [h, m] = startTime.split(":").map(Number);
+  const startMin = h * 60 + m;
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const diff = Math.max(0, nowMin - startMin);
+  const hours = Math.floor(diff / 60);
+  const mins = diff % 60;
+  return hours > 0 ? `${hours}h ${mins}min` : `${mins}min`;
+}
+
+function MissionCard({ mission, isMock }: { mission: { id: string; heure: string; type: string; adresse: string; statut: string; started: boolean; heure_debut?: string | null }; isMock: boolean }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [started, setStarted] = useState(mission.started);
+  const [completed, setCompleted] = useState(mission.statut === "effectuee");
+  const [startTime, setStartTime] = useState(mission.heure_debut ?? null);
+  const [, setTick] = useState(0);
+
+  // Tick every minute to update elapsed time
+  useState(() => {
+    if (!started || completed) return;
+    const iv = setInterval(() => setTick(t => t + 1), 60_000);
+    return () => clearInterval(iv);
+  });
+
+  async function handleStart() {
+    if (isMock) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await api.post(`/ouvreurs/missions/${mission.id}/start`);
+      setStarted(true);
+      setStartTime(data.heure_debut ?? new Date().toTimeString().slice(0, 5));
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setError(msg ?? "Erreur lors du démarrage");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleComplete() {
+    if (isMock) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await api.post(`/ouvreurs/missions/${mission.id}/complete`);
+      setCompleted(true);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setError(msg ?? "Erreur lors de la complétion");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const displayStatut = completed ? "effectuée" : started ? "en cours" : mission.statut;
+
+  return (
+    <DCard style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 8, background: "rgba(26,22,18,0.05)", color: DC.muted }}>{mission.heure}</span>
+        <div>
+          <p style={{ fontSize: 13, fontWeight: 600, color: DC.text, marginBottom: 2 }}>{mission.type}</p>
+          <p style={{ fontSize: 12, color: DC.muted, display: "flex", alignItems: "center", gap: 4 }}><MapPin size={11} />{mission.adresse}</p>
+          {started && !completed && startTime && (
+            <p style={{ fontSize: 11, color: DC.orange, fontWeight: 600, marginTop: 2 }}>
+              En cours depuis {fmtElapsed(startTime)}
+            </p>
+          )}
+        </div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexDirection: "column" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <StatusBadge statut={displayStatut} />
+          {!completed && !started && mission.statut === "confirmée" && (
+            <button
+              onClick={handleStart}
+              disabled={loading}
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 14px", borderRadius: 8, border: "none", background: DC.orange, color: "#fff", fontSize: 12, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1 }}
+            >
+              <Play size={11} /> {loading ? "…" : "Démarrer"}
+            </button>
+          )}
+          {started && !completed && (
+            <button
+              onClick={handleComplete}
+              disabled={loading}
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 14px", borderRadius: 8, border: "none", background: "var(--althy-green)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1 }}
+            >
+              <CheckCircle2 size={11} /> {loading ? "…" : "Terminer"}
+            </button>
+          )}
+        </div>
+        {error && <p style={{ fontSize: 11, color: "var(--althy-red)", margin: 0 }}>{error}</p>}
+      </div>
+    </DCard>
+  );
+}
+
 function SectionMissionsJour({ data }: SectionProps) {
-  const missions = data.missionsDuJour.length > 0
+  const isMock = data.missionsDuJour.length === 0;
+  const missions = !isMock
     ? data.missionsDuJour.map(m => ({
+        id: m.id,
         heure: (m.creneau_debut as unknown as string)?.slice(0, 5) ?? "–",
         type: m.type === "edl_entree" ? "État des lieux entrée" : m.type === "edl_sortie" ? "État des lieux sortie" : m.type === "visite" ? "Visite" : m.type ?? "Mission",
         adresse: `Bien #${m.bien_id?.slice(0, 8) ?? "–"}`,
         statut: m.statut === "acceptee" ? "confirmée" : m.statut,
+        started: !!m.heure_debut,
+        heure_debut: m.heure_debut,
       }))
-    : MISSIONS_MOCK;
+    : MISSIONS_MOCK.map((m, i) => ({ id: `mock-${i}`, ...m, started: false, heure_debut: null as string | null }));
   return (
     <div style={{ marginBottom: "2rem" }}>
       <DSectionTitle>Missions du jour</DSectionTitle>
@@ -966,24 +1176,8 @@ function SectionMissionsJour({ data }: SectionProps) {
         <DEmptyState icon={CheckCircle2} title="Aucune mission aujourd'hui" subtitle="Profitez de votre journée !" />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          {missions.map((m, i) => (
-            <DCard key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 8, background: "rgba(26,22,18,0.05)", color: DC.muted }}>{m.heure}</span>
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: DC.text, marginBottom: 2 }}>{m.type}</p>
-                  <p style={{ fontSize: 12, color: DC.muted, display: "flex", alignItems: "center", gap: 4 }}><MapPin size={11} />{m.adresse}</p>
-                </div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <StatusBadge statut={m.statut} />
-                {m.statut === "confirmée" && (
-                  <button style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 14px", borderRadius: 8, border: "none", background: DC.orange, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                    <Play size={11} /> Démarrer
-                  </button>
-                )}
-              </div>
-            </DCard>
+          {missions.map(m => (
+            <MissionCard key={m.id} mission={m} isMock={isMock} />
           ))}
         </div>
       )}
@@ -1002,7 +1196,7 @@ const SECTION_REGISTRY: Record<string, SectionRendererFn> = {
   interventions_actives: (p) => <SectionInterventionsActives {...p} />,
   mon_bail:           (p) => <SectionMonBail {...p} />,
   mes_documents:      (p) => <SectionMesDocuments {...p} />,
-  signaler_probleme:  ()  => <SectionSignalerProbleme />,
+  signaler_probleme:  (p) => <SectionSignalerProbleme {...p} />,
   devis_recents:      ()  => <SectionDevisRecents />,
   chantiers_actifs:   (p) => <SectionChantiersActifs {...p} />,
   agents:             ()  => <SectionAgents />,
@@ -1052,7 +1246,7 @@ function HKpiCard({ icon: Icon, iconColor, iconBg, value, label, sub, isUrgent }
         <span style={{
           fontSize: 36, fontWeight: 600, lineHeight: 1,
           color: "var(--charcoal)",
-          fontFamily: "var(--font-display)",
+          fontFamily: "var(--font-serif)",
         }}>
           {value}
         </span>
@@ -1095,7 +1289,7 @@ function HHighlightCard({ value, label }: { value: string; label: string }) {
         <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.12em", opacity: 0.75, marginBottom: 6 }}>
           {label}
         </div>
-        <div style={{ fontSize: 40, fontWeight: 600, fontFamily: "var(--font-display)", lineHeight: 1 }}>
+        <div style={{ fontSize: 40, fontWeight: 600, fontFamily: "var(--font-serif)", lineHeight: 1 }}>
           {value}
         </div>
       </div>
@@ -1180,12 +1374,12 @@ function HDonut({ recu, total }: { recu: number; total: number }) {
           />
         </svg>
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontSize: 22, fontWeight: 600, color: "var(--charcoal)", lineHeight: 1, fontFamily: "var(--font-display)" }}>{pct}%</span>
+          <span style={{ fontSize: 22, fontWeight: 600, color: "var(--charcoal)", lineHeight: 1, fontFamily: "var(--font-serif)" }}>{pct}%</span>
           <span style={{ fontSize: 9, fontWeight: 600, color: "var(--text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase" }}>REÇUS</span>
         </div>
       </div>
       <div>
-        <div style={{ fontSize: 20, fontWeight: 600, color: "var(--charcoal)", lineHeight: 1, fontFamily: "var(--font-display)" }}>{fmtCHF(recu)}</div>
+        <div style={{ fontSize: 20, fontWeight: 600, color: "var(--charcoal)", lineHeight: 1, fontFamily: "var(--font-serif)" }}>{fmtCHF(recu)}</div>
         <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>sur {fmtCHF(total)} attendus</div>
       </div>
     </div>
@@ -1235,7 +1429,7 @@ export function UnifiedDashboard() {
 
       {/* ── Top bar ── */}
       <div style={{
-        height: 64, background: "#FFFFFF",
+        height: 64, background: "var(--althy-surface)",
         borderBottom: "1px solid var(--border-subtle)",
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 40px", flexShrink: 0,
@@ -1300,7 +1494,7 @@ export function UnifiedDashboard() {
       <div style={{ padding: "2rem 3rem", maxWidth: 1280 }}>
         {/* Greeting */}
         <div style={{ marginBottom: "2rem" }}>
-          <h1 style={{ fontSize: 48, fontWeight: 600, fontFamily: "var(--font-display)", color: "var(--charcoal)", marginBottom: 6, lineHeight: 1.1 }}>
+          <h1 style={{ fontSize: 48, fontWeight: 600, fontFamily: "var(--font-serif)", color: "var(--charcoal)", marginBottom: 6, lineHeight: 1.1 }}>
             Bonjour{firstName ? `, ${firstName}` : ""}
           </h1>
           <p style={{ fontSize: 15, color: "var(--text-secondary)" }} suppressHydrationWarning>

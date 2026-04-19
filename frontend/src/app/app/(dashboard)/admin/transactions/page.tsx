@@ -10,30 +10,7 @@ import {
 } from "lucide-react";
 import { useAdminTransactions, type AdminTransaction } from "@/lib/hooks/useAdmin";
 import { RentStatusBadge } from "@/components/RentStatusBadge";
-
-// ── Design tokens ─────────────────────────────────────────────────────────────
-
-const S = {
-  bg: "var(--cream)",
-  surface: "var(--background-card)",
-  surface2: "var(--althy-surface-2)",
-  border: "var(--border-subtle)",
-  text: "var(--charcoal)",
-  text2: "var(--text-secondary)",
-  text3: "var(--text-tertiary)",
-  orange: "var(--terracotta-primary)",
-  orangeBg: "var(--althy-orange-bg)",
-  green: "var(--althy-green)",
-  greenBg: "var(--althy-green-bg)",
-  red: "var(--althy-red)",
-  redBg: "var(--althy-red-bg)",
-  amber: "var(--althy-amber)",
-  amberBg: "var(--althy-amber-bg)",
-  blue: "var(--althy-blue)",
-  blueBg: "var(--althy-blue-bg)",
-  shadow: "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const;
+import { C } from "@/lib/design-tokens";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -48,15 +25,15 @@ const TYPE_LABELS: Record<string, string> = {
 type TypeKey = "rent" | "commission" | "deposit" | "service" | "quote";
 
 const TYPE_BADGE_STYLES: Record<TypeKey, { bg: string; color: string }> = {
-  rent: { bg: S.blueBg, color: S.blue },
-  commission: { bg: S.orangeBg, color: S.orange },
-  deposit: { bg: S.orangeBg, color: S.orange },
-  service: { bg: S.surface2, color: S.text2 },
-  quote: { bg: S.amberBg, color: S.amber },
+  rent: { bg: C.blueBg, color: C.blue },
+  commission: { bg: C.orangeBg, color: C.orange },
+  deposit: { bg: C.orangeBg, color: C.orange },
+  service: { bg: C.surface2, color: C.text2 },
+  quote: { bg: C.amberBg, color: C.amber },
 };
 
 function TypeBadge({ type }: { type: string }) {
-  const style = TYPE_BADGE_STYLES[type as TypeKey] ?? { bg: S.surface2, color: S.text2 };
+  const style = TYPE_BADGE_STYLES[type as TypeKey] ?? { bg: C.surface2, color: C.text2 };
   return (
     <span
       style={{
@@ -125,11 +102,11 @@ export default function AdminTransactionsPage() {
 
   const inputStyle = {
     borderRadius: 12,
-    border: `1px solid ${S.border}`,
-    background: S.surface,
+    border: `1px solid ${C.border}`,
+    background: C.surface,
     padding: "8px 12px",
     fontSize: 14,
-    color: S.text,
+    color: C.text,
     outline: "none",
   };
 
@@ -142,22 +119,22 @@ export default function AdminTransactionsPage() {
         <div>
           <Link
             href="/app/admin"
-            style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 4, fontSize: 14, color: S.text2, textDecoration: "none" }}
+            style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 4, fontSize: 14, color: C.text2, textDecoration: "none" }}
           >
             <ArrowLeft style={{ width: 16, height: 16 }} />
             Retour à l&apos;admin
           </Link>
           <h1
             style={{
-              fontFamily: "var(--font-serif),'Cormorant Garamond',serif",
+              fontFamily: "var(--font-serif)",
               fontWeight: 400,
               fontSize: 24,
-              color: S.text,
+              color: C.text,
             }}
           >
             Toutes les transactions
           </h1>
-          <p style={{ fontSize: 14, color: S.text2 }}>
+          <p style={{ fontSize: 14, color: C.text2 }}>
             {data ? `${data.total} transactions` : "Chargement…"}
           </p>
         </div>
@@ -169,14 +146,14 @@ export default function AdminTransactionsPage() {
               alignItems: "center",
               gap: 8,
               borderRadius: 12,
-              border: `1px solid ${S.border}`,
-              background: S.surface,
+              border: `1px solid ${C.border}`,
+              background: C.surface,
               padding: "8px 16px",
               fontSize: 14,
               fontWeight: 500,
-              color: S.text,
+              color: C.text,
               cursor: "pointer",
-              boxShadow: S.shadow,
+              boxShadow: C.shadow,
               transition: "background 0.15s",
             }}
           >
@@ -216,15 +193,15 @@ export default function AdminTransactionsPage() {
         style={{
           overflow: "hidden",
           borderRadius: 20,
-          border: `1px solid ${S.border}`,
-          background: S.surface,
-          boxShadow: S.shadow,
+          border: `1px solid ${C.border}`,
+          background: C.surface,
+          boxShadow: C.shadow,
         }}
       >
         <div style={{ overflowX: "auto" }}>
           <table className="w-full" style={{ fontSize: 14 }}>
             <thead>
-              <tr style={{ borderBottom: `1px solid ${S.border}`, background: S.surface2 }}>
+              <tr style={{ borderBottom: `1px solid ${C.border}`, background: C.surface2 }}>
                 {TABLE_HEADERS.map((h) => (
                   <th
                     key={h}
@@ -235,7 +212,7 @@ export default function AdminTransactionsPage() {
                       fontWeight: 600,
                       letterSpacing: "0.08em",
                       textTransform: "uppercase",
-                      color: S.text3,
+                      color: C.text3,
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -247,12 +224,12 @@ export default function AdminTransactionsPage() {
             <tbody>
               {isLoading
                 ? Array.from({ length: 10 }).map((_, i) => (
-                    <tr key={i} style={{ borderBottom: `1px solid ${S.border}` }}>
+                    <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
                       {Array.from({ length: 8 }).map((_, j) => (
                         <td key={j} style={{ padding: "14px 20px" }}>
                           <div
                             className="animate-pulse"
-                            style={{ height: 14, width: 80, borderRadius: 6, background: S.surface2 }}
+                            style={{ height: 14, width: 80, borderRadius: 6, background: C.surface2 }}
                           />
                         </td>
                       ))}
@@ -261,9 +238,9 @@ export default function AdminTransactionsPage() {
                 : data?.items.map((tx) => (
                     <tr
                       key={tx.id}
-                      style={{ borderBottom: `1px solid ${S.border}` }}
+                      style={{ borderBottom: `1px solid ${C.border}` }}
                     >
-                      <td style={{ padding: "14px 20px", fontFamily: "monospace", fontSize: 12, fontWeight: 600, color: S.text }}>
+                      <td style={{ padding: "14px 20px", fontFamily: "monospace", fontSize: 12, fontWeight: 600, color: C.text }}>
                         {tx.reference}
                       </td>
                       <td style={{ padding: "14px 20px" }}>
@@ -272,23 +249,23 @@ export default function AdminTransactionsPage() {
                       <td style={{ padding: "14px 20px" }}>
                         <RentStatusBadge status={tx.status} />
                       </td>
-                      <td style={{ padding: "14px 20px", fontWeight: 600, color: S.text }}>
+                      <td style={{ padding: "14px 20px", fontWeight: 600, color: C.text }}>
                         {fmt(tx.amount)}
                       </td>
-                      <td style={{ padding: "14px 20px", color: S.text2 }}>
+                      <td style={{ padding: "14px 20px", color: C.text2 }}>
                         {tx.commission_amount != null ? fmt(tx.commission_amount) : "—"}
                       </td>
-                      <td style={{ padding: "14px 20px", fontSize: 12, color: S.text3 }}>
+                      <td style={{ padding: "14px 20px", fontSize: 12, color: C.text3 }}>
                         {tx.due_date
                           ? new Date(tx.due_date).toLocaleDateString("fr-FR")
                           : "—"}
                       </td>
-                      <td style={{ padding: "14px 20px", fontSize: 12, color: S.text3 }}>
+                      <td style={{ padding: "14px 20px", fontSize: 12, color: C.text3 }}>
                         {tx.paid_at
                           ? new Date(tx.paid_at).toLocaleDateString("fr-FR")
                           : "—"}
                       </td>
-                      <td style={{ padding: "14px 20px", fontSize: 12, color: S.text3 }}>
+                      <td style={{ padding: "14px 20px", fontSize: 12, color: C.text3 }}>
                         {new Date(tx.created_at).toLocaleDateString("fr-FR")}
                       </td>
                     </tr>
@@ -301,9 +278,9 @@ export default function AdminTransactionsPage() {
         {data && data.pages > 1 && (
           <div
             className="flex items-center justify-between"
-            style={{ borderTop: `1px solid ${S.border}`, padding: "12px 20px" }}
+            style={{ borderTop: `1px solid ${C.border}`, padding: "12px 20px" }}
           >
-            <p style={{ fontSize: 12, color: S.text3 }}>
+            <p style={{ fontSize: 12, color: C.text3 }}>
               Page {data.page} / {data.pages} — {data.total} résultats
             </p>
             <div className="flex gap-2">
@@ -312,12 +289,12 @@ export default function AdminTransactionsPage() {
                 onClick={() => setPage((p) => p - 1)}
                 style={{
                   borderRadius: 8,
-                  border: `1px solid ${S.border}`,
+                  border: `1px solid ${C.border}`,
                   padding: 6,
-                  background: S.surface,
+                  background: C.surface,
                   cursor: page <= 1 ? "not-allowed" : "pointer",
                   opacity: page <= 1 ? 0.4 : 1,
-                  color: S.text,
+                  color: C.text,
                 }}
               >
                 <ChevronLeft style={{ width: 16, height: 16 }} />
@@ -327,12 +304,12 @@ export default function AdminTransactionsPage() {
                 onClick={() => setPage((p) => p + 1)}
                 style={{
                   borderRadius: 8,
-                  border: `1px solid ${S.border}`,
+                  border: `1px solid ${C.border}`,
                   padding: 6,
-                  background: S.surface,
+                  background: C.surface,
                   cursor: page >= data.pages ? "not-allowed" : "pointer",
                   opacity: page >= data.pages ? 0.4 : 1,
-                  color: S.text,
+                  color: C.text,
                 }}
               >
                 <ChevronRight style={{ width: 16, height: 16 }} />

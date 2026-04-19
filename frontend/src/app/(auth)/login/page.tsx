@@ -41,9 +41,9 @@ function LoginContent() {
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   const ROLE_ROUTES: Record<string, string> = {
-    owner: "/app/dashboard", agency: "/app/dashboard",
-    opener: "/opener", tenant: "/tenant",
-    company: "/company", super_admin: "/app/dashboard",
+    owner: "/app", agency: "/app",
+    opener: "/app", tenant: "/app",
+    company: "/app", super_admin: "/app",
   };
 
   const onSubmit = async ({ email, password }: FormValues) => {

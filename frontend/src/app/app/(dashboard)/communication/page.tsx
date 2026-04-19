@@ -71,7 +71,7 @@ function CommunicationInner() {
 
       {/* Page title */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontFamily: "Cormorant Garamond, var(--font-serif), serif", fontSize: 28, fontWeight: 300, color: "var(--charcoal)", margin: "0 0 4px" }}>
+        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 300, color: "var(--charcoal)", margin: "0 0 4px" }}>
           Communication
         </h1>
         <p style={{ fontSize: 13, color: "var(--text-tertiary)", margin: 0 }}>

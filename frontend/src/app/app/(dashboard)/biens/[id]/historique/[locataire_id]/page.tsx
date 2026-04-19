@@ -12,28 +12,7 @@ import {
 } from "@/lib/hooks/useBiens";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-
-// ── Design tokens ─────────────────────────────────────────────────────────────
-const S = {
-  bg:       "var(--cream)",
-  surface:  "var(--background-card)",
-  surface2: "var(--althy-surface-2)",
-  border:   "var(--border-subtle)",
-  text:     "var(--charcoal)",
-  text2:    "var(--text-secondary)",
-  text3:    "var(--text-tertiary)",
-  orange:   "var(--terracotta-primary)",
-  orangeBg: "var(--althy-orange-bg)",
-  green:    "var(--althy-green)",
-  greenBg:  "var(--althy-green-bg)",
-  red:      "var(--althy-red)",
-  redBg:    "var(--althy-red-bg)",
-  blue:     "var(--althy-blue)",
-  blueBg:   "var(--althy-blue-bg)",
-  amber:    "var(--althy-amber)",
-  amberBg:  "var(--althy-amber-bg)",
-  shadow:   "var(--althy-shadow)",
-} as const;
+import { C } from "@/lib/design-tokens";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtDate(iso?: string | null) {
@@ -55,48 +34,48 @@ function Badge({ label, color, bg }: { label: string; color: string; bg: string 
 }
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div style={{ background: S.surface, borderRadius: 14, border: `1px solid ${S.border}`, boxShadow: S.shadow, padding: "1.25rem", ...style }}>
+    <div style={{ background: C.surface, borderRadius: 14, border: `1px solid ${C.border}`, boxShadow: C.shadow, padding: "1.25rem", ...style }}>
       {children}
     </div>
   );
 }
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ fontSize: 11, fontWeight: 700, color: S.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "1rem" }}>
+    <p style={{ fontSize: 11, fontWeight: 700, color: C.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "1rem" }}>
       {children}
     </p>
   );
 }
 function Row({ label, value, accent }: { label: string; value: React.ReactNode; accent?: boolean }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: `1px solid ${S.border}` }}>
-      <span style={{ fontSize: 12, color: S.text3 }}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: accent ? 700 : 500, color: accent ? S.text : S.text2, textAlign: "right" }}>{value}</span>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: `1px solid ${C.border}` }}>
+      <span style={{ fontSize: 12, color: C.text3 }}>{label}</span>
+      <span style={{ fontSize: 13, fontWeight: accent ? 700 : 500, color: accent ? C.text : C.text2, textAlign: "right" }}>{value}</span>
     </div>
   );
 }
 function Skel({ h = 16, w = "100%" }: { h?: number; w?: string | number }) {
-  return <div style={{ height: h, width: w, borderRadius: 6, background: S.border, opacity: 0.6 }} />;
+  return <div style={{ height: h, width: w, borderRadius: 6, background: C.border, opacity: 0.6 }} />;
 }
 function Empty({ icon: Icon, title, sub }: { icon: React.ElementType; title: string; sub?: string }) {
   return (
-    <div style={{ textAlign: "center", padding: "3rem 1rem", color: S.text3 }}>
+    <div style={{ textAlign: "center", padding: "3rem 1rem", color: C.text3 }}>
       <Icon size={34} style={{ margin: "0 auto 0.75rem", opacity: 0.35 }} />
-      <p style={{ fontWeight: 600, color: S.text2, marginBottom: 4 }}>{title}</p>
+      <p style={{ fontWeight: 600, color: C.text2, marginBottom: 4 }}>{title}</p>
       {sub && <p style={{ fontSize: 13 }}>{sub}</p>}
     </div>
   );
 }
 function ScoreBar({ label, value }: { label: string; value: number }) {
   const pct = Math.round((value / 10) * 100);
-  const color = value >= 7 ? S.green : value >= 5 ? S.amber : S.red;
+  const color = value >= 7 ? C.green : value >= 5 ? C.amber : C.red;
   return (
     <div style={{ marginBottom: "0.65rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: S.text2 }}>{label}</span>
+        <span style={{ fontSize: 12, color: C.text2 }}>{label}</span>
         <span style={{ fontSize: 12, fontWeight: 700, color }}>{value.toFixed(1)}/10</span>
       </div>
-      <div style={{ height: 5, borderRadius: 99, background: S.border }}>
+      <div style={{ height: 5, borderRadius: 99, background: C.border }}>
         <div style={{ height: "100%", width: `${pct}%`, borderRadius: 99, background: color, transition: "width 0.5s ease" }} />
       </div>
     </div>
@@ -143,12 +122,12 @@ function TabIdentite({ locataireId }: { locataireId: string }) {
       <Card>
         <SectionTitle>Identité & bail</SectionTitle>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: "1rem" }}>
-          <div style={{ width: 52, height: 52, borderRadius: "50%", background: S.orangeBg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18, color: S.orange }}>
+          <div style={{ width: 52, height: 52, borderRadius: "50%", background: C.orangeBg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18, color: C.orange }}>
             L
           </div>
           <div>
-            <p style={{ fontWeight: 700, color: S.text }}>Locataire #{loc.id.slice(0, 8)}</p>
-            <Badge label={loc.statut === "actif" ? "Actif" : "Sorti"} color={loc.statut === "actif" ? S.green : S.text2} bg={loc.statut === "actif" ? S.greenBg : S.border} />
+            <p style={{ fontWeight: 700, color: C.text }}>Locataire #{loc.id.slice(0, 8)}</p>
+            <Badge label={loc.statut === "actif" ? "Actif" : "Sorti"} color={loc.statut === "actif" ? C.green : C.text2} bg={loc.statut === "actif" ? C.greenBg : C.border} />
           </div>
         </div>
         <Row label="Entrée" value={fmtDate(loc.date_entree)} accent />
@@ -158,9 +137,9 @@ function TabIdentite({ locataireId }: { locataireId: string }) {
         <Row label="Dépôt garantie" value={fmtCHF(loc.depot_garantie)} accent />
         {loc.motif_depart && <Row label="Motif de départ" value={loc.motif_depart} />}
         {loc.note_interne && (
-          <div style={{ marginTop: "1rem", padding: "0.75rem", borderRadius: 10, background: S.surface2, border: `1px solid ${S.border}` }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: S.text3, marginBottom: 4 }}>NOTE INTERNE</p>
-            <p style={{ fontSize: 13, color: S.text2, lineHeight: 1.5 }}>{loc.note_interne}</p>
+          <div style={{ marginTop: "1rem", padding: "0.75rem", borderRadius: 10, background: C.surface2, border: `1px solid ${C.border}` }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: C.text3, marginBottom: 4 }}>NOTE INTERNE</p>
+            <p style={{ fontSize: 13, color: C.text2, lineHeight: 1.5 }}>{loc.note_interne}</p>
           </div>
         )}
       </Card>
@@ -173,18 +152,18 @@ function TabIdentite({ locataireId }: { locataireId: string }) {
             <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: "1.25rem" }}>
               <div style={{
                 width: 60, height: 60, borderRadius: "50%",
-                background: scoring.score_global >= 7 ? S.greenBg : scoring.score_global >= 5 ? S.amberBg : S.redBg,
+                background: scoring.score_global >= 7 ? C.greenBg : scoring.score_global >= 5 ? C.amberBg : C.redBg,
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
               }}>
-                <span style={{ fontSize: 20, fontWeight: 800, color: scoring.score_global >= 7 ? S.green : scoring.score_global >= 5 ? S.amber : S.red }}>
+                <span style={{ fontSize: 20, fontWeight: 800, color: scoring.score_global >= 7 ? C.green : scoring.score_global >= 5 ? C.amber : C.red }}>
                   {scoring.score_global.toFixed(1)}
                 </span>
-                <span style={{ fontSize: 10, color: S.text3 }}>/10</span>
+                <span style={{ fontSize: 10, color: C.text3 }}>/10</span>
               </div>
               <div>
-                <p style={{ fontWeight: 700, fontSize: 15, color: S.text }}>Score global</p>
-                <p style={{ fontSize: 12, color: S.text3 }}>{scoring.nb_retards} retard{scoring.nb_retards !== 1 ? "s" : ""}</p>
-                {scoring.updated_at && <p style={{ fontSize: 11, color: S.text3 }}>Mis à jour {fmtDate(scoring.updated_at)}</p>}
+                <p style={{ fontWeight: 700, fontSize: 15, color: C.text }}>Score global</p>
+                <p style={{ fontSize: 12, color: C.text3 }}>{scoring.nb_retards} retard{scoring.nb_retards !== 1 ? "s" : ""}</p>
+                {scoring.updated_at && <p style={{ fontSize: 11, color: C.text3 }}>Mis à jour {fmtDate(scoring.updated_at)}</p>}
               </div>
             </div>
             <ScoreBar label="Ponctualité paiements" value={scoring.ponctualite} />
@@ -217,11 +196,11 @@ function TabCaution({ locataireId }: { locataireId: string }) {
         ) : (
           <>
             {loc.type_caution && (
-              <div style={{ padding: "0.9rem", borderRadius: 10, background: S.orangeBg, marginBottom: "1rem", display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <Shield size={18} style={{ color: S.orange, flexShrink: 0, marginTop: 1 }} />
+              <div style={{ padding: "0.9rem", borderRadius: 10, background: C.orangeBg, marginBottom: "1rem", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <Shield size={18} style={{ color: C.orange, flexShrink: 0, marginTop: 1 }} />
                 <div>
-                  <p style={{ fontWeight: 700, color: S.orange }}>{CAUTION_LABELS[loc.type_caution] ?? loc.type_caution}</p>
-                  <p style={{ fontSize: 12, color: S.text2, marginTop: 2 }}>Type de garantie locative</p>
+                  <p style={{ fontWeight: 700, color: C.orange }}>{CAUTION_LABELS[loc.type_caution] ?? loc.type_caution}</p>
+                  <p style={{ fontSize: 12, color: C.text2, marginTop: 2 }}>Type de garantie locative</p>
                 </div>
               </div>
             )}
@@ -233,15 +212,15 @@ function TabCaution({ locataireId }: { locataireId: string }) {
             <Row label="Montant DG" value={fmtCHF(loc.depot_garantie)} accent />
 
             {loc.type_caution === "compte_bloque" && (
-              <div style={{ marginTop: "1rem", padding: "0.75rem", borderRadius: 10, background: S.blueBg, border: `1px solid ${S.blue}22` }}>
-                <p style={{ fontSize: 12, color: S.blue, lineHeight: 1.5 }}>
+              <div style={{ marginTop: "1rem", padding: "0.75rem", borderRadius: 10, background: C.blueBg, border: `1px solid ${C.blue}22` }}>
+                <p style={{ fontSize: 12, color: C.blue, lineHeight: 1.5 }}>
                   <strong>Compte bloqué:</strong> Les fonds sont déposés sur un compte bancaire bloqué au nom du locataire. Ils sont libérés à la fin du bail sous conditions.
                 </p>
               </div>
             )}
             {loc.type_caution === "organisme" && (
-              <div style={{ marginTop: "1rem", padding: "0.75rem", borderRadius: 10, background: S.greenBg, border: `1px solid ${S.green}22` }}>
-                <p style={{ fontSize: 12, color: S.green, lineHeight: 1.5 }}>
+              <div style={{ marginTop: "1rem", padding: "0.75rem", borderRadius: 10, background: C.greenBg, border: `1px solid ${C.green}22` }}>
+                <p style={{ fontSize: 12, color: C.green, lineHeight: 1.5 }}>
                   <strong>Organisme de caution:</strong> Un tiers (ex. ACOSS, garantie cantonale) se porte garant. Vérifiez la validité auprès de l&apos;organisme.
                 </p>
               </div>
@@ -275,21 +254,21 @@ function TabAssurance({ locataireId }: { locataireId: string }) {
           <>
             {/* Status banner */}
             {expired && (
-              <div style={{ padding: "0.75rem 1rem", borderRadius: 10, background: S.redBg, border: `1px solid ${S.red}22`, display: "flex", gap: 8, alignItems: "flex-start", marginBottom: "1rem" }}>
-                <XCircle size={16} style={{ color: S.red, flexShrink: 0 }} />
-                <p style={{ fontSize: 12, color: S.red }}>Assurance <strong>expirée</strong>. Demandez une attestation renouvelée au locataire.</p>
+              <div style={{ padding: "0.75rem 1rem", borderRadius: 10, background: C.redBg, border: `1px solid ${C.red}22`, display: "flex", gap: 8, alignItems: "flex-start", marginBottom: "1rem" }}>
+                <XCircle size={16} style={{ color: C.red, flexShrink: 0 }} />
+                <p style={{ fontSize: 12, color: C.red }}>Assurance <strong>expirée</strong>. Demandez une attestation renouvelée au locataire.</p>
               </div>
             )}
             {expireSoon && !expired && (
-              <div style={{ padding: "0.75rem 1rem", borderRadius: 10, background: S.amberBg, border: `1px solid ${S.amber}22`, display: "flex", gap: 8, alignItems: "flex-start", marginBottom: "1rem" }}>
-                <AlertTriangle size={16} style={{ color: S.amber, flexShrink: 0 }} />
-                <p style={{ fontSize: 12, color: S.amber }}>Assurance expire dans <strong>{daysLeft} jours</strong>. Demandez le renouvellement.</p>
+              <div style={{ padding: "0.75rem 1rem", borderRadius: 10, background: C.amberBg, border: `1px solid ${C.amber}22`, display: "flex", gap: 8, alignItems: "flex-start", marginBottom: "1rem" }}>
+                <AlertTriangle size={16} style={{ color: C.amber, flexShrink: 0 }} />
+                <p style={{ fontSize: 12, color: C.amber }}>Assurance expire dans <strong>{daysLeft} jours</strong>. Demandez le renouvellement.</p>
               </div>
             )}
             {!expired && !expireSoon && dossier.assureur_rc && (
-              <div style={{ padding: "0.75rem 1rem", borderRadius: 10, background: S.greenBg, border: `1px solid ${S.green}22`, display: "flex", gap: 8, alignItems: "center", marginBottom: "1rem" }}>
-                <CheckCircle2 size={16} style={{ color: S.green }} />
-                <p style={{ fontSize: 12, color: S.green, fontWeight: 600 }}>Assurance valide</p>
+              <div style={{ padding: "0.75rem 1rem", borderRadius: 10, background: C.greenBg, border: `1px solid ${C.green}22`, display: "flex", gap: 8, alignItems: "center", marginBottom: "1rem" }}>
+                <CheckCircle2 size={16} style={{ color: C.green }} />
+                <p style={{ fontSize: 12, color: C.green, fontWeight: 600 }}>Assurance valide</p>
               </div>
             )}
             <Row label="Assureur" value={dossier.assureur_rc ?? "—"} accent />
@@ -298,7 +277,7 @@ function TabAssurance({ locataireId }: { locataireId: string }) {
               : "—"} />
             <Row label="Couverture" value="Responsabilité civile privée" />
             <Row label="Validité" value={
-              <span style={{ color: expired ? S.red : expireSoon ? S.amber : S.text }}>
+              <span style={{ color: expired ? C.red : expireSoon ? C.amber : C.text }}>
                 {fmtDate(expiry)}{daysLeft !== null && !expired ? ` (J−${daysLeft})` : ""}
               </span>
             } accent />
@@ -320,7 +299,7 @@ function TabSituationFinanciere({ locataireId, bienId }: { locataireId: string; 
   const salaire = dossier?.salaire_net;
   const loyer = loc?.loyer;
   const ratioLoyer = salaire && loyer ? ((loyer / salaire) * 100).toFixed(1) : null;
-  const ratioColor = ratioLoyer ? (parseFloat(ratioLoyer) <= 33 ? S.green : parseFloat(ratioLoyer) <= 40 ? S.amber : S.red) : S.text;
+  const ratioColor = ratioLoyer ? (parseFloat(ratioLoyer) <= 33 ? C.green : parseFloat(ratioLoyer) <= 40 ? C.amber : C.red) : C.text;
 
   const fichesDeSalaire = docs?.filter(d => d.type === "fiche_salaire") ?? [];
   const contratTravail = docs?.find(d => d.type === "contrat_travail");
@@ -340,20 +319,20 @@ function TabSituationFinanciere({ locataireId, bienId }: { locataireId: string; 
             <Row label="Poste" value={dossier.poste ?? "—"} />
             <Row label="Type contrat" value={dossier.type_contrat ? CONTRAT_LABELS[dossier.type_contrat] ?? dossier.type_contrat : "—"} />
             <Row label="Ancienneté" value={dossier.anciennete != null ? `${dossier.anciennete} mois` : "—"} />
-            <Row label="Salaire net mensuel" value={<span style={{ fontWeight: 800, color: S.green }}>{fmtCHF(dossier.salaire_net)}</span>} />
+            <Row label="Salaire net mensuel" value={<span style={{ fontWeight: 800, color: C.green }}>{fmtCHF(dossier.salaire_net)}</span>} />
             {ratioLoyer && (
-              <div style={{ marginTop: "1rem", padding: "0.9rem", borderRadius: 10, background: S.surface2, border: `1px solid ${S.border}` }}>
-                <p style={{ fontSize: 11, color: S.text3, marginBottom: 6 }}>RATIO LOYER / SALAIRE</p>
+              <div style={{ marginTop: "1rem", padding: "0.9rem", borderRadius: 10, background: C.surface2, border: `1px solid ${C.border}` }}>
+                <p style={{ fontSize: 11, color: C.text3, marginBottom: 6 }}>RATIO LOYER / SALAIRE</p>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <span style={{ fontSize: 28, fontWeight: 800, color: ratioColor }}>{ratioLoyer}%</span>
                   <div>
-                    <p style={{ fontSize: 12, color: S.text2 }}>{fmtCHF(loyer)} / {fmtCHF(salaire)}</p>
+                    <p style={{ fontSize: 12, color: C.text2 }}>{fmtCHF(loyer)} / {fmtCHF(salaire)}</p>
                     <p style={{ fontSize: 11, color: ratioColor, fontWeight: 600 }}>
                       {parseFloat(ratioLoyer) <= 33 ? "Excellent" : parseFloat(ratioLoyer) <= 40 ? "Acceptable" : "Élevé"}
                     </p>
                   </div>
                 </div>
-                <div style={{ marginTop: 8, height: 6, borderRadius: 99, background: S.border }}>
+                <div style={{ marginTop: 8, height: 6, borderRadius: 99, background: C.border }}>
                   <div style={{ height: "100%", width: `${Math.min(100, parseFloat(ratioLoyer) * 2)}%`, borderRadius: 99, background: ratioColor }} />
                 </div>
               </div>
@@ -370,14 +349,14 @@ function TabSituationFinanciere({ locataireId, bienId }: { locataireId: string; 
         ) : (
           <>
             {dossier.resultat_poursuites ? (
-              <div style={{ marginBottom: "1rem", padding: "0.9rem", borderRadius: 10, background: dossier.resultat_poursuites.toLowerCase().includes("néant") || dossier.resultat_poursuites.toLowerCase() === "0" ? S.greenBg : S.redBg, border: `1px solid ${dossier.resultat_poursuites.toLowerCase().includes("néant") ? S.green : S.red}22`, display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <div style={{ marginBottom: "1rem", padding: "0.9rem", borderRadius: 10, background: dossier.resultat_poursuites.toLowerCase().includes("néant") || dossier.resultat_poursuites.toLowerCase() === "0" ? C.greenBg : C.redBg, border: `1px solid ${dossier.resultat_poursuites.toLowerCase().includes("néant") ? C.green : C.red}22`, display: "flex", gap: 10, alignItems: "flex-start" }}>
                 {dossier.resultat_poursuites.toLowerCase().includes("néant") || dossier.resultat_poursuites === "0"
-                  ? <CheckCircle2 size={18} style={{ color: S.green, flexShrink: 0 }} />
-                  : <AlertTriangle size={18} style={{ color: S.red, flexShrink: 0 }} />}
+                  ? <CheckCircle2 size={18} style={{ color: C.green, flexShrink: 0 }} />
+                  : <AlertTriangle size={18} style={{ color: C.red, flexShrink: 0 }} />}
                 <div>
-                  <p style={{ fontWeight: 700, color: S.text }}>Résultat: {dossier.resultat_poursuites}</p>
-                  {dossier.date_poursuites && <p style={{ fontSize: 12, color: S.text3 }}>Daté du {fmtDate(dossier.date_poursuites)}</p>}
-                  {dossier.office_poursuites && <p style={{ fontSize: 12, color: S.text3 }}>Office: {dossier.office_poursuites}</p>}
+                  <p style={{ fontWeight: 700, color: C.text }}>Résultat: {dossier.resultat_poursuites}</p>
+                  {dossier.date_poursuites && <p style={{ fontSize: 12, color: C.text3 }}>Daté du {fmtDate(dossier.date_poursuites)}</p>}
+                  {dossier.office_poursuites && <p style={{ fontSize: 12, color: C.text3 }}>Office: {dossier.office_poursuites}</p>}
                 </div>
               </div>
             ) : (
@@ -414,10 +393,10 @@ function TabSituationFinanciere({ locataireId, bienId }: { locataireId: string; 
 
 function PjRow({ label, doc }: { label: string; doc?: { url_storage: string } }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 10px", borderRadius: 8, border: `1px solid ${S.border}`, background: S.surface }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.surface }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <FileText size={13} style={{ color: doc ? S.orange : S.text3 }} />
-        <span style={{ fontSize: 12, color: doc ? S.text : S.text3, fontWeight: doc ? 600 : 400 }}>{label}</span>
+        <FileText size={13} style={{ color: doc ? C.orange : C.text3 }} />
+        <span style={{ fontSize: 12, color: doc ? C.text : C.text3, fontWeight: doc ? 600 : 400 }}>{label}</span>
       </div>
       {doc ? (
         <div style={{ display: "flex", gap: 4 }}>
@@ -425,7 +404,7 @@ function PjRow({ label, doc }: { label: string; doc?: { url_storage: string } })
           <a href={doc.url_storage} download style={iconBtn}><Download size={12} /></a>
         </div>
       ) : (
-        <span style={{ fontSize: 11, color: S.text3 }}>Manquant</span>
+        <span style={{ fontSize: 11, color: C.text3 }}>Manquant</span>
       )}
     </div>
   );
@@ -434,7 +413,7 @@ function PjRow({ label, doc }: { label: string; doc?: { url_storage: string } })
 const iconBtn: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", justifyContent: "center",
   width: 26, height: 26, borderRadius: 7,
-  border: `1px solid ${S.border}`, background: S.surface, color: S.text2, textDecoration: "none",
+  border: `1px solid ${C.border}`, background: C.surface, color: C.text2, textDecoration: "none",
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -451,15 +430,15 @@ function TabDocsDossier({ bienId, locataireId }: { bienId: string; locataireId: 
       ) : (
         <div style={{ display: "grid", gap: "0.65rem", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}>
           {all.map(doc => (
-            <div key={doc.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "0.8rem 1rem", borderRadius: 12, border: `1px solid ${S.border}`, background: S.surface }}>
-              <FileText size={18} style={{ color: doc.genere_par_ia ? S.orange : S.text3, flexShrink: 0 }} />
+            <div key={doc.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "0.8rem 1rem", borderRadius: 12, border: `1px solid ${C.border}`, background: C.surface }}>
+              <FileText size={18} style={{ color: doc.genere_par_ia ? C.orange : C.text3, flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: S.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {DOC_LABELS[doc.type] ?? doc.type}
                 </p>
-                <p style={{ fontSize: 11, color: S.text3 }}>
+                <p style={{ fontSize: 11, color: C.text3 }}>
                   {fmtDate(doc.date_document ?? doc.created_at)}
-                  {doc.genere_par_ia && <span style={{ marginLeft: 5, color: S.orange, fontWeight: 600 }}>IA</span>}
+                  {doc.genere_par_ia && <span style={{ marginLeft: 5, color: C.orange, fontWeight: 600 }}>IA</span>}
                 </p>
               </div>
               <div style={{ display: "flex", gap: 4 }}>
@@ -494,11 +473,11 @@ export default function DossierLocatairePage() {
   const [activeTab, setActiveTab] = useState<TabId>("identite");
 
   return (
-    <div style={{ background: S.bg, minHeight: "100vh" }}>
+    <div style={{ background: C.bg, minHeight: "100vh" }}>
       {/* Back */}
       <button
         onClick={() => router.back()}
-        style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: S.text3, fontSize: 13, cursor: "pointer", marginBottom: "1rem", padding: 0 }}
+        style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: C.text3, fontSize: 13, cursor: "pointer", marginBottom: "1rem", padding: 0 }}
       >
         <ArrowLeft size={14} /> Retour
       </button>
@@ -506,18 +485,18 @@ export default function DossierLocatairePage() {
       {/* Page title */}
       <div style={{ marginBottom: "1.5rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          <div style={{ width: 40, height: 40, borderRadius: "50%", background: S.orangeBg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: S.orange }}>L</div>
+          <div style={{ width: 40, height: 40, borderRadius: "50%", background: C.orangeBg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: C.orange }}>L</div>
           <div>
-            <h1 style={{ fontSize: 20, fontWeight: 800, color: S.text }}>
+            <h1 style={{ fontSize: 20, fontWeight: 800, color: C.text }}>
               Dossier locataire #{locataire_id.slice(0, 8)}
             </h1>
-            <p style={{ fontSize: 13, color: S.text2 }}>
+            <p style={{ fontSize: 13, color: C.text2 }}>
               {fmtDate(loc?.date_entree)} → {fmtDate(loc?.date_sortie)}
               {loc?.statut && (
                 <Badge
                   label={loc.statut === "actif" ? "Actif" : "Sorti"}
-                  color={loc.statut === "actif" ? S.green : S.text2}
-                  bg={loc.statut === "actif" ? S.greenBg : S.border}
+                  color={loc.statut === "actif" ? C.green : C.text2}
+                  bg={loc.statut === "actif" ? C.greenBg : C.border}
                 />
               )}
             </p>
@@ -526,7 +505,7 @@ export default function DossierLocatairePage() {
       </div>
 
       {/* Tab bar */}
-      <div style={{ display: "flex", gap: 2, borderBottom: `1px solid ${S.border}`, marginBottom: "1.5rem", overflowX: "auto" }}>
+      <div style={{ display: "flex", gap: 2, borderBottom: `1px solid ${C.border}`, marginBottom: "1.5rem", overflowX: "auto" }}>
         {TABS.map(tab => {
           const active = activeTab === tab.id;
           return (
@@ -536,8 +515,8 @@ export default function DossierLocatairePage() {
               style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
                 padding: "10px 16px", background: "none", border: "none",
-                borderBottom: `2px solid ${active ? S.orange : "transparent"}`,
-                color: active ? S.orange : S.text3,
+                borderBottom: `2px solid ${active ? C.orange : "transparent"}`,
+                color: active ? C.orange : C.text3,
                 fontWeight: active ? 700 : 500, fontSize: 13,
                 cursor: "pointer", whiteSpace: "nowrap", transition: "color 0.15s",
               }}

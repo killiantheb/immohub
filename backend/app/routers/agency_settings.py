@@ -26,7 +26,7 @@ router = APIRouter()
 DbDep = Annotated[AsyncSession, Depends(get_db)]
 AuthUserDep = Annotated[User, Depends(get_current_user)]
 
-ALLOWED_ROLES = {"agency", "owner", "super_admin"}
+ALLOWED_ROLES = {"agence", "proprio_solo", "super_admin"}
 
 
 class AgencySettingsRead(BaseModel):

@@ -236,7 +236,7 @@ export default function MapMissionProposal({
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <p style={{ fontSize: 13, fontWeight: 700, color: "#3D3830", margin: 0 }}>{o.first_name ?? `Ouvreur ${o.id.slice(0, 6)}`}</p>
-              {o.rating != null && <span style={{ fontSize: 12, color: "#D97706" }}>⭐ {o.rating.toFixed(1)}</span>}
+              {o.rating != null && <span style={{ fontSize: 12, color: "var(--althy-warning)" }}>⭐ {o.rating.toFixed(1)}</span>}
             </div>
             <p style={{ fontSize: 11, color: "#7A7469", margin: "2px 0 0" }}>
               {o.dist.toFixed(1)} km · {o.total_missions} missions{o.hourly_rate ? ` · CHF ${o.hourly_rate}/h` : ""}

@@ -19,30 +19,10 @@ import {
   useVerifyUser,
   type AdminUser,
 } from "@/lib/hooks/useAdmin";
+import { C } from "@/lib/design-tokens";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
-const S = {
-  bg: "var(--cream)",
-  surface: "var(--background-card)",
-  surface2: "var(--althy-surface-2)",
-  border: "var(--border-subtle)",
-  text: "var(--charcoal)",
-  text2: "var(--text-secondary)",
-  text3: "var(--text-tertiary)",
-  orange: "var(--terracotta-primary)",
-  orangeBg: "var(--althy-orange-bg)",
-  green: "var(--althy-green)",
-  greenBg: "var(--althy-green-bg)",
-  red: "var(--althy-red)",
-  redBg: "var(--althy-red-bg)",
-  amber: "var(--althy-amber)",
-  amberBg: "var(--althy-amber-bg)",
-  blue: "var(--althy-blue)",
-  blueBg: "var(--althy-blue-bg)",
-  shadow: "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -58,16 +38,16 @@ const ROLE_LABELS: Record<string, string> = {
 type RoleKey = "super_admin" | "agency" | "owner" | "tenant" | "opener" | "company";
 
 const ROLE_BADGE_STYLES: Record<RoleKey, { bg: string; color: string }> = {
-  super_admin: { bg: S.redBg, color: S.red },
-  agency: { bg: S.orangeBg, color: S.orange },
-  owner: { bg: S.orangeBg, color: S.orange },
-  tenant: { bg: S.greenBg, color: S.green },
-  opener: { bg: S.orangeBg, color: S.orange },
-  company: { bg: S.amberBg, color: S.amber },
+  super_admin: { bg: C.redBg, color: C.red },
+  agency: { bg: C.orangeBg, color: C.orange },
+  owner: { bg: C.orangeBg, color: C.orange },
+  tenant: { bg: C.greenBg, color: C.green },
+  opener: { bg: C.orangeBg, color: C.orange },
+  company: { bg: C.amberBg, color: C.amber },
 };
 
 function RoleBadge({ role }: { role: string }) {
-  const style = ROLE_BADGE_STYLES[role as RoleKey] ?? { bg: S.surface2, color: S.text2 };
+  const style = ROLE_BADGE_STYLES[role as RoleKey] ?? { bg: C.surface2, color: C.text2 };
   return (
     <span
       style={{
@@ -108,13 +88,13 @@ function RoleModal({
           width: "100%",
           maxWidth: 384,
           borderRadius: 20,
-          background: S.surface,
+          background: C.surface,
           padding: "24px",
-          boxShadow: S.shadowMd,
+          boxShadow: C.shadowMd,
         }}
       >
-        <h3 style={{ fontSize: 16, fontWeight: 600, color: S.text }}>Changer le rôle</h3>
-        <p style={{ marginTop: 4, fontSize: 13, color: S.text2 }}>{user.email}</p>
+        <h3 style={{ fontSize: 16, fontWeight: 600, color: C.text }}>Changer le rôle</h3>
+        <p style={{ marginTop: 4, fontSize: 13, color: C.text2 }}>{user.email}</p>
         <div style={{ marginTop: 16 }} className="space-y-2">
           {roles.map((r) => (
             <label
@@ -125,7 +105,7 @@ function RoleModal({
                 alignItems: "center",
                 gap: 12,
                 borderRadius: 12,
-                border: `1px solid ${S.border}`,
+                border: `1px solid ${C.border}`,
                 padding: "10px 12px",
                 transition: "background 0.15s",
               }}
@@ -136,7 +116,7 @@ function RoleModal({
                 value={r}
                 checked={role === r}
                 onChange={() => setRole(r)}
-                style={{ accentColor: S.orange }}
+                style={{ accentColor: C.orange }}
               />
               <RoleBadge role={r} />
             </label>
@@ -147,12 +127,12 @@ function RoleModal({
             onClick={onClose}
             style={{
               borderRadius: 12,
-              border: `1px solid ${S.border}`,
+              border: `1px solid ${C.border}`,
               padding: "8px 16px",
               fontSize: 14,
               fontWeight: 500,
-              color: S.text2,
-              background: S.surface,
+              color: C.text2,
+              background: C.surface,
               cursor: "pointer",
             }}
           >
@@ -166,7 +146,7 @@ function RoleModal({
             }}
             style={{
               borderRadius: 12,
-              background: S.orange,
+              background: C.orange,
               padding: "8px 16px",
               fontSize: 14,
               fontWeight: 500,
@@ -200,11 +180,11 @@ export default function AdminUsersPage() {
 
   const inputStyle = {
     borderRadius: 12,
-    border: `1px solid ${S.border}`,
-    background: S.surface,
+    border: `1px solid ${C.border}`,
+    background: C.surface,
     padding: "8px 12px",
     fontSize: 14,
-    color: S.text,
+    color: C.text,
     outline: "none",
   };
 
@@ -219,22 +199,22 @@ export default function AdminUsersPage() {
         <div>
           <Link
             href="/app/admin"
-            style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 4, fontSize: 14, color: S.text2, textDecoration: "none" }}
+            style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 4, fontSize: 14, color: C.text2, textDecoration: "none" }}
           >
             <ArrowLeft style={{ width: 16, height: 16 }} />
             Retour à l&apos;admin
           </Link>
           <h1
             style={{
-              fontFamily: "var(--font-serif),'Cormorant Garamond',serif",
+              fontFamily: "var(--font-serif)",
               fontWeight: 400,
               fontSize: 24,
-              color: S.text,
+              color: C.text,
             }}
           >
             Gestion des utilisateurs
           </h1>
-          <p style={{ fontSize: 14, color: S.text2 }}>
+          <p style={{ fontSize: 14, color: C.text2 }}>
             {data ? `${data.total} utilisateurs` : "Chargement…"}
           </p>
         </div>
@@ -243,7 +223,7 @@ export default function AdminUsersPage() {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div style={{ position: "relative" }}>
-          <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: S.text3 }} />
+          <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: C.text3 }} />
           <input
             type="text"
             placeholder="Rechercher email, nom…"
@@ -283,14 +263,14 @@ export default function AdminUsersPage() {
         style={{
           overflow: "hidden",
           borderRadius: 20,
-          border: `1px solid ${S.border}`,
-          background: S.surface,
-          boxShadow: S.shadow,
+          border: `1px solid ${C.border}`,
+          background: C.surface,
+          boxShadow: C.shadow,
         }}
       >
         <table className="w-full" style={{ fontSize: 14 }}>
           <thead>
-            <tr style={{ borderBottom: `1px solid ${S.border}`, background: S.surface2 }}>
+            <tr style={{ borderBottom: `1px solid ${C.border}`, background: C.surface2 }}>
               {["Utilisateur", "Rôle", "Statut", "Inscription", "Actions"].map((h, i) => (
                 <th
                   key={h}
@@ -301,7 +281,7 @@ export default function AdminUsersPage() {
                     fontWeight: 600,
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
-                    color: S.text3,
+                    color: C.text3,
                   }}
                 >
                   {h}
@@ -312,12 +292,12 @@ export default function AdminUsersPage() {
           <tbody>
             {isLoading
               ? Array.from({ length: 8 }).map((_, i) => (
-                  <tr key={i} style={{ borderBottom: `1px solid ${S.border}` }}>
+                  <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
                     {Array.from({ length: 5 }).map((_, j) => (
                       <td key={j} style={{ padding: "14px 20px" }}>
                         <div
                           className="animate-pulse"
-                          style={{ height: 14, width: 96, borderRadius: 6, background: S.surface2 }}
+                          style={{ height: 14, width: 96, borderRadius: 6, background: C.surface2 }}
                         />
                       </td>
                     ))}
@@ -326,16 +306,16 @@ export default function AdminUsersPage() {
               : data?.items.map((user) => (
                   <tr
                     key={user.id}
-                    style={{ borderBottom: `1px solid ${S.border}` }}
+                    style={{ borderBottom: `1px solid ${C.border}` }}
                   >
                     <td style={{ padding: "14px 20px" }}>
                       <div>
-                        <p style={{ fontWeight: 500, color: S.text }}>
+                        <p style={{ fontWeight: 500, color: C.text }}>
                           {user.first_name || user.last_name
                             ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim()
                             : "—"}
                         </p>
-                        <p style={{ fontSize: 12, color: S.text3 }}>{user.email}</p>
+                        <p style={{ fontSize: 12, color: C.text3 }}>{user.email}</p>
                       </div>
                     </td>
                     <td style={{ padding: "14px 20px" }}>
@@ -344,22 +324,22 @@ export default function AdminUsersPage() {
                     <td style={{ padding: "14px 20px" }}>
                       <div className="flex flex-col gap-1">
                         {user.is_verified ? (
-                          <span className="flex items-center gap-1" style={{ fontSize: 12, color: S.green }}>
+                          <span className="flex items-center gap-1" style={{ fontSize: 12, color: C.green }}>
                             <CheckCircle2 style={{ width: 14, height: 14 }} /> Vérifié
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1" style={{ fontSize: 12, color: S.amber }}>
+                          <span className="flex items-center gap-1" style={{ fontSize: 12, color: C.amber }}>
                             <XCircle style={{ width: 14, height: 14 }} /> Non vérifié
                           </span>
                         )}
                         {!user.is_active && (
-                          <span className="flex items-center gap-1" style={{ fontSize: 12, color: S.red }}>
+                          <span className="flex items-center gap-1" style={{ fontSize: 12, color: C.red }}>
                             <ShieldBan style={{ width: 14, height: 14 }} /> Suspendu
                           </span>
                         )}
                       </div>
                     </td>
-                    <td style={{ padding: "14px 20px", fontSize: 12, color: S.text3 }}>
+                    <td style={{ padding: "14px 20px", fontSize: 12, color: C.text3 }}>
                       {new Date(user.created_at).toLocaleDateString("fr-FR")}
                     </td>
                     <td style={{ padding: "14px 20px" }}>
@@ -372,7 +352,7 @@ export default function AdminUsersPage() {
                             style={{
                               borderRadius: 8,
                               padding: 6,
-                              color: S.green,
+                              color: C.green,
                               background: "transparent",
                               border: "none",
                               cursor: "pointer",
@@ -389,7 +369,7 @@ export default function AdminUsersPage() {
                           style={{
                             borderRadius: 8,
                             padding: 6,
-                            color: S.orange,
+                            color: C.orange,
                             background: "transparent",
                             border: "none",
                             cursor: "pointer",
@@ -410,7 +390,7 @@ export default function AdminUsersPage() {
                           style={{
                             borderRadius: 8,
                             padding: 6,
-                            color: user.is_active ? S.red : S.green,
+                            color: user.is_active ? C.red : C.green,
                             background: "transparent",
                             border: "none",
                             cursor: "pointer",
@@ -435,9 +415,9 @@ export default function AdminUsersPage() {
         {data && data.pages > 1 && (
           <div
             className="flex items-center justify-between"
-            style={{ borderTop: `1px solid ${S.border}`, padding: "12px 20px" }}
+            style={{ borderTop: `1px solid ${C.border}`, padding: "12px 20px" }}
           >
-            <p style={{ fontSize: 12, color: S.text3 }}>
+            <p style={{ fontSize: 12, color: C.text3 }}>
               Page {data.page} / {data.pages} — {data.total} résultats
             </p>
             <div className="flex gap-2">
@@ -446,12 +426,12 @@ export default function AdminUsersPage() {
                 onClick={() => setPage((p) => p - 1)}
                 style={{
                   borderRadius: 8,
-                  border: `1px solid ${S.border}`,
+                  border: `1px solid ${C.border}`,
                   padding: 6,
-                  background: S.surface,
+                  background: C.surface,
                   cursor: page <= 1 ? "not-allowed" : "pointer",
                   opacity: page <= 1 ? 0.4 : 1,
-                  color: S.text,
+                  color: C.text,
                 }}
               >
                 <ChevronLeft style={{ width: 16, height: 16 }} />
@@ -461,12 +441,12 @@ export default function AdminUsersPage() {
                 onClick={() => setPage((p) => p + 1)}
                 style={{
                   borderRadius: 8,
-                  border: `1px solid ${S.border}`,
+                  border: `1px solid ${C.border}`,
                   padding: 6,
-                  background: S.surface,
+                  background: C.surface,
                   cursor: page >= data.pages ? "not-allowed" : "pointer",
                   opacity: page >= data.pages ? 0.4 : 1,
-                  color: S.text,
+                  color: C.text,
                 }}
               >
                 <ChevronRight style={{ width: 16, height: 16 }} />

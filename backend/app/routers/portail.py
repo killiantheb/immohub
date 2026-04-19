@@ -86,11 +86,29 @@ async def create_portail_user(
     db.add(portail_user)
     await db.flush()
 
-    # TODO: Send Supabase invitation email via Admin API
-    # supabase_admin.auth.admin.invite_user_by_email(
-    #     email=body.email,
-    #     options={"data": {"role": "portail_proprio", "invited_by": str(agency.id)}}
-    # )
+    # Send Supabase invitation email — creates auth.users entry + sends magic link
+    from app.services.supabase_admin import SupabaseAdminError, invite_user_by_email
+
+    try:
+        invite_result = await invite_user_by_email(
+            email=body.email,
+            user_metadata={
+                "role": "portail_proprio",
+                "invited_by": str(agency.id),
+                "first_name": body.first_name,
+                "last_name": body.last_name,
+            },
+            redirect_to=f"{settings.FRONTEND_URL}/portail/accept",
+        )
+        # Store the Supabase UID so the user can authenticate later
+        if invite_result.get("id"):
+            portail_user.supabase_uid = invite_result["id"]
+    except SupabaseAdminError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            f"Échec envoi invitation : {exc}",
+        )
 
     await db.commit()
     await db.refresh(portail_user)

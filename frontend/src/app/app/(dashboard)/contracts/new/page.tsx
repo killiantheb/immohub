@@ -6,28 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { useCreateContract } from "@/lib/hooks/useContracts";
 import type { ContractType } from "@/lib/types";
-
-const S = {
-  bg: "var(--cream)",
-  surface: "var(--background-card)",
-  surface2: "var(--althy-surface-2)",
-  border: "var(--border-subtle)",
-  text: "var(--charcoal)",
-  text2: "var(--text-secondary)",
-  text3: "var(--text-tertiary)",
-  orange: "var(--terracotta-primary)",
-  orangeBg: "var(--althy-orange-bg)",
-  green: "var(--althy-green)",
-  greenBg: "var(--althy-green-bg)",
-  red: "var(--althy-red)",
-  redBg: "var(--althy-red-bg)",
-  amber: "var(--althy-amber)",
-  amberBg: "var(--althy-amber-bg)",
-  blue: "var(--althy-blue)",
-  blueBg: "var(--althy-blue-bg)",
-  shadow: "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const;
+import { C } from "@/lib/design-tokens";
 
 const TYPE_OPTIONS: { value: ContractType; label: string }[] = [
   { value: "long_term",  label: "Longue durée" },
@@ -37,10 +16,10 @@ const TYPE_OPTIONS: { value: ContractType; label: string }[] = [
 ];
 
 const cardStyle: React.CSSProperties = {
-  background: S.surface,
-  border: `1px solid ${S.border}`,
+  background: C.surface,
+  border: `1px solid ${C.border}`,
   borderRadius: 14,
-  boxShadow: S.shadow,
+  boxShadow: C.shadow,
   padding: "1.25rem",
 };
 
@@ -49,9 +28,9 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "9px 14px",
   borderRadius: 10,
-  border: `1px solid ${S.border}`,
-  background: S.surface,
-  color: S.text,
+  border: `1px solid ${C.border}`,
+  background: C.surface,
+  color: C.text,
   fontSize: 13,
   outline: "none",
   fontFamily: "inherit",
@@ -64,14 +43,14 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 600,
   textTransform: "uppercase",
   letterSpacing: "0.06em",
-  color: S.text3,
+  color: C.text3,
   marginBottom: 5,
 };
 
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 600,
-  color: S.text2,
+  color: C.text2,
   marginBottom: "0.75rem",
 };
 
@@ -187,10 +166,10 @@ export default function NewContractPage() {
     <div className="mx-auto max-w-2xl">
       {/* Header */}
       <div className="mb-6 flex items-center gap-3">
-        <Link href="/app/contracts" style={{ color: S.text3, display: "flex", alignItems: "center" }}>
+        <Link href="/app/contracts" style={{ color: C.text3, display: "flex", alignItems: "center" }}>
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontWeight: 400, fontSize: 28, color: S.text }}>
+        <h1 style={{ fontFamily: "var(--font-serif)", fontWeight: 400, fontSize: 28, color: C.text }}>
           Nouveau contrat
         </h1>
       </div>
@@ -198,12 +177,12 @@ export default function NewContractPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
 
         {/* AI NLP Parser */}
-        <div style={{ ...cardStyle, background: S.amberBg, border: `1px solid ${S.amber}` }} className="space-y-3">
+        <div style={{ ...cardStyle, background: C.amberBg, border: `1px solid ${C.amber}` }} className="space-y-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4" style={{ color: S.amber }} />
-            <h2 style={{ fontSize: 13, fontWeight: 700, color: S.amber }}>Générer avec l&apos;IA</h2>
+            <Sparkles className="h-4 w-4" style={{ color: C.amber }} />
+            <h2 style={{ fontSize: 13, fontWeight: 700, color: C.amber }}>Générer avec l&apos;IA</h2>
           </div>
-          <p style={{ fontSize: 12, color: S.text2 }}>Décrivez votre contrat en langage naturel et l&apos;IA pré-remplira les paramètres.</p>
+          <p style={{ fontSize: 12, color: C.text2 }}>Décrivez votre contrat en langage naturel et l&apos;IA pré-remplira les paramètres.</p>
           <div className="flex gap-2">
             <input
               type="text"
@@ -217,7 +196,7 @@ export default function NewContractPage() {
               type="button"
               onClick={handleNlpParse}
               disabled={!nlpInput.trim() || nlpLoading}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, background: S.orange, color: "#fff", borderRadius: 10, padding: "10px 16px", fontSize: 12, fontWeight: 700, border: "none", cursor: !nlpInput.trim() || nlpLoading ? "not-allowed" : "pointer", opacity: !nlpInput.trim() || nlpLoading ? 0.5 : 1, whiteSpace: "nowrap" }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, background: C.orange, color: "#fff", borderRadius: 10, padding: "10px 16px", fontSize: 12, fontWeight: 700, border: "none", cursor: !nlpInput.trim() || nlpLoading ? "not-allowed" : "pointer", opacity: !nlpInput.trim() || nlpLoading ? 0.5 : 1, whiteSpace: "nowrap" }}
             >
               {nlpLoading ? (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -230,10 +209,10 @@ export default function NewContractPage() {
           {nlpResult && (
             <div className="space-y-1.5">
               {nlpResult.warnings?.map((w, i) => (
-                <p key={i} style={{ fontSize: 12, color: S.red }}>! {w}</p>
+                <p key={i} style={{ fontSize: 12, color: C.red }}>! {w}</p>
               ))}
               {nlpResult.ai_recommendations?.map((r, i) => (
-                <p key={i} style={{ fontSize: 12, color: S.text2 }}>+ {r}</p>
+                <p key={i} style={{ fontSize: 12, color: C.text2 }}>+ {r}</p>
               ))}
             </div>
           )}
@@ -453,9 +432,9 @@ export default function NewContractPage() {
                   type="checkbox"
                   checked={form[key as keyof typeof form] as boolean}
                   onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.checked }))}
-                  style={{ width: 16, height: 16, accentColor: S.orange }}
+                  style={{ width: 16, height: 16, accentColor: C.orange }}
                 />
-                <span style={{ fontSize: 13, color: S.text }}>{label}</span>
+                <span style={{ fontSize: 13, color: C.text }}>{label}</span>
               </label>
             ))}
           </div>
@@ -465,21 +444,21 @@ export default function NewContractPage() {
         <div className="flex justify-end gap-3">
           <Link
             href="/app/contracts"
-            style={{ display: "inline-flex", alignItems: "center", padding: "10px 20px", borderRadius: 10, border: `1px solid ${S.border}`, background: S.surface, color: S.text2, fontSize: 13, fontWeight: 600, textDecoration: "none" }}
+            style={{ display: "inline-flex", alignItems: "center", padding: "10px 20px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.text2, fontSize: 13, fontWeight: 600, textDecoration: "none" }}
           >
             Annuler
           </Link>
           <button
             type="submit"
             disabled={create.isPending}
-            style={{ display: "inline-flex", alignItems: "center", background: S.orange, color: "#fff", borderRadius: 10, padding: "10px 20px", fontSize: 13, fontWeight: 700, border: "none", cursor: create.isPending ? "not-allowed" : "pointer", opacity: create.isPending ? 0.7 : 1 }}
+            style={{ display: "inline-flex", alignItems: "center", background: C.orange, color: "#fff", borderRadius: 10, padding: "10px 20px", fontSize: 13, fontWeight: 700, border: "none", cursor: create.isPending ? "not-allowed" : "pointer", opacity: create.isPending ? 0.7 : 1 }}
           >
             {create.isPending ? "Création…" : "Créer le contrat"}
           </button>
         </div>
 
         {create.isError && (
-          <p style={{ fontSize: 13, color: S.red }}>Une erreur est survenue. Vérifiez les informations.</p>
+          <p style={{ fontSize: 13, color: C.red }}>Une erreur est survenue. Vérifiez les informations.</p>
         )}
       </form>
     </div>

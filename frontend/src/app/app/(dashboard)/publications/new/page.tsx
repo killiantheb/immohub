@@ -12,29 +12,7 @@ import {
 import { api, baseURL } from "@/lib/api";
 import { createClient } from "@/lib/supabase";
 import type { Bien } from "@/lib/hooks/useBiens";
-
-// ── Design tokens ─────────────────────────────────────────────────────────────
-const S = {
-  bg:       "var(--cream)",
-  surface:  "var(--background-card)",
-  surface2: "var(--althy-surface-2)",
-  border:   "var(--border-subtle)",
-  text:     "var(--charcoal)",
-  text2:    "var(--text-secondary)",
-  text3:    "var(--text-tertiary)",
-  orange:   "var(--terracotta-primary)",
-  orangeBg: "var(--althy-orange-bg)",
-  green:    "var(--althy-green)",
-  greenBg:  "var(--althy-green-bg)",
-  red:      "var(--althy-red)",
-  redBg:    "var(--althy-red-bg)",
-  amber:    "var(--althy-amber)",
-  amberBg:  "var(--althy-amber-bg)",
-  blue:     "var(--althy-blue)",
-  blueBg:   "var(--althy-blue-bg)",
-  shadow:   "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const;
+import { C } from "@/lib/design-tokens";
 
 // ── Zod schemas ───────────────────────────────────────────────────────────────
 const missionSchema = z.object({
@@ -91,7 +69,7 @@ interface MatchProfile {
 // ── Atoms ─────────────────────────────────────────────────────────────────────
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div style={{ background: S.surface, borderRadius: 16, border: `1px solid ${S.border}`, boxShadow: S.shadow, padding: "1.25rem", ...style }}>
+    <div style={{ background: C.surface, borderRadius: 16, border: `1px solid ${C.border}`, boxShadow: C.shadow, padding: "1.25rem", ...style }}>
       {children}
     </div>
   );
@@ -99,10 +77,10 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
 function Field({ label, children, error, hint }: { label: string; children: React.ReactNode; error?: string; hint?: string }) {
   return (
     <div>
-      <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: S.text3, marginBottom: 5 }}>{label}</label>
+      <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: C.text3, marginBottom: 5 }}>{label}</label>
       {children}
-      {error && <p style={{ fontSize: 11, color: S.red, marginTop: 3 }}>{error}</p>}
-      {hint && !error && <p style={{ fontSize: 11, color: S.text3, marginTop: 3 }}>{hint}</p>}
+      {error && <p style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{error}</p>}
+      {hint && !error && <p style={{ fontSize: 11, color: C.text3, marginTop: 3 }}>{hint}</p>}
     </div>
   );
 }
@@ -110,12 +88,12 @@ function Input({ value, onChange, type = "text", placeholder, readOnly, min, max
   return (
     <input type={type} value={value} placeholder={placeholder} readOnly={readOnly} min={min} max={max}
       onChange={e => onChange?.(e.target.value)}
-      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${S.border}`, background: readOnly ? S.surface2 : S.surface, color: readOnly ? S.text3 : S.text, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: readOnly ? C.surface2 : C.surface, color: readOnly ? C.text3 : C.text, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
   );
 }
 function Select({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
   return (
-    <select value={value} onChange={e => onChange(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${S.border}`, background: S.surface, color: S.text, fontSize: 13, outline: "none", fontFamily: "inherit" }}>
+    <select value={value} onChange={e => onChange(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: 13, outline: "none", fontFamily: "inherit" }}>
       <option value="">— Choisir —</option>
       {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
@@ -124,14 +102,14 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
 function Textarea({ value, onChange, placeholder, rows = 4 }: { value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) {
   return (
     <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
-      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${S.border}`, background: S.surface, color: S.text, fontSize: 13, outline: "none", fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+      style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: 13, outline: "none", fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
   );
 }
 function Toggle({ label, hint, value, onChange }: { label: string; hint?: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
-      <div><p style={{ fontSize: 13, color: S.text, fontWeight: 500 }}>{label}</p>{hint && <p style={{ fontSize: 11, color: S.text3, marginTop: 2 }}>{hint}</p>}</div>
-      <button onClick={() => onChange(!value)} style={{ width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer", background: value ? S.orange : S.border, position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
+      <div><p style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{label}</p>{hint && <p style={{ fontSize: 11, color: C.text3, marginTop: 2 }}>{hint}</p>}</div>
+      <button onClick={() => onChange(!value)} style={{ width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer", background: value ? C.orange : C.border, position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
         <span style={{ position: "absolute", top: 3, left: value ? 22 : 3, width: 18, height: 18, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
       </button>
     </div>
@@ -141,11 +119,11 @@ function RangeField({ label, value, onChange, min, max, step, suffix = "" }: { l
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-        <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: S.text3 }}>{label}</label>
-        <span style={{ fontSize: 12, fontWeight: 700, color: S.orange }}>{value}{suffix}</span>
+        <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: C.text3 }}>{label}</label>
+        <span style={{ fontSize: 12, fontWeight: 700, color: C.orange }}>{value}{suffix}</span>
       </div>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(Number(e.target.value))} style={{ width: "100%", accentColor: S.orange, cursor: "pointer" }} />
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: S.text3, marginTop: 3 }}>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(Number(e.target.value))} style={{ width: "100%", accentColor: C.orange, cursor: "pointer" }} />
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.text3, marginTop: 3 }}>
         <span>{min}{suffix}</span><span>{max}{suffix}</span>
       </div>
     </div>
@@ -165,13 +143,13 @@ function Stepper({ current }: { current: Step }) {
         return (
           <div key={i} style={{ display: "flex", alignItems: "center", flex: i < STEPS.length - 1 ? 1 : undefined }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <div style={{ width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, border: `2px solid ${active ? S.orange : done ? S.green : S.border}`, background: active ? S.orange : done ? S.greenBg : S.surface, color: active ? "#fff" : done ? S.green : S.text3, transition: "all 0.2s" }}>
+              <div style={{ width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, border: `2px solid ${active ? C.orange : done ? C.green : C.border}`, background: active ? C.orange : done ? C.greenBg : C.surface, color: active ? "#fff" : done ? C.green : C.text3, transition: "all 0.2s" }}>
                 {done ? <CheckCircle2 size={14} /> : idx}
               </div>
-              <span style={{ fontSize: 11, fontWeight: active ? 700 : 500, color: active ? S.orange : done ? S.green : S.text3, whiteSpace: "nowrap" }}>{label}</span>
+              <span style={{ fontSize: 11, fontWeight: active ? 700 : 500, color: active ? C.orange : done ? C.green : C.text3, whiteSpace: "nowrap" }}>{label}</span>
             </div>
             {i < STEPS.length - 1 && (
-              <div style={{ flex: 1, height: 2, background: done ? S.green : S.border, margin: "0 8px", marginBottom: "1.25rem", transition: "background 0.2s" }} />
+              <div style={{ flex: 1, height: 2, background: done ? C.green : C.border, margin: "0 8px", marginBottom: "1.25rem", transition: "background 0.2s" }} />
             )}
           </div>
         );
@@ -183,9 +161,9 @@ function Stepper({ current }: { current: Step }) {
 // ── Type switch ───────────────────────────────────────────────────────────────
 function TypeSwitch({ type, onChange }: { type: TypePublication; onChange: (t: TypePublication) => void }) {
   return (
-    <div style={{ display: "flex", gap: 2, padding: 4, borderRadius: 12, background: S.surface2, border: `1px solid ${S.border}`, marginBottom: "1.5rem", width: "fit-content" }}>
+    <div style={{ display: "flex", gap: 2, padding: 4, borderRadius: 12, background: C.surface2, border: `1px solid ${C.border}`, marginBottom: "1.5rem", width: "fit-content" }}>
       {(["mission", "devis"] as TypePublication[]).map(t => (
-        <button key={t} onClick={() => onChange(t)} style={{ padding: "8px 20px", borderRadius: 9, border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", background: type === t ? S.orange : "transparent", color: type === t ? "#fff" : S.text3, transition: "all 0.2s" }}>
+        <button key={t} onClick={() => onChange(t)} style={{ padding: "8px 20px", borderRadius: 9, border: "none", fontSize: 13, fontWeight: 700, cursor: "pointer", background: type === t ? C.orange : "transparent", color: type === t ? "#fff" : C.text3, transition: "all 0.2s" }}>
           {t === "mission" ? "🔑 Mission ouvreur" : "🔧 Devis artisan"}
         </button>
       ))}
@@ -207,7 +185,7 @@ function Step1({ bienId, setBienId, errors }: { bienId: string; setBienId: (id: 
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
       <Field label="Bien concerné" error={errors.bien_id}>
         {isLoading ? (
-          <div style={{ padding: "10px 14px", color: S.text3, fontSize: 13 }}>Chargement…</div>
+          <div style={{ padding: "10px 14px", color: C.text3, fontSize: 13 }}>Chargement…</div>
         ) : (
           <Select value={bienId} onChange={setBienId} options={biens.map(b => ({ value: b.id, label: `${b.adresse}, ${b.ville} (${b.type})` }))} />
         )}
@@ -215,13 +193,13 @@ function Step1({ bienId, setBienId, errors }: { bienId: string; setBienId: (id: 
 
       {selected && (
         <Card style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: S.orangeBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Building2 size={18} style={{ color: S.orange }} />
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: C.orangeBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Building2 size={18} style={{ color: C.orange }} />
           </div>
           <div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: S.text }}>{selected.adresse}</p>
-            <p style={{ fontSize: 12, color: S.text3 }}>{selected.cp} {selected.ville}{selected.surface ? ` · ${selected.surface} m²` : ""}</p>
-            <p style={{ fontSize: 11, color: S.text3, marginTop: 2 }}>Statut : <span style={{ fontWeight: 600, color: selected.statut === "loue" ? S.green : S.amber }}>{selected.statut}</span></p>
+            <p style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{selected.adresse}</p>
+            <p style={{ fontSize: 12, color: C.text3 }}>{selected.cp} {selected.ville}{selected.surface ? ` · ${selected.surface} m²` : ""}</p>
+            <p style={{ fontSize: 11, color: C.text3, marginTop: 2 }}>Statut : <span style={{ fontWeight: 600, color: selected.statut === "loue" ? C.green : C.amber }}>{selected.statut}</span></p>
           </div>
         </Card>
       )}
@@ -376,7 +354,7 @@ function Step2Devis({ form, setForm, errors, bienId, bienAdresse }: {
       <Field label="Description détaillée" error={errors.description}>
         <div style={{ position: "relative" }}>
           <Textarea value={String(form.description ?? "")} onChange={v => { set("description", v); descRef.current = v; }} placeholder="Décrivez le problème, l'accès au bien, les contraintes particulières…" rows={5} />
-          <button onClick={redigerIA} disabled={streaming || !form.categorie} style={{ position: "absolute", bottom: 10, right: 10, display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "none", background: S.orange, color: "#fff", fontSize: 11, fontWeight: 700, cursor: streaming || !form.categorie ? "not-allowed" : "pointer", opacity: !form.categorie ? 0.5 : 1 }}>
+          <button onClick={redigerIA} disabled={streaming || !form.categorie} style={{ position: "absolute", bottom: 10, right: 10, display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "none", background: C.orange, color: "#fff", fontSize: 11, fontWeight: 700, cursor: streaming || !form.categorie ? "not-allowed" : "pointer", opacity: !form.categorie ? 0.5 : 1 }}>
             {streaming ? <><Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} />Génération…</> : <><Sparkles size={11} />Althy rédige</>}
           </button>
         </div>
@@ -396,13 +374,13 @@ function Step2Devis({ form, setForm, errors, bienId, bienAdresse }: {
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {photos.map((url, i) => (
             <div key={i} style={{ position: "relative", width: 72, height: 72 }}>
-              <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8, border: `1px solid ${S.border}` }} />
-              <button onClick={() => { const u = photos.filter((_, j) => j !== i); setPhotos(u); set("photos", u); }} style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: S.red, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
+              <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}` }} />
+              <button onClick={() => { const u = photos.filter((_, j) => j !== i); setPhotos(u); set("photos", u); }} style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: C.red, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
                 <X size={10} />
               </button>
             </div>
           ))}
-          <label style={{ width: 72, height: 72, borderRadius: 8, border: `2px dashed ${S.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 4, cursor: "pointer", color: S.text3, fontSize: 11 }}>
+          <label style={{ width: 72, height: 72, borderRadius: 8, border: `2px dashed ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 4, cursor: "pointer", color: C.text3, fontSize: 11 }}>
             {uploading ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <><Upload size={16} /><span>Photo</span></>}
             <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = ""; }} />
           </label>
@@ -415,28 +393,28 @@ function Step2Devis({ form, setForm, errors, bienId, bienAdresse }: {
 // ── Step 3: Zone & matching ───────────────────────────────────────────────────
 function MatchCard({ profile, type, selected, onToggle }: { profile: MatchProfile; type: TypePublication; selected: boolean; onToggle: () => void }) {
   return (
-    <div onClick={onToggle} style={{ display: "flex", alignItems: "center", gap: 12, padding: "0.75rem 1rem", borderRadius: 12, border: `1.5px solid ${selected ? S.orange : S.border}`, background: selected ? S.orangeBg : S.surface, cursor: "pointer", transition: "all 0.15s" }}>
-      <div style={{ width: 10, height: 10, borderRadius: "50%", background: selected ? S.orange : S.border, flexShrink: 0, transition: "background 0.15s" }} />
+    <div onClick={onToggle} style={{ display: "flex", alignItems: "center", gap: 12, padding: "0.75rem 1rem", borderRadius: 12, border: `1.5px solid ${selected ? C.orange : C.border}`, background: selected ? C.orangeBg : C.surface, cursor: "pointer", transition: "all 0.15s" }}>
+      <div style={{ width: 10, height: 10, borderRadius: "50%", background: selected ? C.orange : C.border, flexShrink: 0, transition: "background 0.15s" }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 2 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: S.text }}>Profil #{profile.id.slice(0, 6)}</span>
-          {profile.distance_km != null && <span style={{ fontSize: 11, color: S.text3 }}>{profile.distance_km} km</span>}
+          <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>Profil #{profile.id.slice(0, 6)}</span>
+          {profile.distance_km != null && <span style={{ fontSize: 11, color: C.text3 }}>{profile.distance_km} km</span>}
         </div>
         <div style={{ display: "flex", gap: 12 }}>
-          <span style={{ fontSize: 11, color: S.amber, display: "flex", alignItems: "center", gap: 3 }}>
+          <span style={{ fontSize: 11, color: C.amber, display: "flex", alignItems: "center", gap: 3 }}>
             <Star size={10} />{profile.note_moyenne.toFixed(1)}
           </span>
           {type === "mission" && profile.nb_missions !== undefined && (
-            <span style={{ fontSize: 11, color: S.text3 }}>{profile.nb_missions} missions</span>
+            <span style={{ fontSize: 11, color: C.text3 }}>{profile.nb_missions} missions</span>
           )}
           {type === "devis" && profile.nb_chantiers !== undefined && (
-            <span style={{ fontSize: 11, color: S.text3 }}>{profile.nb_chantiers} chantiers</span>
+            <span style={{ fontSize: 11, color: C.text3 }}>{profile.nb_chantiers} chantiers</span>
           )}
-          {profile.vehicule && <span style={{ fontSize: 11, color: S.green }}>🚗 Véhicule</span>}
-          {profile.assurance_rc && <span style={{ fontSize: 11, color: S.blue }}>✓ RC Pro</span>}
+          {profile.vehicule && <span style={{ fontSize: 11, color: C.green }}>🚗 Véhicule</span>}
+          {profile.assurance_rc && <span style={{ fontSize: 11, color: C.blue }}>✓ RC Pro</span>}
         </div>
       </div>
-      <div style={{ width: 20, height: 20, borderRadius: 4, border: `1.5px solid ${selected ? S.orange : S.border}`, background: selected ? S.orange : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ width: 20, height: 20, borderRadius: 4, border: `1.5px solid ${selected ? C.orange : C.border}`, background: selected ? C.orange : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
         {selected && <CheckCircle2 size={12} style={{ color: "#fff" }} />}
       </div>
     </div>
@@ -468,20 +446,20 @@ function Step3({ type, bienId, rayon, setRayon, selectedProfiles, setSelectedPro
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
       {/* Map placeholder */}
-      <div style={{ height: 180, borderRadius: 14, border: `1px solid ${S.border}`, background: S.surface2, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8 }}>
-        <MapPin size={32} style={{ color: S.text3, opacity: 0.3 }} />
-        <p style={{ fontSize: 13, color: S.text3, fontWeight: 600 }}>Carte centrée sur le bien</p>
-        <p style={{ fontSize: 11, color: S.text3 }}>Intégration Mapbox / Leaflet — à connecter</p>
+      <div style={{ height: 180, borderRadius: 14, border: `1px solid ${C.border}`, background: C.surface2, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8 }}>
+        <MapPin size={32} style={{ color: C.text3, opacity: 0.3 }} />
+        <p style={{ fontSize: 13, color: C.text3, fontWeight: 600 }}>Carte centrée sur le bien</p>
+        <p style={{ fontSize: 11, color: C.text3 }}>Intégration Mapbox / Leaflet — à connecter</p>
       </div>
 
       <RangeField label="Rayon de recherche" value={rayon} onChange={setRayon} min={5} max={200} step={5} suffix=" km" />
 
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={() => { setEnabled(true); refetch(); }} disabled={!bienId || isFetching} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px", borderRadius: 10, border: "none", background: S.orange, color: "#fff", fontSize: 13, fontWeight: 700, cursor: !bienId ? "not-allowed" : "pointer", opacity: !bienId ? 0.5 : 1 }}>
+        <button onClick={() => { setEnabled(true); refetch(); }} disabled={!bienId || isFetching} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px", borderRadius: 10, border: "none", background: C.orange, color: "#fff", fontSize: 13, fontWeight: 700, cursor: !bienId ? "not-allowed" : "pointer", opacity: !bienId ? 0.5 : 1 }}>
           {isFetching ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />Recherche…</> : <>Rechercher les {type === "mission" ? "ouvreurs" : "artisans"} disponibles</>}
         </button>
         {selectedProfiles.length > 0 && (
-          <button onClick={() => setSelectedProfiles([])} style={{ padding: "11px 14px", borderRadius: 10, border: `1px solid ${S.border}`, background: S.surface, color: S.text3, fontSize: 12, cursor: "pointer" }}>
+          <button onClick={() => setSelectedProfiles([])} style={{ padding: "11px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.text3, fontSize: 12, cursor: "pointer" }}>
             Tout décocher ({selectedProfiles.length})
           </button>
         )}
@@ -489,7 +467,7 @@ function Step3({ type, bienId, rayon, setRayon, selectedProfiles, setSelectedPro
 
       {matches.length > 0 && (
         <div>
-          <p style={{ fontSize: 11, fontWeight: 700, color: S.text3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.75rem" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: C.text3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.75rem" }}>
             {matches.length} profil{matches.length !== 1 ? "s" : ""} disponible{matches.length !== 1 ? "s" : ""} — cochez pour notifier en priorité
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -500,8 +478,8 @@ function Step3({ type, bienId, rayon, setRayon, selectedProfiles, setSelectedPro
         </div>
       )}
       {enabled && !isFetching && matches.length === 0 && (
-        <div style={{ textAlign: "center", padding: "2rem", color: S.text3 }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: S.text2 }}>Aucun profil disponible dans ce rayon</p>
+        <div style={{ textAlign: "center", padding: "2rem", color: C.text3 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: C.text2 }}>Aucun profil disponible dans ce rayon</p>
           <p style={{ fontSize: 12, marginTop: 4 }}>Augmentez le rayon de recherche ou publiez sans sélection prioritaire.</p>
         </div>
       )}
@@ -680,12 +658,12 @@ export default function PublicationNewPage() {
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "0 0 3rem" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: "1.75rem" }}>
-        <button onClick={() => router.back()} style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 12px", borderRadius: 10, border: `1px solid ${S.border}`, background: S.surface, color: S.text3, fontSize: 13, cursor: "pointer" }}>
+        <button onClick={() => router.back()} style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 12px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.text3, fontSize: 13, cursor: "pointer" }}>
           <ArrowLeft size={14} />
         </button>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: S.text, marginBottom: 2 }}>Nouvelle publication</h1>
-          <p style={{ fontSize: 12, color: S.text3 }}>Publiez une mission ouvreur ou une demande de devis artisan</p>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: C.text, marginBottom: 2 }}>Nouvelle publication</h1>
+          <p style={{ fontSize: 12, color: C.text3 }}>Publiez une mission ouvreur ou une demande de devis artisan</p>
         </div>
       </div>
 
@@ -697,7 +675,7 @@ export default function PublicationNewPage() {
 
       {/* Step content */}
       <Card style={{ marginBottom: "1.5rem" }}>
-        <p style={{ fontSize: 12, fontWeight: 700, color: S.text3, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1.25rem" }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: C.text3, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "1.25rem" }}>
           Étape {step} — {["Bien concerné", "Détails", "Zone & matching", "Critères profil"][step - 1]}
         </p>
 
@@ -712,7 +690,7 @@ export default function PublicationNewPage() {
       {/* Navigation */}
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         {step > 1 && (
-          <button onClick={prev} style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 18px", borderRadius: 10, border: `1px solid ${S.border}`, background: S.surface, color: S.text3, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={prev} style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 18px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.text3, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             <ArrowLeft size={14} />Retour
           </button>
         )}
@@ -721,18 +699,18 @@ export default function PublicationNewPage() {
 
         {/* Draft save (visible from step 2+) */}
         {step >= 2 && (
-          <button onClick={saveDraft} disabled={publishing} style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 18px", borderRadius: 10, border: `1px solid ${S.border}`, background: S.surface, color: S.text2, fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: publishing ? 0.5 : 1 }}>
+          <button onClick={saveDraft} disabled={publishing} style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 18px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.text2, fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: publishing ? 0.5 : 1 }}>
             <FileText size={14} />
             {draftId ? "Brouillon sauvegardé ✓" : "Enregistrer brouillon"}
           </button>
         )}
 
         {step < 4 ? (
-          <button onClick={next} style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 20px", borderRadius: 10, border: "none", background: S.orange, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          <button onClick={next} style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 20px", borderRadius: 10, border: "none", background: C.orange, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             Suivant<ArrowRight size={14} />
           </button>
         ) : (
-          <button onClick={publish} disabled={publishing} style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 20px", borderRadius: 10, border: "none", background: publishing ? S.border : S.orange, color: publishing ? S.text3 : "#fff", fontSize: 13, fontWeight: 700, cursor: publishing ? "not-allowed" : "pointer" }}>
+          <button onClick={publish} disabled={publishing} style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 20px", borderRadius: 10, border: "none", background: publishing ? C.border : C.orange, color: publishing ? C.text3 : "#fff", fontSize: 13, fontWeight: 700, cursor: publishing ? "not-allowed" : "pointer" }}>
             {publishing ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />Publication…</> : <><CheckCircle2 size={14} />Publier</>}
           </button>
         )}

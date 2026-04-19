@@ -16,28 +16,8 @@ import {
 } from "lucide-react";
 import { useContracts, useDeleteContract, useSignContract } from "@/lib/hooks/useContracts";
 import type { ContractStatus, ContractType } from "@/lib/types";
+import { C } from "@/lib/design-tokens";
 
-const S = {
-  bg: "var(--cream)",
-  surface: "var(--background-card)",
-  surface2: "var(--althy-surface-2)",
-  border: "var(--border-subtle)",
-  text: "var(--charcoal)",
-  text2: "var(--text-secondary)",
-  text3: "var(--text-tertiary)",
-  orange: "var(--terracotta-primary)",
-  orangeBg: "var(--althy-orange-bg)",
-  green: "var(--althy-green)",
-  greenBg: "var(--althy-green-bg)",
-  red: "var(--althy-red)",
-  redBg: "var(--althy-red-bg)",
-  amber: "var(--althy-amber)",
-  amberBg: "var(--althy-amber-bg)",
-  blue: "var(--althy-blue)",
-  blueBg: "var(--althy-blue-bg)",
-  shadow: "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const;
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 
@@ -49,14 +29,14 @@ const TYPE_LABELS: Record<ContractType, string> = {
 };
 
 const STATUS_CONFIG: Record<ContractStatus, { label: string; bg: string; color: string }> = {
-  draft:      { label: "Brouillon",  bg: S.surface2,  color: S.text3 },
-  active:     { label: "Actif",      bg: S.greenBg,   color: S.green },
-  terminated: { label: "Résilié",    bg: S.orangeBg,  color: S.orange },
-  expired:    { label: "Expiré",     bg: S.redBg,     color: S.red },
+  draft:      { label: "Brouillon",  bg: C.surface2,  color: C.text3 },
+  active:     { label: "Actif",      bg: C.greenBg,   color: C.green },
+  terminated: { label: "Résilié",    bg: C.orangeBg,  color: C.orange },
+  expired:    { label: "Expiré",     bg: C.redBg,     color: C.red },
 };
 
 function ContractStatusBadge({ status }: { status: string }) {
-  const cfg = STATUS_CONFIG[status as ContractStatus] ?? { label: status, bg: S.surface2, color: S.text3 };
+  const cfg = STATUS_CONFIG[status as ContractStatus] ?? { label: status, bg: C.surface2, color: C.text3 };
   return (
     <span style={{
       display: "inline-block",
@@ -95,9 +75,9 @@ export default function ContractsPage() {
   const inputStyle: React.CSSProperties = {
     padding: "9px 14px",
     borderRadius: 10,
-    border: `1px solid ${S.border}`,
-    background: S.surface,
-    color: S.text,
+    border: `1px solid ${C.border}`,
+    background: C.surface,
+    color: C.text,
     fontSize: 13,
     outline: "none",
     fontFamily: "inherit",
@@ -110,9 +90,9 @@ export default function ContractsPage() {
     gap: 6,
     padding: "9px 16px",
     borderRadius: 10,
-    border: `1px solid ${S.border}`,
-    background: S.surface,
-    color: S.text2,
+    border: `1px solid ${C.border}`,
+    background: C.surface,
+    color: C.text2,
     fontSize: 13,
     fontWeight: 600,
     cursor: "pointer",
@@ -123,16 +103,16 @@ export default function ContractsPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontWeight: 400, fontSize: 28, color: S.text, marginBottom: 2 }}>
+          <h1 style={{ fontFamily: "var(--font-serif)", fontWeight: 400, fontSize: 28, color: C.text, marginBottom: 2 }}>
             Contrats
           </h1>
-          <p style={{ fontSize: 14, color: S.text3 }}>
+          <p style={{ fontSize: 14, color: C.text3 }}>
             {data ? `${data.total} contrat${data.total !== 1 ? "s" : ""}` : "Gérez vos contrats"}
           </p>
         </div>
         <Link
           href="/app/contracts/new"
-          style={{ display: "inline-flex", alignItems: "center", gap: 8, background: S.orange, color: "#fff", borderRadius: 10, padding: "10px 20px", fontSize: 13, fontWeight: 700, textDecoration: "none" }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, background: C.orange, color: "#fff", borderRadius: 10, padding: "10px 20px", fontSize: 13, fontWeight: 700, textDecoration: "none" }}
         >
           <FilePlus className="h-4 w-4" />
           Nouveau contrat
@@ -140,10 +120,10 @@ export default function ContractsPage() {
       </div>
 
       {/* Filters */}
-      <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, boxShadow: S.shadow, padding: "1.25rem", marginBottom: "1.5rem" }}>
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, boxShadow: C.shadow, padding: "1.25rem", marginBottom: "1.5rem" }}>
         <div className="flex flex-wrap gap-3">
           <div className="relative flex-1 min-w-48">
-            <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: S.text3 }} className="h-4 w-4" />
+            <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.text3 }} className="h-4 w-4" />
             <input
               type="search"
               placeholder="Référence…"
@@ -165,7 +145,7 @@ export default function ContractsPage() {
           {(statusFilter || search) && (
             <button
               onClick={() => { setStatusFilter(""); setSearch(""); }}
-              style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, color: S.text3, background: "transparent", border: "none", cursor: "pointer", padding: "4px 8px" }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, color: C.text3, background: "transparent", border: "none", cursor: "pointer", padding: "4px 8px" }}
             >
               <X className="h-4 w-4" /> Effacer
             </button>
@@ -176,25 +156,25 @@ export default function ContractsPage() {
       {/* Table */}
       {isLoading ? (
         <div className="flex justify-center py-16">
-          <div style={{ width: 32, height: 32, borderRadius: "50%", border: `4px solid ${S.orange}`, borderTopColor: "transparent" }} className="animate-spin" />
+          <div style={{ width: 32, height: 32, borderRadius: "50%", border: `4px solid ${C.orange}`, borderTopColor: "transparent" }} className="animate-spin" />
         </div>
       ) : isError ? (
-        <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, boxShadow: S.shadow, padding: "4rem 1.25rem", textAlign: "center", color: S.text3 }}>
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, boxShadow: C.shadow, padding: "4rem 1.25rem", textAlign: "center", color: C.text3 }}>
           Erreur lors du chargement
         </div>
       ) : !filtered.length ? (
-        <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, boxShadow: S.shadow, padding: "4rem 1.25rem", textAlign: "center", color: S.text3 }}>
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, boxShadow: C.shadow, padding: "4rem 1.25rem", textAlign: "center", color: C.text3 }}>
           Aucun contrat trouvé
         </div>
       ) : (
         <>
-          <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, boxShadow: S.shadow, overflow: "hidden" }}>
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, boxShadow: C.shadow, overflow: "hidden" }}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead style={{ borderBottom: `1px solid ${S.border}`, background: S.surface2 }}>
+                <thead style={{ borderBottom: `1px solid ${C.border}`, background: C.surface2 }}>
                   <tr>
                     {["Référence", "Type", "Bien", "Début", "Fin", "Loyer", "Statut", "Actions"].map((h) => (
-                      <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: S.text3 }}>
+                      <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: C.text3 }}>
                         {h}
                       </th>
                     ))}
@@ -202,25 +182,25 @@ export default function ContractsPage() {
                 </thead>
                 <tbody>
                   {filtered.map((contract, idx) => (
-                    <tr key={contract.id} style={{ borderTop: idx > 0 ? `1px solid ${S.border}` : undefined }}>
-                      <td style={{ padding: "12px 16px", fontWeight: 600, color: S.orange }}>
-                        <Link href={`/contracts/${contract.id}`} style={{ color: S.orange, textDecoration: "none" }}>
+                    <tr key={contract.id} style={{ borderTop: idx > 0 ? `1px solid ${C.border}` : undefined }}>
+                      <td style={{ padding: "12px 16px", fontWeight: 600, color: C.orange }}>
+                        <Link href={`/app/contracts/${contract.id}`} style={{ color: C.orange, textDecoration: "none" }}>
                           {contract.reference}
                         </Link>
                       </td>
-                      <td style={{ padding: "12px 16px", color: S.text }}>
+                      <td style={{ padding: "12px 16px", color: C.text }}>
                         {TYPE_LABELS[contract.type as ContractType] ?? contract.type}
                       </td>
-                      <td style={{ padding: "12px 16px", color: S.text3, fontFamily: "monospace", fontSize: 11 }}>
+                      <td style={{ padding: "12px 16px", color: C.text3, fontFamily: "monospace", fontSize: 11 }}>
                         {contract.property_id.slice(0, 8)}…
                       </td>
-                      <td style={{ padding: "12px 16px", color: S.text2 }}>
+                      <td style={{ padding: "12px 16px", color: C.text2 }}>
                         {new Date(contract.start_date).toLocaleDateString("fr-FR")}
                       </td>
-                      <td style={{ padding: "12px 16px", color: S.text2 }}>
+                      <td style={{ padding: "12px 16px", color: C.text2 }}>
                         {contract.end_date ? new Date(contract.end_date).toLocaleDateString("fr-FR") : "—"}
                       </td>
-                      <td style={{ padding: "12px 16px", fontWeight: 600, color: S.text }}>
+                      <td style={{ padding: "12px 16px", fontWeight: 600, color: C.text }}>
                         {contract.monthly_rent != null
                           ? `${contract.monthly_rent.toLocaleString("fr-FR")} €`
                           : "—"}
@@ -236,7 +216,7 @@ export default function ContractsPage() {
                           )}
                           {contract.signed_at && (
                             <span title={`Signé le ${new Date(contract.signed_at).toLocaleDateString("fr-FR")}`}>
-                              <CheckCircle className="h-4 w-4" style={{ color: S.green }} />
+                              <CheckCircle className="h-4 w-4" style={{ color: C.green }} />
                             </span>
                           )}
                           {/* PDF */}
@@ -244,7 +224,7 @@ export default function ContractsPage() {
                             href={`${baseURL}/contracts/${contract.id}/pdf`}
                             target="_blank"
                             rel="noreferrer"
-                            style={{ color: S.text3 }}
+                            style={{ color: C.text3 }}
                             title="Télécharger PDF"
                           >
                             <FileDown className="h-4 w-4" />
@@ -268,7 +248,7 @@ export default function ContractsPage() {
               >
                 <ChevronLeft className="h-4 w-4" /> Précédent
               </button>
-              <span style={{ fontSize: 13, color: S.text2 }}>Page {page} / {data.pages}</span>
+              <span style={{ fontSize: 13, color: C.text2 }}>Page {page} / {data.pages}</span>
               <button
                 onClick={() => setPage((p) => Math.min(data.pages, p + 1))}
                 disabled={page === data.pages}
@@ -293,7 +273,7 @@ function SignButton({ contractId }: { contractId: string }) {
       onClick={() => sign.mutate()}
       disabled={sign.isPending}
       title="Signer"
-      style={{ background: "transparent", border: "none", cursor: sign.isPending ? "not-allowed" : "pointer", color: S.text3, padding: 0, opacity: sign.isPending ? 0.5 : 1 }}
+      style={{ background: "transparent", border: "none", cursor: sign.isPending ? "not-allowed" : "pointer", color: C.text3, padding: 0, opacity: sign.isPending ? 0.5 : 1 }}
     >
       <PenLine className="h-4 w-4" />
     </button>

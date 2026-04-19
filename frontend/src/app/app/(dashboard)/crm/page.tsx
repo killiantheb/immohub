@@ -1,29 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '@/lib/api'
-
-// ── Althy tokens ──────────────────────────────────────────────────────────────
-const S = {
-  bg: "var(--cream)",
-  surface: "var(--background-card)",
-  surface2: "var(--althy-surface-2)",
-  border: "var(--border-subtle)",
-  text: "var(--charcoal)",
-  text2: "var(--text-secondary)",
-  text3: "var(--text-tertiary)",
-  orange: "var(--terracotta-primary)",
-  orangeBg: "var(--althy-orange-bg)",
-  green: "var(--althy-green)",
-  greenBg: "var(--althy-green-bg)",
-  red: "var(--althy-red)",
-  redBg: "var(--althy-red-bg)",
-  amber: "var(--althy-amber)",
-  amberBg: "var(--althy-amber-bg)",
-  blue: "var(--althy-blue)",
-  blueBg: "var(--althy-blue-bg)",
-  shadow: "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const
+import { C } from "@/lib/design-tokens";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Note {
@@ -71,15 +49,15 @@ const STATUS_LABEL: Record<string, string> = {
 }
 
 function statusColor(status: string) {
-  if (status === 'active_tenant') return S.green
-  if (status === 'past_tenant') return S.amber
-  return S.blue
+  if (status === 'active_tenant') return C.green
+  if (status === 'past_tenant') return C.amber
+  return C.blue
 }
 
 function statusBg(status: string) {
-  if (status === 'active_tenant') return S.greenBg
-  if (status === 'past_tenant') return S.amberBg
-  return S.blueBg
+  if (status === 'active_tenant') return C.greenBg
+  if (status === 'past_tenant') return C.amberBg
+  return C.blueBg
 }
 
 function initials(c: Contact) {
@@ -100,10 +78,10 @@ function fmtCHF(n: number) {
 // ── Stat card ─────────────────────────────────────────────────────────────────
 function StatCard({ label, value, sub }: { label: string; value: number | string; sub?: string }) {
   return (
-    <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: '16px 20px', flex: 1, boxShadow: S.shadow }}>
-      <div style={{ fontSize: 10, letterSpacing: '1.5px', textTransform: 'uppercase', color: S.text3, marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 300, color: S.orange, fontFamily: "var(--font-serif),'Cormorant Garamond',serif", letterSpacing: 1 }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: S.text3, marginTop: 3 }}>{sub}</div>}
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: '16px 20px', flex: 1, boxShadow: C.shadow }}>
+      <div style={{ fontSize: 10, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.text3, marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 28, fontWeight: 300, color: C.orange, fontFamily: "var(--font-serif)", letterSpacing: 1 }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: C.text3, marginTop: 3 }}>{sub}</div>}
     </div>
   )
 }
@@ -202,12 +180,12 @@ export default function CRMPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: S.bg, fontFamily: 'var(--font-sans)' }}>
+    <div style={{ minHeight: '100vh', background: C.bg, fontFamily: 'var(--font-sans)' }}>
 
       {/* ── Header ── */}
       <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontSize: 28, fontWeight: 400, color: S.text, letterSpacing: '0.5px', marginBottom: 4 }}>CRM</h1>
-        <p style={{ fontSize: 13, color: S.text3 }}>Locataires, anciens locataires et prospects — vue d'ensemble.</p>
+        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 400, color: C.text, letterSpacing: '0.5px', marginBottom: 4 }}>CRM</h1>
+        <p style={{ fontSize: 13, color: C.text3 }}>Locataires, anciens locataires et prospects — vue d'ensemble.</p>
       </div>
 
       {/* ── Stats ── */}
@@ -230,9 +208,9 @@ export default function CRMPage() {
               onClick={() => setTab(t)}
               style={{
                 padding: '6px 14px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
-                fontFamily: 'inherit', border: `1px solid ${tab === t ? S.orange : S.border}`,
-                background: tab === t ? S.orange : 'transparent',
-                color: tab === t ? '#fff' : S.text2,
+                fontFamily: 'inherit', border: `1px solid ${tab === t ? C.orange : C.border}`,
+                background: tab === t ? C.orange : 'transparent',
+                color: tab === t ? '#fff' : C.text2,
               }}
             >
               {t === 'all' ? 'Tous' : STATUS_LABEL[t]}
@@ -244,11 +222,11 @@ export default function CRMPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Rechercher…"
-            style={{ padding: '7px 14px', borderRadius: 20, border: `1px solid ${S.border}`, background: S.surface, fontSize: 12, color: S.text, outline: 'none', fontFamily: 'inherit', width: 200 }}
+            style={{ padding: '7px 14px', borderRadius: 20, border: `1px solid ${C.border}`, background: C.surface, fontSize: 12, color: C.text, outline: 'none', fontFamily: 'inherit', width: 200 }}
           />
           <button
             onClick={() => setShowAddProspect(true)}
-            style={{ padding: '7px 16px', borderRadius: 20, background: S.orange, color: '#fff', border: 'none', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+            style={{ padding: '7px 16px', borderRadius: 20, background: C.orange, color: '#fff', border: 'none', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
           >
             + Prospect
           </button>
@@ -262,10 +240,10 @@ export default function CRMPage() {
         <div style={{ flex: selected ? '0 0 340px' : 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {loading ? (
             Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} style={{ height: 76, background: S.surface, borderRadius: 14, border: `1px solid ${S.border}`, animation: 'pulse 1.5s infinite' }} />
+              <div key={i} style={{ height: 76, background: C.surface, borderRadius: 14, border: `1px solid ${C.border}`, animation: 'pulse 1.5s infinite' }} />
             ))
           ) : filtered.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: S.text3, fontSize: 13 }}>
+            <div style={{ textAlign: 'center', padding: '3rem', color: C.text3, fontSize: 13 }}>
               Aucun contact{search ? ' pour cette recherche' : ''}.
             </div>
           ) : (
@@ -275,31 +253,31 @@ export default function CRMPage() {
                 onClick={() => setSelected(selected?.id === c.id ? null : c)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
-                  background: selected?.id === c.id ? S.orangeBg : S.surface,
-                  border: `1px solid ${selected?.id === c.id ? S.orange : S.border}`,
+                  background: selected?.id === c.id ? C.orangeBg : C.surface,
+                  border: `1px solid ${selected?.id === c.id ? C.orange : C.border}`,
                   borderRadius: 14, cursor: 'pointer', textAlign: 'left', width: '100%',
-                  fontFamily: 'inherit', boxShadow: S.shadow,
+                  fontFamily: 'inherit', boxShadow: C.shadow,
                 }}
               >
                 {/* Avatar */}
-                <div style={{ width: 40, height: 40, borderRadius: '50%', background: S.orangeBg, border: `1px solid ${S.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 500, color: S.orange, flexShrink: 0 }}>
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: C.orangeBg, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 500, color: C.orange, flexShrink: 0 }}>
                   {initials(c)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                    <span style={{ fontSize: 14, fontWeight: 500, color: S.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {c.first_name} {c.last_name}
                     </span>
                     <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: statusBg(c.status), color: statusColor(c.status), flexShrink: 0 }}>
                       {STATUS_LABEL[c.status]}
                     </span>
                   </div>
-                  <div style={{ fontSize: 12, color: S.text3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div style={{ fontSize: 12, color: C.text3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {c.property_address ?? c.email ?? '—'}
                   </div>
                 </div>
                 {c.notes.length > 0 && (
-                  <div style={{ fontSize: 10, color: S.text3, flexShrink: 0 }}>
+                  <div style={{ fontSize: 10, color: C.text3, flexShrink: 0 }}>
                     {c.notes.length} note{c.notes.length > 1 ? 's' : ''}
                   </div>
                 )}
@@ -310,16 +288,16 @@ export default function CRMPage() {
 
         {/* ── Panel détail ── */}
         {selected && (
-          <div style={{ flex: 1, background: S.surface, border: `1px solid ${S.border}`, borderRadius: 16, padding: '24px', minWidth: 0, boxShadow: S.shadowMd }}>
+          <div style={{ flex: 1, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: '24px', minWidth: 0, boxShadow: C.shadowMd }}>
 
             {/* En-tête contact */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-                <div style={{ width: 52, height: 52, borderRadius: '50%', background: S.orangeBg, border: `1px solid ${S.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 500, color: S.orange }}>
+                <div style={{ width: 52, height: 52, borderRadius: '50%', background: C.orangeBg, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 500, color: C.orange }}>
                   {initials(selected)}
                 </div>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 500, color: S.text, marginBottom: 4 }}>
+                  <div style={{ fontSize: 18, fontWeight: 500, color: C.text, marginBottom: 4 }}>
                     {selected.first_name} {selected.last_name}
                   </div>
                   <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: statusBg(selected.status), color: statusColor(selected.status) }}>
@@ -331,14 +309,14 @@ export default function CRMPage() {
                 {selected.type === 'prospect' && (
                   <button
                     onClick={() => deleteProspect(selected.id)}
-                    style={{ padding: '6px 12px', borderRadius: 20, border: `1px solid ${S.border}`, background: S.redBg, color: S.red, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}
+                    style={{ padding: '6px 12px', borderRadius: 20, border: `1px solid ${C.border}`, background: C.redBg, color: C.red, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}
                   >
                     Supprimer
                   </button>
                 )}
                 <button
                   onClick={() => setSelected(null)}
-                  style={{ padding: '6px 12px', borderRadius: 20, border: `1px solid ${S.border}`, background: 'transparent', color: S.text2, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}
+                  style={{ padding: '6px 12px', borderRadius: 20, border: `1px solid ${C.border}`, background: 'transparent', color: C.text2, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}
                 >
                   x
                 </button>
@@ -353,9 +331,9 @@ export default function CRMPage() {
                 { label: 'Bien', value: selected.property_address },
                 { label: 'Source', value: selected.source ? { manual: 'Manuel', inquiry: 'Demande', portal: 'Portail', referral: 'Recommandation' }[selected.source] ?? selected.source : null },
               ].map(({ label, value }) => value ? (
-                <div key={label} style={{ background: S.bg, borderRadius: 10, padding: '10px 14px' }}>
-                  <div style={{ fontSize: 10, letterSpacing: '1px', textTransform: 'uppercase', color: S.text3, marginBottom: 3 }}>{label}</div>
-                  <div style={{ fontSize: 13, color: S.text }}>{value}</div>
+                <div key={label} style={{ background: C.bg, borderRadius: 10, padding: '10px 14px' }}>
+                  <div style={{ fontSize: 10, letterSpacing: '1px', textTransform: 'uppercase', color: C.text3, marginBottom: 3 }}>{label}</div>
+                  <div style={{ fontSize: 13, color: C.text }}>{value}</div>
                 </div>
               ) : null)}
             </div>
@@ -363,45 +341,45 @@ export default function CRMPage() {
             {/* Bail / Finances (locataires seulement) */}
             {selected.type === 'tenant' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: '1.5rem' }}>
-                <div style={{ background: S.bg, borderRadius: 10, padding: '10px 14px' }}>
-                  <div style={{ fontSize: 10, letterSpacing: '1px', textTransform: 'uppercase', color: S.text3, marginBottom: 3 }}>Début bail</div>
-                  <div style={{ fontSize: 13, color: S.text }}>{fmtDate(selected.contract_start)}</div>
+                <div style={{ background: C.bg, borderRadius: 10, padding: '10px 14px' }}>
+                  <div style={{ fontSize: 10, letterSpacing: '1px', textTransform: 'uppercase', color: C.text3, marginBottom: 3 }}>Début bail</div>
+                  <div style={{ fontSize: 13, color: C.text }}>{fmtDate(selected.contract_start)}</div>
                 </div>
-                <div style={{ background: S.bg, borderRadius: 10, padding: '10px 14px' }}>
-                  <div style={{ fontSize: 10, letterSpacing: '1px', textTransform: 'uppercase', color: S.text3, marginBottom: 3 }}>Fin bail</div>
-                  <div style={{ fontSize: 13, color: S.text }}>{fmtDate(selected.contract_end)}</div>
+                <div style={{ background: C.bg, borderRadius: 10, padding: '10px 14px' }}>
+                  <div style={{ fontSize: 10, letterSpacing: '1px', textTransform: 'uppercase', color: C.text3, marginBottom: 3 }}>Fin bail</div>
+                  <div style={{ fontSize: 13, color: C.text }}>{fmtDate(selected.contract_end)}</div>
                 </div>
-                <div style={{ background: S.bg, borderRadius: 10, padding: '10px 14px' }}>
-                  <div style={{ fontSize: 10, letterSpacing: '1px', textTransform: 'uppercase', color: S.text3, marginBottom: 3 }}>Loyer/mois</div>
-                  <div style={{ fontSize: 13, color: S.orange, fontWeight: 500 }}>
+                <div style={{ background: C.bg, borderRadius: 10, padding: '10px 14px' }}>
+                  <div style={{ fontSize: 10, letterSpacing: '1px', textTransform: 'uppercase', color: C.text3, marginBottom: 3 }}>Loyer/mois</div>
+                  <div style={{ fontSize: 13, color: C.orange, fontWeight: 500 }}>
                     {selected.monthly_rent ? fmtCHF(selected.monthly_rent) : '—'}
                   </div>
                 </div>
                 {selected.total_paid > 0 && (
-                  <div style={{ background: S.greenBg, border: `1px solid ${S.border}`, borderRadius: 10, padding: '10px 14px', gridColumn: '1 / -1' }}>
-                    <div style={{ fontSize: 10, letterSpacing: '1px', textTransform: 'uppercase', color: S.green, marginBottom: 3 }}>Total loyers encaissés</div>
-                    <div style={{ fontSize: 18, fontWeight: 500, color: S.green, fontFamily: "var(--font-serif),'Cormorant Garamond',serif" }}>{fmtCHF(selected.total_paid)}</div>
+                  <div style={{ background: C.greenBg, border: `1px solid ${C.border}`, borderRadius: 10, padding: '10px 14px', gridColumn: '1 / -1' }}>
+                    <div style={{ fontSize: 10, letterSpacing: '1px', textTransform: 'uppercase', color: C.green, marginBottom: 3 }}>Total loyers encaissés</div>
+                    <div style={{ fontSize: 18, fontWeight: 500, color: C.green, fontFamily: "var(--font-serif)" }}>{fmtCHF(selected.total_paid)}</div>
                   </div>
                 )}
               </div>
             )}
 
             {/* Notes */}
-            <div style={{ borderTop: `1px solid ${S.border}`, paddingTop: '1.5rem' }}>
-              <div style={{ fontSize: 12, letterSpacing: '1px', textTransform: 'uppercase', color: S.text3, marginBottom: '1rem' }}>
+            <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: '1.5rem' }}>
+              <div style={{ fontSize: 12, letterSpacing: '1px', textTransform: 'uppercase', color: C.text3, marginBottom: '1rem' }}>
                 Notes ({selected.notes.length})
               </div>
 
               {selected.notes.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: '1rem' }}>
                   {selected.notes.map(note => (
-                    <div key={note.id} style={{ background: S.bg, borderRadius: 10, padding: '12px 14px', position: 'relative' }}>
-                      <div style={{ fontSize: 13, color: S.text, lineHeight: 1.5, marginBottom: 6, whiteSpace: 'pre-wrap' }}>{note.content}</div>
+                    <div key={note.id} style={{ background: C.bg, borderRadius: 10, padding: '12px 14px', position: 'relative' }}>
+                      <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5, marginBottom: 6, whiteSpace: 'pre-wrap' }}>{note.content}</div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 12, color: S.text3 }}>{fmtDate(note.created_at)}</span>
+                        <span style={{ fontSize: 12, color: C.text3 }}>{fmtDate(note.created_at)}</span>
                         <button
                           onClick={() => deleteNote(note.id)}
-                          style={{ fontSize: 12, color: S.red, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+                          style={{ fontSize: 12, color: C.red, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
                         >
                           Supprimer
                         </button>
@@ -410,7 +388,7 @@ export default function CRMPage() {
                   ))}
                 </div>
               ) : (
-                <p style={{ fontSize: 13, color: S.text3, marginBottom: '1rem' }}>Aucune note pour le moment.</p>
+                <p style={{ fontSize: 13, color: C.text3, marginBottom: '1rem' }}>Aucune note pour le moment.</p>
               )}
 
               {/* Ajouter une note */}
@@ -420,12 +398,12 @@ export default function CRMPage() {
                   onChange={e => setNoteInput(e.target.value)}
                   placeholder="Ajouter une note…"
                   rows={2}
-                  style={{ flex: 1, padding: '10px 14px', borderRadius: 12, border: `1px solid ${S.border}`, background: S.bg, fontSize: 13, color: S.text, fontFamily: 'inherit', resize: 'vertical', outline: 'none' }}
+                  style={{ flex: 1, padding: '10px 14px', borderRadius: 12, border: `1px solid ${C.border}`, background: C.bg, fontSize: 13, color: C.text, fontFamily: 'inherit', resize: 'vertical', outline: 'none' }}
                 />
                 <button
                   onClick={addNote}
                   disabled={noteLoading || !noteInput.trim()}
-                  style={{ padding: '0 18px', borderRadius: 12, background: S.orange, color: '#fff', border: 'none', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', opacity: (noteLoading || !noteInput.trim()) ? 0.5 : 1, alignSelf: 'flex-end', height: 40 }}
+                  style={{ padding: '0 18px', borderRadius: 12, background: C.orange, color: '#fff', border: 'none', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', opacity: (noteLoading || !noteInput.trim()) ? 0.5 : 1, alignSelf: 'flex-end', height: 40 }}
                 >
                   {noteLoading ? '…' : 'Ajouter'}
                 </button>
@@ -438,36 +416,36 @@ export default function CRMPage() {
       {/* ── Modal : Ajouter prospect ── */}
       {showAddProspect && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '1rem' }}>
-          <div style={{ background: S.surface, borderRadius: 20, padding: '28px', width: '100%', maxWidth: 420, boxShadow: S.shadowMd }}>
-            <h2 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontSize: 22, fontWeight: 400, color: S.text, marginBottom: '1.2rem' }}>Nouveau prospect</h2>
+          <div style={{ background: C.surface, borderRadius: 20, padding: '28px', width: '100%', maxWidth: 420, boxShadow: C.shadowMd }}>
+            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 400, color: C.text, marginBottom: '1.2rem' }}>Nouveau prospect</h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
-                  <label style={{ fontSize: 12, color: S.text3, letterSpacing: '0.5px', display: 'block', marginBottom: 4 }}>Prénom</label>
+                  <label style={{ fontSize: 12, color: C.text3, letterSpacing: '0.5px', display: 'block', marginBottom: 4 }}>Prénom</label>
                   <input value={prospectForm.first_name} onChange={e => setProspectForm(f => ({ ...f, first_name: e.target.value }))}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 10, border: `1px solid ${S.border}`, fontSize: 13, color: S.text, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: S.bg }} />
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, color: C.text, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: C.bg }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, color: S.text3, letterSpacing: '0.5px', display: 'block', marginBottom: 4 }}>Nom</label>
+                  <label style={{ fontSize: 12, color: C.text3, letterSpacing: '0.5px', display: 'block', marginBottom: 4 }}>Nom</label>
                   <input value={prospectForm.last_name} onChange={e => setProspectForm(f => ({ ...f, last_name: e.target.value }))}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: 10, border: `1px solid ${S.border}`, fontSize: 13, color: S.text, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: S.bg }} />
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, color: C.text, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: C.bg }} />
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: 12, color: S.text3, letterSpacing: '0.5px', display: 'block', marginBottom: 4 }}>Email</label>
+                <label style={{ fontSize: 12, color: C.text3, letterSpacing: '0.5px', display: 'block', marginBottom: 4 }}>Email</label>
                 <input type="email" value={prospectForm.email} onChange={e => setProspectForm(f => ({ ...f, email: e.target.value }))}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: 10, border: `1px solid ${S.border}`, fontSize: 13, color: S.text, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: S.bg }} />
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, color: C.text, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: C.bg }} />
               </div>
               <div>
-                <label style={{ fontSize: 12, color: S.text3, letterSpacing: '0.5px', display: 'block', marginBottom: 4 }}>Téléphone</label>
+                <label style={{ fontSize: 12, color: C.text3, letterSpacing: '0.5px', display: 'block', marginBottom: 4 }}>Téléphone</label>
                 <input type="tel" value={prospectForm.phone} onChange={e => setProspectForm(f => ({ ...f, phone: e.target.value }))}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: 10, border: `1px solid ${S.border}`, fontSize: 13, color: S.text, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: S.bg }} />
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, color: C.text, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: C.bg }} />
               </div>
               <div>
-                <label style={{ fontSize: 12, color: S.text3, letterSpacing: '0.5px', display: 'block', marginBottom: 4 }}>Source</label>
+                <label style={{ fontSize: 12, color: C.text3, letterSpacing: '0.5px', display: 'block', marginBottom: 4 }}>Source</label>
                 <select value={prospectForm.source} onChange={e => setProspectForm(f => ({ ...f, source: e.target.value }))}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: 10, border: `1px solid ${S.border}`, fontSize: 13, color: S.text, fontFamily: 'inherit', outline: 'none', background: S.bg, boxSizing: 'border-box' }}>
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 10, border: `1px solid ${C.border}`, fontSize: 13, color: C.text, fontFamily: 'inherit', outline: 'none', background: C.bg, boxSizing: 'border-box' }}>
                   <option value="manual">Manuel</option>
                   <option value="inquiry">Demande entrante</option>
                   <option value="portal">Portail (Airbnb, etc.)</option>
@@ -478,11 +456,11 @@ export default function CRMPage() {
 
             <div style={{ display: 'flex', gap: 10, marginTop: '1.5rem' }}>
               <button onClick={() => setShowAddProspect(false)}
-                style={{ flex: 1, padding: '10px', borderRadius: 12, border: `1px solid ${S.border}`, background: 'transparent', color: S.text2, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                style={{ flex: 1, padding: '10px', borderRadius: 12, border: `1px solid ${C.border}`, background: 'transparent', color: C.text2, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
                 Annuler
               </button>
               <button onClick={addProspect} disabled={prospectLoading}
-                style={{ flex: 1, padding: '10px', borderRadius: 12, background: S.orange, color: '#fff', border: 'none', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: prospectLoading ? 0.6 : 1 }}>
+                style={{ flex: 1, padding: '10px', borderRadius: 12, background: C.orange, color: '#fff', border: 'none', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', opacity: prospectLoading ? 0.6 : 1 }}>
                 {prospectLoading ? 'Ajout…' : 'Ajouter'}
               </button>
             </div>

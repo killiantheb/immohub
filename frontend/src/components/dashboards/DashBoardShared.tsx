@@ -7,24 +7,24 @@ import type { ReactNode, CSSProperties } from "react";
 // ── Design constants ──────────────────────────────────────────────────────────
 export const DC = {
   bg:      "var(--cream)",
-  surface: "#FFFFFF",
+  surface: "var(--althy-surface)",
   orange:  "var(--terracotta-primary)",
   text:    "var(--charcoal)",
   muted:   "var(--text-tertiary)",
   border:  "var(--border-subtle)",
   shadow:  "none",
-  serif:   "var(--font-display, 'Playfair Display', Georgia, serif)",
+  serif:   "var(--font-serif)",
 } as const;
 
 // ── Role colors ───────────────────────────────────────────────────────────────
 export const ROLE_COLORS: Record<string, { badge: string; bg: string }> = {
-  proprio_solo:     { badge: "#E8602C", bg: "rgba(232,96,44,0.10)" },
-  agence:           { badge: "#2563EB", bg: "rgba(37,99,235,0.10)" },
+  proprio_solo:     { badge: "var(--althy-orange)", bg: "rgba(232,96,44,0.10)" },
+  agence:           { badge: "var(--althy-blue)", bg: "rgba(37,99,235,0.10)" },
   opener:           { badge: "#0891B2", bg: "rgba(8,145,178,0.10)" },
-  artisan:          { badge: "#16A34A", bg: "rgba(22,163,74,0.10)" },
-  expert:           { badge: "#7C3AED", bg: "rgba(124,58,237,0.10)" },
-  hunter:           { badge: "#D97706", bg: "rgba(217,119,6,0.10)" },
-  locataire:        { badge: "#64748B", bg: "rgba(100,116,139,0.10)" },
+  artisan:          { badge: "var(--althy-green)", bg: "rgba(22,163,74,0.10)" },
+  expert:           { badge: "var(--althy-purple)", bg: "rgba(124,58,237,0.10)" },
+  hunter:           { badge: "var(--althy-warning)", bg: "var(--althy-warning-bg)" },
+  locataire:        { badge: "var(--althy-text-3)", bg: "rgba(100,116,139,0.10)" },
   acheteur_premium: { badge: "#0E7490", bg: "rgba(14,116,144,0.10)" },
 };
 

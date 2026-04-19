@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
+import { C } from "@/lib/design-tokens";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 const supabase = createClient(
@@ -101,36 +102,26 @@ export default function MesCandidaturesPage() {
     }
   };
 
-  const S = {
-    orange: "var(--terracotta-primary)",
-    surface: "var(--background-card)",
-    border: "var(--border-subtle)",
-    text: "var(--charcoal)",
-    text2: "var(--text-secondary)",
-    text3: "var(--text-tertiary)",
-    bg: "var(--cream)",
-    radius: "var(--radius-card)",
-  };
-
+  
   return (
     <div style={{ padding: "24px 20px 60px", maxWidth: 760, margin: "0 auto" }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ font: "300 26px/1.2 var(--font-serif)", color: S.text, margin: 0 }}>
+        <h1 style={{ font: "300 26px/1.2 var(--font-serif)", color: C.text, margin: 0 }}>
           Mes candidatures
         </h1>
-        <p style={{ fontSize: 14, color: S.text2, margin: "6px 0 0" }}>
+        <p style={{ fontSize: 14, color: C.text2, margin: "6px 0 0" }}>
           Suivez l'état de vos dossiers envoyés aux propriétaires.
         </p>
       </div>
 
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", paddingTop: 60 }}>
-          <div style={{ width: 36, height: 36, border: `3px solid ${S.border}`, borderTopColor: S.orange, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          <div style={{ width: 36, height: 36, border: `3px solid ${C.border}`, borderTopColor: C.orange, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
         </div>
       ) : candidatures.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: S.text2 }}>
+        <div style={{ textAlign: "center", padding: "60px 20px", color: C.text2 }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
           <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Aucune candidature</div>
           <div style={{ fontSize: 14, marginBottom: 24 }}>
@@ -139,7 +130,7 @@ export default function MesCandidaturesPage() {
           <Link
             href="/biens"
             style={{
-              display: "inline-block", background: S.orange, color: "#fff",
+              display: "inline-block", background: C.orange, color: "#fff",
               padding: "12px 24px", borderRadius: 8, textDecoration: "none",
               fontSize: 14, fontWeight: 600,
             }}
@@ -155,18 +146,18 @@ export default function MesCandidaturesPage() {
               <div
                 key={c.id}
                 style={{
-                  background: S.surface, border: `1px solid ${S.border}`,
-                  borderRadius: S.radius, overflow: "hidden",
+                  background: C.surface, border: `1px solid ${C.border}`,
+                  borderRadius: C.radiusCard, overflow: "hidden",
                 }}
               >
                 {/* Top bar */}
                 <div style={{
-                  background: cfg.bg, borderBottom: `1px solid ${S.border}`,
+                  background: cfg.bg, borderBottom: `1px solid ${C.border}`,
                   padding: "8px 16px", display: "flex", alignItems: "center", gap: 8,
                 }}>
                   <span>{cfg.icon}</span>
                   <span style={{ fontSize: 13, fontWeight: 600, color: cfg.color }}>{cfg.label}</span>
-                  <span style={{ marginLeft: "auto", fontSize: 12, color: S.text3 }}>
+                  <span style={{ marginLeft: "auto", fontSize: 12, color: C.text3 }}>
                     Postulé le {new Date(c.created_at).toLocaleDateString("fr-CH")}
                   </span>
                 </div>
@@ -190,10 +181,10 @@ export default function MesCandidaturesPage() {
 
                   {/* Info bien */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: S.text, marginBottom: 2 }}>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 2 }}>
                       {c.bien?.titre ?? "Bien"}
                     </div>
-                    <div style={{ fontSize: 13, color: S.text2, marginBottom: 6 }}>
+                    <div style={{ fontSize: 13, color: C.text2, marginBottom: 6 }}>
                       {c.bien?.ville} · CHF {c.bien?.prix?.toLocaleString("fr-CH")} / mois
                     </div>
                     {/* Score IA */}
@@ -205,7 +196,7 @@ export default function MesCandidaturesPage() {
                           Score IA : {c.score_ia}/100
                         </div>
                         {c.score_details?.summary && (
-                          <span style={{ fontSize: 12, color: S.text3 }}>— {c.score_details.summary.slice(0, 60)}…</span>
+                          <span style={{ fontSize: 12, color: C.text3 }}>— {c.score_details.summary.slice(0, 60)}…</span>
                         )}
                       </div>
                     )}
@@ -213,9 +204,9 @@ export default function MesCandidaturesPage() {
 
                   {/* Link to bien */}
                   <Link
-                    href={`/biens/${c.listing_id}`}
+                    href={`/app/biens/${c.listing_id}`}
                     style={{
-                      fontSize: 12, color: S.text3, textDecoration: "none",
+                      fontSize: 12, color: C.text3, textDecoration: "none",
                       flexShrink: 0, paddingTop: 2,
                     }}
                   >
@@ -226,7 +217,7 @@ export default function MesCandidaturesPage() {
                 {/* Frais dossier CTA si accepté et non payés */}
                 {c.statut === "acceptee" && !c.frais_payes && (
                   <div style={{
-                    borderTop: `1px solid ${S.border}`, padding: "12px 16px",
+                    borderTop: `1px solid ${C.border}`, padding: "12px 16px",
                     display: "flex", alignItems: "center", justifyContent: "space-between",
                     gap: 12, background: "var(--althy-green-bg)",
                   }}>
@@ -260,7 +251,7 @@ export default function MesCandidaturesPage() {
                 {/* Frais payés */}
                 {c.statut === "acceptee" && c.frais_payes && (
                   <div style={{
-                    borderTop: `1px solid ${S.border}`, padding: "12px 16px",
+                    borderTop: `1px solid ${C.border}`, padding: "12px 16px",
                     background: "var(--althy-green-bg)", fontSize: 13, color: "var(--althy-green)", fontWeight: 600,
                   }}>
                     ✓ Frais de dossier réglés — le propriétaire va vous contacter pour la suite.
@@ -270,8 +261,8 @@ export default function MesCandidaturesPage() {
                 {/* Visite proposée */}
                 {c.visite_proposee_at && (
                   <div style={{
-                    borderTop: `1px solid ${S.border}`, padding: "10px 16px",
-                    fontSize: 13, color: S.text2,
+                    borderTop: `1px solid ${C.border}`, padding: "10px 16px",
+                    fontSize: 13, color: C.text2,
                   }}>
                     📅 Visite proposée le {new Date(c.visite_proposee_at).toLocaleDateString("fr-CH")}
                   </div>

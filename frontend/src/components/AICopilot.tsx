@@ -155,7 +155,7 @@ function SphereOrb({ state, size = 56 }: { state: SphereState; size?: number }) 
       {/* The sphere itself */}
       <div style={{
         position: "relative", width: size, height: size, borderRadius: "50%",
-        background: "radial-gradient(circle at 33% 28%, #F9A06A 0%, #E86030 42%, #B83C12 78%, #6E2008 100%)",
+        background: "radial-gradient(circle at 33% 28%, #F9A06A 0%, #E8602C 42%, #B83C12 78%, #6E2008 100%)",
         boxShadow: `
           0 ${size * 0.1}px ${size * 0.45}px ${glowColor}${glowIntensity + 0.05}),
           inset 0 -${size * 0.06}px ${size * 0.12}px rgba(0,0,0,0.32),
@@ -433,7 +433,7 @@ export function AICopilot() {
           {/* Header */}
           <div style={{
             padding: "14px 16px",
-            background: "radial-gradient(circle at 15% 50%, #F9A06A 0%, #E86030 45%, #C04010 100%)",
+            background: "radial-gradient(circle at 15% 50%, #F9A06A 0%, #E8602C 45%, #C04010 100%)",
             display: "flex", alignItems: "center", justifyContent: "space-between",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -573,7 +573,7 @@ export function AICopilot() {
           /* Close state — small flat circle */
           <div style={{
             width: 52, height: 52, borderRadius: "50%",
-            background: "radial-gradient(circle at 33% 28%, #F9A06A, #E86030 45%, #B83C12 80%, #6E2008 100%)",
+            background: "radial-gradient(circle at 33% 28%, #F9A06A, #E8602C 45%, #B83C12 80%, #6E2008 100%)",
             display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: "0 4px 16px rgba(232,96,44,0.45)",
           }}>

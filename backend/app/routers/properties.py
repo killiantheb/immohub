@@ -58,7 +58,7 @@ async def create_property(
     current_user: AuthUserDep,
     db: DbDep,
 ) -> PropertyRead:
-    if current_user.role not in ("owner", "agency", "super_admin"):
+    if current_user.role not in ("proprio_solo", "agence", "super_admin"):
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "Seuls les propriétaires et agences peuvent créer un bien"
         )

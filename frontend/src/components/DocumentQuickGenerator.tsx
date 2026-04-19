@@ -8,28 +8,7 @@
 
 import { useState } from "react";
 import { api } from "@/lib/api";
-
-const S = {
-  bg: "var(--althy-bg)",
-  surface: "var(--althy-surface)",
-  surface2: "var(--althy-surface-2)",
-  border: "var(--althy-border)",
-  text: "var(--althy-text)",
-  text2: "var(--althy-text-2)",
-  text3: "var(--althy-text-3)",
-  orange: "var(--althy-orange)",
-  orangeBg: "var(--althy-orange-bg)",
-  green: "var(--althy-green)",
-  greenBg: "var(--althy-green-bg)",
-  red: "var(--althy-red)",
-  redBg: "var(--althy-red-bg)",
-  amber: "var(--althy-amber)",
-  amberBg: "var(--althy-amber-bg)",
-  blue: "var(--althy-blue)",
-  blueBg: "var(--althy-blue-bg)",
-  shadow: "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const;
+import { C } from "@/lib/design-tokens";
 
 interface Props {
   /** Label du bouton déclencheur */
@@ -91,9 +70,9 @@ function btnStyle(variant: string): React.CSSProperties {
     padding: "8px 14px",
     transition: "opacity 0.15s",
   };
-  if (variant === "primary")  return { ...base, background: S.orange, color: "#fff", border: "none" };
-  if (variant === "outline")  return { ...base, background: S.surface, color: S.orange, border: `1px solid ${S.orange}` };
-  return { ...base, background: "transparent", color: S.text2, border: `1px solid ${S.border}` };
+  if (variant === "primary")  return { ...base, background: C.orange, color: "#fff", border: "none" };
+  if (variant === "outline")  return { ...base, background: C.surface, color: C.orange, border: `1px solid ${C.orange}` };
+  return { ...base, background: "transparent", color: C.text2, border: `1px solid ${C.border}` };
 }
 
 const now = new Date();
@@ -195,12 +174,12 @@ export function DocumentQuickGenerator({
 
       {open && (
         <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 40, background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}>
-          <div style={{ background: S.surface, borderRadius: 14, width: "min(92vw, 900px)", maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: S.shadowMd }}>
+          <div style={{ background: C.surface, borderRadius: 14, width: "min(92vw, 900px)", maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: C.shadowMd }}>
 
             {/* Header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: `1px solid ${S.border}` }}>
-              <span style={{ fontWeight: 700, fontSize: 15, color: S.text }}>{icon && `${icon} `}{label}</span>
-              <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: S.text3, lineHeight: 1 }}>×</button>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: `1px solid ${C.border}` }}>
+              <span style={{ fontWeight: 700, fontSize: 15, color: C.text }}>{icon && `${icon} `}{label}</span>
+              <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: C.text3, lineHeight: 1 }}>×</button>
             </div>
 
             {/* Body */}
@@ -209,27 +188,27 @@ export function DocumentQuickGenerator({
               {/* Wizard — quittance de loyer */}
               {step === "wizard" && quittanceMode && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                  {error && <div style={{ background: S.redBg, border: `1px solid ${S.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: S.red }}>{error}</div>}
-                  <p style={{ fontSize: 13, color: S.text2 }}>Sélectionnez le mois pour lequel générer la quittance :</p>
+                  {error && <div style={{ background: C.redBg, border: `1px solid ${C.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: C.red }}>{error}</div>}
+                  <p style={{ fontSize: 13, color: C.text2 }}>Sélectionnez le mois pour lequel générer la quittance :</p>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     <div>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: S.text2, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Mois</p>
-                      <select value={qMonth} onChange={(e) => setQMonth(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: `1.5px solid ${S.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: S.surface, color: S.text }}>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: C.text2, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Mois</p>
+                      <select value={qMonth} onChange={(e) => setQMonth(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.surface, color: C.text }}>
                         {["01","02","03","04","05","06","07","08","09","10","11","12"].map((m, i) => (
                           <option key={m} value={m}>{["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"][i]}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: S.text2, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Année</p>
-                      <select value={qYear} onChange={(e) => setQYear(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: `1.5px solid ${S.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: S.surface, color: S.text }}>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: C.text2, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Année</p>
+                      <select value={qYear} onChange={(e) => setQYear(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: C.surface, color: C.text }}>
                         {[String(now.getFullYear() - 1), String(now.getFullYear()), String(now.getFullYear() + 1)].map((y) => (
                           <option key={y} value={y}>{y}</option>
                         ))}
                       </select>
                     </div>
                   </div>
-                  <div style={{ background: S.orangeBg, borderRadius: 8, padding: "10px 14px", fontSize: 11, color: S.orange }}>
+                  <div style={{ background: C.orangeBg, borderRadius: 8, padding: "10px 14px", fontSize: 11, color: C.orange }}>
                     Quittance pour le mois de <strong>{["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"][parseInt(qMonth)-1]} {qYear}</strong>
                   </div>
                   <button onClick={handleQuittanceGenerate} style={{ ...btnStyle("primary"), justifyContent: "center", padding: "11px 0" }}>
@@ -241,51 +220,51 @@ export function DocumentQuickGenerator({
               {/* Wizard — fiche bien */}
               {step === "wizard" && isFiche && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                  {error && <div style={{ background: S.redBg, border: `1px solid ${S.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: S.red }}>{error}</div>}
-                  <p style={{ fontSize: 13, color: S.text2 }}>Configurez les modes de location pour cette fiche.</p>
+                  {error && <div style={{ background: C.redBg, border: `1px solid ${C.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: C.red }}>{error}</div>}
+                  <p style={{ fontSize: 13, color: C.text2 }}>Configurez les modes de location pour cette fiche.</p>
 
                   {/* Annual */}
-                  <div style={{ border: `1.5px solid ${ficheAnnual ? S.orange : S.border}`, borderRadius: 10, padding: "12px 16px", background: ficheAnnual ? S.orangeBg : S.surface }}>
+                  <div style={{ border: `1.5px solid ${ficheAnnual ? C.orange : C.border}`, borderRadius: 10, padding: "12px 16px", background: ficheAnnual ? C.orangeBg : C.surface }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-                      <input type="checkbox" checked={ficheAnnual} onChange={e => setFicheAnnual(e.target.checked)} style={{ accentColor: S.orange, width: 16, height: 16 }} />
-                      <span style={{ fontWeight: 600, fontSize: 13, color: S.text }}>À l'année</span>
+                      <input type="checkbox" checked={ficheAnnual} onChange={e => setFicheAnnual(e.target.checked)} style={{ accentColor: C.orange, width: 16, height: 16 }} />
+                      <span style={{ fontWeight: 600, fontSize: 13, color: C.text }}>À l'année</span>
                     </label>
                     {ficheAnnual && (
                       <div style={{ marginTop: 10 }}>
-                        <p style={{ fontSize: 11, color: S.text3, marginBottom: 4 }}>Loyer mensuel (CHF) — laisser vide pour utiliser celui du bien</p>
+                        <p style={{ fontSize: 11, color: C.text3, marginBottom: 4 }}>Loyer mensuel (CHF) — laisser vide pour utiliser celui du bien</p>
                         <input type="number" placeholder="ex: 1800" value={fichePriceAnnual} onChange={e => setFichePriceAnnual(e.target.value)}
-                          style={{ width: "100%", padding: "8px 12px", border: `1px solid ${S.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "#fff" }} />
+                          style={{ width: "100%", padding: "8px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "#fff" }} />
                       </div>
                     )}
                   </div>
 
                   {/* Seasonal */}
-                  <div style={{ border: `1.5px solid ${ficheSeasonal ? S.orange : S.border}`, borderRadius: 10, padding: "12px 16px", background: ficheSeasonal ? S.orangeBg : S.surface }}>
+                  <div style={{ border: `1.5px solid ${ficheSeasonal ? C.orange : C.border}`, borderRadius: 10, padding: "12px 16px", background: ficheSeasonal ? C.orangeBg : C.surface }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-                      <input type="checkbox" checked={ficheSeasonal} onChange={e => setFicheSeasonal(e.target.checked)} style={{ accentColor: S.orange, width: 16, height: 16 }} />
-                      <span style={{ fontWeight: 600, fontSize: 13, color: S.text }}>Saisonnier</span>
+                      <input type="checkbox" checked={ficheSeasonal} onChange={e => setFicheSeasonal(e.target.checked)} style={{ accentColor: C.orange, width: 16, height: 16 }} />
+                      <span style={{ fontWeight: 600, fontSize: 13, color: C.text }}>Saisonnier</span>
                     </label>
                     {ficheSeasonal && (
                       <div style={{ marginTop: 10 }}>
-                        <p style={{ fontSize: 11, color: S.text3, marginBottom: 4 }}>Tarif saisonnier total (CHF)</p>
+                        <p style={{ fontSize: 11, color: C.text3, marginBottom: 4 }}>Tarif saisonnier total (CHF)</p>
                         <input type="number" placeholder="ex: 4500" value={fichePriceSeasonal} onChange={e => setFichePriceSeasonal(e.target.value)}
-                          style={{ width: "100%", padding: "8px 12px", border: `1px solid ${S.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "#fff" }} />
+                          style={{ width: "100%", padding: "8px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "#fff" }} />
                       </div>
                     )}
                   </div>
 
                   {/* Nightly */}
-                  <div style={{ border: `1.5px solid ${ficheNightly ? S.orange : S.border}`, borderRadius: 10, padding: "12px 16px", background: ficheNightly ? S.orangeBg : S.surface }}>
+                  <div style={{ border: `1.5px solid ${ficheNightly ? C.orange : C.border}`, borderRadius: 10, padding: "12px 16px", background: ficheNightly ? C.orangeBg : C.surface }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-                      <input type="checkbox" checked={ficheNightly} onChange={e => setFicheNightly(e.target.checked)} style={{ accentColor: S.orange, width: 16, height: 16 }} />
-                      <span style={{ fontWeight: 600, fontSize: 13, color: S.text }}>À la nuitée — génère un calendrier 12 mois</span>
+                      <input type="checkbox" checked={ficheNightly} onChange={e => setFicheNightly(e.target.checked)} style={{ accentColor: C.orange, width: 16, height: 16 }} />
+                      <span style={{ fontWeight: 600, fontSize: 13, color: C.text }}>À la nuitée — génère un calendrier 12 mois</span>
                     </label>
                     {ficheNightly && (
                       <div style={{ marginTop: 10 }}>
-                        <p style={{ fontSize: 11, color: S.text3, marginBottom: 4 }}>Prix de base par nuit (CHF)</p>
+                        <p style={{ fontSize: 11, color: C.text3, marginBottom: 4 }}>Prix de base par nuit (CHF)</p>
                         <input type="number" placeholder="ex: 120" value={fichePriceNightly} onChange={e => setFichePriceNightly(e.target.value)}
-                          style={{ width: "100%", padding: "8px 12px", border: `1px solid ${S.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "#fff" }} />
-                        <p style={{ fontSize: 10, color: S.text3, marginTop: 6 }}>
+                          style={{ width: "100%", padding: "8px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 13, fontFamily: "inherit", background: "#fff" }} />
+                        <p style={{ fontSize: 10, color: C.text3, marginTop: 6 }}>
                           Le calendrier affiche les 12 prochains mois avec les tarifs haute/basse saison calculés automatiquement.
                         </p>
                       </div>
@@ -302,16 +281,16 @@ export function DocumentQuickGenerator({
               {/* Wizard — demande de pièces */}
               {step === "wizard" && smartPieces && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                  {error && <div style={{ background: S.redBg, border: `1px solid ${S.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: S.red }}>{error}</div>}
+                  {error && <div style={{ background: C.redBg, border: `1px solid ${C.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: C.red }}>{error}</div>}
 
                   <div>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: S.text2, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Type de location</p>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: C.text2, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Type de location</p>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                       {LOCATION_TYPES.map((o) => (
                         <button
                           key={o.value}
                           onClick={() => setLocationType(o.value)}
-                          style={{ padding: "10px 14px", border: `2px solid ${locationType === o.value ? S.orange : S.border}`, borderRadius: 8, background: locationType === o.value ? S.orangeBg : S.surface, cursor: "pointer", fontSize: 13, fontFamily: "inherit", fontWeight: locationType === o.value ? 600 : 400, color: locationType === o.value ? S.orange : S.text }}
+                          style={{ padding: "10px 14px", border: `2px solid ${locationType === o.value ? C.orange : C.border}`, borderRadius: 8, background: locationType === o.value ? C.orangeBg : C.surface, cursor: "pointer", fontSize: 13, fontFamily: "inherit", fontWeight: locationType === o.value ? 600 : 400, color: locationType === o.value ? C.orange : C.text }}
                         >
                           {o.label}
                         </button>
@@ -320,13 +299,13 @@ export function DocumentQuickGenerator({
                   </div>
 
                   <div>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: S.text2, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Le locataire est…</p>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: C.text2, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Le locataire est…</p>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                       {TENANT_TYPES.map((o) => (
                         <button
                           key={o.value}
                           onClick={() => setTenantType(o.value)}
-                          style={{ padding: "10px 14px", border: `2px solid ${tenantType === o.value ? S.orange : S.border}`, borderRadius: 8, background: tenantType === o.value ? S.orangeBg : S.surface, cursor: "pointer", fontSize: 13, fontFamily: "inherit", fontWeight: tenantType === o.value ? 600 : 400, color: tenantType === o.value ? S.orange : S.text }}
+                          style={{ padding: "10px 14px", border: `2px solid ${tenantType === o.value ? C.orange : C.border}`, borderRadius: 8, background: tenantType === o.value ? C.orangeBg : C.surface, cursor: "pointer", fontSize: 13, fontFamily: "inherit", fontWeight: tenantType === o.value ? 600 : 400, color: tenantType === o.value ? C.orange : C.text }}
                         >
                           {o.label}
                         </button>
@@ -334,7 +313,7 @@ export function DocumentQuickGenerator({
                     </div>
                   </div>
 
-                  <div style={{ background: S.orangeBg, borderRadius: 8, padding: "10px 14px", fontSize: 11, color: S.orange }}>
+                  <div style={{ background: C.orangeBg, borderRadius: 8, padding: "10px 14px", fontSize: 11, color: C.orange }}>
                     Générera : <strong>{PIECES_MAP[locationType]?.[tenantType]?.replace("demande_pieces_", "Demande de pièces — ") || "…"}</strong>
                   </div>
 
@@ -347,8 +326,8 @@ export function DocumentQuickGenerator({
               {/* Loading */}
               {step === "loading" && (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "60px 0" }}>
-                  <div style={{ width: 40, height: 40, border: `3px solid ${S.surface2}`, borderTop: `3px solid ${S.orange}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-                  <p style={{ fontSize: 13, color: S.text3 }}>Génération en cours…</p>
+                  <div style={{ width: 40, height: 40, border: `3px solid ${C.surface2}`, borderTop: `3px solid ${C.orange}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                  <p style={{ fontSize: 13, color: C.text3 }}>Génération en cours…</p>
                   <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
                 </div>
               )}
@@ -361,7 +340,7 @@ export function DocumentQuickGenerator({
 
             {/* Footer */}
             {step === "preview" && (
-              <div style={{ padding: "12px 20px", borderTop: `1px solid ${S.border}`, display: "flex", gap: 10 }}>
+              <div style={{ padding: "12px 20px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 10 }}>
                 <button onClick={print} style={btnStyle("primary")}>
                   Imprimer / Télécharger PDF
                 </button>

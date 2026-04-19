@@ -7,7 +7,6 @@ from sqlalchemy import Boolean, DateTime, Enum, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 UserRole = Enum(
-    # Current canonical roles (CLAUDE.md)
     "proprio_solo",
     "agence",
     "portail_proprio",
@@ -17,12 +16,7 @@ UserRole = Enum(
     "hunter",
     "locataire",
     "acheteur_premium",
-    # Legacy (kept for backwards compat during migration)
     "super_admin",
-    "owner",
-    "agency",
-    "tenant",
-    "company",
     name="user_role_enum",
 )
 

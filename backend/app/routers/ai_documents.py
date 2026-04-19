@@ -99,7 +99,7 @@ async def draft_lease_endpoint(
     from app.models.property import Property
     from sqlalchemy import select as sa_sel
 
-    if current_user.role not in ("owner", "agency", "super_admin"):
+    if current_user.role not in ("proprio_solo", "agence", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux propriétaires et agences")
 
     try:
@@ -144,7 +144,7 @@ async def draft_edl_endpoint(
     from app.models.property import Property
     from sqlalchemy import select as sa_sel
 
-    if current_user.role not in ("owner", "agency", "opener", "super_admin"):
+    if current_user.role not in ("proprio_solo", "agence", "opener", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès non autorisé")
 
     if payload.edl_type not in ("entry", "exit"):
@@ -231,7 +231,7 @@ async def draft_quote_endpoint(
     from app.models.company import Company
     from sqlalchemy import select as sa_sel
 
-    if current_user.role not in ("company", "super_admin"):
+    if current_user.role not in ("artisan", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux entreprises")
 
     try:
@@ -290,7 +290,7 @@ async def explain_contract_endpoint(
     if not contract:
         raise HTTPException(404, "Contrat introuvable")
 
-    if current_user.role == "tenant" and contract.tenant_id != current_user.id:
+    if current_user.role == "locataire" and contract.tenant_id != current_user.id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès non autorisé")
 
     contract_data = {
@@ -351,7 +351,7 @@ async def property_recap_endpoint(
     from app.models.rfq import RFQ
     from sqlalchemy import select as sa_sel, and_
 
-    if current_user.role not in ("owner", "agency", "super_admin"):
+    if current_user.role not in ("proprio_solo", "agence", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux propriétaires et agences")
 
     try:
@@ -594,4 +594,313 @@ async def export_etat_locatif(
         iter([buf.getvalue().encode("utf-8-sig")]),
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename=etat_locatif_{year}.csv"},
+    )
+
+
+# ── SQL helper (shared by PDF/XLSX/tax exports) ──────────────────────────────
+
+_ETAT_LOCATIF_SQL = """
+    SELECT
+        to_char(p.date_echeance, 'YYYY-MM') AS mois,
+        b.adresse, b.ville,
+        COALESCE(u.email, 'N/A')           AS locataire,
+        p.montant                            AS loyer_attendu,
+        CASE WHEN p.statut = 'recu' THEN p.montant ELSE 0 END AS loyer_recu,
+        COALESCE(l.charges, 0)               AS charges,
+        CASE WHEN p.statut = 'recu' THEN COALESCE(p.net_montant, p.montant * 0.96) ELSE NULL END AS net,
+        p.statut
+    FROM paiements p
+    JOIN biens b ON b.id = p.bien_id
+    JOIN locataires l ON l.id = p.locataire_id
+    LEFT JOIN users u ON u.id = l.user_id
+    WHERE b.owner_id = :uid
+      AND EXTRACT(YEAR FROM p.date_echeance) = :year
+    ORDER BY p.date_echeance, b.adresse
+"""
+
+_COLUMNS = ["Mois", "Adresse", "Ville", "Locataire",
+            "Loyer attendu CHF", "Loyer reçu CHF", "Charges CHF", "Net reçu CHF", "Statut"]
+
+
+@router.get("/export/etat-locatif-pdf")
+async def export_etat_locatif_pdf(
+    current_user: AuthUserDep,
+    db: DbDep,
+    year: int = 2025,
+):
+    """Export état locatif annuel au format PDF (fpdf2)."""
+    import io
+    from fpdf import FPDF
+    from sqlalchemy import text as sa_text
+
+    rows = (await db.execute(
+        sa_text(_ETAT_LOCATIF_SQL), {"uid": str(current_user.id), "year": year},
+    )).fetchall()
+
+    pdf = FPDF(orientation="L", unit="mm", format="A4")
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 14)
+    pdf.cell(0, 10, f"Etat locatif annuel {year}", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "", 8)
+    pdf.cell(0, 6, f"Genere par Althy · {current_user.email}", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(4)
+
+    col_w = [22, 50, 30, 50, 28, 28, 22, 28, 20]
+    pdf.set_font("Helvetica", "B", 7.5)
+    for i, h in enumerate(_COLUMNS):
+        pdf.cell(col_w[i], 7, h, border=1)
+    pdf.ln()
+
+    pdf.set_font("Helvetica", "", 7.5)
+    for r in rows:
+        vals = [
+            str(r[0] or ""),
+            str(r[1] or "")[:28],
+            str(r[2] or ""),
+            str(r[3] or "")[:28],
+            f"{float(r[4] or 0):.2f}",
+            f"{float(r[5] or 0):.2f}",
+            f"{float(r[6] or 0):.2f}",
+            f"{float(r[7] or 0):.2f}" if r[7] else "",
+            str(r[8] or ""),
+        ]
+        for i, v in enumerate(vals):
+            pdf.cell(col_w[i], 6, v, border=1)
+        pdf.ln()
+
+    buf = io.BytesIO(pdf.output())
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=etat_locatif_{year}.pdf"},
+    )
+
+
+@router.get("/export/etat-locatif-xlsx")
+async def export_etat_locatif_xlsx(
+    current_user: AuthUserDep,
+    db: DbDep,
+    year: int = 2025,
+):
+    """Export état locatif annuel au format XLSX (openpyxl), compatible ERP suisse."""
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+    from sqlalchemy import text as sa_text
+
+    rows = (await db.execute(
+        sa_text(_ETAT_LOCATIF_SQL), {"uid": str(current_user.id), "year": year},
+    )).fetchall()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"Etat locatif {year}"
+
+    # Header row
+    header_font = Font(bold=True, size=10)
+    header_fill = PatternFill(start_color="E8602C", end_color="E8602C", fill_type="solid")
+    header_text = Font(bold=True, size=10, color="FFFFFF")
+    for c, h in enumerate(_COLUMNS, 1):
+        cell = ws.cell(row=1, column=c, value=h)
+        cell.font = header_text
+        cell.fill = header_fill
+
+    for r_idx, r in enumerate(rows, 2):
+        ws.cell(row=r_idx, column=1, value=str(r[0] or ""))
+        ws.cell(row=r_idx, column=2, value=str(r[1] or ""))
+        ws.cell(row=r_idx, column=3, value=str(r[2] or ""))
+        ws.cell(row=r_idx, column=4, value=str(r[3] or ""))
+        ws.cell(row=r_idx, column=5, value=float(r[4] or 0))
+        ws.cell(row=r_idx, column=6, value=float(r[5] or 0))
+        ws.cell(row=r_idx, column=7, value=float(r[6] or 0))
+        ws.cell(row=r_idx, column=8, value=float(r[7] or 0) if r[7] else None)
+        ws.cell(row=r_idx, column=9, value=str(r[8] or ""))
+
+    # Auto-width
+    for col in ws.columns:
+        max_len = max(len(str(c.value or "")) for c in col)
+        ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 35)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=etat_locatif_{year}.xlsx"},
+    )
+
+
+@router.get("/export/declaration-fiscale")
+async def export_declaration_fiscale(
+    current_user: AuthUserDep,
+    db: DbDep,
+    year: int = 2025,
+):
+    """Génère un PDF de déclaration fiscale préremplie (revenus locatifs)."""
+    import io
+    from fpdf import FPDF
+    from sqlalchemy import text as sa_text
+
+    # Aggregate per-property
+    rows = (await db.execute(
+        sa_text("""
+            SELECT
+                b.adresse, b.ville,
+                SUM(CASE WHEN p.statut = 'recu' THEN p.montant ELSE 0 END) AS total_recu,
+                SUM(p.montant)                                              AS total_attendu,
+                SUM(COALESCE(l.charges, 0))                                 AS total_charges
+            FROM paiements p
+            JOIN biens b ON b.id = p.bien_id
+            JOIN locataires l ON l.id = p.locataire_id
+            WHERE b.owner_id = :uid
+              AND EXTRACT(YEAR FROM p.date_echeance) = :year
+            GROUP BY b.adresse, b.ville
+            ORDER BY b.adresse
+        """),
+        {"uid": str(current_user.id), "year": year},
+    )).fetchall()
+
+    total_brut = sum(float(r[2] or 0) for r in rows)
+    total_charges = sum(float(r[4] or 0) for r in rows)
+    total_net = total_brut - total_charges
+
+    pdf = FPDF(unit="mm", format="A4")
+    pdf.set_auto_page_break(auto=True, margin=20)
+    pdf.add_page()
+
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, f"Declaration fiscale — Revenus locatifs {year}", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "", 9)
+    pdf.cell(0, 6, f"Contribuable : {current_user.first_name or ''} {current_user.last_name or ''} — {current_user.email}", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, "Document genere par Althy — a joindre a votre declaration d'impot", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(8)
+
+    # Per-property table
+    pdf.set_font("Helvetica", "B", 9)
+    col_w = [60, 30, 35, 35, 30]
+    headers = ["Bien", "Ville", "Loyers bruts CHF", "Charges CHF", "Net CHF"]
+    for i, h in enumerate(headers):
+        pdf.cell(col_w[i], 7, h, border=1)
+    pdf.ln()
+
+    pdf.set_font("Helvetica", "", 9)
+    for r in rows:
+        brut = float(r[2] or 0)
+        charges = float(r[4] or 0)
+        pdf.cell(col_w[0], 6, str(r[0] or "")[:32], border=1)
+        pdf.cell(col_w[1], 6, str(r[1] or ""), border=1)
+        pdf.cell(col_w[2], 6, f"{brut:,.2f}", border=1)
+        pdf.cell(col_w[3], 6, f"{charges:,.2f}", border=1)
+        pdf.cell(col_w[4], 6, f"{brut - charges:,.2f}", border=1)
+        pdf.ln()
+
+    # Totals
+    pdf.set_font("Helvetica", "B", 9)
+    pdf.cell(col_w[0] + col_w[1], 7, "TOTAL", border=1)
+    pdf.cell(col_w[2], 7, f"{total_brut:,.2f}", border=1)
+    pdf.cell(col_w[3], 7, f"{total_charges:,.2f}", border=1)
+    pdf.cell(col_w[4], 7, f"{total_net:,.2f}", border=1)
+    pdf.ln(14)
+
+    pdf.set_font("Helvetica", "", 8)
+    pdf.multi_cell(0, 5, (
+        "Ce document est un recapitulatif genere automatiquement par Althy. "
+        "Il ne constitue pas un formulaire fiscal officiel. "
+        "Veuillez reporter ces montants dans votre declaration d'impot "
+        "(formulaire cantonal, annexe immeubles)."
+    ))
+
+    buf = io.BytesIO(pdf.output())
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=declaration_fiscale_{year}.pdf"},
+    )
+
+
+@router.get("/export/rapport-gestion")
+async def export_rapport_gestion(
+    current_user: AuthUserDep,
+    db: DbDep,
+    year: int = 2025,
+):
+    """Rapport de gestion annuel — performances et rendements par bien."""
+    import io
+    from fpdf import FPDF
+    from sqlalchemy import text as sa_text
+
+    rows = (await db.execute(
+        sa_text("""
+            SELECT
+                b.adresse, b.ville,
+                COUNT(DISTINCT l.id)                                        AS nb_locataires,
+                SUM(p.montant)                                              AS total_attendu,
+                SUM(CASE WHEN p.statut = 'recu' THEN p.montant ELSE 0 END) AS total_recu,
+                SUM(CASE WHEN p.statut = 'en_retard' THEN p.montant ELSE 0 END) AS total_impayes
+            FROM paiements p
+            JOIN biens b ON b.id = p.bien_id
+            JOIN locataires l ON l.id = p.locataire_id
+            WHERE b.owner_id = :uid
+              AND EXTRACT(YEAR FROM p.date_echeance) = :year
+            GROUP BY b.adresse, b.ville
+            ORDER BY b.adresse
+        """),
+        {"uid": str(current_user.id), "year": year},
+    )).fetchall()
+
+    total_attendu = sum(float(r[3] or 0) for r in rows)
+    total_recu = sum(float(r[4] or 0) for r in rows)
+    total_impayes = sum(float(r[5] or 0) for r in rows)
+    taux_recouvrement = round(total_recu / total_attendu * 100, 1) if total_attendu else 0
+
+    pdf = FPDF(unit="mm", format="A4")
+    pdf.set_auto_page_break(auto=True, margin=20)
+    pdf.add_page()
+
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, f"Rapport de gestion {year}", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "", 9)
+    pdf.cell(0, 6, f"Proprietaire : {current_user.first_name or ''} {current_user.last_name or ''}", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, f"Genere par Althy le {__import__('datetime').date.today().isoformat()}", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(6)
+
+    # KPIs
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(0, 7, "Indicateurs cles", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "", 9)
+    pdf.cell(0, 6, f"  Loyers attendus :     CHF {total_attendu:,.2f}", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, f"  Loyers encaisses :    CHF {total_recu:,.2f}", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, f"  Impayes :             CHF {total_impayes:,.2f}", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, f"  Taux de recouvrement: {taux_recouvrement}%", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, f"  Nombre de biens :     {len(rows)}", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(6)
+
+    # Per-property table
+    pdf.set_font("Helvetica", "B", 9)
+    col_w = [50, 25, 20, 30, 30, 30]
+    headers = ["Bien", "Ville", "Locataires", "Attendu CHF", "Recu CHF", "Impayes CHF"]
+    for i, h in enumerate(headers):
+        pdf.cell(col_w[i], 7, h, border=1)
+    pdf.ln()
+
+    pdf.set_font("Helvetica", "", 9)
+    for r in rows:
+        pdf.cell(col_w[0], 6, str(r[0] or "")[:28], border=1)
+        pdf.cell(col_w[1], 6, str(r[1] or ""), border=1)
+        pdf.cell(col_w[2], 6, str(int(r[2] or 0)), border=1)
+        pdf.cell(col_w[3], 6, f"{float(r[3] or 0):,.2f}", border=1)
+        pdf.cell(col_w[4], 6, f"{float(r[4] or 0):,.2f}", border=1)
+        pdf.cell(col_w[5], 6, f"{float(r[5] or 0):,.2f}", border=1)
+        pdf.ln()
+
+    buf = io.BytesIO(pdf.output())
+    buf.seek(0)
+    return StreamingResponse(
+        buf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=rapport_gestion_{year}.pdf"},
     )

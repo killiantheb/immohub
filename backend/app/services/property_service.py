@@ -114,7 +114,7 @@ class PropertyService:
 
         # Scope by role
         if current_user.role not in ("super_admin",):
-            if current_user.role in ("owner", "agency"):
+            if current_user.role in ("proprio_solo", "agence"):
                 base_q = base_q.where(
                     (Property.owner_id == current_user.id)
                     | (Property.agency_id == current_user.id)
@@ -179,7 +179,7 @@ class PropertyService:
         prop = Property(
             owner_id=uid,
             created_by_id=uid,
-            agency_id=uid if current_user.role == "agency" else None,
+            agency_id=uid if current_user.role == "agence" else None,
             **payload.model_dump(),
         )
         self.db.add(prop)

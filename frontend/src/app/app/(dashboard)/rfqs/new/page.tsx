@@ -14,28 +14,7 @@ import {
 } from "lucide-react";
 import { useCreateRFQ, useQualifyRFQ } from "@/lib/hooks/useRFQ";
 import type { RFQCategory, RFQUrgency } from "@/lib/types";
-
-const S = {
-  bg: "var(--cream)",
-  surface: "var(--background-card)",
-  surface2: "var(--althy-surface-2)",
-  border: "var(--border-subtle)",
-  text: "var(--charcoal)",
-  text2: "var(--text-secondary)",
-  text3: "var(--text-tertiary)",
-  orange: "var(--terracotta-primary)",
-  orangeBg: "var(--althy-orange-bg)",
-  green: "var(--althy-green)",
-  greenBg: "var(--althy-green-bg)",
-  red: "var(--althy-red)",
-  redBg: "var(--althy-red-bg)",
-  amber: "var(--althy-amber)",
-  amberBg: "var(--althy-amber-bg)",
-  blue: "var(--althy-blue)",
-  blueBg: "var(--althy-blue-bg)",
-  shadow: "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const;
+import { C } from "@/lib/design-tokens";
 
 const CATEGORIES: { value: RFQCategory; label: string }[] = [
   { value: "plumbing",     label: "Plomberie" },
@@ -52,10 +31,10 @@ const CATEGORIES: { value: RFQCategory; label: string }[] = [
 ];
 
 const URGENCIES: { value: RFQUrgency; label: string; color: string }[] = [
-  { value: "low",       label: "Non urgent (> 1 mois)",   color: S.green },
-  { value: "medium",    label: "Normal (2-4 semaines)",    color: S.blue },
-  { value: "high",      label: "Urgent (< 2 semaines)",   color: S.orange },
-  { value: "emergency", label: "Urgence (< 48h)",         color: S.red },
+  { value: "low",       label: "Non urgent (> 1 mois)",   color: C.green },
+  { value: "medium",    label: "Normal (2-4 semaines)",    color: C.blue },
+  { value: "high",      label: "Urgent (< 2 semaines)",   color: C.orange },
+  { value: "emergency", label: "Urgence (< 48h)",         color: C.red },
 ];
 
 const schema = z.object({
@@ -76,10 +55,10 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 const cardStyle = {
-  background: S.surface,
-  border: `1px solid ${S.border}`,
+  background: C.surface,
+  border: `1px solid ${C.border}`,
   borderRadius: 14,
-  boxShadow: S.shadow,
+  boxShadow: C.shadow,
   padding: "1.25rem",
 } as const;
 
@@ -138,20 +117,21 @@ export default function NewRFQPage() {
           ? new Date(data.scheduled_date).toISOString()
           : undefined,
       });
-      router.push(`/rfqs/${rfq.id}`);
+      await new Promise((r) => setTimeout(r, 200));
+      router.push(`/app/rfqs/${rfq.id}`);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setServerError(msg ?? "Erreur lors de la création");
+      setServerError(msg ?? "Erreur lors de la création de la demande");
     }
   };
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="mb-6">
-        <h1 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontWeight: 400, fontSize: 28, color: S.text }}>
+        <h1 style={{ fontFamily: "var(--font-serif)", fontWeight: 400, fontSize: 28, color: C.text }}>
           Nouvel appel d'offre
         </h1>
-        <p style={{ marginTop: 4, fontSize: 14, color: S.text3 }}>
+        <p style={{ marginTop: 4, fontSize: 14, color: C.text3 }}>
           Décrivez votre besoin et CATHY trouvera les meilleurs prestataires.
         </p>
       </div>
@@ -159,7 +139,7 @@ export default function NewRFQPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Step 1 — Description + AI */}
         <div style={cardStyle}>
-          <h2 className="mb-4 text-base font-semibold" style={{ color: S.text2 }}>
+          <h2 className="mb-4 text-base font-semibold" style={{ color: C.text2 }}>
             1. Décrivez votre besoin
           </h2>
           <textarea
@@ -169,7 +149,7 @@ export default function NewRFQPage() {
             className={`input resize-none ${errors.description ? "border-red-400" : ""}`}
           />
           {errors.description && (
-            <p className="mt-1 text-xs" style={{ color: S.red }}>{errors.description.message}</p>
+            <p className="mt-1 text-xs" style={{ color: C.red }}>{errors.description.message}</p>
           )}
 
           <button
@@ -177,7 +157,7 @@ export default function NewRFQPage() {
             onClick={handleAIQualify}
             disabled={description.length < 20 || qualify.isPending}
             className="mt-3 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50"
-            style={{ border: `1px solid ${S.orange}`, background: S.orangeBg, color: S.orange }}
+            style={{ border: `1px solid ${C.orange}`, background: C.orangeBg, color: C.orange }}
           >
             {qualify.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -190,9 +170,9 @@ export default function NewRFQPage() {
           {aiSuggestion && (
             <div
               className="mt-3 flex items-start gap-2 rounded-lg px-4 py-3 text-sm"
-              style={{ border: `1px solid ${S.green}`, background: S.greenBg, color: S.green }}
+              style={{ border: `1px solid ${C.green}`, background: C.greenBg, color: C.green }}
             >
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" style={{ color: S.green }} />
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" style={{ color: C.green }} />
               <span>
                 CATHY a détecté : <strong>{CATEGORIES.find(c => c.value === aiSuggestion.category)?.label}</strong>
                 {" · "}confiance {Math.round(aiSuggestion.confidence * 100)}%
@@ -203,7 +183,7 @@ export default function NewRFQPage() {
 
         {/* Step 2 — Title */}
         <div style={cardStyle}>
-          <h2 className="mb-4 text-base font-semibold" style={{ color: S.text2 }}>2. Titre</h2>
+          <h2 className="mb-4 text-base font-semibold" style={{ color: C.text2 }}>2. Titre</h2>
           <input
             type="text"
             {...register("title")}
@@ -211,13 +191,13 @@ export default function NewRFQPage() {
             className={`input ${errors.title ? "border-red-400" : ""}`}
           />
           {errors.title && (
-            <p className="mt-1 text-xs" style={{ color: S.red }}>{errors.title.message}</p>
+            <p className="mt-1 text-xs" style={{ color: C.red }}>{errors.title.message}</p>
           )}
         </div>
 
         {/* Step 3 — Category */}
         <div style={cardStyle}>
-          <h2 className="mb-4 text-base font-semibold" style={{ color: S.text2 }}>3. Catégorie</h2>
+          <h2 className="mb-4 text-base font-semibold" style={{ color: C.text2 }}>3. Catégorie</h2>
           <Controller
             name="category"
             control={control}
@@ -231,8 +211,8 @@ export default function NewRFQPage() {
                     className="flex flex-col items-center gap-1 rounded-lg p-3 text-xs font-medium transition-colors"
                     style={
                       field.value === c.value
-                        ? { border: `1px solid ${S.orange}`, background: S.orangeBg, color: S.orange }
-                        : { border: `1px solid ${S.border}`, background: S.surface, color: S.text2 }
+                        ? { border: `1px solid ${C.orange}`, background: C.orangeBg, color: C.orange }
+                        : { border: `1px solid ${C.border}`, background: C.surface, color: C.text2 }
                     }
                   >
                     {c.label}
@@ -245,13 +225,13 @@ export default function NewRFQPage() {
 
         {/* Step 4 — Urgency */}
         <div style={cardStyle}>
-          <h2 className="mb-4 text-base font-semibold" style={{ color: S.text2 }}>4. Urgence</h2>
+          <h2 className="mb-4 text-base font-semibold" style={{ color: C.text2 }}>4. Urgence</h2>
           <div className="space-y-2">
             {URGENCIES.map((u) => (
               <label
                 key={u.value}
                 className="flex cursor-pointer items-center gap-3 rounded-lg p-3"
-                style={{ border: `1px solid ${S.border}`, background: S.surface }}
+                style={{ border: `1px solid ${C.border}`, background: C.surface }}
               >
                 <input
                   type="radio"
@@ -267,11 +247,11 @@ export default function NewRFQPage() {
 
         {/* Step 5 — Location + Budget + Date */}
         <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <h2 className="text-base font-semibold" style={{ color: S.text2 }}>5. Détails (optionnel)</h2>
+          <h2 className="text-base font-semibold" style={{ color: C.text2 }}>5. Détails (optionnel)</h2>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1.5 block text-sm font-medium" style={{ color: S.text2 }}>Ville</label>
+              <label className="mb-1.5 block text-sm font-medium" style={{ color: C.text2 }}>Ville</label>
               <input
                 type="text"
                 {...register("city")}
@@ -280,7 +260,7 @@ export default function NewRFQPage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium" style={{ color: S.text2 }}>Code postal</label>
+              <label className="mb-1.5 block text-sm font-medium" style={{ color: C.text2 }}>Code postal</label>
               <input
                 type="text"
                 {...register("zip_code")}
@@ -292,7 +272,7 @@ export default function NewRFQPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1.5 block text-sm font-medium" style={{ color: S.text2 }}>Budget min (€)</label>
+              <label className="mb-1.5 block text-sm font-medium" style={{ color: C.text2 }}>Budget min (€)</label>
               <input
                 type="number"
                 min={0}
@@ -302,7 +282,7 @@ export default function NewRFQPage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium" style={{ color: S.text2 }}>Budget max (€)</label>
+              <label className="mb-1.5 block text-sm font-medium" style={{ color: C.text2 }}>Budget max (€)</label>
               <input
                 type="number"
                 min={0}
@@ -314,7 +294,7 @@ export default function NewRFQPage() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium" style={{ color: S.text2 }}>Date souhaitée</label>
+            <label className="mb-1.5 block text-sm font-medium" style={{ color: C.text2 }}>Date souhaitée</label>
             <input
               type="date"
               {...register("scheduled_date")}
@@ -326,7 +306,7 @@ export default function NewRFQPage() {
         {serverError && (
           <div
             className="flex items-start gap-2 rounded-lg px-4 py-3 text-sm"
-            style={{ border: `1px solid ${S.red}`, background: S.redBg, color: S.red }}
+            style={{ border: `1px solid ${C.red}`, background: C.redBg, color: C.red }}
           >
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{serverError}</span>
@@ -338,7 +318,7 @@ export default function NewRFQPage() {
             type="button"
             onClick={() => router.back()}
             className="rounded-lg px-5 py-2.5 text-sm font-medium"
-            style={{ border: `1px solid ${S.border}`, background: S.surface, color: S.text2 }}
+            style={{ border: `1px solid ${C.border}`, background: C.surface, color: C.text2 }}
           >
             Annuler
           </button>
@@ -346,7 +326,7 @@ export default function NewRFQPage() {
             type="submit"
             disabled={isSubmitting}
             className="btn-primary flex flex-1 items-center justify-center gap-2 py-2.5 disabled:opacity-60"
-            style={{ background: S.orange, color: "#fff" }}
+            style={{ background: C.orange, color: "#fff" }}
           >
             {isSubmitting ? (
               <>

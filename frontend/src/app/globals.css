@@ -5,16 +5,16 @@
 /* ── Althy — Design tokens (source unique de vérité) ─────────────────────── */
 :root {
   /* Surfaces */
-  --althy-bg:          #FAF9F6;
+  --althy-bg:          #FAFAF8;
   --althy-surface:     #FFFFFF;
-  --althy-surface-2:   #FAF9F6;
-  --althy-border:      #EDE9E3;
+  --althy-surface-2:   #F5F2ED;
+  --althy-border:      #E8E4DC;
   --althy-border-2:    rgba(61,56,48,0.06);
 
   /* Text */
-  --althy-text:        #2B2B2B;
-  --althy-text-2:      #6E6A65;
-  --althy-text-3:      #A8A29E;
+  --althy-text:        #3D3830;
+  --althy-text-2:      #5C5650;
+  --althy-text-3:      #7A7469;
 
   /* Orange vif — couleur principale */
   --althy-orange:        #E8602C;
@@ -27,11 +27,16 @@
   --althy-green:       #22B573;
   --althy-green-bg:    #E8F8F0;
 
+  /* WhatsApp */
+  --whatsapp-green:    #25D366;
+
   /* Sémantique */
   --althy-red:         #E53E3E;
   --althy-red-bg:      #FEF0EF;
   --althy-amber:       #B45309;
   --althy-amber-bg:    #FFF6E5;
+  --althy-warning:     #D97706;
+  --althy-warning-bg:  rgba(217,119,6,0.10);
   --althy-blue:        #4B8BF5;
   --althy-blue-bg:     #EEF3FE;
   --althy-purple:      #5A3870;
@@ -79,7 +84,9 @@
   --radius-elem:       8px;
 
   /* ── Fonts ── */
-  --font-display: var(--font-display, 'Playfair Display', Georgia, serif);
+  /* --font-serif est injecté par Next.js (Fraunces variable font) */
+  /* --font-display est un alias legacy → pointe vers --font-serif */
+  --font-display: var(--font-serif);
 
   /* ── Aliases Figma V2 → tokens Althy (compatibilité composants existants) ── */
   --terracotta-primary: var(--althy-orange);
@@ -120,14 +127,14 @@
   body {
     background-color: var(--althy-bg);
     color: var(--althy-text);
-    font-family: var(--font-sans), 'DM Sans', system-ui, sans-serif;
+    font-family: var(--font-sans, 'DM Sans', system-ui, sans-serif);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3 {
-    font-family: var(--font-serif), 'Fraunces', Georgia, serif;
+    font-family: var(--font-serif, 'Fraunces', Georgia, serif);
     font-weight: 300;
     letter-spacing: -0.01em;
     color: var(--althy-text);
@@ -184,7 +191,7 @@
   }
 
   .section-title {
-    font-family: var(--font-serif), 'Fraunces', serif;
+    font-family: var(--font-serif);
     font-size: 1.4rem;
     font-weight: 300;
     color: var(--althy-text);
@@ -214,7 +221,7 @@
 
 /* Hero — titre émotionnel principal (landing, marketplace, onboarding) */
 .hero-title {
-  font-family: var(--font-serif), 'Fraunces', Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: 300;
   font-style: italic;
   font-variation-settings: 'wght' 300, 'SOFT' 40, 'WONK' 0;
@@ -225,7 +232,7 @@
 
 /* Prix / valeurs grandes (dashboards, fiches biens) */
 .price-display {
-  font-family: var(--font-serif), 'Fraunces', Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: 300;
   font-style: normal;
   font-variation-settings: 'wght' 300, 'SOFT' 20, 'WONK' 0;
@@ -235,7 +242,7 @@
 
 /* Titre section standard */
 .section-title-serif {
-  font-family: var(--font-serif), 'Fraunces', Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: 300;
   font-style: normal;
   font-variation-settings: 'wght' 300, 'SOFT' 10, 'WONK' 0;
@@ -245,7 +252,7 @@
 
 /* Tagline / quote italic */
 .quote-serif {
-  font-family: var(--font-serif), 'Fraunces', Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: 300;
   font-style: italic;
   font-variation-settings: 'wght' 300, 'SOFT' 60, 'WONK' 0;
@@ -327,7 +334,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: var(--font-serif), 'Cormorant Garamond', serif;
+  font-family: var(--font-serif);
   font-size: 20px;
   font-weight: 300;
   letter-spacing: 4px;

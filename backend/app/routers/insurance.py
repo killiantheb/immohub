@@ -122,7 +122,7 @@ async def list_insurance_rfqs(
     limit: int = Query(50, ge=1, le=200),
 ) -> list[dict]:
     """Liste les appels d'offre assurance disponibles."""
-    if current_user.role not in ("insurance", "super_admin", "agency", "owner", "tenant"):
+    if current_user.role not in ("super_admin", "agence", "proprio_solo", "locataire"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
 
     result = await db.execute(

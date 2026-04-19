@@ -100,7 +100,7 @@ class CRMStats(PydanticModel):
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _require_owner(user: User) -> None:
-    if user.role not in ("owner", "agency", "super_admin"):
+    if user.role not in ("proprio_solo", "agence", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux propriétaires")
 
 

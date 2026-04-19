@@ -27,10 +27,10 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store/authStore";
 import { Analytics } from "@/lib/analytics";
+import { C } from "@/lib/design-tokens";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
-const ORANGE = "#E8602C";
 
 interface BienDetail {
   id: string;
@@ -70,9 +70,9 @@ const TX_LABEL: Record<string, string> = {
   colocation: "Colocation",
 };
 const TX_COLOR: Record<string, string> = {
-  location: ORANGE,
+  location: C.orange,
   vente: "#0EA5E9",
-  colocation: "#7C3AED",
+  colocation: "var(--althy-purple)",
 };
 
 function fmt(n: number) {
@@ -111,7 +111,7 @@ function Header() {
             letterSpacing: "0.05em",
           }}
         >
-          ALT<span style={{ color: ORANGE }}>H</span>Y
+          ALT<span style={{ color: C.orange }}>H</span>Y
         </span>
       </Link>
       <div style={{ display: "flex", gap: 8 }}>
@@ -122,8 +122,8 @@ function Header() {
             padding: "6px 14px",
             borderRadius: "var(--radius-elem)",
             background: "var(--althy-orange-bg, rgba(232,96,44,0.08))",
-            color: ORANGE,
-            border: `1px solid ${ORANGE}`,
+            color: C.orange,
+            border: `1px solid ${C.orange}`,
             textDecoration: "none",
             fontWeight: 500,
           }}
@@ -136,7 +136,7 @@ function Header() {
             fontSize: 13,
             padding: "6px 14px",
             borderRadius: "var(--radius-elem)",
-            background: ORANGE,
+            background: C.orange,
             color: "#fff",
             textDecoration: "none",
             fontWeight: 500,
@@ -232,7 +232,7 @@ function InteretModal({
               href={`/register?callbackUrl=/biens/${bienId}`}
               style={{
                 display: "block", textAlign: "center",
-                background: ORANGE, color: "#fff",
+                background: C.orange, color: "#fff",
                 padding: "11px", borderRadius: "var(--radius-elem)",
                 textDecoration: "none", fontWeight: 600, fontSize: 14,
               }}
@@ -271,7 +271,7 @@ function InteretModal({
               disabled={sending}
               style={{
                 width: "100%", padding: "11px",
-                background: ORANGE, color: "#fff",
+                background: C.orange, color: "#fff",
                 border: "none", borderRadius: "var(--radius-elem)",
                 fontSize: 14, fontWeight: 600, cursor: sending ? "wait" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
@@ -297,7 +297,7 @@ function InteretModal({
               href={`/postuler/${bienId}`}
               style={{
                 display: "block", textAlign: "center",
-                background: ORANGE, color: "#fff",
+                background: C.orange, color: "#fff",
                 padding: "11px", borderRadius: "var(--radius-elem)",
                 textDecoration: "none", fontWeight: 600, fontSize: 14, marginBottom: 10,
               }}
@@ -370,7 +370,7 @@ function AlthyIAWidget({ bien }: { bien: BienDetail }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-        <Sparkles size={15} color={ORANGE} />
+        <Sparkles size={15} color={C.orange} />
         <span style={{ fontSize: 13, fontWeight: 600, color: "var(--althy-text)" }}>
           Posez vos questions à Althy
         </span>
@@ -391,7 +391,7 @@ function AlthyIAWidget({ bien }: { bien: BienDetail }) {
                 color: "var(--althy-text-2)", cursor: "pointer",
                 transition: "border-color 0.15s",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = ORANGE)}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.orange)}
               onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--althy-border)")}
             >
               {s}
@@ -412,7 +412,7 @@ function AlthyIAWidget({ bien }: { bien: BienDetail }) {
                 borderRadius: "var(--radius-elem)",
                 padding: "7px 11px",
                 fontSize: 12,
-                color: m.role === "user" ? ORANGE : "var(--althy-text-2)",
+                color: m.role === "user" ? C.orange : "var(--althy-text-2)",
                 alignSelf: m.role === "user" ? "flex-end" : "flex-start",
                 maxWidth: "90%",
               }}
@@ -443,14 +443,14 @@ function AlthyIAWidget({ bien }: { bien: BienDetail }) {
             background: "var(--althy-bg)", color: "var(--althy-text)",
             fontFamily: "inherit",
           }}
-          onFocus={(e) => (e.currentTarget.style.borderColor = ORANGE)}
+          onFocus={(e) => (e.currentTarget.style.borderColor = C.orange)}
           onBlur={(e) => (e.currentTarget.style.borderColor = "var(--althy-border)")}
         />
         <button
           onClick={() => ask(question)}
           disabled={thinking || !question.trim()}
           style={{
-            width: 32, height: 32, background: ORANGE, color: "#fff",
+            width: 32, height: 32, background: C.orange, color: "#fff",
             border: "none", borderRadius: "var(--radius-elem)",
             cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
             opacity: thinking || !question.trim() ? 0.5 : 1,
@@ -498,7 +498,7 @@ function ShareButtons({ bienId, titre }: { bienId: string; titre: string }) {
         style={{
           flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
           height: 32, border: "1px solid var(--althy-border)",
-          borderRadius: "var(--radius-elem)", background: "#25D366",
+          borderRadius: "var(--radius-elem)", background: "var(--whatsapp-green)",
           color: "#fff", fontSize: 12, cursor: "pointer",
         }}
       >
@@ -536,11 +536,11 @@ function Galerie({
 
   const Badges = () => (
     <div style={{ position: "absolute", top: 14, left: 14, display: "flex", gap: 6, zIndex: 2 }}>
-      <span style={{ background: TX_COLOR[transactionType] || ORANGE, color: "#fff", fontSize: 12, fontWeight: 600, padding: "4px 10px", borderRadius: 4 }}>
+      <span style={{ background: TX_COLOR[transactionType] || C.orange, color: "#fff", fontSize: 12, fontWeight: 600, padding: "4px 10px", borderRadius: 4 }}>
         {TX_LABEL[transactionType]}
       </span>
       {isPremium && (
-        <span style={{ background: "#F59E0B", color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 8px", borderRadius: 4, display: "flex", alignItems: "center", gap: 4 }}>
+        <span style={{ background: "var(--althy-warning)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 8px", borderRadius: 4, display: "flex", alignItems: "center", gap: 4 }}>
           <Star size={11} fill="#fff" /> Premium
         </span>
       )}
@@ -549,7 +549,7 @@ function Galerie({
 
   const Placeholder = () => (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: "linear-gradient(135deg, #FEF2EB 0%, rgba(232,96,44,0.1) 100%)" }}>
-      <Building2 size={48} color={ORANGE} style={{ opacity: 0.3 }} />
+      <Building2 size={48} color={C.orange} style={{ opacity: 0.3 }} />
     </div>
   );
 
@@ -726,7 +726,7 @@ export default function BienDetailPage({
         el.style.cssText = `
           width: 26px; height: 26px;
           border-radius: 50% 50% 50% 0;
-          background: ${ORANGE};
+          background: ${C.orange};
           border: 2px solid #fff;
           transform: rotate(-45deg);
           box-shadow: 0 2px 8px rgba(232,96,44,0.4);
@@ -801,7 +801,7 @@ export default function BienDetailPage({
           </p>
           <Link
             href="/biens"
-            style={{ color: ORANGE, fontSize: 13, textDecoration: "none" }}
+            style={{ color: C.orange, fontSize: 13, textDecoration: "none" }}
           >
             ← Retour aux biens
           </Link>
@@ -993,7 +993,7 @@ export default function BienDetailPage({
                     key={tag}
                     style={{
                       background: "var(--althy-orange-bg, rgba(232,96,44,0.08))",
-                      color: ORANGE,
+                      color: C.orange,
                       fontSize: 12,
                       padding: "4px 12px",
                       borderRadius: 20,
@@ -1031,7 +1031,7 @@ export default function BienDetailPage({
                       fontSize: 13,
                     }}
                   >
-                    <span style={{ color: ORANGE }}>{s.icon}</span>
+                    <span style={{ color: C.orange }}>{s.icon}</span>
                     {s.label}
                   </div>
                 ))}
@@ -1059,8 +1059,8 @@ export default function BienDetailPage({
                         display: "flex",
                         alignItems: "center",
                         gap: 5,
-                        background: "#EBF4E8",
-                        color: "#2E5E22",
+                        background: "var(--althy-green-bg)",
+                        color: "var(--althy-green)",
                         fontSize: 12,
                         padding: "5px 12px",
                         borderRadius: 20,
@@ -1152,7 +1152,7 @@ export default function BienDetailPage({
                     style={{
                       fontSize: 30,
                       fontWeight: 700,
-                      color: ORANGE,
+                      color: C.orange,
                       lineHeight: 1,
                     }}
                   >
@@ -1203,7 +1203,7 @@ export default function BienDetailPage({
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 6,
-                  background: ORANGE,
+                  background: C.orange,
                   color: "#fff",
                   padding: "11px 18px",
                   borderRadius: "var(--radius-elem)",
@@ -1288,7 +1288,7 @@ export default function BienDetailPage({
                     fontSize: 11,
                   }}
                 >
-                  <Shield size={12} style={{ color: ORANGE, flexShrink: 0 }} />
+                  <Shield size={12} style={{ color: C.orange, flexShrink: 0 }} />
                   Dossier locataire sécurisé Althy
                 </div>
                 <div
@@ -1300,7 +1300,7 @@ export default function BienDetailPage({
                     fontSize: 11,
                   }}
                 >
-                  <Check size={12} style={{ color: "#2E5E22", flexShrink: 0 }} />
+                  <Check size={12} style={{ color: "var(--althy-green)", flexShrink: 0 }} />
                   CHF 90 de frais uniquement si retenu
                 </div>
               </div>

@@ -355,7 +355,7 @@ async def update_user(
     db: DbDep,
 ) -> AdminUser:
     """Update role or active status (suspend/unsuspend)."""
-    valid_roles = {"super_admin", "agency", "owner", "tenant", "opener", "company"}
+    valid_roles = {"super_admin", "proprio_solo", "agence", "portail_proprio", "opener", "artisan", "expert", "hunter", "locataire", "acheteur_premium"}
     if payload.role and payload.role not in valid_roles:
         raise HTTPException(422, f"Rôle invalide. Valeurs acceptées : {', '.join(valid_roles)}")
 

@@ -150,7 +150,7 @@ async def export_transactions_csv(
     year: int = Query(default=None, ge=2020, le=2035),
 ) -> StreamingResponse:
     """Export transactions au format CSV avec catégories fiscales suisses (IF/IFD)."""
-    if current_user.role not in ("owner", "agency", "super_admin"):
+    if current_user.role not in ("proprio_solo", "agence", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
 
     target_year = year or datetime.now().year
@@ -237,7 +237,7 @@ async def generate_monthly_rents(
     db: DbDep,
 ) -> dict:
     """Trigger the monthly rent generation Celery task."""
-    if current_user.role not in ("owner", "agency", "super_admin"):
+    if current_user.role not in ("proprio_solo", "agence", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
     from app.tasks.rent_tasks import generate_monthly_rents as celery_task
 

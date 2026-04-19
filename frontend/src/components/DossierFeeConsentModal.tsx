@@ -39,7 +39,7 @@ export function DossierFeeConsentModal({ propertyName, landlordName, onConfirm, 
       }}
     >
       <div style={{
-        background: "#FFFFFF", borderRadius: 16, padding: "28px 28px 24px",
+        background: "var(--althy-surface)", borderRadius: 16, padding: "28px 28px 24px",
         maxWidth: 480, width: "100%",
         boxShadow: "0 20px 60px rgba(61,56,48,0.25)",
         fontFamily: "'DM Sans', system-ui, sans-serif",
@@ -47,21 +47,21 @@ export function DossierFeeConsentModal({ propertyName, landlordName, onConfirm, 
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-            <div style={{ background: "#FAE4D6", borderRadius: 10, padding: 10, flexShrink: 0 }}>
+            <div style={{ background: "var(--althy-orange-light)", borderRadius: 10, padding: 10, flexShrink: 0 }}>
               <FileText style={{ color: "var(--althy-orange)", width: 20, height: 20 }} />
             </div>
             <div>
-              <p style={{ margin: "0 0 2px", fontSize: 16, fontWeight: 700, color: "#3D3830" }}>
+              <p style={{ margin: "0 0 2px", fontSize: 16, fontWeight: 700, color: "var(--althy-text)" }}>
                 Frais de dossier
               </p>
-              <p style={{ margin: 0, fontSize: 12, color: "#7A7469" }}>
+              <p style={{ margin: 0, fontSize: 12, color: "var(--althy-text-3)" }}>
                 {propertyName}{landlordName ? ` — ${landlordName}` : ""}
               </p>
             </div>
           </div>
           <button
             onClick={onCancel}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "#7A7469", padding: 4 }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--althy-text-3)", padding: 4 }}
             aria-label="Fermer"
           >
             <X style={{ width: 18, height: 18 }} />
@@ -70,7 +70,7 @@ export function DossierFeeConsentModal({ propertyName, landlordName, onConfirm, 
 
         {/* Fee highlight */}
         <div style={{
-          background: "#FAE4D6", borderRadius: 12, padding: "14px 16px",
+          background: "var(--althy-orange-light)", borderRadius: 12, padding: "14px 16px",
           border: "1px solid #EDCFBE", marginBottom: 16,
         }}>
           <p style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 700, color: "var(--althy-orange)" }}>CHF 90</p>
@@ -88,7 +88,7 @@ export function DossierFeeConsentModal({ propertyName, landlordName, onConfirm, 
             { icon: "💳", text: "Si retenu : CHF 90 débités après confirmation du propriétaire" },
             { icon: "📋", text: "Conformément à l'art. 5 des CGU Althy et à l'OBLF suisse" },
           ].map(item => (
-            <div key={item.icon} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12.5, color: "#4A4440" }}>
+            <div key={item.icon} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12.5, color: "var(--althy-text)" }}>
               <span style={{ flexShrink: 0 }}>{item.icon}</span>
               <span style={{ lineHeight: 1.55 }}>{item.text}</span>
             </div>
@@ -99,8 +99,8 @@ export function DossierFeeConsentModal({ propertyName, landlordName, onConfirm, 
         <label style={{
           display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer",
           padding: "12px 14px", borderRadius: 10,
-          border: `1px solid ${accepted ? "var(--althy-orange)" : "#E8E4DC"}`,
-          background: accepted ? "#FAE4D6" : "#FAFAF8",
+          border: `1px solid ${accepted ? "var(--althy-orange)" : "var(--althy-border)"}`,
+          background: accepted ? "var(--althy-orange-light)" : "var(--althy-bg)",
           marginBottom: 16, transition: "all 0.15s",
         }}>
           <input
@@ -109,7 +109,7 @@ export function DossierFeeConsentModal({ propertyName, landlordName, onConfirm, 
             onChange={e => setAccepted(e.target.checked)}
             style={{ marginTop: 2, accentColor: "var(--althy-orange)", width: 15, height: 15, flexShrink: 0, cursor: "pointer" }}
           />
-          <span style={{ fontSize: 12.5, color: "#3D3830", lineHeight: 1.55 }}>
+          <span style={{ fontSize: 12.5, color: "var(--althy-text)", lineHeight: 1.55 }}>
             Je comprends que des frais de dossier de <strong>CHF 90</strong> me seront facturés{" "}
             <strong>uniquement si ma candidature est retenue</strong> par le propriétaire.{" "}
             J&apos;accepte les{" "}
@@ -143,7 +143,7 @@ export function DossierFeeConsentModal({ propertyName, landlordName, onConfirm, 
             onClick={onCancel}
             style={{
               padding: "10px 16px", background: "transparent",
-              color: "#7A7469", border: "1px solid #E8E4DC", borderRadius: 10,
+              color: "var(--althy-text-3)", border: "1px solid var(--althy-border)", borderRadius: 10,
               fontSize: 14, cursor: "pointer",
             }}
           >

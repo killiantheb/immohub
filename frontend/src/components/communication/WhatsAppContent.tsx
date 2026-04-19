@@ -163,7 +163,7 @@ export function WhatsAppContent() {
     return (
       <div style={{ ...S.card, textAlign: "center", padding: "56px 24px" }}>
         <MessageCircle size={44} color="var(--althy-border)" style={{ marginBottom: 16 }} />
-        <h3 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 22, fontWeight: 300, color: "var(--althy-text)", margin: "0 0 8px" }}>
+        <h3 style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 300, color: "var(--althy-text)", margin: "0 0 8px" }}>
           Aucune conversation WhatsApp
         </h3>
         <p style={{ fontSize: 13, color: "var(--althy-text-3)", maxWidth: 440, margin: "0 auto 20px", lineHeight: 1.6 }}>
@@ -221,7 +221,7 @@ export function WhatsAppContent() {
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 2 }}>
                     <span style={{ fontSize: 11, color: "var(--althy-text-3)" }}>{conv.contact_phone}</span>
                     {conv.unread_count > 0 && (
-                      <span style={{ minWidth: 18, height: 18, borderRadius: 9, background: "#25D366", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px" }}>
+                      <span style={{ minWidth: 18, height: 18, borderRadius: 9, background: "var(--whatsapp-green)", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 5px" }}>
                         {conv.unread_count}
                       </span>
                     )}
@@ -270,7 +270,7 @@ export function WhatsAppContent() {
                 const isOut = msg.direction === "outbound";
                 return (
                   <div key={msg.id} style={{ display: "flex", justifyContent: isOut ? "flex-end" : "flex-start" }}>
-                    <div style={{ maxWidth: "70%", padding: "9px 13px", borderRadius: isOut ? "14px 14px 4px 14px" : "14px 14px 14px 4px", background: isOut ? "#25D366" : "var(--althy-bg)", border: isOut ? "none" : "1px solid var(--althy-border)" }}>
+                    <div style={{ maxWidth: "70%", padding: "9px 13px", borderRadius: isOut ? "14px 14px 4px 14px" : "14px 14px 14px 4px", background: isOut ? "var(--whatsapp-green)" : "var(--althy-bg)", border: isOut ? "none" : "1px solid var(--althy-border)" }}>
                       <p style={{ fontSize: 13, color: isOut ? "#fff" : "var(--althy-text)", margin: 0, lineHeight: 1.5 }}>{msg.body}</p>
                       <p style={{ fontSize: 10, color: isOut ? "rgba(255,255,255,0.7)" : "var(--althy-text-3)", margin: "4px 0 0", textAlign: "right" }}>
                         {formatTime(msg.sent_at)}
@@ -310,7 +310,7 @@ export function WhatsAppContent() {
             <button
               onClick={handleSend}
               disabled={sending || !input.trim()}
-              style={{ padding: "9px 16px", borderRadius: 10, background: "#25D366", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: sending || !input.trim() ? 0.5 : 1 }}
+              style={{ padding: "9px 16px", borderRadius: 10, background: "var(--whatsapp-green)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: sending || !input.trim() ? 0.5 : 1 }}
             >
               <Send size={15} color="#fff" />
             </button>

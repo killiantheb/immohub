@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useRef, useState } from "react";
 
 // ── Constantes ────────────────────────────────────────────────────────────────
-
+// Mapbox GL requires hex — do not replace with CSS var
 const ORANGE = "#E8602C";
 const ACTIVE_CANTONS = ["Genève", "Vaud", "Valais", "Fribourg", "Neuchâtel", "Jura"];
 

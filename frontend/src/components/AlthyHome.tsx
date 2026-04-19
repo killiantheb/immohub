@@ -43,7 +43,7 @@ const BADGE_STYLES = {
 };
 
 const CARD_BORDER = {
-  urgent:  "#D4601A",
+  urgent:  "var(--althy-orange)",
   success: "#3B6D11",
   info:    "#185FA5",
   mission: "#854F0B",
@@ -166,7 +166,7 @@ export default function AlthyHome() {
     return (
       <div style={{ background: "#F5EDE0", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #F5A050 0%, #D4601A 45%, #8A3008 100%)", margin: "0 auto 1rem", animation: "breathe 2s ease-in-out infinite", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #F5A050 0%, var(--althy-orange) 45%, #8A3008 100%)", margin: "0 auto 1rem", animation: "breathe 2s ease-in-out infinite", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
             <span style={{ fontFamily: "serif", fontSize: 18, color: "#fff", letterSpacing: 4 }}>Althy</span>
           </div>
           <p style={{ fontSize: 11, letterSpacing: 2, color: "#A05C28", textTransform: "uppercase" }}>analyse en cours…</p>
@@ -209,10 +209,10 @@ export default function AlthyHome() {
 
       {/* Bubble */}
       <div style={{ position: "relative", width: 160, height: 160, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1.8rem" }}>
-        <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid #D4601A", animation: "ripple 3s ease-out infinite" }} />
-        <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid #D4601A", animation: "ripple2 3s ease-out infinite 1.5s" }} />
-        <div onClick={toggleTalk} style={{ width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #F5A050 0%, #D4601A 45%, #8A3008 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", animation: isTalking ? "speaking 0.4s ease-in-out infinite" : "breathe 3.5s ease-in-out infinite", cursor: "pointer", zIndex: 2, boxShadow: "0 8px 40px rgba(212,96,26,0.3)" }}>
-          <span style={{ fontFamily: "Georgia, serif", fontSize: 22, fontWeight: 300, color: "#fff", letterSpacing: 4, textTransform: "uppercase" }}>Althy</span>
+        <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid var(--althy-orange)", animation: "ripple 3s ease-out infinite" }} />
+        <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid var(--althy-orange)", animation: "ripple2 3s ease-out infinite 1.5s" }} />
+        <div onClick={toggleTalk} style={{ width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #F5A050 0%, var(--althy-orange) 45%, #8A3008 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", animation: isTalking ? "speaking 0.4s ease-in-out infinite" : "breathe 3.5s ease-in-out infinite", cursor: "pointer", zIndex: 2, boxShadow: "0 8px 40px rgba(232,96,44,0.3)" }}>
+          <span style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 300, color: "#fff", letterSpacing: 4, textTransform: "uppercase" }}>Althy</span>
           <span style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", letterSpacing: 1.5, textTransform: "uppercase", marginTop: 2 }}>parler</span>
         </div>
       </div>
@@ -253,7 +253,7 @@ export default function AlthyHome() {
                   <button
                     onClick={() => handleAction(card.primaryAction!)}
                     disabled={actionLoading === card.primaryAction.id}
-                    style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", background: "#D4601A", color: "#fff", fontFamily: "inherit", fontSize: 12, fontWeight: 500, cursor: "pointer", opacity: actionLoading === card.primaryAction.id ? 0.6 : 1 }}
+                    style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", background: "var(--althy-orange)", color: "#fff", fontFamily: "inherit", fontSize: 12, fontWeight: 500, cursor: "pointer", opacity: actionLoading === card.primaryAction.id ? 0.6 : 1 }}
                   >
                     {actionLoading === card.primaryAction.id ? "…" : card.primaryAction.label}
                   </button>
@@ -282,7 +282,7 @@ export default function AlthyHome() {
           disabled={isThinking}
           style={{ flex: 1, border: "none", outline: "none", fontFamily: "inherit", fontSize: 13, color: "#1a1a1a", background: "transparent" }}
         />
-        <button onClick={sendMessage} disabled={isThinking} style={{ width: 34, height: 34, borderRadius: "50%", background: "#D4601A", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: isThinking ? 0.6 : 1 }}>
+        <button onClick={sendMessage} disabled={isThinking} style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--althy-orange)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: isThinking ? 0.6 : 1 }}>
           <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>

@@ -10,28 +10,8 @@ import {
   YAxis,
 } from "recharts";
 import type { MonthlyRevenue } from "@/lib/types";
+import { C } from "@/lib/design-tokens";
 
-const S = {
-  bg: "var(--althy-bg)",
-  surface: "var(--althy-surface)",
-  surface2: "var(--althy-surface-2)",
-  border: "var(--althy-border)",
-  text: "var(--althy-text)",
-  text2: "var(--althy-text-2)",
-  text3: "var(--althy-text-3)",
-  orange: "var(--althy-orange)",
-  orangeBg: "var(--althy-orange-bg)",
-  green: "var(--althy-green)",
-  greenBg: "var(--althy-green-bg)",
-  red: "var(--althy-red)",
-  redBg: "var(--althy-red-bg)",
-  amber: "var(--althy-amber)",
-  amberBg: "var(--althy-amber-bg)",
-  blue: "var(--althy-blue)",
-  blueBg: "var(--althy-blue-bg)",
-  shadow: "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const;
 
 const MONTH_FR = [
   "", "Jan", "Fév", "Mar", "Avr", "Mai", "Jui",
@@ -57,7 +37,7 @@ export function RevenueChart({ data, height = 220 }: Props) {
     return (
       <div
         className="flex items-center justify-center py-12"
-        style={{ fontSize: 14, color: S.text3 }}
+        style={{ fontSize: 14, color: C.text3 }}
       >
         Aucune donnée disponible
       </div>

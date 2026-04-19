@@ -1,28 +1,8 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import { C } from "@/lib/design-tokens";
 
-const S = {
-  bg: "var(--althy-bg)",
-  surface: "var(--althy-surface)",
-  surface2: "var(--althy-surface-2)",
-  border: "var(--althy-border)",
-  text: "var(--althy-text)",
-  text2: "var(--althy-text-2)",
-  text3: "var(--althy-text-3)",
-  orange: "var(--althy-orange)",
-  orangeBg: "var(--althy-orange-bg)",
-  green: "var(--althy-green)",
-  greenBg: "var(--althy-green-bg)",
-  red: "var(--althy-red)",
-  redBg: "var(--althy-red-bg)",
-  amber: "var(--althy-amber)",
-  amberBg: "var(--althy-amber-bg)",
-  blue: "var(--althy-blue)",
-  blueBg: "var(--althy-blue-bg)",
-  shadow: "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const;
 
 interface Rating {
   id: string
@@ -63,7 +43,7 @@ function Stars({ score, interactive = false, onRate }: { score: number; interact
           style={{
             fontSize: 18,
             cursor: interactive ? 'pointer' : 'default',
-            color: n <= (hover || score) ? S.amber : S.border,
+            color: n <= (hover || score) ? C.amber : C.border,
             transition: 'color 0.1s',
           }}
         >
@@ -124,7 +104,7 @@ export function RatingWidget({ entityType, entityId, title, compact = false }: P
     return (
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
         <Stars score={Math.round(summary?.avg_score ?? 0)} />
-        <span style={{ fontSize: 12, color: S.text2 }}>
+        <span style={{ fontSize: 12, color: C.text2 }}>
           {summary?.avg_score?.toFixed(1) ?? '—'} ({summary?.count ?? 0})
         </span>
       </span>
@@ -132,9 +112,9 @@ export function RatingWidget({ entityType, entityId, title, compact = false }: P
   }
 
   return (
-    <div style={{ background: S.surface, borderRadius: 16, padding: '20px', border: `0.5px solid ${S.border}`, marginTop: 12 }}>
+    <div style={{ background: C.surface, borderRadius: 16, padding: '20px', border: `0.5px solid ${C.border}`, marginTop: 12 }}>
       {title && (
-        <p style={{ fontSize: 10, letterSpacing: '2px', textTransform: 'uppercase', color: S.text2, marginBottom: 14 }}>
+        <p style={{ fontSize: 10, letterSpacing: '2px', textTransform: 'uppercase', color: C.text2, marginBottom: 14 }}>
           {title}
         </p>
       )}
@@ -142,11 +122,11 @@ export function RatingWidget({ entityType, entityId, title, compact = false }: P
       {/* Summary */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
         <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: 32, fontWeight: 700, color: S.text, lineHeight: 1 }}>
+          <p style={{ fontSize: 32, fontWeight: 700, color: C.text, lineHeight: 1 }}>
             {summary?.avg_score?.toFixed(1) ?? '—'}
           </p>
           <Stars score={Math.round(summary?.avg_score ?? 0)} />
-          <p style={{ fontSize: 11, color: S.text3, marginTop: 4 }}>{summary?.count ?? 0} avis</p>
+          <p style={{ fontSize: 11, color: C.text3, marginTop: 4 }}>{summary?.count ?? 0} avis</p>
         </div>
         <div style={{ flex: 1 }}>
           {[5, 4, 3, 2, 1].map(n => {
@@ -155,12 +135,12 @@ export function RatingWidget({ entityType, entityId, title, compact = false }: P
             const pct = total > 0 ? (count / total) * 100 : 0
             return (
               <div key={n} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <span style={{ fontSize: 11, color: S.text2, width: 8 }}>{n}</span>
-                <span style={{ fontSize: 12, color: S.amber }}>★</span>
-                <div style={{ flex: 1, height: 6, borderRadius: 3, background: S.surface2, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: S.orange, borderRadius: 3, transition: 'width 0.3s' }} />
+                <span style={{ fontSize: 11, color: C.text2, width: 8 }}>{n}</span>
+                <span style={{ fontSize: 12, color: C.amber }}>★</span>
+                <div style={{ flex: 1, height: 6, borderRadius: 3, background: C.surface2, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: C.orange, borderRadius: 3, transition: 'width 0.3s' }} />
                 </div>
-                <span style={{ fontSize: 10, color: S.text3, width: 20, textAlign: 'right' }}>{count}</span>
+                <span style={{ fontSize: 10, color: C.text3, width: 20, textAlign: 'right' }}>{count}</span>
               </div>
             )
           })}
@@ -171,33 +151,33 @@ export function RatingWidget({ entityType, entityId, title, compact = false }: P
       {!showForm ? (
         <button
           onClick={() => setShowForm(true)}
-          style={{ fontSize: 12, padding: '7px 14px', borderRadius: 10, border: `0.5px solid ${S.border}`, background: 'transparent', color: S.text2, cursor: 'pointer', fontFamily: 'inherit' }}
+          style={{ fontSize: 12, padding: '7px 14px', borderRadius: 10, border: `0.5px solid ${C.border}`, background: 'transparent', color: C.text2, cursor: 'pointer', fontFamily: 'inherit' }}
         >
           + Laisser un avis
         </button>
       ) : (
-        <div style={{ borderTop: `0.5px solid ${S.border}`, paddingTop: 16 }}>
-          <p style={{ fontSize: 12, color: S.text2, marginBottom: 10 }}>Votre note</p>
+        <div style={{ borderTop: `0.5px solid ${C.border}`, paddingTop: 16 }}>
+          <p style={{ fontSize: 12, color: C.text2, marginBottom: 10 }}>Votre note</p>
           <Stars score={myScore} interactive onRate={setMyScore} />
           <textarea
             value={myComment}
             onChange={e => setMyComment(e.target.value)}
             placeholder="Commentaire (optionnel)…"
             rows={3}
-            style={{ width: '100%', marginTop: 12, padding: '9px 13px', border: `0.5px solid ${S.border}`, borderRadius: 10, fontSize: 13, color: S.text, background: S.bg, outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', marginTop: 12, padding: '9px 13px', border: `0.5px solid ${C.border}`, borderRadius: 10, fontSize: 13, color: C.text, background: C.bg, outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box' }}
           />
-          {error && <p style={{ fontSize: 12, color: S.red, marginTop: 6 }}>{error}</p>}
+          {error && <p style={{ fontSize: 12, color: C.red, marginTop: 6 }}>{error}</p>}
           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
             <button
               onClick={submit}
               disabled={!myScore || submitting}
-              style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: !myScore ? S.text3 : S.orange, color: '#fff', fontSize: 13, cursor: !myScore ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}
+              style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: !myScore ? C.text3 : C.orange, color: '#fff', fontSize: 13, cursor: !myScore ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}
             >
               {submitting ? 'Envoi…' : 'Publier'}
             </button>
             <button
               onClick={() => { setShowForm(false); setMyScore(0); setMyComment(''); setError('') }}
-              style={{ padding: '8px 14px', borderRadius: 10, border: `0.5px solid ${S.border}`, background: 'transparent', color: S.text2, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
+              style={{ padding: '8px 14px', borderRadius: 10, border: `0.5px solid ${C.border}`, background: 'transparent', color: C.text2, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
             >
               Annuler
             </button>
@@ -207,18 +187,18 @@ export function RatingWidget({ entityType, entityId, title, compact = false }: P
 
       {/* Recent ratings */}
       {summary && summary.ratings.length > 0 && (
-        <div style={{ marginTop: 20, borderTop: `0.5px solid ${S.border}`, paddingTop: 16 }}>
-          <p style={{ fontSize: 10, letterSpacing: '1.5px', textTransform: 'uppercase', color: S.text3, marginBottom: 12 }}>Avis récents</p>
+        <div style={{ marginTop: 20, borderTop: `0.5px solid ${C.border}`, paddingTop: 16 }}>
+          <p style={{ fontSize: 10, letterSpacing: '1.5px', textTransform: 'uppercase', color: C.text3, marginBottom: 12 }}>Avis récents</p>
           {summary.ratings.slice(0, 5).map(r => (
-            <div key={r.id} style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `0.5px solid ${S.border}` }}>
+            <div key={r.id} style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `0.5px solid ${C.border}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                 <Stars score={r.score} />
-                <span style={{ fontSize: 11, color: S.text3, textTransform: 'capitalize' }}>{r.rater_role}</span>
-                <span style={{ fontSize: 10, color: S.text3, marginLeft: 'auto' }}>
+                <span style={{ fontSize: 11, color: C.text3, textTransform: 'capitalize' }}>{r.rater_role}</span>
+                <span style={{ fontSize: 10, color: C.text3, marginLeft: 'auto' }}>
                   {new Date(r.created_at).toLocaleDateString('fr-CH')}
                 </span>
               </div>
-              {r.comment && <p style={{ fontSize: 13, color: S.text2, lineHeight: 1.5, margin: 0 }}>{r.comment}</p>}
+              {r.comment && <p style={{ fontSize: 13, color: C.text2, lineHeight: 1.5, margin: 0 }}>{r.comment}</p>}
             </div>
           ))}
         </div>

@@ -11,47 +11,26 @@ import { api } from "@/lib/api";
 import { useRole } from "@/lib/hooks/useRole";
 import { ZoneMap } from "@/components/map";
 import type { ZoneMapData } from "@/components/map";
-
-// ── Design tokens ──────────────────────────────────────────────────────────────
-const S = {
-  bg:       "var(--cream)",
-  surface:  "var(--background-card)",
-  surface2: "var(--althy-surface-2)",
-  border:   "var(--border-subtle)",
-  text:     "var(--charcoal)",
-  text2:    "var(--text-secondary)",
-  text3:    "var(--text-tertiary)",
-  orange:   "var(--terracotta-primary)",
-  orangeBg: "var(--althy-orange-bg)",
-  green:    "var(--althy-green)",
-  greenBg:  "var(--althy-green-bg)",
-  red:      "var(--althy-red)",
-  redBg:    "var(--althy-red-bg)",
-  amber:    "var(--althy-amber)",
-  amberBg:  "var(--althy-amber-bg)",
-  blue:     "var(--althy-blue)",
-  blueBg:   "var(--althy-blue-bg)",
-  shadow:   "var(--althy-shadow)",
-} as const;
+import { C } from "@/lib/design-tokens";
 
 // ── Atoms ──────────────────────────────────────────────────────────────────────
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div style={{ background: S.surface, borderRadius: 16, border: `1px solid ${S.border}`, boxShadow: S.shadow, padding: "1.25rem", ...style }}>
+    <div style={{ background: C.surface, borderRadius: 16, border: `1px solid ${C.border}`, boxShadow: C.shadow, padding: "1.25rem", ...style }}>
       {children}
     </div>
   );
 }
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ fontFamily: "var(--font-serif)", fontSize: 15, fontWeight: 400, color: S.text2, marginBottom: "0.75rem", borderBottom: `1px solid ${S.border}`, paddingBottom: "0.5rem" }}>
+    <p style={{ fontFamily: "var(--font-serif)", fontSize: 15, fontWeight: 400, color: C.text2, marginBottom: "0.75rem", borderBottom: `1px solid ${C.border}`, paddingBottom: "0.5rem" }}>
       {children}
     </p>
   );
 }
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: S.text3, marginBottom: 5 }}>
+    <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: C.text3, marginBottom: 5 }}>
       {children}
     </label>
   );
@@ -61,7 +40,7 @@ function Field({ label, value, onChange, type = "text", placeholder, error, hint
   type?: string; placeholder?: string; error?: string; hint?: string; readOnly?: boolean;
   textarea?: boolean; rows?: number;
 }) {
-  const shared = { width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${error ? S.red : S.border}`, background: readOnly ? S.surface2 : S.surface, color: readOnly ? S.text3 : S.text, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const };
+  const shared = { width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${error ? C.red : C.border}`, background: readOnly ? C.surface2 : C.surface, color: readOnly ? C.text3 : C.text, fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" as const };
   return (
     <div>
       <FieldLabel>{label}</FieldLabel>
@@ -69,8 +48,8 @@ function Field({ label, value, onChange, type = "text", placeholder, error, hint
         ? <textarea value={value} placeholder={placeholder} readOnly={readOnly} rows={rows} onChange={e => onChange?.(e.target.value)} style={{ ...shared, resize: "vertical" }} />
         : <input type={type} value={value} placeholder={placeholder} readOnly={readOnly} onChange={e => onChange?.(e.target.value)} style={shared} />
       }
-      {error && <p style={{ fontSize: 11, color: S.red, marginTop: 3 }}>{error}</p>}
-      {hint && !error && <p style={{ fontSize: 11, color: S.text3, marginTop: 3 }}>{hint}</p>}
+      {error && <p style={{ fontSize: 11, color: C.red, marginTop: 3 }}>{error}</p>}
+      {hint && !error && <p style={{ fontSize: 11, color: C.text3, marginTop: 3 }}>{hint}</p>}
     </div>
   );
 }
@@ -81,11 +60,11 @@ function SelectField({ label, value, onChange, options, hint }: {
   return (
     <div>
       <FieldLabel>{label}</FieldLabel>
-      <select value={value} onChange={e => onChange(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${S.border}`, background: S.surface, color: S.text, fontSize: 13, outline: "none", fontFamily: "inherit" }}>
+      <select value={value} onChange={e => onChange(e.target.value)} style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: 13, outline: "none", fontFamily: "inherit" }}>
         <option value="">— Choisir —</option>
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
-      {hint && <p style={{ fontSize: 11, color: S.text3, marginTop: 3 }}>{hint}</p>}
+      {hint && <p style={{ fontSize: 11, color: C.text3, marginTop: 3 }}>{hint}</p>}
     </div>
   );
 }
@@ -93,10 +72,10 @@ function Toggle({ label, hint, value, onChange }: { label: string; hint?: string
   return (
     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
       <div>
-        <p style={{ fontSize: 13, color: S.text, fontWeight: 500 }}>{label}</p>
-        {hint && <p style={{ fontSize: 11, color: S.text3, marginTop: 2 }}>{hint}</p>}
+        <p style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{label}</p>
+        {hint && <p style={{ fontSize: 11, color: C.text3, marginTop: 2 }}>{hint}</p>}
       </div>
-      <button onClick={() => onChange(!value)} style={{ width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer", background: value ? S.orange : S.border, position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
+      <button onClick={() => onChange(!value)} style={{ width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer", background: value ? C.orange : C.border, position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
         <span style={{ position: "absolute", top: 3, left: value ? 22 : 3, width: 18, height: 18, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
       </button>
     </div>
@@ -104,7 +83,7 @@ function Toggle({ label, hint, value, onChange }: { label: string; hint?: string
 }
 function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
-    <button onClick={onClick} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? S.orange : S.border}`, background: active ? S.orangeBg : S.surface, color: active ? S.orange : S.text3, transition: "all 0.15s" }}>
+    <button onClick={onClick} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${active ? C.orange : C.border}`, background: active ? C.orangeBg : C.surface, color: active ? C.orange : C.text3, transition: "all 0.15s" }}>
       {label}
     </button>
   );
@@ -117,10 +96,10 @@ function RangeField({ label, value, onChange, min, max, step, suffix = "" }: {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
         <FieldLabel>{label}</FieldLabel>
-        <span style={{ fontSize: 12, fontWeight: 700, color: S.orange }}>{value}{suffix}</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: C.orange }}>{value}{suffix}</span>
       </div>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(Number(e.target.value))} style={{ width: "100%", accentColor: S.orange, cursor: "pointer" }} />
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: S.text3, marginTop: 3 }}>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(Number(e.target.value))} style={{ width: "100%", accentColor: C.orange, cursor: "pointer" }} />
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.text3, marginTop: 3 }}>
         <span>{min}{suffix}</span><span>{max}{suffix}</span>
       </div>
     </div>
@@ -128,7 +107,7 @@ function RangeField({ label, value, onChange, min, max, step, suffix = "" }: {
 }
 function SaveBtn({ saving, saved, onClick, label = "Sauvegarder les modifications" }: { saving: boolean; saved: boolean; onClick: () => void; label?: string }) {
   return (
-    <button onClick={onClick} disabled={saving} style={{ display: "block", width: "100%", padding: "12px 0", borderRadius: 12, background: saved ? S.greenBg : S.orange, border: `1px solid ${saved ? S.green : "transparent"}`, color: saved ? S.green : "#fff", fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, transition: "all 0.2s" }}>
+    <button onClick={onClick} disabled={saving} style={{ display: "block", width: "100%", padding: "12px 0", borderRadius: 12, background: saved ? C.greenBg : C.orange, border: `1px solid ${saved ? C.green : "transparent"}`, color: saved ? C.green : "#fff", fontSize: 14, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.6 : 1, transition: "all 0.2s" }}>
       {saving ? <Loader2 size={16} style={{ display: "inline", animation: "spin 1s linear infinite", marginRight: 6 }} /> : null}
       {saving ? "Sauvegarde…" : saved ? "Sauvegardé ✓" : label}
     </button>
@@ -136,7 +115,7 @@ function SaveBtn({ saving, saved, onClick, label = "Sauvegarder les modification
 }
 function Badge({ children, color }: { children: React.ReactNode; color?: string }) {
   return (
-    <span style={{ display: "inline-block", padding: "2px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: color ?? S.orangeBg, color: color ? "#fff" : S.orange }}>
+    <span style={{ display: "inline-block", padding: "2px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: color ?? C.orangeBg, color: color ? "#fff" : C.orange }}>
       {children}
     </span>
   );
@@ -153,7 +132,7 @@ function useToast() {
   const [msg, setMsg] = useState<string | null>(null);
   const show = (m: string) => { setMsg(m); setTimeout(() => setMsg(null), 3000); };
   const Toast = () => msg ? (
-    <div style={{ position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)", background: S.text, color: "#fff", padding: "10px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600, zIndex: 9999, boxShadow: "0 4px 16px rgba(0,0,0,0.15)" }}>
+    <div style={{ position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)", background: C.text, color: "#fff", padding: "10px 20px", borderRadius: 12, fontSize: 13, fontWeight: 600, zIndex: 9999, boxShadow: "0 4px 16px rgba(0,0,0,0.15)" }}>
       {msg}
     </div>
   ) : null;
@@ -269,25 +248,25 @@ function TabIdentite() {
       <Card>
         <SectionTitle>Photo de profil</SectionTitle>
         <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-          <div style={{ width: 80, height: 80, borderRadius: "50%", background: S.surface2, border: `2px solid ${S.border}`, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 80, height: 80, borderRadius: "50%", background: C.surface2, border: `2px solid ${C.border}`, overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
             {photoPreview || me?.avatar_url
               ? <img src={photoPreview ?? me?.avatar_url} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              : <User size={32} style={{ color: S.text3 }} />}
+              : <User size={32} style={{ color: C.text3 }} />}
           </div>
           <div>
             <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => {
               const file = e.target.files?.[0];
               if (file) { setPhotoFile(file); setPhotoPreview(URL.createObjectURL(file)); }
             }} />
-            <button onClick={() => fileRef.current?.click()} style={{ padding: "8px 18px", borderRadius: 10, background: S.orangeBg, border: `1px solid ${S.orange}`, color: S.orange, fontSize: 13, fontWeight: 600, cursor: "pointer", marginRight: 10 }}>
+            <button onClick={() => fileRef.current?.click()} style={{ padding: "8px 18px", borderRadius: 10, background: C.orangeBg, border: `1px solid ${C.orange}`, color: C.orange, fontSize: 13, fontWeight: 600, cursor: "pointer", marginRight: 10 }}>
               Changer la photo
             </button>
             {photoPreview && (
-              <button onClick={() => { setPhotoFile(null); setPhotoPreview(null); }} style={{ padding: "8px 12px", borderRadius: 10, background: S.redBg, border: `1px solid ${S.red}`, color: S.red, fontSize: 13, cursor: "pointer" }}>
+              <button onClick={() => { setPhotoFile(null); setPhotoPreview(null); }} style={{ padding: "8px 12px", borderRadius: 10, background: C.redBg, border: `1px solid ${C.red}`, color: C.red, fontSize: 13, cursor: "pointer" }}>
                 <X size={14} />
               </button>
             )}
-            <p style={{ fontSize: 11, color: S.text3, marginTop: 6 }}>JPG, PNG ou WebP · max 2 Mo · recadré en cercle</p>
+            <p style={{ fontSize: 11, color: C.text3, marginTop: 6 }}>JPG, PNG ou WebP · max 2 Mo · recadré en cercle</p>
           </div>
         </div>
       </Card>
@@ -329,19 +308,19 @@ function TabIdentite() {
           <SectionTitle>Informations agence</SectionTitle>
           <FormStack>
             {isAgence && (
-              <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", padding: "1rem", background: S.surface2, borderRadius: 12, marginBottom: 8 }}>
-                <div style={{ width: 64, height: 64, borderRadius: 12, background: S.bg, border: `1px solid ${S.border}`, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  {logoPreview ? <img src={logoPreview} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : <Building2 size={24} style={{ color: S.text3 }} />}
+              <div style={{ display: "flex", alignItems: "center", gap: "1.5rem", padding: "1rem", background: C.surface2, borderRadius: 12, marginBottom: 8 }}>
+                <div style={{ width: 64, height: 64, borderRadius: 12, background: C.bg, border: `1px solid ${C.border}`, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {logoPreview ? <img src={logoPreview} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : <Building2 size={24} style={{ color: C.text3 }} />}
                 </div>
                 <div>
                   <input ref={logoRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => {
                     const file = e.target.files?.[0];
                     if (file) { setLogoFile(file); setLogoPreview(URL.createObjectURL(file)); }
                   }} />
-                  <button onClick={() => logoRef.current?.click()} style={{ padding: "7px 16px", borderRadius: 8, background: S.orangeBg, border: `1px solid ${S.orange}`, color: S.orange, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                  <button onClick={() => logoRef.current?.click()} style={{ padding: "7px 16px", borderRadius: 8, background: C.orangeBg, border: `1px solid ${C.orange}`, color: C.orange, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                     Logo agence
                   </button>
-                  <p style={{ fontSize: 11, color: S.text3, marginTop: 4 }}>PNG · fond transparent recommandé</p>
+                  <p style={{ fontSize: 11, color: C.text3, marginTop: 4 }}>PNG · fond transparent recommandé</p>
                 </div>
               </div>
             )}
@@ -429,7 +408,7 @@ function TabIdentite() {
               <FieldLabel>Assurance RC professionnelle</FieldLabel>
               <div style={{ display: "flex", gap: "1rem", marginTop: 6 }}>
                 {["oui", "non"].map(v => (
-                  <button key={v} onClick={() => set("rc_insurance", v)} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${f.rc_insurance === v ? S.orange : S.border}`, background: f.rc_insurance === v ? S.orangeBg : S.surface, color: f.rc_insurance === v ? S.orange : S.text, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                  <button key={v} onClick={() => set("rc_insurance", v)} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${f.rc_insurance === v ? C.orange : C.border}`, background: f.rc_insurance === v ? C.orangeBg : C.surface, color: f.rc_insurance === v ? C.orange : C.text, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                     {v === "oui" ? "Oui" : "Non"}
                   </button>
                 ))}
@@ -452,7 +431,7 @@ function TabIdentite() {
               <FieldLabel>Réseau estimé</FieldLabel>
               <div style={{ display: "flex", gap: "1rem", marginTop: 6 }}>
                 {[{ v: "<50", l: "< 50 contacts" }, { v: "50-200", l: "50 – 200 contacts" }, { v: "200+", l: "200+ contacts" }].map(o => (
-                  <button key={o.v} onClick={() => set("hunter_network", o.v)} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${f.hunter_network === o.v ? S.orange : S.border}`, background: f.hunter_network === o.v ? S.orangeBg : S.surface, color: f.hunter_network === o.v ? S.orange : S.text, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                  <button key={o.v} onClick={() => set("hunter_network", o.v)} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${f.hunter_network === o.v ? C.orange : C.border}`, background: f.hunter_network === o.v ? C.orangeBg : C.surface, color: f.hunter_network === o.v ? C.orange : C.text, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                     {o.l}
                   </button>
                 ))}
@@ -536,19 +515,19 @@ function TabZone() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
               <tr>
-                <th style={{ width: 120, textAlign: "left", color: S.text3, fontWeight: 600, padding: "6px 0" }}></th>
+                <th style={{ width: 120, textAlign: "left", color: C.text3, fontWeight: 600, padding: "6px 0" }}></th>
                 {DAYS.map(d => (
-                  <th key={d} style={{ textAlign: "center", color: S.text3, fontWeight: 600, padding: "6px 4px" }}>{d}</th>
+                  <th key={d} style={{ textAlign: "center", color: C.text3, fontWeight: 600, padding: "6px 4px" }}>{d}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {SLOTS.map(slot => (
                 <tr key={slot.key}>
-                  <td style={{ fontSize: 11, color: S.text2, padding: "6px 0", paddingRight: 8 }}>{slot.label}</td>
+                  <td style={{ fontSize: 11, color: C.text2, padding: "6px 0", paddingRight: 8 }}>{slot.label}</td>
                   {DAYS.map(day => (
                     <td key={day} style={{ textAlign: "center", padding: 4 }}>
-                      <button onClick={() => toggleAvail(day, slot.key)} style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${avail[day]?.[slot.key] ? S.orange : S.border}`, background: avail[day]?.[slot.key] ? S.orange : S.surface, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
+                      <button onClick={() => toggleAvail(day, slot.key)} style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${avail[day]?.[slot.key] ? C.orange : C.border}`, background: avail[day]?.[slot.key] ? C.orange : C.surface, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
                         {avail[day]?.[slot.key] && <span style={{ fontSize: 14, color: "#fff" }}>✓</span>}
                       </button>
                     </td>
@@ -575,7 +554,7 @@ function TabZone() {
             <FieldLabel>Missions simultanées max</FieldLabel>
             <div style={{ display: "flex", gap: "1rem", marginTop: 6 }}>
               {["1", "2", "3+"].map(v => (
-                <button key={v} onClick={() => setMaxMissions(v)} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${maxMissions === v ? S.orange : S.border}`, background: maxMissions === v ? S.orangeBg : S.surface, color: maxMissions === v ? S.orange : S.text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                <button key={v} onClick={() => setMaxMissions(v)} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${maxMissions === v ? C.orange : C.border}`, background: maxMissions === v ? C.orangeBg : C.surface, color: maxMissions === v ? C.orange : C.text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                   {v}
                 </button>
               ))}
@@ -646,7 +625,7 @@ function TabPaiement() {
     } catch { /* noop */ } finally { setSaving(false); }
   }
 
-  const planColor: Record<string, string> = { standard: S.blue, pro: S.orange, agence: "#7C3AED", free: S.green };
+  const planColor: Record<string, string> = { standard: C.blue, pro: C.orange, agence: "var(--althy-purple)", free: C.green };
 
   return (
     <FormStack>
@@ -654,10 +633,10 @@ function TabPaiement() {
       {/* Abonnement */}
       <Card>
         <SectionTitle>Mon abonnement</SectionTitle>
-        <p style={{ fontSize: 13, color: S.text3, marginBottom: "1rem" }}>
+        <p style={{ fontSize: 13, color: C.text3, marginBottom: "1rem" }}>
           Consultez votre plan actuel, changez d'offre et gérez vos factures depuis la page dédiée.
         </p>
-        <Link href="/app/abonnement" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 10, background: S.orangeBg, border: `1px solid ${S.orange}`, color: S.orange, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+        <Link href="/app/abonnement" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 10, background: C.orangeBg, border: `1px solid ${C.orange}`, color: C.orange, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
           Gérer mon abonnement →
         </Link>
       </Card>
@@ -668,15 +647,15 @@ function TabPaiement() {
           <SectionTitle>Historique des factures</SectionTitle>
           <FormStack>
             {(invoices?.items ?? []).slice(0, 12).map((inv: { id: string; date: string; amount: number; pdf_url: string; status: string }) => (
-              <div key={inv.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${S.border}` }}>
+              <div key={inv.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: S.text }}>{new Date(inv.date).toLocaleDateString("fr-CH")}</p>
-                  <p style={{ fontSize: 11, color: S.text3 }}>CHF {(inv.amount / 100).toFixed(2)}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{new Date(inv.date).toLocaleDateString("fr-CH")}</p>
+                  <p style={{ fontSize: 11, color: C.text3 }}>CHF {(inv.amount / 100).toFixed(2)}</p>
                 </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <Badge color={inv.status === "paid" ? S.green : S.amber}>{inv.status === "paid" ? "Payée" : "En attente"}</Badge>
+                  <Badge color={inv.status === "paid" ? C.green : C.amber}>{inv.status === "paid" ? "Payée" : "En attente"}</Badge>
                   {inv.pdf_url && (
-                    <a href={inv.pdf_url} target="_blank" rel="noreferrer" style={{ padding: "6px 10px", borderRadius: 8, background: S.surface2, border: `1px solid ${S.border}`, color: S.text2, fontSize: 12, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
+                    <a href={inv.pdf_url} target="_blank" rel="noreferrer" style={{ padding: "6px 10px", borderRadius: 8, background: C.surface2, border: `1px solid ${C.border}`, color: C.text2, fontSize: 12, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
                       <Download size={12} /> PDF
                     </a>
                   )}
@@ -944,18 +923,18 @@ function TabSecurite() {
         <FormStack>
           <div style={{ position: "relative" }}>
             <Field label="Mot de passe actuel" value={pwOld} onChange={setPwOld} type={showOld ? "text" : "password"} placeholder="••••••••" />
-            <button onClick={() => setShowOld(!showOld)} style={{ position: "absolute", right: 12, top: 32, background: "none", border: "none", cursor: "pointer", color: S.text3 }}>
+            <button onClick={() => setShowOld(!showOld)} style={{ position: "absolute", right: 12, top: 32, background: "none", border: "none", cursor: "pointer", color: C.text3 }}>
               {showOld ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
           <div style={{ position: "relative" }}>
             <Field label="Nouveau mot de passe" value={pwNew} onChange={setPwNew} type={showNew ? "text" : "password"} placeholder="••••••••" hint="Minimum 8 caractères" />
-            <button onClick={() => setShowNew(!showNew)} style={{ position: "absolute", right: 12, top: 32, background: "none", border: "none", cursor: "pointer", color: S.text3 }}>
+            <button onClick={() => setShowNew(!showNew)} style={{ position: "absolute", right: 12, top: 32, background: "none", border: "none", cursor: "pointer", color: C.text3 }}>
               {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
           <Field label="Confirmer le nouveau mot de passe" value={pwConfirm} onChange={setPwConfirm} type="password" placeholder="••••••••" />
-          <button onClick={changePassword} disabled={pwSaving} style={{ padding: "11px 0", borderRadius: 12, background: S.orange, border: "none", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+          <button onClick={changePassword} disabled={pwSaving} style={{ padding: "11px 0", borderRadius: 12, background: C.orange, border: "none", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
             {pwSaving ? "Modification…" : "Modifier le mot de passe"}
           </button>
         </FormStack>
@@ -966,8 +945,8 @@ function TabSecurite() {
         <FormStack>
           <Toggle label="Activer la 2FA" hint="TOTP (Google Authenticator) ou SMS" value={twofa} onChange={setTwofa} />
           {twofa && (
-            <div style={{ padding: "1rem", background: S.amberBg, borderRadius: 12, border: `1px solid ${S.amber}` }}>
-              <p style={{ fontSize: 12, color: S.amber, fontWeight: 600 }}>Configuration 2FA disponible via le portail Supabase Auth. Contactez privacy@althy.ch pour l'activer sur votre compte.</p>
+            <div style={{ padding: "1rem", background: C.amberBg, borderRadius: 12, border: `1px solid ${C.amber}` }}>
+              <p style={{ fontSize: 12, color: C.amber, fontWeight: 600 }}>Configuration 2FA disponible via le portail Supabase Auth. Contactez privacy@althy.ch pour l'activer sur votre compte.</p>
             </div>
           )}
         </FormStack>
@@ -978,13 +957,13 @@ function TabSecurite() {
           <SectionTitle>Sessions actives</SectionTitle>
           <FormStack>
             {sessions.items.map((s: { id: string; device: string; last_seen: string; current: boolean }) => (
-              <div key={s.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${S.border}` }}>
+              <div key={s.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: S.text }}>{s.device}</p>
-                  <p style={{ fontSize: 11, color: S.text3 }}>Dernière activité : {new Date(s.last_seen).toLocaleString("fr-CH")}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{s.device}</p>
+                  <p style={{ fontSize: 11, color: C.text3 }}>Dernière activité : {new Date(s.last_seen).toLocaleString("fr-CH")}</p>
                 </div>
                 {s.current ? <Badge>Session active</Badge> : (
-                  <button onClick={async () => { await api.delete(`/auth/sessions/${s.id}`); show("Session déconnectée"); }} style={{ padding: "6px 12px", borderRadius: 8, background: S.redBg, border: `1px solid ${S.red}`, color: S.red, fontSize: 12, cursor: "pointer" }}>
+                  <button onClick={async () => { await api.delete(`/auth/sessions/${s.id}`); show("Session déconnectée"); }} style={{ padding: "6px 12px", borderRadius: 8, background: C.redBg, border: `1px solid ${C.red}`, color: C.red, fontSize: 12, cursor: "pointer" }}>
                     Déconnecter
                   </button>
                 )}
@@ -997,27 +976,27 @@ function TabSecurite() {
       <Card>
         <SectionTitle>Export de mes données (RGPD / LPD art. 25)</SectionTitle>
         <FormStack>
-          <p style={{ fontSize: 13, color: S.text2 }}>Téléchargez l'intégralité de vos données personnelles stockées sur Althy, conformément au RGPD et à la LPD suisse.</p>
+          <p style={{ fontSize: 13, color: C.text2 }}>Téléchargez l'intégralité de vos données personnelles stockées sur Althy, conformément au RGPD et à la LPD suisse.</p>
           <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-            <button onClick={exportData} style={{ flex: 1, padding: "10px 16px", borderRadius: 10, background: S.blueBg, border: `1px solid ${S.blue}`, color: S.blue, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <button onClick={exportData} style={{ flex: 1, padding: "10px 16px", borderRadius: 10, background: C.blueBg, border: `1px solid ${C.blue}`, color: C.blue, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
               <Download size={14} /> Export JSON (toutes données)
             </button>
-            <button onClick={exportCSV} style={{ flex: 1, padding: "10px 16px", borderRadius: 10, background: S.greenBg, border: `1px solid ${S.green}`, color: S.green, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <button onClick={exportCSV} style={{ flex: 1, padding: "10px 16px", borderRadius: 10, background: C.greenBg, border: `1px solid ${C.green}`, color: C.green, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
               <Download size={14} /> Export CSV (loyers)
             </button>
           </div>
-          <button onClick={() => window.location.href = "mailto:privacy@althy.ch"} style={{ padding: "10px 16px", borderRadius: 10, background: S.surface2, border: `1px solid ${S.border}`, color: S.text2, fontSize: 13, cursor: "pointer" }}>
+          <button onClick={() => window.location.href = "mailto:privacy@althy.ch"} style={{ padding: "10px 16px", borderRadius: 10, background: C.surface2, border: `1px solid ${C.border}`, color: C.text2, fontSize: 13, cursor: "pointer" }}>
             Contacter le DPO — privacy@althy.ch
           </button>
         </FormStack>
       </Card>
 
-      <Card style={{ border: `1px solid ${S.red}` }}>
+      <Card style={{ border: `1px solid ${C.red}` }}>
         <SectionTitle>Zone de danger</SectionTitle>
         <FormStack>
-          <p style={{ fontSize: 13, color: S.text2 }}>La suppression de votre compte est irréversible. Toutes vos données seront effacées dans un délai de 30 jours (LPD art. 25 / RGPD art. 17).</p>
+          <p style={{ fontSize: 13, color: C.text2 }}>La suppression de votre compte est irréversible. Toutes vos données seront effacées dans un délai de 30 jours (LPD art. 25 / RGPD art. 17).</p>
           <Field label={`Tapez "SUPPRIMER" pour confirmer`} value={deleteConfirm} onChange={setDeleteConfirm} placeholder="SUPPRIMER" />
-          <button onClick={requestDelete} disabled={deleteConfirm !== "SUPPRIMER" || deletingAccount} style={{ padding: "11px 0", borderRadius: 12, background: deleteConfirm === "SUPPRIMER" ? S.red : S.surface2, border: "none", color: deleteConfirm === "SUPPRIMER" ? "#fff" : S.text3, fontSize: 14, fontWeight: 700, cursor: deleteConfirm === "SUPPRIMER" ? "pointer" : "not-allowed", transition: "all 0.2s" }}>
+          <button onClick={requestDelete} disabled={deleteConfirm !== "SUPPRIMER" || deletingAccount} style={{ padding: "11px 0", borderRadius: 12, background: deleteConfirm === "SUPPRIMER" ? C.red : C.surface2, border: "none", color: deleteConfirm === "SUPPRIMER" ? "#fff" : C.text3, fontSize: 14, fontWeight: 700, cursor: deleteConfirm === "SUPPRIMER" ? "pointer" : "not-allowed", transition: "all 0.2s" }}>
             <Trash2 size={14} style={{ display: "inline", marginRight: 6 }} />
             Demander la suppression du compte
           </button>
@@ -1081,22 +1060,22 @@ function TabEquipe() {
       <Card>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
           <SectionTitle>Agents ({agentCount})</SectionTitle>
-          <p style={{ fontSize: 12, color: S.orange, fontWeight: 700 }}>CHF {agentCount * 29}/mois</p>
+          <p style={{ fontSize: 12, color: C.orange, fontWeight: 700 }}>CHF {agentCount * 29}/mois</p>
         </div>
         <FormStack>
           {(team?.items ?? []).map((agent: { id: string; first_name: string; last_name: string; email: string; role: string; biens_count: number }) => (
-            <div key={agent.id} style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "12px 0", borderBottom: `1px solid ${S.border}` }}>
-              <div style={{ width: 40, height: 40, borderRadius: "50%", background: S.orangeBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: S.orange }}>{agent.first_name[0]}{agent.last_name[0]}</span>
+            <div key={agent.id} style={{ display: "flex", alignItems: "center", gap: "1rem", padding: "12px 0", borderBottom: `1px solid ${C.border}` }}>
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: C.orangeBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: C.orange }}>{agent.first_name[0]}{agent.last_name[0]}</span>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: S.text }}>{agent.first_name} {agent.last_name}</p>
-                <p style={{ fontSize: 11, color: S.text3 }}>{agent.email} · {agent.biens_count} bien{agent.biens_count !== 1 ? "s" : ""}</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{agent.first_name} {agent.last_name}</p>
+                <p style={{ fontSize: 11, color: C.text3 }}>{agent.email} · {agent.biens_count} bien{agent.biens_count !== 1 ? "s" : ""}</p>
               </div>
-              <select value={agent.role} onChange={e => changeRole(agent.id, e.target.value)} style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${S.border}`, background: S.surface, color: S.text, fontSize: 12, cursor: "pointer" }}>
+              <select value={agent.role} onChange={e => changeRole(agent.id, e.target.value)} style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: 12, cursor: "pointer" }}>
                 {AGENT_ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
               </select>
-              <button onClick={() => removeAgent(agent.id)} style={{ padding: 6, borderRadius: 8, background: S.redBg, border: `1px solid ${S.red}`, color: S.red, cursor: "pointer", display: "flex" }}>
+              <button onClick={() => removeAgent(agent.id)} style={{ padding: 6, borderRadius: 8, background: C.redBg, border: `1px solid ${C.red}`, color: C.red, cursor: "pointer", display: "flex" }}>
                 <Trash2 size={14} />
               </button>
             </div>
@@ -1111,8 +1090,8 @@ function TabEquipe() {
             <Field label="Email" value={inviteEmail} onChange={setInviteEmail} type="email" placeholder="agent@agence.ch" />
             <SelectField label="Rôle" value={inviteRole} onChange={setInviteRole} options={AGENT_ROLES} />
           </Row>
-          <p style={{ fontSize: 11, color: S.text3 }}>L'agent recevra un lien d'inscription par email. CHF 29/mois sera ajouté à votre abonnement.</p>
-          <button onClick={invite} disabled={inviting || !inviteEmail} style={{ padding: "11px 0", borderRadius: 12, background: inviteEmail ? S.orange : S.surface2, border: "none", color: inviteEmail ? "#fff" : S.text3, fontSize: 14, fontWeight: 700, cursor: inviteEmail ? "pointer" : "not-allowed" }}>
+          <p style={{ fontSize: 11, color: C.text3 }}>L'agent recevra un lien d'inscription par email. CHF 29/mois sera ajouté à votre abonnement.</p>
+          <button onClick={invite} disabled={inviting || !inviteEmail} style={{ padding: "11px 0", borderRadius: 12, background: inviteEmail ? C.orange : C.surface2, border: "none", color: inviteEmail ? "#fff" : C.text3, fontSize: 14, fontWeight: 700, cursor: inviteEmail ? "pointer" : "not-allowed" }}>
             {inviting ? "Envoi…" : <><Plus size={14} style={{ display: "inline", marginRight: 6 }} />Envoyer l'invitation</>}
           </button>
         </FormStack>
@@ -1168,12 +1147,12 @@ function TabIntegrations() {
             return (
               <div key={p.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: S.text }}>{p.label}</p>
-                  {conn ? <p style={{ fontSize: 11, color: S.green }}>Connecté : {conn.email}</p> : <p style={{ fontSize: 11, color: S.text3 }}>Non connecté</p>}
+                  <p style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{p.label}</p>
+                  {conn ? <p style={{ fontSize: 11, color: C.green }}>Connecté : {conn.email}</p> : <p style={{ fontSize: 11, color: C.text3 }}>Non connecté</p>}
                 </div>
                 {conn
-                  ? <button onClick={() => disconnectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: S.redBg, border: `1px solid ${S.red}`, color: S.red, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Déconnecter</button>
-                  : <button onClick={() => connectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: S.orangeBg, border: `1px solid ${S.orange}`, color: S.orange, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Connecter</button>
+                  ? <button onClick={() => disconnectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: C.redBg, border: `1px solid ${C.red}`, color: C.red, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Déconnecter</button>
+                  : <button onClick={() => connectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: C.orangeBg, border: `1px solid ${C.orange}`, color: C.orange, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Connecter</button>
                 }
               </div>
             );
@@ -1190,12 +1169,12 @@ function TabIntegrations() {
             return (
               <div key={p.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: S.text }}>{p.label}</p>
-                  {conn ? <p style={{ fontSize: 11, color: S.green }}>Synchronisé</p> : <p style={{ fontSize: 11, color: S.text3 }}>Non connecté</p>}
+                  <p style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{p.label}</p>
+                  {conn ? <p style={{ fontSize: 11, color: C.green }}>Synchronisé</p> : <p style={{ fontSize: 11, color: C.text3 }}>Non connecté</p>}
                 </div>
                 {conn
-                  ? <button onClick={() => disconnectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: S.redBg, border: `1px solid ${S.red}`, color: S.red, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Déconnecter</button>
-                  : <button onClick={() => connectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: S.orangeBg, border: `1px solid ${S.orange}`, color: S.orange, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Connecter</button>
+                  ? <button onClick={() => disconnectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: C.redBg, border: `1px solid ${C.red}`, color: C.red, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Déconnecter</button>
+                  : <button onClick={() => connectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: C.orangeBg, border: `1px solid ${C.orange}`, color: C.orange, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Connecter</button>
                 }
               </div>
             );
@@ -1206,25 +1185,25 @@ function TabIntegrations() {
       {/* WhatsApp */}
       <Card>
         <SectionTitle>WhatsApp</SectionTitle>
-        <div style={{ padding: "1rem", background: S.greenBg, borderRadius: 12, border: `1px solid ${S.green}` }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: S.green, marginBottom: 4 }}>Phase 1 — Aucune connexion requise</p>
-          <p style={{ fontSize: 12, color: S.text2 }}>Les liens WhatsApp (<code>wa.me/</code>) sont générés automatiquement depuis votre numéro de téléphone enregistré dans le profil.</p>
+        <div style={{ padding: "1rem", background: C.greenBg, borderRadius: 12, border: `1px solid ${C.green}` }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: C.green, marginBottom: 4 }}>Phase 1 — Aucune connexion requise</p>
+          <p style={{ fontSize: 12, color: C.text2 }}>Les liens WhatsApp (<code>wa.me/</code>) sont générés automatiquement depuis votre numéro de téléphone enregistré dans le profil.</p>
         </div>
       </Card>
 
       {/* Portails */}
       <Card>
         <SectionTitle>Portails immobiliers</SectionTitle>
-        <p style={{ fontSize: 11, color: S.text3, marginBottom: "0.75rem" }}>Althy prélève 4% sur les paiements reçus via la plateforme. Paiement direct au portail : facturation séparée des 4%.</p>
+        <p style={{ fontSize: 11, color: C.text3, marginBottom: "0.75rem" }}>Althy prélève 4% sur les paiements reçus via la plateforme. Paiement direct au portail : facturation séparée des 4%.</p>
         <FormStack>
           {PORTALS.map(p => (
             <div key={p.key} style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
               <div>
-                <p style={{ fontSize: 13, fontWeight: 600, color: S.text }}>{p.name}</p>
-                <p style={{ fontSize: 11, color: S.orange, fontWeight: 600 }}>{p.price}</p>
-                <p style={{ fontSize: 10, color: S.text3 }}>{p.note}</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{p.name}</p>
+                <p style={{ fontSize: 11, color: C.orange, fontWeight: 600 }}>{p.price}</p>
+                <p style={{ fontSize: 10, color: C.text3 }}>{p.note}</p>
               </div>
-              <button onClick={() => setPortals(prev => ({ ...prev, [p.key]: !prev[p.key] }))} style={{ width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer", background: portals[p.key] ? S.orange : S.border, position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
+              <button onClick={() => setPortals(prev => ({ ...prev, [p.key]: !prev[p.key] }))} style={{ width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer", background: portals[p.key] ? C.orange : C.border, position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
                 <span style={{ position: "absolute", top: 3, left: portals[p.key] ? 22 : 3, width: 18, height: 18, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
               </button>
             </div>
@@ -1243,18 +1222,18 @@ function TabIntegrations() {
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 20 }}>{p.icon}</span>
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: S.text }}>{p.name} {p.note ? <span style={{ fontSize: 10, color: S.text3 }}>({p.note})</span> : null}</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{p.name} {p.note ? <span style={{ fontSize: 10, color: C.text3 }}>({p.note})</span> : null}</p>
                     {conn
-                      ? <p style={{ fontSize: 11, color: S.green }}>Connecté · Dernière publi. : {conn.last_post ? new Date(conn.last_post).toLocaleDateString("fr-CH") : "—"}</p>
-                      : <p style={{ fontSize: 11, color: S.text3 }}>Non connecté</p>
+                      ? <p style={{ fontSize: 11, color: C.green }}>Connecté · Dernière publi. : {conn.last_post ? new Date(conn.last_post).toLocaleDateString("fr-CH") : "—"}</p>
+                      : <p style={{ fontSize: 11, color: C.text3 }}>Non connecté</p>
                     }
                   </div>
                 </div>
                 {p.note === "An 2"
                   ? <Badge>Bientôt</Badge>
                   : conn
-                    ? <button onClick={() => disconnectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: S.redBg, border: `1px solid ${S.red}`, color: S.red, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Déconnecter</button>
-                    : <button onClick={() => connectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: S.orangeBg, border: `1px solid ${S.orange}`, color: S.orange, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Connecter</button>
+                    ? <button onClick={() => disconnectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: C.redBg, border: `1px solid ${C.red}`, color: C.red, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Déconnecter</button>
+                    : <button onClick={() => connectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: C.orangeBg, border: `1px solid ${C.orange}`, color: C.orange, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Connecter</button>
                 }
               </div>
             );
@@ -1320,17 +1299,17 @@ function TabComptabilite() {
         <FormStack>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
             {categories.map(cat => (
-              <div key={cat} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 20, background: S.surface2, border: `1px solid ${S.border}`, fontSize: 12 }}>
-                <span style={{ color: S.text }}>{cat}</span>
-                <button onClick={() => setCategories(prev => prev.filter(c => c !== cat))} style={{ background: "none", border: "none", cursor: "pointer", color: S.text3, padding: 0, lineHeight: 1 }}>
+              <div key={cat} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 20, background: C.surface2, border: `1px solid ${C.border}`, fontSize: 12 }}>
+                <span style={{ color: C.text }}>{cat}</span>
+                <button onClick={() => setCategories(prev => prev.filter(c => c !== cat))} style={{ background: "none", border: "none", cursor: "pointer", color: C.text3, padding: 0, lineHeight: 1 }}>
                   <X size={12} />
                 </button>
               </div>
             ))}
           </div>
           <div style={{ display: "flex", gap: "0.75rem" }}>
-            <input value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="Nouvelle catégorie…" onKeyDown={e => { if (e.key === "Enter" && newCategory.trim()) { setCategories(prev => [...prev, newCategory.trim()]); setNewCategory(""); } }} style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: `1px solid ${S.border}`, background: S.surface, color: S.text, fontSize: 13, fontFamily: "inherit", outline: "none" }} />
-            <button onClick={() => { if (newCategory.trim()) { setCategories(prev => [...prev, newCategory.trim()]); setNewCategory(""); } }} style={{ padding: "10px 16px", borderRadius: 10, background: S.orange, border: "none", color: "#fff", cursor: "pointer" }}>
+            <input value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="Nouvelle catégorie…" onKeyDown={e => { if (e.key === "Enter" && newCategory.trim()) { setCategories(prev => [...prev, newCategory.trim()]); setNewCategory(""); } }} style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: 13, fontFamily: "inherit", outline: "none" }} />
+            <button onClick={() => { if (newCategory.trim()) { setCategories(prev => [...prev, newCategory.trim()]); setNewCategory(""); } }} style={{ padding: "10px 16px", borderRadius: 10, background: C.orange, border: "none", color: "#fff", cursor: "pointer" }}>
               <Plus size={16} />
             </button>
           </div>
@@ -1348,7 +1327,7 @@ function TabComptabilite() {
             <FieldLabel>Format d'export</FieldLabel>
             <div style={{ display: "flex", gap: "0.75rem", marginTop: 6 }}>
               {[{ v: "pdf", l: "PDF" }, { v: "excel", l: "Excel" }, { v: "csv", l: "CSV" }].map(o => (
-                <button key={o.v} onClick={() => set("export_format", o.v)} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${f.export_format === o.v ? S.orange : S.border}`, background: f.export_format === o.v ? S.orangeBg : S.surface, color: f.export_format === o.v ? S.orange : S.text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                <button key={o.v} onClick={() => set("export_format", o.v)} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${f.export_format === o.v ? C.orange : C.border}`, background: f.export_format === o.v ? C.orangeBg : C.surface, color: f.export_format === o.v ? C.orange : C.text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                   {o.l}
                 </button>
               ))}
@@ -1413,13 +1392,13 @@ export default function SettingsPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: S.bg, padding: "1.5rem" }}>
+    <div style={{ minHeight: "100vh", background: C.bg, padding: "1.5rem" }}>
       {/* Page header */}
       <div style={{ marginBottom: "1.5rem" }}>
-        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 300, color: S.text, marginBottom: 4 }}>
+        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 300, color: C.text, marginBottom: 4 }}>
           Paramètres
         </h1>
-        <p style={{ fontSize: 13, color: S.text3 }}>
+        <p style={{ fontSize: 13, color: C.text3 }}>
           {roleCtx.label} · {roleCtx.price ?? ""}
         </p>
       </div>
@@ -1428,14 +1407,14 @@ export default function SettingsPage() {
 
         {/* ── Sidebar (desktop) ────────────────────────────────────────────── */}
         <nav style={{ width: 220, flexShrink: 0, display: "none" }} className="settings-sidebar">
-          <div style={{ background: S.surface, borderRadius: 16, border: `1px solid ${S.border}`, boxShadow: S.shadow, overflow: "hidden" }}>
+          <div style={{ background: C.surface, borderRadius: 16, border: `1px solid ${C.border}`, boxShadow: C.shadow, overflow: "hidden" }}>
             {tabs.map((tab, i) => {
               const Icon = tab.icon;
               const active = activeTab === tab.id;
               return (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ width: "100%", display: "flex", alignItems: "center", gap: "0.75rem", padding: "13px 16px", background: active ? S.orangeBg : "transparent", borderLeft: `3px solid ${active ? S.orange : "transparent"}`, borderRight: "none", borderTop: i === 0 ? "none" : `1px solid ${S.border}`, borderBottom: "none", cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}>
-                  <Icon size={16} style={{ color: active ? S.orange : S.text3, flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, fontWeight: active ? 700 : 500, color: active ? S.orange : S.text2 }}>{tab.label}</span>
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ width: "100%", display: "flex", alignItems: "center", gap: "0.75rem", padding: "13px 16px", background: active ? C.orangeBg : "transparent", borderLeft: `3px solid ${active ? C.orange : "transparent"}`, borderRight: "none", borderTop: i === 0 ? "none" : `1px solid ${C.border}`, borderBottom: "none", cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}>
+                  <Icon size={16} style={{ color: active ? C.orange : C.text3, flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, fontWeight: active ? 700 : 500, color: active ? C.orange : C.text2 }}>{tab.label}</span>
                 </button>
               );
             })}
@@ -1449,14 +1428,14 @@ export default function SettingsPage() {
       </div>
 
       {/* ── Bottom tabs (mobile) ─────────────────────────────────────────── */}
-      <div className="settings-mobile-tabs" style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: S.surface, borderTop: `1px solid ${S.border}`, display: "flex", overflowX: "auto", zIndex: 100, boxShadow: "0 -2px 12px rgba(0,0,0,0.06)" }}>
+      <div className="settings-mobile-tabs" style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: C.surface, borderTop: `1px solid ${C.border}`, display: "flex", overflowX: "auto", zIndex: 100, boxShadow: "0 -2px 12px rgba(0,0,0,0.06)" }}>
         {tabs.map(tab => {
           const Icon = tab.icon;
           const active = activeTab === tab.id;
           return (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 16px", gap: 3, background: "none", border: "none", cursor: "pointer", borderTop: `2px solid ${active ? S.orange : "transparent"}` }}>
-              <Icon size={18} style={{ color: active ? S.orange : S.text3 }} />
-              <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, color: active ? S.orange : S.text3, whiteSpace: "nowrap" }}>{tab.label}</span>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 16px", gap: 3, background: "none", border: "none", cursor: "pointer", borderTop: `2px solid ${active ? C.orange : "transparent"}` }}>
+              <Icon size={18} style={{ color: active ? C.orange : C.text3 }} />
+              <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, color: active ? C.orange : C.text3, whiteSpace: "nowrap" }}>{tab.label}</span>
             </button>
           );
         })}

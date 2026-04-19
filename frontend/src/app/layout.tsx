@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Fraunces, DM_Sans, Playfair_Display } from "next/font/google";
+import { Fraunces, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { CookieBanner } from "@/components/CookieBanner";
 
-// Variable font — axes SOFT (arrondi) et WONK uniquement.
-// wght est l'axe standard géré implicitement — ne pas l'inclure dans axes.
+// Fraunces — seule serif du projet (titres, KPI, accents)
+// Variable font : axes SOFT (arrondi) et WONK.
 const fraunces = Fraunces({
   subsets: ["latin"],
   axes:    ["SOFT", "WONK"],
@@ -14,15 +14,7 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
-// Playfair Display — titres Figma V2
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  weight:  ["400", "500", "600", "700"],
-  variable: "--font-display",
-  display: "swap",
-});
-
-// DM Sans — poids complets pour l'interface (labels, boutons, corps)
+// DM Sans — corps, labels, boutons
 const dmSans = DM_Sans({
   subsets: ["latin"],
   weight:  ["400", "500", "600", "700"],
@@ -63,8 +55,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" suppressHydrationWarning className={`${fraunces.variable} ${dmSans.variable} ${playfair.variable}`}>
-      <body className={`${playfair.variable} ${dmSans.variable} ${fraunces.variable} font-sans`}>
+    <html lang="fr" suppressHydrationWarning className={`${fraunces.variable} ${dmSans.variable}`}>
+      <body className={`${fraunces.variable} ${dmSans.variable} font-sans`}>
         <Providers>{children}</Providers>
         <CookieBanner />
       </body>

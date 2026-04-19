@@ -26,7 +26,7 @@ class BienBase(BaseModel):
 
 
 class BienCreate(BienBase):
-    owner_id: uuid.UUID
+    pass
 
 
 class BienUpdate(BaseModel):

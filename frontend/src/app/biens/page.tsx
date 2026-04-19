@@ -22,10 +22,10 @@ import {
   UserCircle,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store/authStore";
+import { C } from "@/lib/design-tokens";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
-const ORANGE = "#E8602C";
 const PAGE_SIZE = 20;
 
 type TxType = "location" | "vente" | "colocation" | "";
@@ -56,8 +56,8 @@ const TX_LABEL: Record<string, string> = {
 };
 
 const TX_COLOR: Record<string, string> = {
-  location: ORANGE,
-  colocation: "#7C3AED",
+  location: C.orange,
+  colocation: "var(--althy-purple)",
   vente: "#0EA5E9",
 };
 
@@ -90,7 +90,7 @@ function BienCard({
       style={{
         display: "block",
         background: "var(--althy-surface)",
-        border: `1.5px solid ${isHovered ? ORANGE : "var(--althy-border)"}`,
+        border: `1.5px solid ${isHovered ? C.orange : "var(--althy-border)"}`,
         borderRadius: "var(--radius-card)",
         overflow: "hidden",
         textDecoration: "none",
@@ -127,7 +127,7 @@ function BienCard({
               height: "100%",
             }}
           >
-            <Building2 size={36} color={ORANGE} style={{ opacity: 0.35 }} />
+            <Building2 size={36} color={C.orange} style={{ opacity: 0.35 }} />
           </div>
         )}
 
@@ -136,7 +136,7 @@ function BienCard({
             position: "absolute",
             top: 10,
             left: 10,
-            background: TX_COLOR[bien.transaction_type] || ORANGE,
+            background: TX_COLOR[bien.transaction_type] || C.orange,
             color: "#fff",
             fontSize: 11,
             fontWeight: 600,
@@ -153,7 +153,7 @@ function BienCard({
               position: "absolute",
               top: 10,
               right: 10,
-              background: "#F59E0B",
+              background: "var(--althy-warning)",
               color: "#fff",
               fontSize: 10,
               fontWeight: 700,
@@ -183,7 +183,7 @@ function BienCard({
             {bien.type_label}
           </span>
           {bien.prix && (
-            <span style={{ fontSize: 15, fontWeight: 700, color: ORANGE, whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: C.orange, whiteSpace: "nowrap" }}>
               {fmt(bien.prix)}
               {(bien.transaction_type === "location" || bien.transaction_type === "colocation") && (
                 <span style={{ fontSize: 11, fontWeight: 400, color: "var(--althy-text-3)" }}>
@@ -236,7 +236,7 @@ function BienCard({
                 key={tag}
                 style={{
                   background: "rgba(232,96,44,0.08)",
-                  color: ORANGE,
+                  color: C.orange,
                   fontSize: 10,
                   padding: "2px 7px",
                   borderRadius: 20,
@@ -435,7 +435,7 @@ export default function BiensPage() {
       el.style.cssText = `
         width: 30px; height: 30px;
         border-radius: 50% 50% 50% 0;
-        background: ${ORANGE};
+        background: ${C.orange};
         border: 2px solid #fff;
         transform: rotate(-45deg);
         cursor: pointer;
@@ -474,11 +474,11 @@ export default function BiensPage() {
   useEffect(() => {
     markerElsRef.current.forEach((el, id) => {
       if (id === hoveredId) {
-        el.style.background = "#C84E1E";
+        el.style.background = "var(--althy-orange-hover)";
         el.style.transform = "rotate(-45deg) scale(1.3)";
         el.style.zIndex = "10";
       } else {
-        el.style.background = ORANGE;
+        el.style.background = C.orange;
         el.style.transform = "rotate(-45deg) scale(1)";
         el.style.zIndex = "1";
       }
@@ -528,7 +528,7 @@ export default function BiensPage() {
           left: 50%;
           transform: translateX(-50%);
           z-index: 200;
-          background: #1a1a1a;
+          background: var(--althy-text);
           color: #fff;
           border: none;
           border-radius: 24px;
@@ -567,7 +567,7 @@ export default function BiensPage() {
               letterSpacing: "0.05em",
             }}
           >
-            ALT<span style={{ color: ORANGE }}>H</span>Y
+            ALT<span style={{ color: C.orange }}>H</span>Y
           </span>
         </Link>
 
@@ -579,7 +579,7 @@ export default function BiensPage() {
               padding: "5px 12px",
               borderRadius: 20,
               background: "rgba(232,96,44,0.08)",
-              color: ORANGE,
+              color: C.orange,
               textDecoration: "none",
               fontWeight: 600,
               display: isMobile ? "none" : undefined,
@@ -616,8 +616,8 @@ export default function BiensPage() {
                   fontSize: 12,
                   padding: "5px 12px",
                   borderRadius: "var(--radius-elem)",
-                  border: `1px solid ${ORANGE}`,
-                  color: ORANGE,
+                  border: `1px solid ${C.orange}`,
+                  color: C.orange,
                   textDecoration: "none",
                   fontWeight: 500,
                   display: isMobile ? "none" : undefined,
@@ -631,7 +631,7 @@ export default function BiensPage() {
                   fontSize: 12,
                   padding: "5px 12px",
                   borderRadius: "var(--radius-elem)",
-                  background: ORANGE,
+                  background: C.orange,
                   color: "#fff",
                   textDecoration: "none",
                   fontWeight: 500,
@@ -668,9 +668,9 @@ export default function BiensPage() {
               fontSize: 12,
               padding: "4px 12px",
               borderRadius: 20,
-              border: `1.5px solid ${txType === type ? ORANGE : "var(--althy-border)"}`,
+              border: `1.5px solid ${txType === type ? C.orange : "var(--althy-border)"}`,
               background: txType === type ? "rgba(232,96,44,0.08)" : "transparent",
-              color: txType === type ? ORANGE : "var(--althy-text-2)",
+              color: txType === type ? C.orange : "var(--althy-text-2)",
               cursor: "pointer",
               fontWeight: txType === type ? 600 : 400,
               whiteSpace: "nowrap",
@@ -692,9 +692,9 @@ export default function BiensPage() {
                   fontSize: 11,
                   padding: "3px 9px",
                   borderRadius: 20,
-                  border: `1.5px solid ${pieces === n ? ORANGE : "var(--althy-border)"}`,
+                  border: `1.5px solid ${pieces === n ? C.orange : "var(--althy-border)"}`,
                   background: pieces === n ? "rgba(232,96,44,0.08)" : "transparent",
-                  color: pieces === n ? ORANGE : "var(--althy-text-3)",
+                  color: pieces === n ? C.orange : "var(--althy-text-3)",
                   cursor: "pointer",
                   fontWeight: pieces === n ? 600 : 400,
                   whiteSpace: "nowrap",
@@ -887,7 +887,7 @@ export default function BiensPage() {
                       </p>
                       <button
                         onClick={resetFiltres}
-                        style={{ fontSize: 13, color: ORANGE, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
+                        style={{ fontSize: 13, color: C.orange, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
                       >
                         Voir tous les biens
                       </button>
@@ -907,7 +907,7 @@ export default function BiensPage() {
               {!loading && hasMore && (
                 <div ref={sentinelRef} style={{ height: 40, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {loadingMore && (
-                    <div style={{ width: 24, height: 24, border: "2px solid var(--althy-border)", borderTopColor: ORANGE, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                    <div style={{ width: 24, height: 24, border: "2px solid var(--althy-border)", borderTopColor: C.orange, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                   )}
                 </div>
               )}
@@ -977,7 +977,7 @@ export default function BiensPage() {
                       </p>
                       <button
                         onClick={resetFiltres}
-                        style={{ fontSize: 13, color: ORANGE, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
+                        style={{ fontSize: 13, color: C.orange, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
                       >
                         Voir tous les biens
                       </button>
@@ -997,7 +997,7 @@ export default function BiensPage() {
               {!loading && hasMore && (
                 <div ref={sentinelRef} style={{ height: 48, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {loadingMore && (
-                    <div style={{ width: 24, height: 24, border: "2px solid var(--althy-border)", borderTopColor: ORANGE, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                    <div style={{ width: 24, height: 24, border: "2px solid var(--althy-border)", borderTopColor: C.orange, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                   )}
                 </div>
               )}

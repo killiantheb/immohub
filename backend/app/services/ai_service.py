@@ -1106,7 +1106,7 @@ async def draft_notification(
     """
     Draft a ready-to-send notification (email or WhatsApp) for any role.
     channel: "email" | "whatsapp"
-    recipient_role: "tenant" | "owner" | "company" | "opener"
+    recipient_role: "locataire" | "proprio_solo" | "artisan" | "opener"
     """
     if not _check_rate_limit(user_id):
         raise RuntimeError("Limite de débit IA atteinte — réessayez dans une minute.")

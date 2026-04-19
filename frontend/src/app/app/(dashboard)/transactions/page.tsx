@@ -17,29 +17,9 @@ import { useRevenueStats } from "@/lib/hooks/useTransactions";
 import { RentStatusBadge } from "@/components/RentStatusBadge";
 import { RevenueChart } from "@/components/RevenueChart";
 import type { TransactionStatus, TransactionType } from "@/lib/types";
+import { C } from "@/lib/design-tokens";
 
 // ── Althy tokens ──────────────────────────────────────────────────────────────
-const S = {
-  bg: "var(--cream)",
-  surface: "var(--background-card)",
-  surface2: "var(--althy-surface-2)",
-  border: "var(--border-subtle)",
-  text: "var(--charcoal)",
-  text2: "var(--text-secondary)",
-  text3: "var(--text-tertiary)",
-  orange: "var(--terracotta-primary)",
-  orangeBg: "var(--althy-orange-bg)",
-  green: "var(--althy-green)",
-  greenBg: "var(--althy-green-bg)",
-  red: "var(--althy-red)",
-  redBg: "var(--althy-red-bg)",
-  amber: "var(--althy-amber)",
-  amberBg: "var(--althy-amber-bg)",
-  blue: "var(--althy-blue)",
-  blueBg: "var(--althy-blue-bg)",
-  shadow: "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const;
 
 // ── Labels ────────────────────────────────────────────────────────────────────
 
@@ -56,10 +36,10 @@ const TYPE_LABELS: Record<TransactionType, string> = {
 const inputStyle: React.CSSProperties = {
   padding: "8px 12px",
   borderRadius: 10,
-  border: `1px solid ${S.border}`,
-  background: S.surface,
+  border: `1px solid ${C.border}`,
+  background: C.surface,
   fontSize: 14,
-  color: S.text,
+  color: C.text,
   fontFamily: "inherit",
   outline: "none",
 };
@@ -70,13 +50,13 @@ const btnSecondaryStyle: React.CSSProperties = {
   gap: 6,
   padding: "7px 14px",
   borderRadius: 10,
-  border: `1px solid ${S.border}`,
-  background: S.surface,
-  color: S.text2,
+  border: `1px solid ${C.border}`,
+  background: C.surface,
+  color: C.text2,
   fontSize: 13,
   cursor: "pointer",
   fontFamily: "inherit",
-  boxShadow: S.shadow,
+  boxShadow: C.shadow,
 };
 
 // ── CSV export ────────────────────────────────────────────────────────────────
@@ -150,8 +130,8 @@ function TransactionsContent() {
       {/* Header */}
       <div style={{ marginBottom: 24, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <div>
-          <h1 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontSize: 26, fontWeight: 400, color: S.text, margin: 0 }}>Transactions</h1>
-          <p style={{ marginTop: 4, fontSize: 13, color: S.text3 }}>
+          <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 26, fontWeight: 400, color: C.text, margin: 0 }}>Transactions</h1>
+          <p style={{ marginTop: 4, fontSize: 13, color: C.text3 }}>
             {data ? `${data.total} transaction${data.total !== 1 ? "s" : ""}` : "Historique financier"}
           </p>
         </div>
@@ -196,17 +176,17 @@ function TransactionsContent() {
 
       {/* Revenue chart (collapsible) */}
       {showChart && stats && (
-        <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: "20px", marginBottom: 24, boxShadow: S.shadow }}>
-          <h2 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600, color: S.text2 }}>Revenus loyers — 12 mois</h2>
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px", marginBottom: 24, boxShadow: C.shadow }}>
+          <h2 style={{ marginBottom: 12, fontSize: 14, fontWeight: 600, color: C.text2 }}>Revenus loyers — 12 mois</h2>
           <RevenueChart data={stats.by_month} height={180} />
-          <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 16, borderTop: `1px solid ${S.border}`, paddingTop: 12, fontSize: 14 }}>
+          <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 16, borderTop: `1px solid ${C.border}`, paddingTop: 12, fontSize: 14 }}>
             {[
-              { label: "Total encaissé", value: `CHF ${stats.total.toLocaleString("fr-CH")}`, color: S.green },
-              { label: "En attente", value: stats.pending_count, color: S.amber },
-              { label: "Impayés", value: stats.late_count, color: S.red },
+              { label: "Total encaissé", value: `CHF ${stats.total.toLocaleString("fr-CH")}`, color: C.green },
+              { label: "En attente", value: stats.pending_count, color: C.amber },
+              { label: "Impayés", value: stats.late_count, color: C.red },
             ].map(({ label, value, color }) => (
               <div key={label}>
-                <p style={{ color: S.text3, margin: 0, fontSize: 13 }}>{label}</p>
+                <p style={{ color: C.text3, margin: 0, fontSize: 13 }}>{label}</p>
                 <p style={{ fontWeight: 600, color, margin: 0, fontSize: 14 }}>{value}</p>
               </div>
             ))}
@@ -215,10 +195,10 @@ function TransactionsContent() {
       )}
 
       {/* Filters */}
-      <div style={{ marginBottom: 20, background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: 16, boxShadow: S.shadow }}>
+      <div style={{ marginBottom: 20, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 16, boxShadow: C.shadow }}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
           <div style={{ position: "relative", flex: 1, minWidth: 160 }}>
-            <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: S.text3 }} />
+            <Search style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, color: C.text3 }} />
             <input
               type="search"
               placeholder="Référence, notes…"
@@ -247,7 +227,7 @@ function TransactionsContent() {
             style={inputStyle}
           />
           {hasFilters && (
-            <button onClick={clearFilters} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, color: S.text2, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+            <button onClick={clearFilters} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, color: C.text2, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
               <X style={{ width: 16, height: 16 }} /> Effacer
             </button>
           )}
@@ -257,13 +237,13 @@ function TransactionsContent() {
       {/* Table */}
       {isLoading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: "4rem 0" }}>
-          <div style={{ width: 32, height: 32, borderRadius: "50%", border: `4px solid ${S.orange}`, borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
+          <div style={{ width: 32, height: 32, borderRadius: "50%", border: `4px solid ${C.orange}`, borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
         </div>
       ) : isError ? (
-        <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: "4rem", textAlign: "center", color: S.text2, boxShadow: S.shadow }}>Erreur lors du chargement</div>
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "4rem", textAlign: "center", color: C.text2, boxShadow: C.shadow }}>Erreur lors du chargement</div>
       ) : !filtered.length ? (
-        <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: "4rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", boxShadow: S.shadow }}>
-          <p style={{ color: S.text2, margin: 0 }}>Aucune transaction</p>
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "4rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", boxShadow: C.shadow }}>
+          <p style={{ color: C.text2, margin: 0 }}>Aucune transaction</p>
           {hasFilters && (
             <button onClick={clearFilters} style={{ ...btnSecondaryStyle, marginTop: 12, fontSize: 13 }}>
               Réinitialiser les filtres
@@ -272,13 +252,13 @@ function TransactionsContent() {
         </div>
       ) : (
         <>
-          <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, overflow: "hidden", boxShadow: S.shadow }}>
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", boxShadow: C.shadow }}>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
-                <thead style={{ borderBottom: `1px solid ${S.border}`, background: S.bg }}>
+                <thead style={{ borderBottom: `1px solid ${C.border}`, background: C.bg }}>
                   <tr>
                     {["Date", "Référence", "Type", "Montant", "Échéance", "Statut", "Actions"].map((h) => (
-                      <th key={h} style={{ padding: "12px 16px", fontSize: 10, fontWeight: 500, textTransform: "uppercase", letterSpacing: "1.5px", color: S.text3, textAlign: h === "Montant" ? "right" : "left", whiteSpace: "nowrap" }}>
+                      <th key={h} style={{ padding: "12px 16px", fontSize: 10, fontWeight: 500, textTransform: "uppercase", letterSpacing: "1.5px", color: C.text3, textAlign: h === "Montant" ? "right" : "left", whiteSpace: "nowrap" }}>
                         {h}
                       </th>
                     ))}
@@ -288,22 +268,22 @@ function TransactionsContent() {
                   {filtered.map((tx, idx) => (
                     <tr
                       key={tx.id}
-                      style={{ borderBottom: `1px solid ${S.border}`, background: tx.status === "late" ? S.redBg : "transparent" }}
+                      style={{ borderBottom: `1px solid ${C.border}`, background: tx.status === "late" ? C.redBg : "transparent" }}
                     >
-                      <td style={{ padding: "12px 16px", color: S.text2 }}>
+                      <td style={{ padding: "12px 16px", color: C.text2 }}>
                         {new Date(tx.created_at).toLocaleDateString("fr-FR")}
                       </td>
-                      <td style={{ padding: "12px 16px", fontFamily: "monospace", fontSize: 12, color: S.orange }}>{tx.reference}</td>
-                      <td style={{ padding: "12px 16px", color: S.text }}>
+                      <td style={{ padding: "12px 16px", fontFamily: "monospace", fontSize: 12, color: C.orange }}>{tx.reference}</td>
+                      <td style={{ padding: "12px 16px", color: C.text }}>
                         {TYPE_LABELS[tx.type as TransactionType] ?? tx.type}
                         {tx.notes && (
-                          <p style={{ marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160, fontSize: 12, color: S.text3 }}>{tx.notes}</p>
+                          <p style={{ marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160, fontSize: 12, color: C.text3 }}>{tx.notes}</p>
                         )}
                       </td>
-                      <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: 600, color: S.text }}>
+                      <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: 600, color: C.text }}>
                         CHF {tx.amount.toLocaleString("fr-CH")}
                       </td>
-                      <td style={{ padding: "12px 16px", color: S.text2 }}>
+                      <td style={{ padding: "12px 16px", color: C.text2 }}>
                         {tx.due_date ? new Date(tx.due_date).toLocaleDateString("fr-FR") : "—"}
                       </td>
                       <td style={{ padding: "12px 16px" }}>
@@ -315,13 +295,13 @@ function TransactionsContent() {
                             onClick={() => markPaid.mutate(tx.id)}
                             disabled={markPaid.isPending}
                             title="Marquer comme payé"
-                            style={{ display: "inline-flex", alignItems: "center", gap: 4, borderRadius: 8, padding: "4px 8px", fontSize: 12, fontWeight: 500, color: S.green, background: S.greenBg, border: "none", cursor: "pointer", fontFamily: "inherit", opacity: markPaid.isPending ? 0.5 : 1 }}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 4, borderRadius: 8, padding: "4px 8px", fontSize: 12, fontWeight: 500, color: C.green, background: C.greenBg, border: "none", cursor: "pointer", fontFamily: "inherit", opacity: markPaid.isPending ? 0.5 : 1 }}
                           >
                             <CheckCircle style={{ width: 14, height: 14 }} />
                             Payé
                           </button>
                         ) : tx.status === "paid" && tx.paid_at ? (
-                          <span style={{ fontSize: 12, color: S.text3 }}>
+                          <span style={{ fontSize: 12, color: C.text3 }}>
                             {new Date(tx.paid_at).toLocaleDateString("fr-FR")}
                           </span>
                         ) : null}
@@ -339,7 +319,7 @@ function TransactionsContent() {
               <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} style={{ ...btnSecondaryStyle, opacity: page === 1 ? 0.4 : 1 }}>
                 <ChevronLeft style={{ width: 16, height: 16 }} /> Précédent
               </button>
-              <span style={{ fontSize: 13, color: S.text2 }}>Page {page} / {data.pages}</span>
+              <span style={{ fontSize: 13, color: C.text2 }}>Page {page} / {data.pages}</span>
               <button onClick={() => setPage((p) => Math.min(data.pages, p + 1))} disabled={page === data.pages} style={{ ...btnSecondaryStyle, opacity: page === data.pages ? 0.4 : 1 }}>
                 Suivant <ChevronRight style={{ width: 16, height: 16 }} />
               </button>

@@ -27,30 +27,10 @@ import {
 } from "recharts";
 import { useAdminRevenue, usePlatformStats } from "@/lib/hooks/useAdmin";
 import { useAuthStore } from "@/lib/store/authStore";
+import { C } from "@/lib/design-tokens";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
-const S = {
-  bg: "var(--cream)",
-  surface: "var(--background-card)",
-  surface2: "var(--althy-surface-2)",
-  border: "var(--border-subtle)",
-  text: "var(--charcoal)",
-  text2: "var(--text-secondary)",
-  text3: "var(--text-tertiary)",
-  orange: "var(--terracotta-primary)",
-  orangeBg: "var(--althy-orange-bg)",
-  green: "var(--althy-green)",
-  greenBg: "var(--althy-green-bg)",
-  red: "var(--althy-red)",
-  redBg: "var(--althy-red-bg)",
-  amber: "var(--althy-amber)",
-  amberBg: "var(--althy-amber-bg)",
-  blue: "var(--althy-blue)",
-  blueBg: "var(--althy-blue-bg)",
-  shadow: "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -118,23 +98,23 @@ function KpiCard({
         position: "relative",
         overflow: "hidden",
         borderRadius: 20,
-        border: `1px solid ${S.border}`,
-        background: S.surface,
+        border: `1px solid ${C.border}`,
+        background: C.surface,
         padding: "20px",
-        boxShadow: S.shadow,
+        boxShadow: C.shadow,
         transition: "box-shadow 0.2s",
       }}
     >
       <div className="flex items-start justify-between">
-        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: S.text3 }}>{label}</p>
+        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: C.text3 }}>{label}</p>
         <div style={{ borderRadius: 12, padding: "10px", background: iconBg }}>
           <Icon style={{ width: 16, height: 16, color: iconColor }} />
         </div>
       </div>
-      <p style={{ marginTop: 12, fontSize: 30, fontWeight: 700, letterSpacing: "-0.02em", color: S.text }}>{value}</p>
-      {sub && <p style={{ marginTop: 4, fontSize: 12, color: S.text3 }}>{sub}</p>}
+      <p style={{ marginTop: 12, fontSize: 30, fontWeight: 700, letterSpacing: "-0.02em", color: C.text }}>{value}</p>
+      {sub && <p style={{ marginTop: 4, fontSize: 12, color: C.text3 }}>{sub}</p>}
       {href && (
-        <ArrowUpRight style={{ position: "absolute", bottom: 16, right: 16, width: 16, height: 16, color: S.text3 }} />
+        <ArrowUpRight style={{ position: "absolute", bottom: 16, right: 16, width: 16, height: 16, color: C.text3 }} />
       )}
     </div>
   );
@@ -147,15 +127,15 @@ function SkeletonCard() {
       className="animate-pulse"
       style={{
         borderRadius: 20,
-        border: `1px solid ${S.border}`,
-        background: S.surface,
+        border: `1px solid ${C.border}`,
+        background: C.surface,
         padding: "20px",
-        boxShadow: S.shadow,
+        boxShadow: C.shadow,
       }}
     >
-      <div style={{ height: 12, width: 96, borderRadius: 6, background: S.surface2 }} />
-      <div style={{ marginTop: 16, height: 28, width: 128, borderRadius: 6, background: S.surface2 }} />
-      <div style={{ marginTop: 8, height: 12, width: 80, borderRadius: 6, background: S.surface2 }} />
+      <div style={{ height: 12, width: 96, borderRadius: 6, background: C.surface2 }} />
+      <div style={{ marginTop: 16, height: 28, width: 128, borderRadius: 6, background: C.surface2 }} />
+      <div style={{ marginTop: 8, height: 12, width: 80, borderRadius: 6, background: C.surface2 }} />
     </div>
   );
 }
@@ -169,33 +149,33 @@ export default function AdminPage() {
 
   if (user && user.user_metadata?.role !== "super_admin") {
     return (
-      <div className="flex min-h-screen items-center justify-center" style={{ background: S.bg }}>
+      <div className="flex min-h-screen items-center justify-center" style={{ background: C.bg }}>
         <div
           style={{
             borderRadius: 20,
-            border: `1px solid ${S.border}`,
-            background: S.surface,
+            border: `1px solid ${C.border}`,
+            background: C.surface,
             padding: "32px",
             textAlign: "center",
-            boxShadow: S.shadow,
+            boxShadow: C.shadow,
             maxWidth: 384,
           }}
         >
-          <ShieldCheck style={{ margin: "0 auto 16px", width: 40, height: 40, color: S.red }} />
+          <ShieldCheck style={{ margin: "0 auto 16px", width: 40, height: 40, color: C.red }} />
           <h2
             style={{
-              fontFamily: "var(--font-serif),'Cormorant Garamond',serif",
+              fontFamily: "var(--font-serif)",
               fontWeight: 400,
               fontSize: 20,
-              color: S.text,
+              color: C.text,
             }}
           >
             Accès réservé
           </h2>
-          <p style={{ marginTop: 8, fontSize: 14, color: S.text2 }}>
+          <p style={{ marginTop: 8, fontSize: 14, color: C.text2 }}>
             Cette page est réservée aux administrateurs Althy.<br />
             Rôle requis :{" "}
-            <code style={{ fontSize: 11, background: S.surface2, padding: "2px 4px", borderRadius: 4 }}>
+            <code style={{ fontSize: 11, background: C.surface2, padding: "2px 4px", borderRadius: 4 }}>
               super_admin
             </code>
           </p>
@@ -225,8 +205,8 @@ export default function AdminPage() {
           value: stats.total_users.toLocaleString("fr-FR"),
           sub: `+${stats.new_users_this_month} ce mois`,
           icon: Users,
-          iconBg: S.orangeBg,
-          iconColor: S.orange,
+          iconBg: C.orangeBg,
+          iconColor: C.orange,
           href: "/app/admin/users",
         },
         {
@@ -234,39 +214,39 @@ export default function AdminPage() {
           value: fmtShort(stats.revenue_this_month),
           sub: `Total : ${fmtShort(stats.revenue_total)}`,
           icon: Wallet,
-          iconBg: S.orangeBg,
-          iconColor: S.orange,
+          iconBg: C.orangeBg,
+          iconColor: C.orange,
         },
         {
           label: "Commissions du mois",
           value: fmtShort(stats.commissions_this_month),
           sub: `Total : ${fmtShort(stats.commissions_total)}`,
           icon: TrendingUp,
-          iconBg: S.greenBg,
-          iconColor: S.green,
+          iconBg: C.greenBg,
+          iconColor: C.green,
         },
         {
           label: "Biens gérés",
           value: stats.active_properties.toLocaleString("fr-FR"),
           sub: `${stats.total_properties} au total`,
           icon: Building2,
-          iconBg: S.blueBg,
-          iconColor: S.blue,
+          iconBg: C.blueBg,
+          iconColor: C.blue,
         },
         {
           label: "Contrats actifs",
           value: stats.active_contracts.toLocaleString("fr-FR"),
           icon: FileText,
-          iconBg: S.orangeBg,
-          iconColor: S.orange,
+          iconBg: C.orangeBg,
+          iconColor: C.orange,
         },
         {
           label: "Transactions en attente",
           value: stats.pending_transactions.toLocaleString("fr-FR"),
           sub: stats.late_transactions > 0 ? `${stats.late_transactions} en retard` : undefined,
           icon: stats.late_transactions > 0 ? AlertTriangle : Activity,
-          iconBg: stats.late_transactions > 0 ? S.redBg : S.surface2,
-          iconColor: stats.late_transactions > 0 ? S.red : S.text3,
+          iconBg: stats.late_transactions > 0 ? C.redBg : C.surface2,
+          iconColor: stats.late_transactions > 0 ? C.red : C.text3,
           href: "/app/admin/transactions",
         },
       ]
@@ -283,19 +263,19 @@ export default function AdminPage() {
           background: "linear-gradient(135deg, #1C1917 0%, #2d1f1a 100%)",
           padding: "28px 32px",
           color: "#fff",
-          boxShadow: S.shadowMd,
+          boxShadow: C.shadowMd,
         }}
       >
         <div style={{ position: "relative", zIndex: 10 }} className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <ShieldCheck style={{ width: 20, height: 20, color: S.orange }} />
-              <span style={{ fontSize: 14, fontWeight: 500, color: S.orange }}>Super Admin</span>
+              <ShieldCheck style={{ width: 20, height: 20, color: C.orange }} />
+              <span style={{ fontSize: 14, fontWeight: 500, color: C.orange }}>Super Admin</span>
             </div>
             <h1
               style={{
                 marginTop: 4,
-                fontFamily: "var(--font-serif),'Cormorant Garamond',serif",
+                fontFamily: "var(--font-serif)",
                 fontWeight: 400,
                 fontSize: 26,
                 color: "#fff",
@@ -363,31 +343,31 @@ export default function AdminPage() {
           className="col-span-2"
           style={{
             borderRadius: 20,
-            border: `1px solid ${S.border}`,
-            background: S.surface,
+            border: `1px solid ${C.border}`,
+            background: C.surface,
             padding: "24px",
-            boxShadow: S.shadow,
+            boxShadow: C.shadow,
           }}
         >
           <h2
             style={{
               marginBottom: 20,
-              fontFamily: "var(--font-serif),'Cormorant Garamond',serif",
+              fontFamily: "var(--font-serif)",
               fontWeight: 400,
               fontSize: 18,
-              color: S.text,
+              color: C.text,
             }}
           >
             Revenus &amp; commissions (12 mois)
           </h2>
           {revenueChartData.length === 0 ? (
-            <div className="flex items-center justify-center py-16" style={{ fontSize: 14, color: S.text3 }}>
+            <div className="flex items-center justify-center py-16" style={{ fontSize: 14, color: C.text3 }}>
               Aucune donnée
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={revenueChartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={S.border} vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
                 <XAxis
                   dataKey="label"
                   tick={{ fontSize: 11, fill: "var(--text-tertiary)" }}
@@ -406,11 +386,11 @@ export default function AdminPage() {
                     Number(v).toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }),
                     name,
                   ]}
-                  contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, background: S.surface, color: S.text }}
+                  contentStyle={{ borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12, background: C.surface, color: C.text }}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Revenus" fill={S.orange} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Commissions" fill={S.green} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Revenus" fill={C.orange} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Commissions" fill={C.green} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -420,25 +400,25 @@ export default function AdminPage() {
         <div
           style={{
             borderRadius: 20,
-            border: `1px solid ${S.border}`,
-            background: S.surface,
+            border: `1px solid ${C.border}`,
+            background: C.surface,
             padding: "24px",
-            boxShadow: S.shadow,
+            boxShadow: C.shadow,
           }}
         >
           <h2
             style={{
               marginBottom: 20,
-              fontFamily: "var(--font-serif),'Cormorant Garamond',serif",
+              fontFamily: "var(--font-serif)",
               fontWeight: 400,
               fontSize: 18,
-              color: S.text,
+              color: C.text,
             }}
           >
             Répartition des rôles
           </h2>
           {rolesData.length === 0 ? (
-            <div className="flex items-center justify-center py-16" style={{ fontSize: 14, color: S.text3 }}>
+            <div className="flex items-center justify-center py-16" style={{ fontSize: 14, color: C.text3 }}>
               Aucune donnée
             </div>
           ) : (
@@ -460,20 +440,20 @@ export default function AdminPage() {
                   </Pie>
                   <Tooltip
                     formatter={(v, name) => [v, name]}
-                    contentStyle={{ borderRadius: 8, border: `1px solid ${S.border}`, fontSize: 12, background: S.surface, color: S.text }}
+                    contentStyle={{ borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12, background: C.surface, color: C.text }}
                   />
                 </PieChart>
               </ResponsiveContainer>
               <ul style={{ marginTop: 12 }} className="space-y-1.5">
                 {rolesData.map((r) => (
                   <li key={r.name} className="flex items-center justify-between" style={{ fontSize: 12 }}>
-                    <span className="flex items-center gap-2" style={{ color: S.text2 }}>
+                    <span className="flex items-center gap-2" style={{ color: C.text2 }}>
                       <span
                         style={{ width: 10, height: 10, borderRadius: "50%", background: r.color, display: "inline-block" }}
                       />
                       {r.name}
                     </span>
-                    <span style={{ fontWeight: 600, color: S.text }}>{r.value}</span>
+                    <span style={{ fontWeight: 600, color: C.text }}>{r.value}</span>
                   </li>
                 ))}
               </ul>
@@ -485,10 +465,10 @@ export default function AdminPage() {
       {/* Quick links */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { href: "/app/admin/users", label: "Gérer les utilisateurs", icon: Users, iconColor: S.orange, bg: S.orangeBg },
-          { href: "/app/admin/transactions", label: "Toutes les transactions", icon: Wallet, iconColor: S.orange, bg: S.orangeBg },
-          { href: "/app/admin/users?is_verified=false", label: "Comptes à vérifier", icon: ShieldCheck, iconColor: S.green, bg: S.greenBg },
-          { href: "/api/docs", label: "API Swagger", icon: Activity, iconColor: S.orange, bg: S.orangeBg },
+          { href: "/app/admin/users", label: "Gérer les utilisateurs", icon: Users, iconColor: C.orange, bg: C.orangeBg },
+          { href: "/app/admin/transactions", label: "Toutes les transactions", icon: Wallet, iconColor: C.orange, bg: C.orangeBg },
+          { href: "/app/admin/users?is_verified=false", label: "Comptes à vérifier", icon: ShieldCheck, iconColor: C.green, bg: C.greenBg },
+          { href: "/api/docs", label: "API Swagger", icon: Activity, iconColor: C.orange, bg: C.orangeBg },
         ].map(({ href, label, icon: Icon, iconColor, bg }) => (
           <Link
             key={href}
@@ -498,7 +478,7 @@ export default function AdminPage() {
               alignItems: "center",
               gap: 12,
               borderRadius: 12,
-              border: `1px solid ${S.border}`,
+              border: `1px solid ${C.border}`,
               background: bg,
               padding: "14px 16px",
               transition: "box-shadow 0.2s, opacity 0.2s",
@@ -506,7 +486,7 @@ export default function AdminPage() {
             }}
           >
             <Icon style={{ width: 16, height: 16, flexShrink: 0, color: iconColor }} />
-            <span style={{ fontSize: 14, fontWeight: 500, color: S.text }}>{label}</span>
+            <span style={{ fontSize: 14, fontWeight: 500, color: C.text }}>{label}</span>
           </Link>
         ))}
       </div>

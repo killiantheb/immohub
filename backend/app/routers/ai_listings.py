@@ -189,7 +189,7 @@ async def import_property_file(
         extract_from_pdf_bytes,
     )
 
-    if current_user.role not in ("owner", "agency", "super_admin"):
+    if current_user.role not in ("proprio_solo", "agence", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux propriétaires et agences")
 
     content_type = file.content_type or ""
@@ -266,7 +266,7 @@ async def import_property_file(
         try:
             agency_identity = await extract_agency_identity(file_bytes, content_type, file.filename or "")
             logo_url = agency_identity.get("logo_url")
-            if logo_url and current_user.role in ("agency", "owner"):
+            if logo_url and current_user.role in ("agence", "proprio_solo"):
                 import httpx
                 async with httpx.AsyncClient(timeout=5) as hclient:
                     resp = await hclient.head(logo_url)

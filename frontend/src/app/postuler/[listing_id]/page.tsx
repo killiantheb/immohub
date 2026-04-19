@@ -56,8 +56,8 @@ const DOC_TYPES: DocType[] = ["cni", "fiche_salaire", "reference", "autre"];
 
 const SCORE_COLOR = (score: number) => {
   if (score >= 70) return "var(--althy-orange)";
-  if (score >= 50) return "#d97706";
-  return "#dc2626";
+  if (score >= 50) return "var(--althy-warning)";
+  return "var(--althy-red)";
 };
 
 const SCORE_LABEL = (score: number) => {
@@ -73,9 +73,9 @@ const RECO_LABEL = {
 };
 
 const RECO_COLOR = {
-  approve: "#16a34a",
-  review: "#d97706",
-  reject: "#dc2626",
+  approve: "var(--althy-green)",
+  review: "var(--althy-warning)",
+  reject: "var(--althy-red)",
 };
 
 // ── Step indicator ────────────────────────────────────────────────────────────
@@ -94,7 +94,7 @@ function StepIndicator({ step }: { step: number }) {
               <div
                 style={{
                   width: 32, height: 32, borderRadius: "50%",
-                  background: done ? "#16a34a" : active ? "var(--althy-orange)" : "var(--althy-border)",
+                  background: done ? "var(--althy-green)" : active ? "var(--althy-orange)" : "var(--althy-border)",
                   color: done || active ? "#fff" : "var(--althy-text-3)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 14, fontWeight: 600,
@@ -110,7 +110,7 @@ function StepIndicator({ step }: { step: number }) {
             {i < steps.length - 1 && (
               <div style={{
                 flex: 1, height: 2, margin: "0 8px", marginBottom: 20,
-                background: done ? "#16a34a" : "var(--althy-border)",
+                background: done ? "var(--althy-green)" : "var(--althy-border)",
               }} />
             )}
           </div>
@@ -333,8 +333,8 @@ export default function PostulerPage() {
                   : docs.some((d) => d.type === type);
                 return (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
-                    <span style={{ color: done ? "#16a34a" : "var(--althy-text-3)" }}>{done ? "✓" : "○"}</span>
-                    <span style={{ color: done ? "#16a34a" : "var(--althy-text-2)" }}>{DOC_TYPE_LABELS[type]}</span>
+                    <span style={{ color: done ? "var(--althy-green)" : "var(--althy-text-3)" }}>{done ? "✓" : "○"}</span>
+                    <span style={{ color: done ? "var(--althy-green)" : "var(--althy-text-2)" }}>{DOC_TYPE_LABELS[type]}</span>
                   </div>
                 );
               })}
@@ -397,7 +397,7 @@ export default function PostulerPage() {
                       <div style={{ fontSize: 13, fontWeight: 500, color: "var(--althy-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {doc.file.name}
                       </div>
-                      {doc.error && <div style={{ fontSize: 12, color: "#dc2626" }}>{doc.error}</div>}
+                      {doc.error && <div style={{ fontSize: 12, color: "var(--althy-red)" }}>{doc.error}</div>}
                       {doc.uploading && <div style={{ fontSize: 12, color: "var(--althy-text-3)" }}>Envoi en cours…</div>}
                     </div>
 
@@ -481,7 +481,7 @@ export default function PostulerPage() {
             {error && (
               <div style={{
                 background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8,
-                padding: "12px 14px", marginTop: 16, fontSize: 14, color: "#dc2626",
+                padding: "12px 14px", marginTop: 16, fontSize: 14, color: "var(--althy-red)",
               }}>
                 {error}
               </div>

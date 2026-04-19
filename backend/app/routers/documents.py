@@ -1388,7 +1388,7 @@ async def generate_document(
     agency_settings: dict | None = None
     try:
         from app.models.agency_settings import AgencySettings
-        eff_agency_id = agency_id or (current_user.id if current_user.role == "agency" else None)
+        eff_agency_id = agency_id or (current_user.id if current_user.role == "agence" else None)
         if eff_agency_id:
             res = await db.execute(select(AgencySettings).where(AgencySettings.agency_id == eff_agency_id))
             settings_obj = res.scalar_one_or_none()

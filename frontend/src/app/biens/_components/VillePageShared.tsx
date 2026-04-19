@@ -9,10 +9,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { VilleMap } from "./VilleMap";
+import { C } from "@/lib/design-tokens";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 const BASE = "https://althy.ch";
-const ORANGE = "#E8602C";
 
 // ── Config villes ─────────────────────────────────────────────────────────────
 
@@ -221,7 +221,7 @@ function BienCard({ bien }: { bien: Bien }) {
       style={{
         display: "block",
         background: "#fff",
-        border: "1px solid #E8E4DC",
+        border: "1px solid var(--althy-border)",
         borderRadius: 12,
         overflow: "hidden",
         textDecoration: "none",
@@ -254,7 +254,7 @@ function BienCard({ bien }: { bien: Bien }) {
         {bien.is_premium && (
           <span style={{
             position: "absolute", top: 10, right: 10,
-            background: "#F59E0B", color: "#fff",
+            background: "var(--althy-warning)", color: "#fff",
             fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 4,
           }}>
             ★ Premium
@@ -262,7 +262,7 @@ function BienCard({ bien }: { bien: Bien }) {
         )}
         <span style={{
           position: "absolute", top: 10, left: 10,
-          background: ORANGE, color: "#fff",
+          background: C.orange, color: "#fff",
           fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 4,
         }}>
           Location
@@ -270,22 +270,22 @@ function BienCard({ bien }: { bien: Bien }) {
       </div>
       <div style={{ padding: "14px 16px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
-          <span style={{ fontSize: 11, color: "#7A7469" }}>{bien.type_label}</span>
+          <span style={{ fontSize: 11, color: "var(--althy-text-3)" }}>{bien.type_label}</span>
           {prixStr && (
-            <span style={{ fontSize: 16, fontWeight: 700, color: ORANGE }}>
+            <span style={{ fontSize: 16, fontWeight: 700, color: C.orange }}>
               {prixStr}
-              <span style={{ fontSize: 11, fontWeight: 400, color: "#7A7469" }}>/mois</span>
+              <span style={{ fontSize: 11, fontWeight: 400, color: "var(--althy-text-3)" }}>/mois</span>
             </span>
           )}
         </div>
         <p style={{
-          fontSize: 14, fontWeight: 600, color: "#3D3830",
+          fontSize: 14, fontWeight: 600, color: "var(--althy-text)",
           margin: "0 0 6px", overflow: "hidden",
           textOverflow: "ellipsis", whiteSpace: "nowrap",
         }}>
           {bien.titre}
         </p>
-        <div style={{ fontSize: 12, color: "#7A7469", marginBottom: 8 }}>
+        <div style={{ fontSize: 12, color: "var(--althy-text-3)", marginBottom: 8 }}>
           📍 {bien.adresse_affichee}
           {bien.surface && <span> · {bien.surface}m²</span>}
           {bien.pieces && <span> · {bien.pieces}p.</span>}
@@ -294,7 +294,7 @@ function BienCard({ bien }: { bien: Bien }) {
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
             {bien.tags_ia.slice(0, 3).map((t) => (
               <span key={t} style={{
-                background: "rgba(232,96,44,0.08)", color: ORANGE,
+                background: "rgba(232,96,44,0.08)", color: C.orange,
                 fontSize: 10, padding: "2px 7px", borderRadius: 20,
               }}>
                 {t}
@@ -386,32 +386,32 @@ export async function VillePageShared({ slug }: { slug: string }) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div style={{ minHeight: "100vh", background: "#FAFAF8" }}>
+      <div style={{ minHeight: "100vh", background: "var(--althy-bg)" }}>
 
         {/* Header */}
         <header style={{
-          background: "#fff", borderBottom: "1px solid #E8E4DC",
+          background: "#fff", borderBottom: "1px solid var(--althy-border)",
           padding: "0 24px", height: 56,
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <Link href="/" style={{ textDecoration: "none" }}>
             <span style={{
-              fontFamily: "Georgia, serif", fontSize: 20,
-              fontWeight: 300, color: "#3D3830", letterSpacing: "0.05em",
+              fontFamily: "var(--font-serif)", fontSize: 20,
+              fontWeight: 300, color: "var(--althy-text)", letterSpacing: "0.05em",
             }}>
-              ALT<span style={{ color: ORANGE }}>H</span>Y
+              ALT<span style={{ color: C.orange }}>H</span>Y
             </span>
           </Link>
           <div style={{ display: "flex", gap: 8 }}>
             <Link href="/biens" style={{
               fontSize: 13, padding: "6px 14px", borderRadius: 8,
-              border: "1px solid #E8E4DC", color: "#5C5650", textDecoration: "none",
+              border: "1px solid var(--althy-border)", color: "var(--althy-text-2)", textDecoration: "none",
             }}>
               ← Tous les biens
             </Link>
             <Link href="/login" style={{
               fontSize: 13, padding: "6px 14px", borderRadius: 8,
-              background: ORANGE, color: "#fff", textDecoration: "none", fontWeight: 500,
+              background: C.orange, color: "#fff", textDecoration: "none", fontWeight: 500,
             }}>
               Se connecter
             </Link>
@@ -421,23 +421,23 @@ export async function VillePageShared({ slug }: { slug: string }) {
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 20px 80px" }}>
 
           {/* Breadcrumb */}
-          <nav aria-label="Fil d'ariane" style={{ fontSize: 13, color: "#7A7469", marginBottom: 24 }}>
-            <Link href="/" style={{ color: "#7A7469", textDecoration: "none" }}>Althy</Link>
+          <nav aria-label="Fil d'ariane" style={{ fontSize: 13, color: "var(--althy-text-3)", marginBottom: 24 }}>
+            <Link href="/" style={{ color: "var(--althy-text-3)", textDecoration: "none" }}>Althy</Link>
             {" › "}
-            <Link href="/biens" style={{ color: "#7A7469", textDecoration: "none" }}>Biens</Link>
+            <Link href="/biens" style={{ color: "var(--althy-text-3)", textDecoration: "none" }}>Biens</Link>
             {" › "}
-            <span style={{ color: "#3D3830" }}>{cfg.labelLong}</span>
+            <span style={{ color: "var(--althy-text)" }}>{cfg.labelLong}</span>
           </nav>
 
           {/* H1 */}
           <h1 style={{
-            fontFamily: "Georgia, serif",
+            fontFamily: "var(--font-serif)",
             fontSize: "clamp(26px, 5vw, 40px)",
-            fontWeight: 300, color: "#3D3830", marginBottom: 12,
+            fontWeight: 300, color: "var(--althy-text)", marginBottom: 12,
           }}>
             Appartements et logements à louer à {cfg.labelLong} — Althy
           </h1>
-          <p style={{ fontSize: 16, color: "#5C5650", maxWidth: 640, marginBottom: 28, lineHeight: 1.6 }}>
+          <p style={{ fontSize: 16, color: "var(--althy-text-2)", maxWidth: 640, marginBottom: 28, lineHeight: 1.6 }}>
             {cfg.description}
           </p>
 
@@ -446,7 +446,7 @@ export async function VillePageShared({ slug }: { slug: string }) {
             {cfg.quartiers.map((q) => (
               <span key={q} style={{
                 fontSize: 12, padding: "5px 12px", borderRadius: 20,
-                background: "rgba(232,96,44,0.07)", color: ORANGE,
+                background: "rgba(232,96,44,0.07)", color: C.orange,
                 border: "1px solid rgba(232,96,44,0.2)", fontWeight: 500,
               }}>
                 {q}
@@ -463,13 +463,13 @@ export async function VillePageShared({ slug }: { slug: string }) {
               { label: "Canton", value: cfg.canton },
             ].map((stat) => (
               <div key={stat.label} style={{
-                background: "#fff", border: "1px solid #E8E4DC",
+                background: "#fff", border: "1px solid var(--althy-border)",
                 borderRadius: 12, padding: "16px 20px", minWidth: 140,
               }}>
-                <div style={{ fontSize: 20, fontWeight: 700, color: ORANGE, marginBottom: 2 }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: C.orange, marginBottom: 2 }}>
                   {stat.value}
                 </div>
-                <div style={{ fontSize: 12, color: "#7A7469" }}>{stat.label}</div>
+                <div style={{ fontSize: 12, color: "var(--althy-text-3)" }}>{stat.label}</div>
               </div>
             ))}
           </div>
@@ -481,7 +481,7 @@ export async function VillePageShared({ slug }: { slug: string }) {
             <div>
               {biens.length > 0 ? (
                 <>
-                  <h2 style={{ fontSize: 18, fontWeight: 600, color: "#3D3830", marginBottom: 20 }}>
+                  <h2 style={{ fontSize: 18, fontWeight: 600, color: "var(--althy-text)", marginBottom: 20 }}>
                     {total} bien{total !== 1 ? "s" : ""} disponible{total !== 1 ? "s" : ""} à {cfg.labelLong}
                   </h2>
                   <div style={{
@@ -494,7 +494,7 @@ export async function VillePageShared({ slug }: { slug: string }) {
                   {total > biens.length && (
                     <div style={{ textAlign: "center", marginBottom: 12 }}>
                       <Link href={`/biens?ville=${encodeURIComponent(cfg.searchTerm)}`} style={{
-                        display: "inline-block", background: ORANGE, color: "#fff",
+                        display: "inline-block", background: C.orange, color: "#fff",
                         padding: "12px 28px", borderRadius: 8, textDecoration: "none",
                         fontSize: 15, fontWeight: 600,
                       }}>
@@ -504,12 +504,12 @@ export async function VillePageShared({ slug }: { slug: string }) {
                   )}
                 </>
               ) : (
-                <div style={{ textAlign: "center", padding: "40px 20px", background: "#fff", borderRadius: 12, border: "1px solid #E8E4DC" }}>
-                  <p style={{ color: "#7A7469", marginBottom: 20 }}>
+                <div style={{ textAlign: "center", padding: "40px 20px", background: "#fff", borderRadius: 12, border: "1px solid var(--althy-border)" }}>
+                  <p style={{ color: "var(--althy-text-3)", marginBottom: 20 }}>
                     Aucun bien disponible pour le moment. Revenez bientôt !
                   </p>
                   <Link href="/biens" style={{
-                    background: ORANGE, color: "#fff", padding: "12px 24px",
+                    background: C.orange, color: "#fff", padding: "12px 24px",
                     borderRadius: 8, textDecoration: "none", fontWeight: 600,
                   }}>
                     Voir tous les biens
@@ -523,11 +523,11 @@ export async function VillePageShared({ slug }: { slug: string }) {
 
               {/* Carte Mapbox */}
               <div style={{
-                background: "#fff", border: "1px solid #E8E4DC",
+                background: "#fff", border: "1px solid var(--althy-border)",
                 borderRadius: 12, overflow: "hidden",
               }}>
-                <div style={{ padding: "12px 16px", borderBottom: "1px solid #E8E4DC" }}>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#3D3830" }}>
+                <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--althy-border)" }}>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--althy-text)" }}>
                     Carte de {cfg.labelLong}
                   </p>
                 </div>
@@ -544,15 +544,15 @@ export async function VillePageShared({ slug }: { slug: string }) {
                 background: "#fff", border: "1.5px solid rgba(232,96,44,0.3)",
                 borderRadius: 12, padding: "20px 18px",
               }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: "#3D3830", margin: "0 0 6px" }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "var(--althy-text)", margin: "0 0 6px" }}>
                   Vous êtes propriétaire à {cfg.labelLong} ?
                 </p>
-                <p style={{ fontSize: 12, color: "#7A7469", margin: "0 0 14px", lineHeight: 1.5 }}>
+                <p style={{ fontSize: 12, color: "var(--althy-text-3)", margin: "0 0 14px", lineHeight: 1.5 }}>
                   Publiez votre bien gratuitement et trouvez un locataire scoré par IA en quelques jours.
                 </p>
                 <Link href="/register?role=proprio_solo" style={{
                   display: "block", textAlign: "center",
-                  background: ORANGE, color: "#fff",
+                  background: C.orange, color: "#fff",
                   padding: "10px 0", borderRadius: 8,
                   textDecoration: "none", fontSize: 13, fontWeight: 600,
                   marginBottom: 8,
@@ -561,7 +561,7 @@ export async function VillePageShared({ slug }: { slug: string }) {
                 </Link>
                 <Link href="/estimation" style={{
                   display: "block", textAlign: "center",
-                  background: "#fff", border: "1px solid #E8E4DC", color: "#3D3830",
+                  background: "#fff", border: "1px solid var(--althy-border)", color: "var(--althy-text)",
                   padding: "10px 0", borderRadius: 8,
                   textDecoration: "none", fontSize: 13,
                 }}>
@@ -573,21 +573,21 @@ export async function VillePageShared({ slug }: { slug: string }) {
 
           {/* SEO text bloc */}
           <section style={{
-            background: "#fff", border: "1px solid #E8E4DC",
+            background: "#fff", border: "1px solid var(--althy-border)",
             borderRadius: 12, padding: "28px 32px", marginTop: 48,
           }}>
-            <h2 style={{ fontSize: 20, fontWeight: 600, color: "#3D3830", marginBottom: 16 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 600, color: "var(--althy-text)", marginBottom: 16 }}>
               Louer à {cfg.labelLong} avec Althy
             </h2>
-            <div style={{ fontSize: 14, color: "#5C5650", lineHeight: 1.85, display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ fontSize: 14, color: "var(--althy-text-2)", lineHeight: 1.85, display: "flex", flexDirection: "column", gap: 14 }}>
               {cfg.texte_seo.map((para, i) => (
                 <p key={i} style={{ margin: 0 }}>{para}</p>
               ))}
             </div>
 
             {/* FAQ */}
-            <div style={{ marginTop: 28, borderTop: "1px solid #E8E4DC", paddingTop: 16 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, color: "#3D3830", marginBottom: 8 }}>
+            <div style={{ marginTop: 28, borderTop: "1px solid var(--althy-border)", paddingTop: 16 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: "var(--althy-text)", marginBottom: 8 }}>
                 Questions fréquentes
               </h3>
               {[
@@ -608,16 +608,16 @@ export async function VillePageShared({ slug }: { slug: string }) {
                   a: "Créez un compte propriétaire sur Althy, ajoutez votre bien (photos, description, prix), et publiez en 5 minutes. Les candidats scorés par IA postulent directement. Aucun abonnement requis pour commencer.",
                 },
               ].map((faq) => (
-                <details key={faq.q} style={{ borderTop: "1px solid #E8E4DC", padding: "12px 0" }}>
+                <details key={faq.q} style={{ borderTop: "1px solid var(--althy-border)", padding: "12px 0" }}>
                   <summary style={{
-                    fontSize: 14, fontWeight: 600, color: "#3D3830",
+                    fontSize: 14, fontWeight: 600, color: "var(--althy-text)",
                     cursor: "pointer", listStyle: "none",
                     display: "flex", justifyContent: "space-between",
                   }}>
                     {faq.q}
-                    <span style={{ color: ORANGE, marginLeft: 8, flexShrink: 0 }}>+</span>
+                    <span style={{ color: C.orange, marginLeft: 8, flexShrink: 0 }}>+</span>
                   </summary>
-                  <p style={{ fontSize: 13, color: "#5C5650", marginTop: 8, marginBottom: 0, lineHeight: 1.6 }}>
+                  <p style={{ fontSize: 13, color: "var(--althy-text-2)", marginTop: 8, marginBottom: 0, lineHeight: 1.6 }}>
                     {faq.a}
                   </p>
                 </details>
@@ -631,29 +631,29 @@ export async function VillePageShared({ slug }: { slug: string }) {
             background: "linear-gradient(135deg, rgba(232,96,44,0.05) 0%, rgba(232,96,44,0.12) 100%)",
             borderRadius: 16, border: "1px solid rgba(232,96,44,0.2)",
           }}>
-            <p style={{ fontSize: 18, fontWeight: 300, fontFamily: "Georgia, serif", color: "#3D3830", marginBottom: 8 }}>
+            <p style={{ fontSize: 18, fontWeight: 300, fontFamily: "var(--font-serif)", color: "var(--althy-text)", marginBottom: 8 }}>
               Vous cherchez un logement à {cfg.labelLong} ?
             </p>
-            <p style={{ fontSize: 14, color: "#7A7469", marginBottom: 24 }}>
+            <p style={{ fontSize: 14, color: "var(--althy-text-3)", marginBottom: 24 }}>
               Créez votre dossier locataire gratuitement. Frais de CHF 90 uniquement si vous êtes retenu.
             </p>
             <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
               <Link href="/register" style={{
-                background: ORANGE, color: "#fff",
+                background: C.orange, color: "#fff",
                 padding: "14px 32px", borderRadius: 8,
                 textDecoration: "none", fontSize: 15, fontWeight: 600,
               }}>
                 Créer mon dossier gratuit →
               </Link>
               <Link href="/biens/swipe" style={{
-                background: "#fff", border: "1.5px solid #E8E4DC", color: "#3D3830",
+                background: "#fff", border: "1.5px solid var(--althy-border)", color: "var(--althy-text)",
                 padding: "14px 32px", borderRadius: 8,
                 textDecoration: "none", fontSize: 15,
               }}>
                 Swiper les biens 🏠
               </Link>
               <Link href="/estimation" style={{
-                background: "#fff", border: "1.5px solid #E8E4DC", color: "#3D3830",
+                background: "#fff", border: "1.5px solid var(--althy-border)", color: "var(--althy-text)",
                 padding: "14px 32px", borderRadius: 8,
                 textDecoration: "none", fontSize: 15,
               }}>
@@ -664,7 +664,7 @@ export async function VillePageShared({ slug }: { slug: string }) {
 
           {/* Liens villes voisines */}
           <div style={{ marginTop: 40, textAlign: "center" }}>
-            <p style={{ fontSize: 13, color: "#7A7469", marginBottom: 12 }}>
+            <p style={{ fontSize: 13, color: "var(--althy-text-3)", marginBottom: 12 }}>
               Chercher dans d'autres villes :
             </p>
             <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
@@ -673,7 +673,7 @@ export async function VillePageShared({ slug }: { slug: string }) {
                 .map((v) => (
                   <Link key={v.slug} href={`/biens/${v.slug}`} style={{
                     fontSize: 13, padding: "6px 14px", borderRadius: 20,
-                    border: "1px solid #E8E4DC", color: "#5C5650",
+                    border: "1px solid var(--althy-border)", color: "var(--althy-text-2)",
                     textDecoration: "none", background: "#fff",
                   }}>
                     {v.label}

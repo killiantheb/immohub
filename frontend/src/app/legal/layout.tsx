@@ -17,30 +17,30 @@ const LEGAL_LINKS = [
 
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ minHeight: "100vh", background: "#FAFAF8", fontFamily: "var(--font-sans)", color: "#3D3830" }}>
+    <div style={{ minHeight: "100vh", background: "var(--althy-bg)", fontFamily: "var(--font-sans)", color: "var(--althy-text)" }}>
       {/* Header */}
-      <header style={{ borderBottom: "1px solid #E8E4DC", background: "#fff", padding: "0 1.5rem", position: "sticky", top: 0, zIndex: 50 }}>
+      <header style={{ borderBottom: "1px solid var(--althy-border)", background: "#fff", padding: "0 1.5rem", position: "sticky", top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 900, margin: "0 auto", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
             <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
               <AlthyLogo size={28} />
-              <span style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 400, color: "#3D3830" }}>Althy</span>
+              <span style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 400, color: "var(--althy-text)" }}>Althy</span>
             </Link>
-            <span style={{ color: "#E8E4DC" }}>|</span>
-            <span style={{ fontSize: 12, color: "#7A7469", letterSpacing: "1px", textTransform: "uppercase" as const }}>Informations légales</span>
+            <span style={{ color: "var(--althy-border)" }}>|</span>
+            <span style={{ fontSize: 12, color: "var(--althy-text-3)", letterSpacing: "1px", textTransform: "uppercase" as const }}>Informations légales</span>
           </div>
           <PrintButton />
         </div>
       </header>
 
       {/* Navigation légale */}
-      <nav style={{ borderBottom: "1px solid #E8E4DC", background: "#fff", overflowX: "auto" }}>
+      <nav style={{ borderBottom: "1px solid var(--althy-border)", background: "#fff", overflowX: "auto" }}>
         <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 1.5rem", display: "flex", gap: 0 }}>
           {LEGAL_LINKS.map(l => (
             <Link
               key={l.href}
               href={l.href}
-              style={{ padding: "10px 16px", fontSize: 12, fontWeight: 500, color: "#7A7469", textDecoration: "none", whiteSpace: "nowrap" as const, borderBottom: "2px solid transparent", display: "block" }}
+              style={{ padding: "10px 16px", fontSize: 12, fontWeight: 500, color: "var(--althy-text-3)", textDecoration: "none", whiteSpace: "nowrap" as const, borderBottom: "2px solid transparent", display: "block" }}
             >
               {l.label}
             </Link>
@@ -54,13 +54,13 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
       </main>
 
       {/* Footer */}
-      <footer style={{ borderTop: "1px solid #E8E4DC", background: "#fff", padding: "1.5rem", textAlign: "center" }}>
-        <p style={{ fontSize: 11, color: "#7A7469", marginBottom: "0.75rem" }}>
+      <footer style={{ borderTop: "1px solid var(--althy-border)", background: "#fff", padding: "1.5rem", textAlign: "center" }}>
+        <p style={{ fontSize: 11, color: "var(--althy-text-3)", marginBottom: "0.75rem" }}>
           &copy; {new Date().getFullYear()} Althy — Tous droits réservés
         </p>
         <div style={{ display: "flex", justifyContent: "center", gap: "1.5rem", flexWrap: "wrap" }}>
           {LEGAL_LINKS.map(l => (
-            <Link key={l.href} href={l.href} style={{ fontSize: 11, color: "#7A7469", textDecoration: "none" }}>
+            <Link key={l.href} href={l.href} style={{ fontSize: 11, color: "var(--althy-text-3)", textDecoration: "none" }}>
               {l.label}
             </Link>
           ))}

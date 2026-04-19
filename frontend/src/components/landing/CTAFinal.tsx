@@ -81,8 +81,8 @@ export function CTAFinal() {
             margin: "0 0 1.25rem 0",
           }}
         >
-          Prêt à laisser{" "}
-          <span style={{ color: C.orange }}>Althy gérer</span> ?
+          Commencez à gérer votre bien{" "}
+          <span style={{ color: C.orange }}>sans agence</span>
         </motion.h2>
 
         <motion.p
@@ -98,7 +98,7 @@ export function CTAFinal() {
             maxWidth: 520,
           }}
         >
-          Rejoignez des centaines de professionnels qui ont repris le contrôle de leur temps.
+          Gratuit pendant 30 jours. Sans carte bancaire. Sans engagement.
         </motion.p>
 
         <motion.div
@@ -117,7 +117,7 @@ export function CTAFinal() {
             href="/register"
             style={{
               background: C.orange,
-              color: "#FFFFFF",
+              color: "var(--althy-surface)",
               textDecoration: "none",
               fontSize: "1rem",
               fontWeight: 700,
@@ -169,7 +169,7 @@ export function CTAFinal() {
             marginTop: "2rem",
           }}
         >
-          14 jours d&apos;essai · Sans carte de crédit · Annulable à tout moment
+          Déjà 130 biens gérés en Suisse romande
         </motion.p>
       </div>
     </section>

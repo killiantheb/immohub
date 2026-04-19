@@ -22,28 +22,8 @@ import {
 import type { ContractStatus, ContractType } from "@/lib/types";
 import { NotificationDraft } from "@/components/NotificationDraft";
 import { DocumentQuickGenerator } from "@/components/DocumentQuickGenerator";
+import { C } from "@/lib/design-tokens";
 
-const S = {
-  bg: "var(--cream)",
-  surface: "var(--background-card)",
-  surface2: "var(--althy-surface-2)",
-  border: "var(--border-subtle)",
-  text: "var(--charcoal)",
-  text2: "var(--text-secondary)",
-  text3: "var(--text-tertiary)",
-  orange: "var(--terracotta-primary)",
-  orangeBg: "var(--althy-orange-bg)",
-  green: "var(--althy-green)",
-  greenBg: "var(--althy-green-bg)",
-  red: "var(--althy-red)",
-  redBg: "var(--althy-red-bg)",
-  amber: "var(--althy-amber)",
-  amberBg: "var(--althy-amber-bg)",
-  blue: "var(--althy-blue)",
-  blueBg: "var(--althy-blue-bg)",
-  shadow: "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const;
 
 const CONTRACT_TYPE_TO_BAIL: Record<string, string> = {
   long_term:  "bail_annee",
@@ -60,17 +40,17 @@ const TYPE_LABELS: Record<ContractType, string> = {
 };
 
 const STATUS_CONFIG: Record<ContractStatus, { label: string; bg: string; color: string }> = {
-  draft:      { label: "Brouillon", bg: S.surface2,  color: S.text3 },
-  active:     { label: "Actif",     bg: S.greenBg,   color: S.green },
-  terminated: { label: "Résilié",   bg: S.orangeBg,  color: S.orange },
-  expired:    { label: "Expiré",    bg: S.redBg,     color: S.red },
+  draft:      { label: "Brouillon", bg: C.surface2,  color: C.text3 },
+  active:     { label: "Actif",     bg: C.greenBg,   color: C.green },
+  terminated: { label: "Résilié",   bg: C.orangeBg,  color: C.orange },
+  expired:    { label: "Expiré",    bg: C.redBg,     color: C.red },
 };
 
 const cardStyle: React.CSSProperties = {
-  background: S.surface,
-  border: `1px solid ${S.border}`,
+  background: C.surface,
+  border: `1px solid ${C.border}`,
   borderRadius: 14,
-  boxShadow: S.shadow,
+  boxShadow: C.shadow,
   padding: "1.25rem",
 };
 
@@ -79,9 +59,9 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "7px 12px",
   borderRadius: 8,
-  border: `1px solid ${S.border}`,
-  background: S.surface,
-  color: S.text,
+  border: `1px solid ${C.border}`,
+  background: C.surface,
+  color: C.text,
   fontSize: 13,
   outline: "none",
   fontFamily: "inherit",
@@ -94,9 +74,9 @@ const btnSecondaryStyle: React.CSSProperties = {
   gap: 6,
   padding: "8px 14px",
   borderRadius: 10,
-  border: `1px solid ${S.border}`,
-  background: S.surface,
-  color: S.text2,
+  border: `1px solid ${C.border}`,
+  background: C.surface,
+  color: C.text2,
   fontSize: 13,
   fontWeight: 600,
   cursor: "pointer",
@@ -109,7 +89,7 @@ const btnPrimaryStyle: React.CSSProperties = {
   padding: "8px 16px",
   borderRadius: 10,
   border: "none",
-  background: S.orange,
+  background: C.orange,
   color: "#fff",
   fontSize: 13,
   fontWeight: 700,
@@ -172,21 +152,21 @@ export default function ContractDetailPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center py-20">
-        <div style={{ width: 32, height: 32, borderRadius: "50%", border: `4px solid ${S.orange}`, borderTopColor: "transparent" }} className="animate-spin" />
+        <div style={{ width: 32, height: 32, borderRadius: "50%", border: `4px solid ${C.orange}`, borderTopColor: "transparent" }} className="animate-spin" />
       </div>
     );
   }
 
   if (isError || !contract) {
     return (
-      <div style={{ ...cardStyle, padding: "5rem 1.25rem", textAlign: "center", color: S.text3 }}>
+      <div style={{ ...cardStyle, padding: "5rem 1.25rem", textAlign: "center", color: C.text3 }}>
         Contrat introuvable.{" "}
-        <Link href="/app/contracts" style={{ color: S.orange, textDecoration: "underline" }}>Retour</Link>
+        <Link href="/app/contracts" style={{ color: C.orange, textDecoration: "underline" }}>Retour</Link>
       </div>
     );
   }
 
-  const statusCfg = STATUS_CONFIG[contract.status as ContractStatus] ?? { label: contract.status, bg: S.surface2, color: S.text3 };
+  const statusCfg = STATUS_CONFIG[contract.status as ContractStatus] ?? { label: contract.status, bg: C.surface2, color: C.text3 };
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -200,14 +180,14 @@ export default function ContractDetailPage() {
 
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3">
-        <Link href="/app/contracts" style={{ color: S.text3, display: "flex", alignItems: "center" }}>
+        <Link href="/app/contracts" style={{ color: C.text3, display: "flex", alignItems: "center" }}>
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontWeight: 400, fontSize: 28, color: S.text }}>
+          <h1 style={{ fontFamily: "var(--font-serif)", fontWeight: 400, fontSize: 28, color: C.text }}>
             {contract.reference}
           </h1>
-          <p style={{ fontSize: 14, color: S.text3 }}>
+          <p style={{ fontSize: 14, color: C.text3 }}>
             {TYPE_LABELS[contract.type as ContractType] ?? contract.type}
           </p>
         </div>
@@ -274,26 +254,26 @@ export default function ContractDetailPage() {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Parties */}
         <div style={cardStyle} className="space-y-3">
-          <h2 style={{ fontSize: 13, fontWeight: 600, color: S.text2, marginBottom: "0.5rem" }}>Parties</h2>
+          <h2 style={{ fontSize: 13, fontWeight: 600, color: C.text2, marginBottom: "0.5rem" }}>Parties</h2>
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <dt style={{ color: S.text3 }}>Bien</dt>
-              <dd style={{ fontFamily: "monospace", fontSize: 11, color: S.orange }}>{contract.property_id.slice(0, 8)}…</dd>
+              <dt style={{ color: C.text3 }}>Bien</dt>
+              <dd style={{ fontFamily: "monospace", fontSize: 11, color: C.orange }}>{contract.property_id.slice(0, 8)}…</dd>
             </div>
             <div className="flex justify-between">
-              <dt style={{ color: S.text3 }}>Propriétaire</dt>
-              <dd style={{ fontFamily: "monospace", fontSize: 11, color: S.text }}>{contract.owner_id.slice(0, 8)}…</dd>
+              <dt style={{ color: C.text3 }}>Propriétaire</dt>
+              <dd style={{ fontFamily: "monospace", fontSize: 11, color: C.text }}>{contract.owner_id.slice(0, 8)}…</dd>
             </div>
             {contract.tenant_id && (
               <div className="flex justify-between">
-                <dt style={{ color: S.text3 }}>Locataire</dt>
-                <dd style={{ fontFamily: "monospace", fontSize: 11, color: S.text }}>{contract.tenant_id.slice(0, 8)}…</dd>
+                <dt style={{ color: C.text3 }}>Locataire</dt>
+                <dd style={{ fontFamily: "monospace", fontSize: 11, color: C.text }}>{contract.tenant_id.slice(0, 8)}…</dd>
               </div>
             )}
             {contract.agency_id && (
               <div className="flex justify-between">
-                <dt style={{ color: S.text3 }}>Agence</dt>
-                <dd style={{ fontFamily: "monospace", fontSize: 11, color: S.text }}>{contract.agency_id.slice(0, 8)}…</dd>
+                <dt style={{ color: C.text3 }}>Agence</dt>
+                <dd style={{ fontFamily: "monospace", fontSize: 11, color: C.text }}>{contract.agency_id.slice(0, 8)}…</dd>
               </div>
             )}
           </dl>
@@ -301,14 +281,14 @@ export default function ContractDetailPage() {
 
         {/* Dates */}
         <div style={cardStyle} className="space-y-3">
-          <h2 style={{ fontSize: 13, fontWeight: 600, color: S.text2, marginBottom: "0.5rem" }}>Durée</h2>
+          <h2 style={{ fontSize: 13, fontWeight: 600, color: C.text2, marginBottom: "0.5rem" }}>Durée</h2>
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <dt style={{ color: S.text3 }}>Début</dt>
-              <dd style={{ color: S.text }}>{fmt(contract.start_date)}</dd>
+              <dt style={{ color: C.text3 }}>Début</dt>
+              <dd style={{ color: C.text }}>{fmt(contract.start_date)}</dd>
             </div>
             <div className="flex justify-between items-center">
-              <dt style={{ color: S.text3 }}>Fin</dt>
+              <dt style={{ color: C.text3 }}>Fin</dt>
               {editing ? (
                 <input
                   type="date"
@@ -317,13 +297,13 @@ export default function ContractDetailPage() {
                   style={{ ...inputStyle, width: 144 }}
                 />
               ) : (
-                <dd style={{ color: S.text }}>{fmt(contract.end_date)}</dd>
+                <dd style={{ color: C.text }}>{fmt(contract.end_date)}</dd>
               )}
             </div>
             {contract.signed_at && (
               <div className="flex justify-between">
-                <dt style={{ color: S.text3 }}>Signé le</dt>
-                <dd style={{ display: "flex", alignItems: "center", gap: 4, color: S.green }}>
+                <dt style={{ color: C.text3 }}>Signé le</dt>
+                <dd style={{ display: "flex", alignItems: "center", gap: 4, color: C.green }}>
                   <CheckCircle className="h-3.5 w-3.5" />
                   {fmt(contract.signed_at)}
                 </dd>
@@ -331,7 +311,7 @@ export default function ContractDetailPage() {
             )}
             {editing && (
               <div className="flex justify-between items-center">
-                <dt style={{ color: S.text3 }}>Statut</dt>
+                <dt style={{ color: C.text3 }}>Statut</dt>
                 <select
                   value={form.status}
                   onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as ContractStatus }))}
@@ -348,7 +328,7 @@ export default function ContractDetailPage() {
 
         {/* Finances */}
         <div style={{ ...cardStyle, gridColumn: "1 / -1" }} className="space-y-3">
-          <h2 style={{ fontSize: 13, fontWeight: 600, color: S.text2, marginBottom: "0.5rem" }}>Finances</h2>
+          <h2 style={{ fontSize: 13, fontWeight: 600, color: C.text2, marginBottom: "0.5rem" }}>Finances</h2>
           <div className="grid grid-cols-3 gap-6">
             {[
               { label: "Loyer mensuel", field: "monthly_rent" as const, value: contract.monthly_rent },
@@ -356,7 +336,7 @@ export default function ContractDetailPage() {
               { label: "Dépôt de garantie", field: "deposit" as const,  value: contract.deposit },
             ].map(({ label, field, value }) => (
               <div key={field}>
-                <p style={{ fontSize: 12, color: S.text3, marginBottom: 4 }}>{label}</p>
+                <p style={{ fontSize: 12, color: C.text3, marginBottom: 4 }}>{label}</p>
                 {editing ? (
                   <input
                     type="number"
@@ -367,7 +347,7 @@ export default function ContractDetailPage() {
                     style={inputStyle}
                   />
                 ) : (
-                  <p style={{ fontSize: 20, fontWeight: 700, color: S.text }}>
+                  <p style={{ fontSize: 20, fontWeight: 700, color: C.text }}>
                     {value != null ? `CHF ${value.toLocaleString("fr-CH")}` : "—"}
                   </p>
                 )}
@@ -380,8 +360,8 @@ export default function ContractDetailPage() {
       {/* Signature */}
       {!contract.signed_at && contract.status !== "terminated" && (
         <div style={cardStyle}>
-          <h2 style={{ fontSize: 13, fontWeight: 600, color: S.text2, marginBottom: "0.75rem" }}>Signature électronique</h2>
-          <p style={{ fontSize: 13, color: S.text3, marginBottom: "1rem" }}>
+          <h2 style={{ fontSize: 13, fontWeight: 600, color: C.text2, marginBottom: "0.75rem" }}>Signature électronique</h2>
+          <p style={{ fontSize: 13, color: C.text3, marginBottom: "1rem" }}>
             La signature enregistre votre adresse IP et l&apos;horodatage comme preuve de consentement.
           </p>
           <button
@@ -396,13 +376,13 @@ export default function ContractDetailPage() {
       )}
 
       {/* Danger zone */}
-      <div style={{ borderRadius: 14, border: `1px solid ${S.red}`, background: S.redBg, padding: "1.5rem", opacity: 0.85 }}>
-        <h2 style={{ fontSize: 13, fontWeight: 600, color: S.red, marginBottom: 4 }}>Zone de danger</h2>
-        <p style={{ fontSize: 13, color: S.text3, marginBottom: "1rem" }}>La suppression est irréversible.</p>
+      <div style={{ borderRadius: 14, border: `1px solid ${C.red}`, background: C.redBg, padding: "1.5rem", opacity: 0.85 }}>
+        <h2 style={{ fontSize: 13, fontWeight: 600, color: C.red, marginBottom: 4 }}>Zone de danger</h2>
+        <p style={{ fontSize: 13, color: C.text3, marginBottom: "1rem" }}>La suppression est irréversible.</p>
         <button
           onClick={handleDelete}
           disabled={deleteContract.isPending}
-          style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 10, border: `1px solid ${S.red}`, background: S.surface, padding: "8px 16px", fontSize: 13, fontWeight: 600, color: S.red, cursor: deleteContract.isPending ? "not-allowed" : "pointer", opacity: deleteContract.isPending ? 0.5 : 1 }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, borderRadius: 10, border: `1px solid ${C.red}`, background: C.surface, padding: "8px 16px", fontSize: 13, fontWeight: 600, color: C.red, cursor: deleteContract.isPending ? "not-allowed" : "pointer", opacity: deleteContract.isPending ? 0.5 : 1 }}
         >
           <Trash2 className="h-4 w-4" />
           {deleteContract.isPending ? "Suppression…" : "Supprimer le contrat"}

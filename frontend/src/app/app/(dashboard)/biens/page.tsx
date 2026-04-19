@@ -8,6 +8,7 @@ import { useProperties } from "@/lib/hooks/useProperties";
 import { api } from "@/lib/api";
 import type { Property, PropertyStatus } from "@/lib/types";
 import { AlthyMap, type AlthyMapMarker } from "@/components/map/AlthyMap";
+import { C } from "@/lib/design-tokens";
 
 // ── Coordonnées par ville (fallback) ──────────────────────────────────────────
 
@@ -35,25 +36,6 @@ function cityCoords(city: string | undefined): [number, number] | null {
   return null;
 }
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
-
-const S = {
-  orange:   "var(--terracotta-primary)",
-  orangeBg: "var(--althy-orange-bg, rgba(232,96,44,0.08))",
-  surface:  "var(--background-card)",
-  border:   "var(--border-subtle)",
-  text:     "var(--charcoal)",
-  text3:    "var(--text-tertiary)",
-  greenBg:  "var(--althy-green-bg)",
-  green:    "var(--althy-green)",
-  blueBg:   "var(--althy-blue-bg)",
-  blue:     "var(--althy-blue)",
-  amberBg:  "var(--althy-amber-bg)",
-  amber:    "var(--althy-amber)",
-  redBg:    "var(--althy-red-bg)",
-  red:      "var(--althy-red)",
-};
-
 const TYPE_LABEL: Record<string, string> = {
   apartment:  "Appartement",
   villa:      "Villa",
@@ -68,11 +50,11 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 const STATUS_STYLE: Record<PropertyStatus, { label: string; bg: string; fg: string }> = {
-  available:   { label: "Libre",      bg: S.greenBg, fg: S.green  },
-  rented:      { label: "Loué",       bg: S.blueBg,  fg: S.blue   },
-  for_sale:    { label: "À vendre",   bg: S.amberBg, fg: S.amber  },
-  sold:        { label: "Vendu",      bg: "var(--border-subtle)", fg: S.text3 },
-  maintenance: { label: "Rénovation", bg: S.redBg,   fg: S.red    },
+  available:   { label: "Libre",      bg: C.greenBg, fg: C.green  },
+  rented:      { label: "Loué",       bg: C.blueBg,  fg: C.blue   },
+  for_sale:    { label: "À vendre",   bg: C.amberBg, fg: C.amber  },
+  sold:        { label: "Vendu",      bg: "var(--border-subtle)", fg: C.text3 },
+  maintenance: { label: "Rénovation", bg: C.redBg,   fg: C.red    },
 };
 
 // ── BienCard ──────────────────────────────────────────────────────────────────
@@ -86,14 +68,14 @@ function BienCard({
   isFav: boolean;
   onToggleFavorite: (e: React.MouseEvent, bien: Property) => void;
 }) {
-  const st = STATUS_STYLE[bien.status] ?? { label: bien.status, bg: "var(--border-subtle)", fg: S.text3 };
+  const st = STATUS_STYLE[bien.status] ?? { label: bien.status, bg: "var(--border-subtle)", fg: C.text3 };
   const cover = bien.images?.find(i => i.is_cover)?.url ?? bien.images?.[0]?.url;
 
   return (
     <Link href={`/app/biens/${bien.id}`} style={{ textDecoration: "none", color: "inherit" }}>
       <div
         style={{
-          background: S.surface, borderRadius: 14,
+          background: C.surface, borderRadius: 14,
           border: "1px solid var(--border-subtle)",
           boxShadow: "0 1px 4px rgba(26,22,18,0.04)",
           overflow: "hidden", cursor: "pointer",
@@ -155,21 +137,21 @@ function BienCard({
 
         {/* Content */}
         <div style={{ padding: "14px 16px" }}>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: S.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {bien.address || "Adresse non renseignée"}
           </p>
           {bien.city && (
-            <p style={{ margin: "3px 0 0", fontSize: 12, color: S.text3, display: "flex", alignItems: "center", gap: 4 }}>
+            <p style={{ margin: "3px 0 0", fontSize: 12, color: C.text3, display: "flex", alignItems: "center", gap: 4 }}>
               <MapPin size={10} /> {bien.city}
             </p>
           )}
           <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 11, color: S.text3 }}>{TYPE_LABEL[bien.type] ?? bien.type}</span>
-            {bien.surface != null && <span style={{ fontSize: 11, color: S.text3 }}>· {bien.surface} m²</span>}
-            {bien.rooms != null && <span style={{ fontSize: 11, color: S.text3 }}>· {bien.rooms} p.</span>}
+            <span style={{ fontSize: 11, color: C.text3 }}>{TYPE_LABEL[bien.type] ?? bien.type}</span>
+            {bien.surface != null && <span style={{ fontSize: 11, color: C.text3 }}>· {bien.surface} m²</span>}
+            {bien.rooms != null && <span style={{ fontSize: 11, color: C.text3 }}>· {bien.rooms} p.</span>}
           </div>
           {bien.monthly_rent != null && (
-            <p style={{ margin: "8px 0 0", fontSize: 15, fontWeight: 700, color: S.orange }}>
+            <p style={{ margin: "8px 0 0", fontSize: 15, fontWeight: 700, color: C.orange }}>
               CHF {bien.monthly_rent.toLocaleString("fr-CH")} / mois
             </p>
           )}
@@ -303,10 +285,10 @@ function BiensPageInner() {
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, gap: 12, flexWrap: "wrap" }}>
         <div>
-          <h1 style={{ margin: 0, fontFamily: "Cormorant Garamond, serif", fontSize: 30, fontWeight: 300, color: S.text }}>
+          <h1 style={{ margin: 0, fontFamily: "var(--font-serif)", fontSize: 30, fontWeight: 300, color: C.text }}>
             Mes biens
           </h1>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: S.text3 }}>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: C.text3 }}>
             {displayLoading
               ? "Chargement…"
               : `${totalCount} bien${totalCount !== 1 ? "s" : ""}${tab === "favoris" ? " en favori" : tab === "archives" ? " archivé" : " enregistré"}${totalCount !== 1 ? "s" : ""}`}
@@ -318,9 +300,9 @@ function BiensPageInner() {
             style={{
               display: "inline-flex", alignItems: "center", gap: 7,
               padding: "9px 16px", borderRadius: 10,
-              background: showMap ? S.orangeBg : S.surface,
-              color: showMap ? S.orange : S.text3,
-              border: `1px solid ${showMap ? S.orange : S.border}`,
+              background: showMap ? C.orangeBg : C.surface,
+              color: showMap ? C.orange : C.text3,
+              border: `1px solid ${showMap ? C.orange : C.border}`,
               fontSize: 13, fontWeight: 600, cursor: "pointer",
             }}
           >
@@ -328,7 +310,7 @@ function BiensPageInner() {
           </button>
           <Link
             href="/app/biens/nouveau"
-            style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 18px", borderRadius: 10, background: S.orange, color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 18px", borderRadius: 10, background: C.orange, color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}
           >
             <Plus size={14} /> Ajouter un bien
           </Link>
@@ -348,8 +330,8 @@ function BiensPageInner() {
               cursor: "pointer",
               fontSize: 13,
               fontWeight: tab === t.key ? 700 : 500,
-              color: tab === t.key ? S.orange : S.text3,
-              borderBottom: `2px solid ${tab === t.key ? S.orange : "transparent"}`,
+              color: tab === t.key ? C.orange : C.text3,
+              borderBottom: `2px solid ${tab === t.key ? C.orange : "transparent"}`,
               marginBottom: -1,
               transition: "color 0.15s",
             }}
@@ -358,7 +340,7 @@ function BiensPageInner() {
             {t.key === "favoris" && favorites.length > 0 && (
               <span style={{
                 marginLeft: 6, fontSize: 10, fontWeight: 700,
-                background: S.orangeBg, color: S.orange,
+                background: C.orangeBg, color: C.orange,
                 padding: "1px 6px", borderRadius: 10,
               }}>
                 {favorites.length}
@@ -378,9 +360,9 @@ function BiensPageInner() {
                 onClick={() => setFiltre(f.key)}
                 style={{
                   padding: "6px 14px", borderRadius: 20, cursor: "pointer",
-                  border: `1px solid ${filtre === f.key ? S.orange : "var(--border-subtle)"}`,
-                  background: filtre === f.key ? S.orangeBg : S.surface,
-                  color: filtre === f.key ? S.orange : S.text3,
+                  border: `1px solid ${filtre === f.key ? C.orange : "var(--border-subtle)"}`,
+                  background: filtre === f.key ? C.orangeBg : C.surface,
+                  color: filtre === f.key ? C.orange : C.text3,
                   fontSize: 12, fontWeight: 600,
                 }}
               >
@@ -388,13 +370,13 @@ function BiensPageInner() {
               </button>
             ))}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", background: S.surface, border: "1px solid var(--border-subtle)", borderRadius: 10, flex: 1, minWidth: 200 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", background: C.surface, border: "1px solid var(--border-subtle)", borderRadius: 10, flex: 1, minWidth: 200 }}>
             <Search size={13} color="var(--text-tertiary)" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Rechercher par adresse ou ville…"
-              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: S.text, fontFamily: "inherit" }}
+              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: C.text, fontFamily: "inherit" }}
             />
           </div>
         </div>
@@ -402,13 +384,13 @@ function BiensPageInner() {
 
       {/* Search bar on Favoris tab */}
       {tab === "favoris" && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", background: S.surface, border: "1px solid var(--border-subtle)", borderRadius: 10, marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", background: C.surface, border: "1px solid var(--border-subtle)", borderRadius: 10, marginBottom: 20 }}>
           <Search size={13} color="var(--text-tertiary)" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Rechercher parmi vos favoris…"
-            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: S.text, fontFamily: "inherit" }}
+            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: C.text, fontFamily: "inherit" }}
           />
         </div>
       )}
@@ -425,28 +407,28 @@ function BiensPageInner() {
               ))}
             </div>
           ) : displayList.length === 0 ? (
-            <div style={{ background: S.surface, border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "56px 24px", textAlign: "center" }}>
+            <div style={{ background: C.surface, border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "56px 24px", textAlign: "center" }}>
               {tab === "favoris" ? (
                 <>
                   <Heart size={40} color="var(--border-subtle)" style={{ margin: "0 auto 16px" }} />
-                  <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600, color: S.text }}>
+                  <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600, color: C.text }}>
                     {search ? "Aucun résultat" : "Aucun favori enregistré"}
                   </h3>
-                  <p style={{ margin: 0, fontSize: 13, color: S.text3 }}>
+                  <p style={{ margin: 0, fontSize: 13, color: C.text3 }}>
                     {search ? "Essayez un autre terme." : "Cliquez sur le cœur d'un bien pour l'ajouter à vos favoris."}
                   </p>
                 </>
               ) : (
                 <>
                   <Building2 size={40} color="var(--border-subtle)" style={{ margin: "0 auto 16px" }} />
-                  <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600, color: S.text }}>
+                  <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600, color: C.text }}>
                     {search ? "Aucun résultat" : tab === "archives" ? "Aucun bien archivé" : "Aucun bien enregistré"}
                   </h3>
-                  <p style={{ margin: "0 0 20px", fontSize: 13, color: S.text3 }}>
+                  <p style={{ margin: "0 0 20px", fontSize: 13, color: C.text3 }}>
                     {search ? "Essayez un autre terme de recherche." : tab === "archives" ? "Les biens vendus apparaîtront ici." : "Ajoutez votre premier bien pour commencer."}
                   </p>
                   {!search && tab === "tous" && (
-                    <Link href="/app/biens/nouveau" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 20px", borderRadius: 10, background: S.orange, color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
+                    <Link href="/app/biens/nouveau" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 20px", borderRadius: 10, background: C.orange, color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
                       <Plus size={14} /> Ajouter un bien
                     </Link>
                   )}

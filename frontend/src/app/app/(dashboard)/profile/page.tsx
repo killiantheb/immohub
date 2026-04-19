@@ -2,28 +2,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { useUser } from '@/lib/auth'
-
-const S = {
-  bg: "var(--cream)",
-  surface: "var(--background-card)",
-  surface2: "var(--althy-surface-2)",
-  border: "var(--border-subtle)",
-  text: "var(--charcoal)",
-  text2: "var(--text-secondary)",
-  text3: "var(--text-tertiary)",
-  orange: "var(--terracotta-primary)",
-  orangeBg: "var(--althy-orange-bg)",
-  green: "var(--althy-green)",
-  greenBg: "var(--althy-green-bg)",
-  red: "var(--althy-red)",
-  redBg: "var(--althy-red-bg)",
-  amber: "var(--althy-amber)",
-  amberBg: "var(--althy-amber-bg)",
-  blue: "var(--althy-blue)",
-  blueBg: "var(--althy-blue-bg)",
-  shadow: "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const
+import { C } from "@/lib/design-tokens";
 
 interface ProfileFormData {
   first_name: string
@@ -91,11 +70,11 @@ export default function ProfilePage() {
   const inputStyle: React.CSSProperties = {
     width: '100%',
     padding: '10px 14px',
-    border: `1px solid ${S.border}`,
+    border: `1px solid ${C.border}`,
     borderRadius: 10,
     fontSize: 14,
-    color: S.text,
-    background: S.surface,
+    color: C.text,
+    background: C.surface,
     outline: 'none',
     fontFamily: 'inherit',
     boxSizing: 'border-box',
@@ -106,7 +85,7 @@ export default function ProfilePage() {
     fontSize: 11,
     letterSpacing: '1px',
     textTransform: 'uppercase',
-    color: S.text3,
+    color: C.text3,
     marginBottom: 6,
     fontWeight: 500,
   }
@@ -129,10 +108,10 @@ export default function ProfilePage() {
   }
 
   const cardStyle: React.CSSProperties = {
-    background: S.surface,
-    border: `1px solid ${S.border}`,
+    background: C.surface,
+    border: `1px solid ${C.border}`,
     borderRadius: 14,
-    boxShadow: S.shadow,
+    boxShadow: C.shadow,
     padding: 20,
     marginBottom: 12,
     display: 'flex',
@@ -142,14 +121,14 @@ export default function ProfilePage() {
 
   return (
     <div style={{ maxWidth: 520, margin: '0 auto', padding: '1.5rem 0' }}>
-      <h1 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontSize: 28, fontWeight: 400, color: S.text, letterSpacing: 1, marginBottom: '0.5rem' }}>
+      <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 400, color: C.text, letterSpacing: 1, marginBottom: '0.5rem' }}>
         Mon profil
       </h1>
-      <p style={{ fontSize: 13, color: S.text3, marginBottom: '2rem' }}>{profile?.email}</p>
+      <p style={{ fontSize: 13, color: C.text3, marginBottom: '2rem' }}>{profile?.email}</p>
 
       {/* Identité */}
       <section style={cardStyle}>
-        <p style={{ fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: S.text3, marginBottom: 2 }}>Identité</p>
+        <p style={{ fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: C.text3, marginBottom: 2 }}>Identité</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <Field label="Prénom" field="first_name" value={form.first_name} placeholder="Jean" />
           <Field label="Nom" field="last_name" value={form.last_name} placeholder="Dupont" />
@@ -160,18 +139,18 @@ export default function ProfilePage() {
       {/* Coordonnées bancaires */}
       <section style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-          <p style={{ fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: S.text3, margin: 0 }}>Coordonnées bancaires</p>
-          <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: S.orangeBg, color: S.orange, border: `1px solid ${S.orange}` }}>Pour virements loyer</span>
+          <p style={{ fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: C.text3, margin: 0 }}>Coordonnées bancaires</p>
+          <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: C.orangeBg, color: C.orange, border: `1px solid ${C.orange}` }}>Pour virements loyer</span>
         </div>
         <Field label="Titulaire du compte" field="bank_account_holder" value={form.bank_account_holder} placeholder="Jean Dupont" />
         <Field label="IBAN" field="iban" value={form.iban} placeholder="CH56 0483 5012 3456 7800 9" />
         <Field label="BIC / SWIFT" field="bic" value={form.bic} placeholder="CRESCHZZ80A" />
-        <p style={{ fontSize: 11, color: S.text3, marginTop: -4 }}>
+        <p style={{ fontSize: 11, color: C.text3, marginTop: -4 }}>
           Ces informations permettent aux locataires de vous virer directement le loyer.
         </p>
       </section>
 
-      {error && <p style={{ fontSize: 12, color: S.red, marginBottom: 10 }}>{error}</p>}
+      {error && <p style={{ fontSize: 12, color: C.red, marginBottom: 10 }}>{error}</p>}
 
       <button
         onClick={handleSave}
@@ -180,9 +159,9 @@ export default function ProfilePage() {
           width: '100%',
           padding: '12px 0',
           borderRadius: 12,
-          background: saving ? S.orangeBg : S.orange,
+          background: saving ? C.orangeBg : C.orange,
           border: 'none',
-          color: saving ? S.orange : '#fff',
+          color: saving ? C.orange : '#fff',
           fontSize: 14,
           fontWeight: 500,
           cursor: saving ? 'not-allowed' : 'pointer',

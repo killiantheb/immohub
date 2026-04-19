@@ -5,29 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { DocumentQuickGenerator } from "@/components/DocumentQuickGenerator";
 import { Camera, Upload, Check, AlertTriangle, Loader2, X } from "lucide-react";
-
-// ── Althy tokens ──────────────────────────────────────────────────────────────
-const S = {
-  bg: "var(--cream)",
-  surface: "var(--background-card)",
-  surface2: "var(--althy-surface-2)",
-  border: "var(--border-subtle)",
-  text: "var(--charcoal)",
-  text2: "var(--text-secondary)",
-  text3: "var(--text-tertiary)",
-  orange: "var(--terracotta-primary)",
-  orangeBg: "var(--althy-orange-bg)",
-  green: "var(--althy-green)",
-  greenBg: "var(--althy-green-bg)",
-  red: "var(--althy-red)",
-  redBg: "var(--althy-red-bg)",
-  amber: "var(--althy-amber)",
-  amberBg: "var(--althy-amber-bg)",
-  blue: "var(--althy-blue)",
-  blueBg: "var(--althy-blue-bg)",
-  shadow: "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const;
+import { C } from "@/lib/design-tokens";
 
 interface GeneratedDoc {
   id: string;
@@ -124,14 +102,14 @@ function ScanFacturePanel() {
 
   return (
     <div style={{
-      background: S.surface, border: `1px solid ${S.border}`,
-      borderRadius: 14, padding: 20, boxShadow: S.shadow,
+      background: C.surface, border: `1px solid ${C.border}`,
+      borderRadius: 14, padding: 20, boxShadow: C.shadow,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-        <Camera size={18} color={S.orange} />
-        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: S.text }}>Scan de facture</h2>
+        <Camera size={18} color={C.orange} />
+        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>Scan de facture</h2>
       </div>
-      <p style={{ margin: "0 0 14px", fontSize: 13, color: S.text3, lineHeight: 1.6 }}>
+      <p style={{ margin: "0 0 14px", fontSize: 13, color: C.text3, lineHeight: 1.6 }}>
         Photo ou PDF → Althy extrait le montant, le fournisseur, la date et propose l&apos;affectation OBLF.
       </p>
 
@@ -139,18 +117,18 @@ function ScanFacturePanel() {
       {!result && !scanning && (
         <div
           style={{
-            border: `2px dashed ${S.border}`, borderRadius: 10, padding: "24px 16px",
+            border: `2px dashed ${C.border}`, borderRadius: 10, padding: "24px 16px",
             textAlign: "center", cursor: "pointer",
           }}
           onClick={() => fileRef.current?.click()}
           onDragOver={e => e.preventDefault()}
           onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
         >
-          <Upload size={24} style={{ color: S.text3, margin: "0 auto 8px" }} />
-          <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: S.text2 }}>
+          <Upload size={24} style={{ color: C.text3, margin: "0 auto 8px" }} />
+          <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: C.text2 }}>
             Glisser-déposer ou cliquer pour uploader
           </p>
-          <p style={{ margin: 0, fontSize: 11, color: S.text3 }}>JPEG · PNG · WEBP · PDF</p>
+          <p style={{ margin: 0, fontSize: 11, color: C.text3 }}>JPEG · PNG · WEBP · PDF</p>
           <input
             ref={fileRef} type="file" style={{ display: "none" }}
             accept="image/*,.pdf"
@@ -161,26 +139,26 @@ function ScanFacturePanel() {
 
       {scanning && (
         <div style={{ textAlign: "center", padding: "24px 0" }}>
-          <Loader2 size={28} style={{ color: S.orange, animation: "spin 1s linear infinite", marginBottom: 8 }} />
-          <p style={{ color: S.text3, fontSize: 13 }}>Althy analyse la facture…</p>
+          <Loader2 size={28} style={{ color: C.orange, animation: "spin 1s linear infinite", marginBottom: 8 }} />
+          <p style={{ color: C.text3, fontSize: 13 }}>Althy analyse la facture…</p>
         </div>
       )}
 
       {error && (
-        <div style={{ padding: "10px 14px", borderRadius: 8, background: S.redBg, color: S.red, fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ padding: "10px 14px", borderRadius: 8, background: C.redBg, color: C.red, fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
           <AlertTriangle size={14} /> {error}
         </div>
       )}
 
       {/* Result card */}
       {result && !confirmed && (
-        <div style={{ border: `1px solid ${S.border}`, borderRadius: 10, padding: 16 }}>
+        <div style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: 16 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: S.text }}>Résultat du scan</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>Résultat du scan</span>
             <span style={{
               padding: "2px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600,
-              background: result.confidence >= 0.7 ? S.greenBg : S.amberBg,
-              color: result.confidence >= 0.7 ? S.green : S.amber,
+              background: result.confidence >= 0.7 ? C.greenBg : C.amberBg,
+              color: result.confidence >= 0.7 ? C.green : C.amber,
             }}>
               Confiance : {Math.round(result.confidence * 100)}%
             </span>
@@ -193,9 +171,9 @@ function ScanFacturePanel() {
               { label: "Date", value: result.date_facture || "—" },
               { label: "Catégorie OBLF", value: OBLF_LABELS[result.categorie_oblf || ""] || result.categorie_oblf || "—" },
             ].map(({ label, value }) => (
-              <div key={label} style={{ background: S.surface2, borderRadius: 8, padding: "8px 12px" }}>
-                <div style={{ fontSize: 10, color: S.text3, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 2 }}>{label}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: S.text }}>{value}</div>
+              <div key={label} style={{ background: C.surface2, borderRadius: 8, padding: "8px 12px" }}>
+                <div style={{ fontSize: 10, color: C.text3, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 2 }}>{label}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{value}</div>
               </div>
             ))}
           </div>
@@ -203,8 +181,8 @@ function ScanFacturePanel() {
           {/* Affectation proposition */}
           <div style={{
             padding: "10px 14px", borderRadius: 8,
-            background: S.orangeBg, border: `1px solid rgba(181,90,48,0.25)`,
-            fontSize: 13, color: S.text, marginBottom: 12,
+            background: C.orangeBg, border: `1px solid rgba(181,90,48,0.25)`,
+            fontSize: 13, color: C.text, marginBottom: 12,
           }}>
             <strong>Althy propose :</strong> Facture CHF {result.montant?.toFixed(2) ?? "?"} →{" "}
             {OBLF_LABELS[result.categorie_oblf || ""] || result.categorie_oblf || "Autre"} →{" "}
@@ -217,7 +195,7 @@ function ScanFacturePanel() {
               disabled={confirming}
               style={{
                 flex: 1, padding: "9px 0", borderRadius: 8, border: "none",
-                background: S.green, color: "#fff", fontSize: 13, fontWeight: 600,
+                background: C.green, color: "#fff", fontSize: 13, fontWeight: 600,
                 cursor: confirming ? "default" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
               }}
@@ -228,8 +206,8 @@ function ScanFacturePanel() {
             <button
               onClick={() => { setResult(null); setError(null); }}
               style={{
-                padding: "9px 14px", borderRadius: 8, border: `1px solid ${S.border}`,
-                background: S.surface, color: S.text3, fontSize: 13, cursor: "pointer",
+                padding: "9px 14px", borderRadius: 8, border: `1px solid ${C.border}`,
+                background: C.surface, color: C.text3, fontSize: 13, cursor: "pointer",
               }}
             >
               <X size={13} />
@@ -241,13 +219,13 @@ function ScanFacturePanel() {
       {confirmed && (
         <div style={{
           textAlign: "center", padding: 16, borderRadius: 10,
-          background: S.greenBg, border: `1px solid rgba(46,94,34,0.2)`,
+          background: C.greenBg, border: `1px solid rgba(46,94,34,0.2)`,
         }}>
-          <Check size={20} color={S.green} style={{ margin: "0 auto 6px" }} />
-          <p style={{ margin: 0, fontWeight: 700, color: S.green, fontSize: 13 }}>Dépense enregistrée</p>
+          <Check size={20} color={C.green} style={{ margin: "0 auto 6px" }} />
+          <p style={{ margin: 0, fontWeight: 700, color: C.green, fontSize: 13 }}>Dépense enregistrée</p>
           <button
             onClick={() => { setResult(null); setConfirmed(false); }}
-            style={{ marginTop: 8, fontSize: 12, color: S.text3, background: "none", border: "none", cursor: "pointer" }}
+            style={{ marginTop: 8, fontSize: 12, color: C.text3, background: "none", border: "none", cursor: "pointer" }}
           >
             Scanner une autre facture
           </button>
@@ -335,16 +313,16 @@ function DocumentsContent() {
     <div style={{ maxWidth: 900, margin: "0 auto", fontFamily: "var(--font-sans)", padding: "28px 0" }}>
 
       {/* Header */}
-      <h1 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontSize: 26, fontWeight: 400, color: S.text, margin: "0 0 4px" }}>Documents</h1>
-      <p style={{ fontSize: 13, color: S.text3, margin: "0 0 2rem" }}>
+      <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 26, fontWeight: 400, color: C.text, margin: "0 0 4px" }}>Documents</h1>
+      <p style={{ fontSize: 13, color: C.text3, margin: "0 0 2rem" }}>
         Tous les documents sont gratuits et générés instantanément.
       </p>
 
       {/* Global disclaimer */}
       <div style={{
-        background: S.amberBg, border: `1px solid rgba(200,130,0,0.3)`,
+        background: C.amberBg, border: `1px solid rgba(200,130,0,0.3)`,
         borderRadius: 10, padding: "10px 16px", marginBottom: "1.5rem",
-        fontSize: 12, color: S.amber, display: "flex", alignItems: "flex-start", gap: 8,
+        fontSize: 12, color: C.amber, display: "flex", alignItems: "flex-start", gap: 8,
       }}>
         <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
         <span>{DISCLAIMER}</span>
@@ -353,9 +331,9 @@ function DocumentsContent() {
       {/* Actions rapides */}
       <div ref={generatorRef} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16, marginBottom: "2rem" }}>
         {ACTION_CARDS.map((card) => (
-          <div key={card.title} style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: "20px 20px 16px", boxShadow: S.shadow }}>
-            <h2 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontSize: 17, fontWeight: 400, color: S.text, margin: "0 0 6px" }}>{card.title}</h2>
-            <p style={{ fontSize: 13, color: S.text3, margin: "0 0 14px", lineHeight: 1.6 }}>
+          <div key={card.title} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px 20px 16px", boxShadow: C.shadow }}>
+            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 17, fontWeight: 400, color: C.text, margin: "0 0 6px" }}>{card.title}</h2>
+            <p style={{ fontSize: 13, color: C.text3, margin: "0 0 14px", lineHeight: 1.6 }}>
               {card.description}
             </p>
             <DocumentQuickGenerator {...card.generatorProps} />
@@ -369,33 +347,33 @@ function DocumentsContent() {
       </div>
 
       {/* Rappel baux */}
-      <div style={{ background: S.orangeBg, borderRadius: 10, padding: "14px 18px", marginBottom: "2rem", fontSize: 13, color: S.orange, lineHeight: 1.7, border: `1px solid ${S.border}` }}>
+      <div style={{ background: C.orangeBg, borderRadius: 10, padding: "14px 18px", marginBottom: "2rem", fontSize: 13, color: C.orange, lineHeight: 1.7, border: `1px solid ${C.border}` }}>
         <strong>Baux et fiches :</strong> rendez-vous directement sur la page du contrat (bouton <strong>Générer le bail</strong>)
         ou sur la page du bien (bouton <strong>Fiche PDF</strong>). Les données sont pré-remplies automatiquement.
       </div>
 
       {/* Historique */}
-      <h2 style={{ fontFamily: "var(--font-serif),'Cormorant Garamond',serif", fontSize: 18, fontWeight: 400, color: S.text, marginBottom: 12 }}>Documents générés récemment</h2>
+      <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 18, fontWeight: 400, color: C.text, marginBottom: 12 }}>Documents générés récemment</h2>
       {loadingHistory ? (
-        <p style={{ fontSize: 13, color: S.text3 }}>Chargement…</p>
+        <p style={{ fontSize: 13, color: C.text3 }}>Chargement…</p>
       ) : history.length === 0 ? (
-        <p style={{ fontSize: 13, color: S.text3 }}>Aucun document généré pour le moment.</p>
+        <p style={{ fontSize: 13, color: C.text3 }}>Aucun document généré pour le moment.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {history.map((doc) => (
             <button
               key={doc.id}
               onClick={() => openDoc(doc.id)}
-              style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: S.surface, border: `1px solid ${S.border}`, borderRadius: 10, cursor: "pointer", textAlign: "left", fontFamily: "inherit", boxShadow: S.shadow }}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, cursor: "pointer", textAlign: "left", fontFamily: "inherit", boxShadow: C.shadow }}
             >
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: S.orangeBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <span style={{ fontSize: 16, color: S.orange }}>&#128196;</span>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: C.orangeBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <span style={{ fontSize: 16, color: C.orange }}>&#128196;</span>
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: S.text }}>{TYPE_LABELS[doc.template_type] || doc.template_type}</div>
-                <div style={{ fontSize: 12, color: S.text3 }}>{new Date(doc.created_at).toLocaleDateString("fr-CH")} à {new Date(doc.created_at).toLocaleTimeString("fr-CH", { hour: "2-digit", minute: "2-digit" })}</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: C.text }}>{TYPE_LABELS[doc.template_type] || doc.template_type}</div>
+                <div style={{ fontSize: 12, color: C.text3 }}>{new Date(doc.created_at).toLocaleDateString("fr-CH")} à {new Date(doc.created_at).toLocaleTimeString("fr-CH", { hour: "2-digit", minute: "2-digit" })}</div>
               </div>
-              <span style={{ fontSize: 12, padding: "3px 10px", background: S.bg, borderRadius: 20, color: S.text2, border: `1px solid ${S.border}` }}>{doc.status}</span>
+              <span style={{ fontSize: 12, padding: "3px 10px", background: C.bg, borderRadius: 20, color: C.text2, border: `1px solid ${C.border}` }}>{doc.status}</span>
             </button>
           ))}
         </div>
@@ -404,17 +382,17 @@ function DocumentsContent() {
       {/* Preview modal */}
       {previewOpen && (
         <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 40 }}>
-          <div style={{ background: S.surface, borderRadius: 14, width: "min(92vw, 900px)", maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: S.shadowMd }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: `1px solid ${S.border}` }}>
-              <span style={{ fontWeight: 600, fontSize: 14, color: S.text }}>Aperçu du document</span>
-              <button onClick={() => setPreviewOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: S.text3, fontFamily: "inherit" }}>x</button>
+          <div style={{ background: C.surface, borderRadius: 14, width: "min(92vw, 900px)", maxHeight: "88vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: C.shadowMd }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: `1px solid ${C.border}` }}>
+              <span style={{ fontWeight: 600, fontSize: 14, color: C.text }}>Aperçu du document</span>
+              <button onClick={() => setPreviewOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: C.text3, fontFamily: "inherit" }}>x</button>
             </div>
             <iframe srcDoc={previewHtml} style={{ flex: 1, border: "none" }} title="Aperçu" />
-            <div style={{ padding: "12px 20px", borderTop: `1px solid ${S.border}`, display: "flex", gap: 10 }}>
-              <button onClick={print} style={{ padding: "8px 16px", background: S.orange, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontFamily: "inherit", fontWeight: 600 }}>
+            <div style={{ padding: "12px 20px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 10 }}>
+              <button onClick={print} style={{ padding: "8px 16px", background: C.orange, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontFamily: "inherit", fontWeight: 600 }}>
                 Imprimer / PDF
               </button>
-              <button onClick={() => setPreviewOpen(false)} style={{ padding: "8px 16px", background: S.surface, color: S.text2, border: `1px solid ${S.border}`, borderRadius: 8, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
+              <button onClick={() => setPreviewOpen(false)} style={{ padding: "8px 16px", background: C.surface, color: C.text2, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", fontSize: 13, fontFamily: "inherit" }}>
                 Fermer
               </button>
             </div>

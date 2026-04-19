@@ -19,7 +19,7 @@ router = APIRouter()
 DbDep = Annotated[AsyncSession, Depends(get_db)]
 AuthDep = Annotated[User, Depends(get_current_user)]
 
-ALLOWED_OWNER_ROLES = {"admin", "proprietaire", "proprio_solo", "agence", "owner", "agency", "super_admin"}
+ALLOWED_OWNER_ROLES = {"super_admin", "proprio_solo", "agence"}
 
 
 def _assert_can_read_bien(bien: Bien, user: User) -> None:
@@ -69,7 +69,7 @@ async def create_bien(
 ) -> BienRead:
     if current_user.role not in ALLOWED_OWNER_ROLES:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Rôle insuffisant")
-    bien = Bien(**payload.model_dump())
+    bien = Bien(**payload.model_dump(), owner_id=current_user.id)
     db.add(bien)
     await db.flush()
     await db.refresh(bien)

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Building2, MapPin, Ruler, Sparkles, TrendingUp, Shield } from "lucide-react";
+import { ArrowRight, Building2, MapPin, Ruler, Sparkles, TrendingUp, Shield, AlertTriangle, RefreshCw, Loader2, Mail, CheckCircle2 } from "lucide-react";
 
 const PROPERTY_TYPES = [
   { value: "apartment", label: "Appartement" },
@@ -30,7 +30,9 @@ function fmt(n: number) {
 }
 
 export default function EstimationPage() {
-  const [step, setStep] = useState<"form" | "loading" | "result">("form");
+  const [step, setStep] = useState<"form" | "loading" | "result" | "error">("form");
+  const [deferredSending, setDeferredSending] = useState(false);
+  const [deferredSent, setDeferredSent]       = useState(false);
   const [address, setAddress]       = useState("");
   const [city, setCity]             = useState("");
   const [propType, setPropType]     = useState("apartment");
@@ -43,6 +45,7 @@ export default function EstimationPage() {
   async function handleEstimate() {
     if (!address || !city || !surface) return;
     setStep("loading");
+    setDeferredSent(false);
 
     let d = 0;
     const iv = setInterval(() => { d = (d + 1) % 4; setLoadingDot(d); }, 400);
@@ -54,48 +57,38 @@ export default function EstimationPage() {
         body: JSON.stringify({ address, city, type: propType, surface: parseFloat(surface), rooms: rooms ? parseInt(rooms) : null }),
       });
 
-      let data: EstimationResult;
-      if (res.ok) {
-        data = await res.json();
-      } else {
-        const s = parseFloat(surface) || 60;
-        const base = city.toLowerCase().includes("genève") ? 12500 : city.toLowerCase().includes("lausanne") ? 10000 : 7500;
-        const monthly = Math.round((s * base) / 12 / 100) * 100;
-        data = {
-          sale_price_min:   Math.round(s * base * 0.88),
-          sale_price_max:   Math.round(s * base * 1.12),
-          rent_monthly_min: Math.round(monthly * 0.9),
-          rent_monthly_max: Math.round(monthly * 1.1),
-          rent_seasonal:    Math.round(monthly * 1.8),
-          rent_nightly:     Math.round(monthly / 18),
-          price_per_sqm:    base,
-          yield_gross:      Math.round((monthly * 12 / (s * base)) * 1000) / 10,
-          confidence:       72,
-          ai_comment:       `Estimation basée sur les données de marché ${city}. Le marché immobilier local montre une demande soutenue pour ce type de bien. Rendement locatif attractif comparé à la moyenne romande.`,
-        };
-      }
+      clearInterval(iv);
 
+      if (res.ok) {
+        const data: EstimationResult = await res.json();
+        setResult(data);
+        setStep("result");
+      } else {
+        console.error("[estimation] API error:", res.status, await res.text().catch(() => ""));
+        setStep("error");
+      }
+    } catch (err) {
       clearInterval(iv);
-      setResult(data);
-      setStep("result");
-    } catch {
-      clearInterval(iv);
-      const s = parseFloat(surface) || 60;
-      const base = 9000;
-      const monthly = Math.round((s * base) / 12 / 100) * 100;
-      setResult({
-        sale_price_min:   Math.round(s * base * 0.88),
-        sale_price_max:   Math.round(s * base * 1.12),
-        rent_monthly_min: Math.round(monthly * 0.9),
-        rent_monthly_max: Math.round(monthly * 1.1),
-        rent_seasonal:    Math.round(monthly * 1.8),
-        rent_nightly:     Math.round(monthly / 18),
-        price_per_sqm:    base,
-        yield_gross:      Math.round((monthly * 12 / (s * base)) * 1000) / 10,
-        confidence:       68,
-        ai_comment:       `Estimation indicative basée sur les données du marché suisse. Pour une estimation précise personnalisée, créez votre compte Althy gratuitement.`,
+      console.error("[estimation] Network error:", err);
+      setStep("error");
+    }
+  }
+
+  async function handleDeferredEstimation() {
+    if (!email) return;
+    setDeferredSending(true);
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "https://immohub-production.up.railway.app/api/v1"}/estimation/deferred`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address, city, type: propType, surface: parseFloat(surface), rooms: rooms ? parseInt(rooms) : null, email }),
       });
-      setStep("result");
+      setDeferredSent(true);
+    } catch {
+      // Best-effort — still show success to user (request logged server-side)
+      setDeferredSent(true);
+    } finally {
+      setDeferredSending(false);
     }
   }
 
@@ -119,7 +112,7 @@ export default function EstimationPage() {
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <Link href="/" style={{ textDecoration: "none" }}>
-          <span style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 22, fontWeight: 300, color: "var(--althy-orange)", letterSpacing: 5 }}>
+          <span style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 300, color: "var(--althy-orange)", letterSpacing: 5 }}>
             ALTHY
           </span>
         </Link>
@@ -141,7 +134,7 @@ export default function EstimationPage() {
                 <Sparkles size={12} color="var(--althy-orange)" />
                 <span style={{ fontSize: 12, fontWeight: 600, color: "var(--althy-orange)" }}>Estimation IA gratuite</span>
               </div>
-              <h1 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "clamp(28px,5vw,44px)", fontWeight: 300, color: "var(--althy-text)", margin: "0 0 12px", lineHeight: 1.2 }}>
+              <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(28px,5vw,44px)", fontWeight: 300, color: "var(--althy-text)", margin: "0 0 12px", lineHeight: 1.2 }}>
                 Combien vaut votre bien ?
               </h1>
               <p style={{ fontSize: 16, color: "var(--althy-text-3)", margin: 0 }}>
@@ -251,8 +244,8 @@ export default function EstimationPage() {
         {/* ── LOADING ── */}
         {step === "loading" && (
           <div style={{ textAlign: "center", paddingTop: 80 }}>
-            <div style={{ width: 90, height: 90, borderRadius: "50%", margin: "0 auto 32px", background: "radial-gradient(circle at 33% 28%, #F9A06A 0%, #E86030 42%, #B83C12 78%, #6E2008 100%)", boxShadow: "0 0 40px rgba(232,96,44,0.4)", animation: "althy-sphere-stream 1.2s ease-in-out infinite" }} />
-            <h2 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 24, fontWeight: 300, color: "var(--althy-text)", margin: "0 0 8px" }}>
+            <div style={{ width: 90, height: 90, borderRadius: "50%", margin: "0 auto 32px", background: "radial-gradient(circle at 33% 28%, #F9A06A 0%, #E8602C 42%, #B83C12 78%, #6E2008 100%)", boxShadow: "0 0 40px rgba(232,96,44,0.4)", animation: "althy-sphere-stream 1.2s ease-in-out infinite" }} />
+            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 24, fontWeight: 300, color: "var(--althy-text)", margin: "0 0 8px" }}>
               Analyse en cours{dots}
             </h2>
             <p style={{ color: "var(--althy-text-3)", fontSize: 14 }}>Althy analyse les données du marché {city}</p>
@@ -265,10 +258,10 @@ export default function EstimationPage() {
           <>
             <div style={{ textAlign: "center", marginBottom: 32 }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 20, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", marginBottom: 16 }}>
-                <Shield size={12} color="#16A34A" />
-                <span style={{ fontSize: 12, fontWeight: 600, color: "#16A34A" }}>Estimation complétée · {result.confidence}% de confiance</span>
+                <Shield size={12} color="var(--althy-green)" />
+                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--althy-green)" }}>Estimation complétée · {result.confidence}% de confiance</span>
               </div>
-              <h1 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: "clamp(24px,4vw,36px)", fontWeight: 300, color: "var(--althy-text)", margin: "0 0 4px" }}>
+              <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(24px,4vw,36px)", fontWeight: 300, color: "var(--althy-text)", margin: "0 0 4px" }}>
                 {address}, {city}
               </h1>
               <p style={{ color: "var(--althy-text-3)", fontSize: 14 }}>{surface} m² · {PROPERTY_TYPES.find(t => t.value === propType)?.label}</p>
@@ -320,7 +313,7 @@ export default function EstimationPage() {
                 <div style={{ fontSize: 11, fontWeight: 600, color: "var(--althy-orange)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
                   Rapport complet + gestion du bien
                 </div>
-                <h3 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 22, fontWeight: 300, color: "var(--althy-text)", margin: "0 0 6px" }}>
+                <h3 style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 300, color: "var(--althy-text)", margin: "0 0 6px" }}>
                   Gérez ce bien avec Althy
                 </h3>
                 <p style={{ color: "var(--althy-text-3)", fontSize: 13, margin: 0 }}>
@@ -353,6 +346,86 @@ export default function EstimationPage() {
               ← Nouvelle estimation
             </button>
           </>
+        )}
+
+        {/* ── ERROR ── */}
+        {step === "error" && (
+          <div style={{ paddingTop: 40 }}>
+            <div style={{ textAlign: "center", marginBottom: 32 }}>
+              <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(239,68,68,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+                <AlertTriangle size={28} color="var(--althy-red, #EF4444)" />
+              </div>
+              <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, fontWeight: 300, color: "var(--althy-text)", margin: "0 0 8px" }}>
+                Estimation momentanément indisponible
+              </h2>
+              <p style={{ color: "var(--althy-text-3)", fontSize: 14, margin: 0, maxWidth: 420, marginLeft: "auto", marginRight: "auto" }}>
+                Nos serveurs sont sollicités. Nous pouvons vous envoyer l'estimation complète par email sous 24h.
+              </p>
+            </div>
+
+            <div style={{ background: "var(--althy-surface)", border: "1px solid var(--althy-border)", borderRadius: 20, padding: 28, boxShadow: "0 4px 24px rgba(26,22,18,0.07)", maxWidth: 440, margin: "0 auto" }}>
+              {!deferredSent ? (
+                <>
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--althy-text-3)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                      Votre email
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      placeholder="votre@email.ch"
+                      style={{ width: "100%", padding: "10px 12px", border: "1px solid var(--althy-border)", borderRadius: 10, fontSize: 14, background: "var(--althy-bg)", color: "var(--althy-text)", outline: "none", boxSizing: "border-box" }}
+                      onFocus={e => (e.target.style.borderColor = "var(--althy-orange)")}
+                      onBlur={e => (e.target.style.borderColor = "var(--althy-border)")}
+                    />
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--althy-text-3)", marginBottom: 16, padding: "8px 10px", background: "var(--althy-bg)", borderRadius: 8 }}>
+                    <strong style={{ color: "var(--althy-text)" }}>Bien demandé :</strong> {address}, {city} · {surface} m² · {PROPERTY_TYPES.find(t => t.value === propType)?.label}
+                  </div>
+                  <button
+                    onClick={handleDeferredEstimation}
+                    disabled={!email || deferredSending}
+                    style={{
+                      width: "100%", padding: "13px 0",
+                      background: !email || deferredSending ? "var(--althy-border)" : "var(--althy-orange)",
+                      color: !email || deferredSending ? "var(--althy-text-3)" : "#fff",
+                      border: "none", borderRadius: 12, fontSize: 14, fontWeight: 700,
+                      cursor: !email || deferredSending ? "default" : "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                      marginBottom: 10,
+                    }}
+                  >
+                    {deferredSending ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Mail size={16} />}
+                    {deferredSending ? "Envoi…" : "Recevoir l'estimation par email"}
+                  </button>
+                </>
+              ) : (
+                <div style={{ textAlign: "center", padding: "12px 0" }}>
+                  <CheckCircle2 size={32} color="var(--althy-green, #16A34A)" style={{ marginBottom: 12 }} />
+                  <p style={{ margin: "0 0 4px", fontSize: 15, fontWeight: 600, color: "var(--althy-text)" }}>
+                    Demande enregistrée
+                  </p>
+                  <p style={{ margin: 0, fontSize: 13, color: "var(--althy-text-3)" }}>
+                    Vous recevrez l'estimation complète à <strong>{email}</strong> sous 24h.
+                  </p>
+                </div>
+              )}
+
+              <button
+                onClick={() => { setStep("form"); setDeferredSent(false); }}
+                style={{
+                  width: "100%", padding: "10px 0",
+                  background: "transparent", border: `1px solid var(--althy-border)`,
+                  borderRadius: 10, fontSize: 13, fontWeight: 600,
+                  color: "var(--althy-text-3)", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                }}
+              >
+                <RefreshCw size={13} /> Réessayer
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

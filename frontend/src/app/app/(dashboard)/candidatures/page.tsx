@@ -9,6 +9,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
+import { C } from "@/lib/design-tokens";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 const supabase = createClient(
@@ -152,31 +153,21 @@ export default function CandidaturesPage() {
     { key: "refusee", label: "Refusées" },
   ];
 
-  const S = {
-    orange: "var(--terracotta-primary)",
-    surface: "var(--background-card)",
-    border: "var(--border-subtle)",
-    text: "var(--charcoal)",
-    text2: "var(--text-secondary)",
-    text3: "var(--text-tertiary)",
-    bg: "var(--cream)",
-    radius: "var(--radius-card)",
-  };
-
+  
   return (
     <div style={{ padding: "24px 20px 60px", maxWidth: 1100, margin: "0 auto" }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ font: "300 26px/1.2 var(--font-serif)", color: S.text, margin: 0 }}>
+        <h1 style={{ font: "300 26px/1.2 var(--font-serif)", color: C.text, margin: 0 }}>
           Candidatures reçues
         </h1>
-        <p style={{ fontSize: 14, color: S.text2, margin: "6px 0 0" }}>
+        <p style={{ fontSize: 14, color: C.text2, margin: "6px 0 0" }}>
           {total} candidature{total !== 1 ? "s" : ""} sur vos annonces, triées par score IA
         </p>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 0, borderBottom: `1px solid ${S.border}`, marginBottom: 24 }}>
+      <div style={{ display: "flex", gap: 0, borderBottom: `1px solid ${C.border}`, marginBottom: 24 }}>
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -184,8 +175,8 @@ export default function CandidaturesPage() {
             style={{
               background: "none", border: "none", cursor: "pointer",
               padding: "10px 18px", fontSize: 14, fontWeight: filter === t.key ? 700 : 500,
-              color: filter === t.key ? S.orange : S.text3,
-              borderBottom: `2px solid ${filter === t.key ? S.orange : "transparent"}`,
+              color: filter === t.key ? C.orange : C.text3,
+              borderBottom: `2px solid ${filter === t.key ? C.orange : "transparent"}`,
               marginBottom: -1,
             }}
           >
@@ -196,10 +187,10 @@ export default function CandidaturesPage() {
 
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", paddingTop: 60 }}>
-          <div style={{ width: 36, height: 36, border: `3px solid ${S.border}`, borderTopColor: S.orange, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          <div style={{ width: 36, height: 36, border: `3px solid ${C.border}`, borderTopColor: C.orange, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
         </div>
       ) : candidatures.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: S.text2 }}>
+        <div style={{ textAlign: "center", padding: "60px 20px", color: C.text2 }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
           <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Aucune candidature</div>
           <div style={{ fontSize: 14 }}>
@@ -220,9 +211,9 @@ export default function CandidaturesPage() {
                   key={c.id}
                   onClick={() => setSelected(isSelected ? null : c)}
                   style={{
-                    background: S.surface,
-                    border: `1px solid ${isSelected ? S.orange : S.border}`,
-                    borderRadius: S.radius, padding: "14px 16px",
+                    background: C.surface,
+                    border: `1px solid ${isSelected ? C.orange : C.border}`,
+                    borderRadius: C.radiusCard, padding: "14px 16px",
                     cursor: "pointer", display: "flex", gap: 14, alignItems: "center",
                     transition: "border-color 0.15s",
                   }}
@@ -231,7 +222,7 @@ export default function CandidaturesPage() {
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                      <span style={{ fontSize: 15, fontWeight: 600, color: S.text }}>
+                      <span style={{ fontSize: 15, fontWeight: 600, color: C.text }}>
                         {c.candidat?.prenom ?? "Candidat"} {c.candidat?.nom ?? ""}
                       </span>
                       <span style={{
@@ -242,17 +233,17 @@ export default function CandidaturesPage() {
                         <span style={{ fontSize: 11, color: "var(--althy-green)", fontWeight: 600 }}>✓ Frais payés</span>
                       )}
                     </div>
-                    <div style={{ fontSize: 13, color: S.text2 }}>
+                    <div style={{ fontSize: 13, color: C.text2 }}>
                       {c.candidat?.email} · {c.documents.length} document{c.documents.length !== 1 ? "s" : ""}
                     </div>
                     {c.score_details?.summary && (
-                      <div style={{ fontSize: 12, color: S.text3, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div style={{ fontSize: 12, color: C.text3, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {c.score_details.summary}
                       </div>
                     )}
                   </div>
 
-                  <div style={{ fontSize: 12, color: S.text3, flexShrink: 0 }}>
+                  <div style={{ fontSize: 12, color: C.text3, flexShrink: 0 }}>
                     {new Date(c.created_at).toLocaleDateString("fr-CH")}
                   </div>
                 </div>
@@ -263,22 +254,22 @@ export default function CandidaturesPage() {
           {/* Detail panel */}
           {selected && (
             <div style={{
-              background: S.surface, border: `1px solid ${S.border}`,
-              borderRadius: S.radius, padding: 20, position: "sticky", top: 80,
+              background: C.surface, border: `1px solid ${C.border}`,
+              borderRadius: C.radiusCard, padding: 20, position: "sticky", top: 80,
               alignSelf: "start", maxHeight: "calc(100vh - 120px)", overflowY: "auto",
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: S.text }}>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: C.text }}>
                   Détail de la candidature
                 </h3>
-                <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", cursor: "pointer", color: S.text3, fontSize: 18 }}>✕</button>
+                <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", cursor: "pointer", color: C.text3, fontSize: 18 }}>✕</button>
               </div>
 
               {/* Score */}
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
                 <ScoreBadge score={selected.score_ia} />
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: S.text }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>
                     Score IA : {selected.score_ia ?? "Non disponible"}{selected.score_ia ? "/100" : ""}
                   </div>
                   {selected.score_details?.recommendation && (
@@ -299,7 +290,7 @@ export default function CandidaturesPage() {
               {selected.score_details?.summary && (
                 <div style={{
                   background: "var(--cream)", borderRadius: 8, padding: "10px 12px",
-                  fontSize: 13, color: S.text2, marginBottom: 16,
+                  fontSize: 13, color: C.text2, marginBottom: 16,
                 }}>
                   {selected.score_details.summary}
                 </div>
@@ -317,7 +308,7 @@ export default function CandidaturesPage() {
 
               {/* Documents */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: S.text, marginBottom: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 8 }}>
                   Documents ({selected.documents.length})
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -330,7 +321,7 @@ export default function CandidaturesPage() {
                       style={{
                         display: "flex", alignItems: "center", gap: 8,
                         background: "var(--cream)", borderRadius: 6, padding: "8px 10px",
-                        textDecoration: "none", color: S.text,
+                        textDecoration: "none", color: C.text,
                       }}
                     >
                       <span style={{ fontSize: 16 }}>📄</span>
@@ -346,10 +337,10 @@ export default function CandidaturesPage() {
               {/* Message */}
               {selected.message && (
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: S.text, marginBottom: 6 }}>Message</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 6 }}>Message</div>
                   <div style={{
                     background: "var(--cream)", borderRadius: 8, padding: "10px 12px",
-                    fontSize: 13, color: S.text2, fontStyle: "italic",
+                    fontSize: 13, color: C.text2, fontStyle: "italic",
                   }}>
                     "{selected.message}"
                   </div>

@@ -27,7 +27,7 @@ DbDep = Annotated[AsyncSession, Depends(get_db)]
 AuthDep = Annotated[User, Depends(get_current_user)]
 
 
-MANAGER_ROLES = {"admin", "super_admin", "proprietaire", "agence", "owner", "agency", "proprio_solo"}
+MANAGER_ROLES = {"super_admin", "proprio_solo", "agence"}
 
 
 def _check_admin(user: User) -> None:

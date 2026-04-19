@@ -71,8 +71,9 @@ async def list_emails(current_user: AuthDep, db: DbDep, limit: int = 50) -> list
 
 
 @router.post("/synchroniser")
-async def synchroniser(current_user: AuthDep, db: DbDep) -> dict:
-    """Déclenche une synchronisation des emails (placeholder — traitement Celery à venir)."""
-    # Full sync via Celery task will be wired here.
-    # For now return a no-op success so the frontend doesn't error.
-    return {"ok": True, "message": "Synchronisation planifiée"}
+async def synchroniser(current_user: AuthDep) -> dict:
+    """Déclenche une synchronisation des emails via Celery."""
+    from app.tasks.sync_tasks import sync_messagerie_task
+
+    result = sync_messagerie_task.delay(str(current_user.id))
+    return {"ok": True, "task_id": result.id, "message": "Synchronisation planifiée"}

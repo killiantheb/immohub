@@ -37,7 +37,7 @@ async def tenant_dashboard(
     current_user: User = Depends(get_current_user),
 ) -> TenantDashboard:
     """Renvoie le prochain loyer, le statut et les infos du bail du locataire connecté."""
-    if current_user.role != "tenant":
+    if current_user.role != "locataire":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux locataires")
 
     # Bail actif le plus récent
@@ -124,7 +124,7 @@ async def create_report(
     current_user: User = Depends(get_current_user),
 ) -> ReportResponse:
     """Locataire signale un problème — crée un RFQ de type maintenance."""
-    if current_user.role != "tenant":
+    if current_user.role != "locataire":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux locataires")
 
     from app.models.rfq import RFQ  # local import
@@ -149,7 +149,7 @@ async def tenant_documents(
     current_user: User = Depends(get_current_user),
 ) -> list:
     """Retourne les documents du bail actif du locataire."""
-    if current_user.role != "tenant":
+    if current_user.role != "locataire":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux locataires")
 
     result = await db.execute(
@@ -184,7 +184,7 @@ async def tenant_quittances(
     current_user: User = Depends(get_current_user),
 ) -> list:
     """Retourne les quittances de loyer générées pour le locataire connecté."""
-    if current_user.role != "tenant":
+    if current_user.role != "locataire":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux locataires")
 
     # Find active contract
@@ -230,7 +230,7 @@ async def tenant_history(
     current_user: User = Depends(get_current_user),
 ) -> list:
     """Historique de tous les logements (baux passés + actuel) du locataire."""
-    if current_user.role != "tenant":
+    if current_user.role != "locataire":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux locataires")
 
     result = await db.execute(
@@ -266,7 +266,7 @@ async def tenant_deposit(
     current_user: User = Depends(get_current_user),
 ) -> dict:
     """Informations sur la caution (dépôt de garantie) du bail actif."""
-    if current_user.role != "tenant":
+    if current_user.role != "locataire":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux locataires")
 
     result = await db.execute(

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useRole } from "@/lib/hooks/useRole";
 import { useAuth } from "@/lib/auth";
+import { isSectionEnabled } from "@/lib/flags";
 import { useAuthStore } from "@/lib/store/authStore";
 import { api } from "@/lib/api";
 import { AlthyLogo } from "@/components/AlthyLogo";
@@ -22,6 +23,9 @@ import {
   User,
   FileText,
   LayoutGrid,
+  Wrench,
+  FileCheck,
+  Users,
 } from "lucide-react";
 
 // ── Nav items ─────────────────────────────────────────────────────────────────
@@ -50,6 +54,9 @@ function buildNavSet(role: string | null): NavSet {
   const documents:     NavItem = { label: "Documents",          href: "/app/documents",       icon: ic(FileText),          section: "documents" };
   const communication: NavItem = { label: "Communication",      href: "/app/communication",   icon: ic(Mail),              section: "communication" };
   const missions:      NavItem = { label: "Missions",           href: "/app/artisans",        icon: ic(HardHat),           section: "artisans" };
+  const interventions: NavItem = { label: "Interventions",      href: "/app/interventions",   icon: ic(Wrench),            section: "interventions" };
+  const candidatures:  NavItem = { label: "Candidatures",       href: "/app/candidatures",    icon: ic(Users),             section: "candidatures" };
+  const mesCandid:     NavItem = { label: "Mes candidatures",   href: "/app/mes-candidatures",icon: ic(FileCheck),         section: "mes_candidatures" };
   const portail:       NavItem = { label: "Portail proprios",   href: "/app/portail",         icon: ic(Users2),            section: "portail" };
   const profile:       NavItem = { label: "Mon profil",         href: "/app/profile",         icon: ic(User),              section: "profile" };
   const settings:      NavItem = { label: "Paramètres",         href: "/app/settings",        icon: ic(SlidersHorizontal), section: "settings" };
@@ -57,25 +64,25 @@ function buildNavSet(role: string | null): NavSet {
   switch (role) {
     case "proprio_solo":
       return {
-        main:   [althy, biens, finances, documents, communication],
+        main:   [althy, biens, candidatures, interventions, finances, documents, communication],
         bottom: [profile, settings],
       };
 
     case "locataire":
       return {
-        main:   [althy, { ...biens, label: "Mon logement" }, { ...documents, label: "Mes documents" }],
+        main:   [althy, { ...biens, label: "Mon logement" }, mesCandid, { ...documents, label: "Mes documents" }],
         bottom: [profile],
       };
 
     case "artisan":
       return {
-        main:   [althy, missions, { ...finances, label: "Mes revenus" }, communication],
+        main:   [althy, missions, interventions, { ...finances, label: "Mes revenus" }, communication],
         bottom: [profile],
       };
 
     case "agence":
       return {
-        main:   [althy, biens, finances, documents, communication, portail],
+        main:   [althy, biens, candidatures, interventions, finances, documents, communication, portail],
         bottom: [profile, settings],
       };
 
@@ -92,7 +99,7 @@ function buildNavSet(role: string | null): NavSet {
     case "super_admin":
       return {
         main:   [
-          althy, biens, finances, documents, communication, portail,
+          althy, biens, candidatures, interventions, finances, documents, communication, portail,
           { label: "Administration", href: "/app/admin", icon: ic(LayoutGrid), section: "admin" },
         ],
         bottom: [profile, settings],
@@ -113,7 +120,7 @@ const S = {
   sidebar: (w: number): React.CSSProperties => ({
     width: w, minWidth: w, maxWidth: w,
     height: "100vh", position: "sticky", top: 0,
-    background: "#FFFFFF",
+    background: "var(--althy-surface)",
     borderRight: "1px solid var(--border-subtle)",
     display: "flex", flexDirection: "column",
     padding: "0",
@@ -158,7 +165,7 @@ const S = {
 
   navIconWrap: (active: boolean): React.CSSProperties => ({
     width: 40, height: 40, borderRadius: 12,
-    background: active ? "#FFFFFF" : "transparent",
+    background: active ? "var(--althy-surface)" : "transparent",
     boxShadow: active ? "0 1px 3px rgba(43,43,43,0.08)" : "none",
     display: "flex", alignItems: "center", justifyContent: "center",
     flexShrink: 0,
@@ -218,7 +225,9 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
     return () => clearInterval(t);
   }, []);
 
-  const { main: navMain, bottom: navBottom } = buildNavSet(role);
+  const { main: rawMain, bottom: rawBottom } = buildNavSet(role);
+  const navMain   = rawMain.filter(item => isSectionEnabled(item.section));
+  const navBottom = rawBottom.filter(item => isSectionEnabled(item.section));
 
   const isActive = (href: string) =>
     href === "/app" ? pathname === "/app" : pathname.startsWith(href);
@@ -255,7 +264,7 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
             {item.section === "communication" && unreadMsg > 0 && (
               <span style={{
                 marginLeft: "auto", minWidth: 17, height: 17, borderRadius: 9,
-                background: "#E8602C", color: "#fff",
+                background: "var(--althy-orange)", color: "#fff",
                 fontSize: 9, fontWeight: 800,
                 display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px",
               }}>
@@ -267,7 +276,7 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
             {item.section === "sphere" && (
               <span style={{
                 width: 7, height: 7, borderRadius: "50%",
-                background: "#E8602C",
+                background: "var(--althy-orange)",
                 flexShrink: 0,
                 boxShadow: "0 0 0 2px rgba(232,96,44,0.25), 0 0 0 4px rgba(232,96,44,0.10)",
                 animation: "sidebar-pulse 2s ease-in-out infinite",
@@ -289,7 +298,7 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
         {!collapsed ? (
           <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
             <AlthyLogo size={44} animated />
-            <span style={{ fontSize: 20, fontWeight: 600, color: "var(--charcoal)", fontFamily: "var(--font-display)" }}>Althy</span>
+            <span style={{ fontSize: 20, fontWeight: 600, color: "var(--charcoal)", fontFamily: "var(--font-serif)" }}>Althy</span>
           </Link>
         ) : (
           <AlthyLogo size={44} animated />

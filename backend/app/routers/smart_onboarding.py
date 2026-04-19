@@ -29,34 +29,34 @@ class ManualInput(BaseModel):
 
 
 SEARCH_MESSAGES = {
-    "agency": [
+    "agence": [
         "Je cherche sur le registre du commerce suisse (zefix.ch)…",
         "Consultation de votre site web et portails immobiliers…",
         "Vérification sur ImmoScout24, Homegate, LinkedIn…",
         "Récupération de vos coordonnées et spécialités…",
         "Finalisation de votre profil agence…",
     ],
-    "company": [
+    "artisan": [
         "Je cherche sur zefix.ch…",
         "Consultation de vos avis Google Maps…",
         "Vérification dans les annuaires professionnels…",
         "Récupération de vos certifications…",
         "Finalisation de votre profil artisan…",
     ],
-    "owner": [
+    "proprio_solo": [
         "Recherche d'informations publiques…",
         "Consultation des annuaires suisses…",
         "Vérification LinkedIn et profils publics…",
         "Compilation des données trouvées…",
     ],
     "opener": ["Création de votre profil ouvreur…"],
-    "tenant": ["Création de votre espace locataire…"],
+    "locataire": ["Création de votre espace locataire…"],
 }
 
 
 async def _stream_search(role: str, name: str, **kwargs):
     """Générateur SSE — streame les étapes de recherche puis le résultat final."""
-    messages = SEARCH_MESSAGES.get(role, SEARCH_MESSAGES["owner"])
+    messages = SEARCH_MESSAGES.get(role, SEARCH_MESSAGES["proprio_solo"])
 
     for i, msg in enumerate(messages[:-1]):
         progress = int((i / len(messages)) * 85)
@@ -94,7 +94,7 @@ async def onboard_from_speech(data: SpeechInput, _=rate_limit(5, 60)) -> Streami
             yield f"data: {json.dumps({'step': 'need_more', 'message': profile.get('althy_response', 'Pouvez-vous me donner votre nom ?')})}\n\n"
             return
 
-        role = profile.get("role", "owner")
+        role = profile.get("role", "proprio_solo")
         yield f"data: {json.dumps({'step': 'detected', 'profile': profile, 'message': profile.get('althy_response', 'Compris.')})}\n\n"
         await asyncio.sleep(0.5)
 

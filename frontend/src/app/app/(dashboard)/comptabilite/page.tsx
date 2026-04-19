@@ -6,26 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { RevenueChart } from "@/components/RevenueChart";
 import type { MonthlyRevenue } from "@/lib/types";
-
-const S = {
-  bg:       "var(--cream)",
-  surface:  "var(--background-card)",
-  surface2: "var(--althy-surface-2)",
-  border:   "var(--border-subtle)",
-  text:     "var(--charcoal)",
-  text2:    "var(--text-secondary)",
-  text3:    "var(--text-tertiary)",
-  orange:   "var(--terracotta-primary)",
-  orangeBg: "var(--althy-orange-bg)",
-  green:    "var(--althy-green)",
-  greenBg:  "var(--althy-green-bg)",
-  red:      "var(--althy-red)",
-  redBg:    "var(--althy-red-bg)",
-  amber:    "var(--althy-amber)",
-  amberBg:  "var(--althy-amber-bg)",
-  shadow:   "var(--althy-shadow)",
-  shadowMd: "var(--althy-shadow-md)",
-} as const;
+import { C } from "@/lib/design-tokens";
 
 // ── Types scan ────────────────────────────────────────────────────────────────
 
@@ -137,24 +118,24 @@ function ScanSection({ S }: { S: Record<string, string> }) {
 
   const field = (label: string, val: string, key: keyof OcrResult, type: "text" | "number" | "date" = "text") => (
     <div key={key}>
-      <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: S.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>
+      <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: C.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>
         {label}
       </label>
       <input
         type={type}
         value={val}
         onChange={e => setEdited(prev => prev ? { ...prev, [key]: type === "number" ? parseFloat(e.target.value) || null : e.target.value } : prev)}
-        style={{ width: "100%", padding: "9px 12px", border: `1px solid ${S.border}`, borderRadius: 9, fontSize: 13, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
+        style={{ width: "100%", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 9, fontSize: 13, background: C.bg, color: C.text, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
       />
     </div>
   );
 
   return (
-    <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: 16, padding: 24, marginBottom: 24 }}>
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, marginBottom: 24 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-        <ScanLine size={18} color={S.orange} />
-        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: S.text }}>Scanner une facture</h3>
-        <span style={{ fontSize: 11, color: S.text3, marginLeft: "auto" }}>IA · JPEG / PNG / PDF</span>
+        <ScanLine size={18} color={C.orange} />
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.text }}>Scanner une facture</h3>
+        <span style={{ fontSize: 11, color: C.text3, marginLeft: "auto" }}>IA · JPEG / PNG / PDF</span>
       </div>
 
       {/* Drop zone */}
@@ -165,12 +146,12 @@ function ScanSection({ S }: { S: Record<string, string> }) {
           onDrop={onDrop}
           onClick={() => fileRef.current?.click()}
           style={{
-            border: `2px dashed ${dragging ? S.orange : S.border}`,
+            border: `2px dashed ${dragging ? C.orange : C.border}`,
             borderRadius: 12,
             padding: "32px 24px",
             textAlign: "center",
             cursor: "pointer",
-            background: dragging ? S.orangeBg : S.bg,
+            background: dragging ? C.orangeBg : C.bg,
             transition: "all 0.18s",
             marginBottom: saved ? 12 : 0,
           }}
@@ -182,11 +163,11 @@ function ScanSection({ S }: { S: Record<string, string> }) {
             style={{ display: "none" }}
             onChange={onFileChange}
           />
-          <Upload size={28} color={dragging ? S.orange : S.text3} style={{ marginBottom: 10 }} />
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: dragging ? S.orange : S.text }}>
+          <Upload size={28} color={dragging ? C.orange : C.text3} style={{ marginBottom: 10 }} />
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: dragging ? C.orange : C.text }}>
             Glissez une facture ici
           </p>
-          <p style={{ margin: "4px 0 0", fontSize: 12, color: S.text3 }}>
+          <p style={{ margin: "4px 0 0", fontSize: 12, color: C.text3 }}>
             ou cliquez pour sélectionner · JPEG, PNG, PDF
           </p>
         </div>
@@ -195,25 +176,25 @@ function ScanSection({ S }: { S: Record<string, string> }) {
       {/* Scanning state */}
       {scanning && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, padding: "32px 0" }}>
-          <Loader2 size={20} color={S.orange} style={{ animation: "spin 1s linear infinite" }} />
-          <span style={{ fontSize: 13, color: S.text3 }}>Althy analyse la facture…</span>
+          <Loader2 size={20} color={C.orange} style={{ animation: "spin 1s linear infinite" }} />
+          <span style={{ fontSize: 13, color: C.text3 }}>Althy analyse la facture…</span>
         </div>
       )}
 
       {/* Error */}
       {error && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: S.redBg, borderRadius: 9, border: `1px solid ${S.red}`, marginTop: 12 }}>
-          <AlertCircle size={14} color={S.red} />
-          <span style={{ fontSize: 12, color: S.red }}>{error}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: C.redBg, borderRadius: 9, border: `1px solid ${C.red}`, marginTop: 12 }}>
+          <AlertCircle size={14} color={C.red} />
+          <span style={{ fontSize: 12, color: C.red }}>{error}</span>
         </div>
       )}
 
       {/* Saved confirmation */}
       {saved && !scanning && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: S.greenBg, borderRadius: 9, border: `1px solid ${S.green}` }}>
-          <Check size={14} color={S.green} />
-          <span style={{ fontSize: 12, color: S.green, fontWeight: 600 }}>Dépense enregistrée avec succès.</span>
-          <button onClick={() => setSaved(false)} style={{ marginLeft: "auto", fontSize: 11, color: S.text3, background: "none", border: "none", cursor: "pointer" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: C.greenBg, borderRadius: 9, border: `1px solid ${C.green}` }}>
+          <Check size={14} color={C.green} />
+          <span style={{ fontSize: 12, color: C.green, fontWeight: 600 }}>Dépense enregistrée avec succès.</span>
+          <button onClick={() => setSaved(false)} style={{ marginLeft: "auto", fontSize: 11, color: C.text3, background: "none", border: "none", cursor: "pointer" }}>
             Scanner une autre
           </button>
         </div>
@@ -222,9 +203,9 @@ function ScanSection({ S }: { S: Record<string, string> }) {
       {/* Extracted data — editable */}
       {edited && !scanning && (
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: S.orangeBg, borderRadius: 9, border: `1px solid rgba(232,96,44,0.2)`, marginBottom: 18 }}>
-            <Check size={13} color={S.orange} />
-            <span style={{ fontSize: 12, color: S.orange, fontWeight: 600 }}>Données extraites par Althy — vérifiez et complétez si nécessaire</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: C.orangeBg, borderRadius: 9, border: `1px solid rgba(232,96,44,0.2)`, marginBottom: 18 }}>
+            <Check size={13} color={C.orange} />
+            <span style={{ fontSize: 12, color: C.orange, fontWeight: 600 }}>Données extraites par Althy — vérifiez et complétez si nécessaire</span>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
@@ -235,27 +216,27 @@ function ScanSection({ S }: { S: Record<string, string> }) {
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: S.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: C.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>
               Description
             </label>
             <textarea
               value={edited.description ?? ""}
               onChange={e => setEdited(prev => prev ? { ...prev, description: e.target.value } : prev)}
               rows={2}
-              style={{ width: "100%", padding: "9px 12px", border: `1px solid ${S.border}`, borderRadius: 9, fontSize: 13, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 9, fontSize: 13, background: C.bg, color: C.text, outline: "none", fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }}
             />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 16 }}>
             {/* Bien dropdown */}
             <div>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: S.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: C.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>
                 Bien concerné
               </label>
               <select
                 value={bienId}
                 onChange={e => setBienId(e.target.value)}
-                style={{ width: "100%", padding: "9px 12px", border: `1px solid ${S.border}`, borderRadius: 9, fontSize: 13, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
+                style={{ width: "100%", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 9, fontSize: 13, background: C.bg, color: C.text, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
               >
                 <option value="">— Aucun bien —</option>
                 {biens.map(b => (
@@ -266,13 +247,13 @@ function ScanSection({ S }: { S: Record<string, string> }) {
 
             {/* Type entretien */}
             <div>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: S.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: C.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5 }}>
                 Type OBLF
               </label>
               <select
                 value={edited.type}
                 onChange={e => setEdited(prev => prev ? { ...prev, type: e.target.value as OcrResult["type"] } : prev)}
-                style={{ width: "100%", padding: "9px 12px", border: `1px solid ${S.border}`, borderRadius: 9, fontSize: 13, background: S.bg, color: S.text, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
+                style={{ width: "100%", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 9, fontSize: 13, background: C.bg, color: C.text, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
               >
                 {Object.entries(TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
@@ -280,7 +261,7 @@ function ScanSection({ S }: { S: Record<string, string> }) {
 
             {/* Affectation radio */}
             <div>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: S.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: C.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>
                 À charge de
               </label>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -292,9 +273,9 @@ function ScanSection({ S }: { S: Record<string, string> }) {
                       value={v}
                       checked={edited.affectation === v}
                       onChange={() => setEdited(prev => prev ? { ...prev, affectation: v } : prev)}
-                      style={{ accentColor: S.orange, width: 14, height: 14 }}
+                      style={{ accentColor: C.orange, width: 14, height: 14 }}
                     />
-                    <span style={{ fontSize: 12, color: S.text }}>{AFFECTATION_LABELS[v]}</span>
+                    <span style={{ fontSize: 12, color: C.text }}>{AFFECTATION_LABELS[v]}</span>
                   </label>
                 ))}
               </div>
@@ -306,19 +287,104 @@ function ScanSection({ S }: { S: Record<string, string> }) {
             <button
               onClick={enregistrer}
               disabled={saving}
-              style={{ flex: 1, padding: "10px 0", borderRadius: 10, background: S.orange, color: "#fff", border: "none", fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1, fontFamily: "inherit" }}
+              style={{ flex: 1, padding: "10px 0", borderRadius: 10, background: C.orange, color: "#fff", border: "none", fontSize: 13, fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1, fontFamily: "inherit" }}
             >
               {saving ? "Enregistrement…" : "Enregistrer la dépense"}
             </button>
             <button
               onClick={() => { setEdited(null); setResult(null); setError(null); }}
-              style={{ padding: "10px 18px", borderRadius: 10, background: S.bg, color: S.text3, border: `1px solid ${S.border}`, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}
+              style={{ padding: "10px 18px", borderRadius: 10, background: C.bg, color: C.text3, border: `1px solid ${C.border}`, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}
             >
               Annuler
             </button>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── ExportSection ────────────────────────────────────────────────────────────
+
+type ExportAction = "download_pdf" | "export_excel" | "tax_declaration" | "rapport_gestion";
+
+const EXPORTS: { icon: string; title: string; sub: string; btn: string; action: ExportAction }[] = [
+  { icon: "📄", title: "État locatif annuel",     sub: "Récapitulatif loyers par bien · PDF",  btn: "Générer PDF",   action: "download_pdf" },
+  { icon: "📊", title: "Export Excel fiduciaire", sub: "Format compatible ERP suisse · XLSX",  btn: "Générer Excel", action: "export_excel" },
+  { icon: "🧾", title: "Déclaration fiscale IA",  sub: "Revenus locatifs préremplis · PDF",    btn: "Préparer",      action: "tax_declaration" },
+  { icon: "📈", title: "Rapport de gestion",      sub: "Performances & rendements · PDF",      btn: "Générer",       action: "rapport_gestion" },
+];
+
+const ACTION_ENDPOINTS: Record<ExportAction, (year: number) => string> = {
+  download_pdf:     (y) => `/export/etat-locatif-pdf?year=${y}`,
+  export_excel:     (y) => `/export/etat-locatif-xlsx?year=${y}`,
+  tax_declaration:  (y) => `/export/declaration-fiscale?year=${y}`,
+  rapport_gestion:  (y) => `/export/rapport-gestion?year=${y}`,
+};
+
+function ExportSection({ S, year }: { S: Record<string, string>; year: number }) {
+  const [loading, setLoading] = useState<ExportAction | null>(null);
+  const [error, setError]     = useState<string | null>(null);
+
+  async function handleExport(action: ExportAction) {
+    setLoading(action);
+    setError(null);
+    try {
+      const url = ACTION_ENDPOINTS[action](year);
+      const resp = await api.get(url, { responseType: "blob" });
+      const contentDisp = resp.headers["content-disposition"] || "";
+      const filenameMatch = contentDisp.match(/filename=(.+)/);
+      const filename = filenameMatch ? filenameMatch[1] : `export_${action}_${year}`;
+      const blobUrl = URL.createObjectURL(new Blob([resp.data]));
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      setError("Erreur lors de la génération. Réessayez.");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  return (
+    <div style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24 }}>
+      <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700, color: C.text }}>Exports disponibles</h3>
+      {error && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: C.redBg, borderRadius: 9, border: `1px solid ${C.red}`, marginBottom: 14 }}>
+          <AlertCircle size={13} color={C.red} />
+          <span style={{ fontSize: 12, color: C.red }}>{error}</span>
+        </div>
+      )}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+        {EXPORTS.map(e => {
+          const isLoading = loading === e.action;
+          return (
+            <div key={e.title} style={{ padding: "16px 18px", border: `1px solid ${C.border}`, borderRadius: 12 }}>
+              <div style={{ fontSize: 24, marginBottom: 8 }}>{e.icon}</div>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: C.text, marginBottom: 3 }}>{e.title}</div>
+              <div style={{ fontSize: 11.5, color: C.text3, marginBottom: 12 }}>{e.sub}</div>
+              <button
+                onClick={() => handleExport(e.action)}
+                disabled={isLoading || loading !== null}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "7px 14px", border: `1px solid ${C.border}`, borderRadius: 8,
+                  backgroundColor: isLoading ? C.orangeBg : C.surface2,
+                  color: isLoading ? C.orange : C.text2,
+                  fontSize: 12, fontWeight: 600,
+                  cursor: isLoading || loading !== null ? "default" : "pointer",
+                  opacity: loading !== null && !isLoading ? 0.5 : 1,
+                }}
+              >
+                {isLoading && <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />}
+                {e.btn}
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -388,24 +454,24 @@ export default function ComptabilitePage() {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
         <div>
-          <h1 style={{ margin: "0 0 6px", fontSize: 26, fontWeight: 700, color: S.text, letterSpacing: "-0.02em" }}>Comptabilité</h1>
-          <p style={{ margin: 0, color: S.text3, fontSize: 13.5 }}>États locatifs · Rapport annuel · Export fiduciaire</p>
+          <h1 style={{ margin: "0 0 6px", fontSize: 26, fontWeight: 700, color: C.text, letterSpacing: "-0.02em" }}>Comptabilité</h1>
+          <p style={{ margin: 0, color: C.text3, fontSize: 13.5 }}>États locatifs · Rapport annuel · Export fiduciaire</p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <select value={year} onChange={e => setYear(parseInt(e.target.value))}
-            style={{ padding: "8px 12px", border: `1px solid ${S.border}`, borderRadius: 9, fontSize: 13, backgroundColor: S.surface, color: S.text, outline: "none" }}>
+            style={{ padding: "8px 12px", border: `1px solid ${C.border}`, borderRadius: 9, fontSize: 13, backgroundColor: C.surface, color: C.text, outline: "none" }}>
             {[YEAR, YEAR - 1, YEAR - 2].map(y => <option key={y} value={y}>{y}</option>)}
           </select>
           <button
             onClick={() => window.print()}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", border: `1px solid ${S.border}`, borderRadius: 9, backgroundColor: S.surface, color: S.text2, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", border: `1px solid ${C.border}`, borderRadius: 9, backgroundColor: C.surface, color: C.text2, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
           >
             <Download size={14} /> Export PDF
           </button>
           <button
             onClick={downloadCsv}
             disabled={exportingCsv}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", border: `1px solid ${S.orange}`, borderRadius: 9, backgroundColor: S.orangeBg, color: S.orange, fontSize: 13, fontWeight: 600, cursor: exportingCsv ? "default" : "pointer" }}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", border: `1px solid ${C.orange}`, borderRadius: 9, backgroundColor: C.orangeBg, color: C.orange, fontSize: 13, fontWeight: 600, cursor: exportingCsv ? "default" : "pointer" }}
           >
             {exportingCsv ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <FileText size={14} />}
             Export CSV fiduciaire
@@ -416,15 +482,15 @@ export default function ComptabilitePage() {
       {/* KPI cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 14, marginBottom: 28 }}>
         {[
-          { label: "Loyers encaissés",   value: fmt(stats?.total_received),   color: S.green,  bg: S.greenBg  },
-          { label: "Loyers attendus",     value: fmt(stats?.total_expected),   color: S.text,   bg: S.surface2 },
-          { label: "Impayés",             value: fmt(stats?.total_late),       color: stats?.total_late ? S.red : S.text3, bg: stats?.total_late ? S.redBg : S.surface2 },
-          { label: "Taux d'occupation",   value: stats?.occupancy_rate ? `${stats.occupancy_rate}%` : "—", color: S.orange, bg: S.orangeBg },
-          { label: "Économies vs régie",  value: savings > 0 ? fmt(savings) : "—", color: S.green, bg: S.greenBg },
+          { label: "Loyers encaissés",   value: fmt(stats?.total_received),   color: C.green,  bg: C.greenBg  },
+          { label: "Loyers attendus",     value: fmt(stats?.total_expected),   color: C.text,   bg: C.surface2 },
+          { label: "Impayés",             value: fmt(stats?.total_late),       color: stats?.total_late ? C.red : C.text3, bg: stats?.total_late ? C.redBg : C.surface2 },
+          { label: "Taux d'occupation",   value: stats?.occupancy_rate ? `${stats.occupancy_rate}%` : "—", color: C.orange, bg: C.orangeBg },
+          { label: "Économies vs régie",  value: savings > 0 ? fmt(savings) : "—", color: C.green, bg: C.greenBg },
         ].map(k => (
-          <div key={k.label} style={{ backgroundColor: S.surface, border: `1px solid ${S.border}`, borderRadius: 14, padding: "14px 16px" }}>
+          <div key={k.label} style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px" }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: k.color }}>{k.value}</div>
-            <div style={{ fontSize: 11, color: S.text3, marginTop: 2 }}>{k.label}</div>
+            <div style={{ fontSize: 11, color: C.text3, marginTop: 2 }}>{k.label}</div>
           </div>
         ))}
       </div>
@@ -437,8 +503,8 @@ export default function ComptabilitePage() {
           border: "1px solid rgba(46,94,34,0.2)",
           display: "flex", alignItems: "center", gap: 10,
         }}>
-          <TrendingUp size={18} color={S.green} />
-          <p style={{ margin: 0, fontSize: 13, color: S.text }}>
+          <TrendingUp size={18} color={C.green} />
+          <p style={{ margin: 0, fontSize: 13, color: C.text }}>
             <strong>Althy vous économise {fmt(savings)}/an</strong> par rapport à une régie qui facturerait 10% de gérance ({fmt(regieEquivalent)}/an vs CHF {29*12}/an pour Althy).
           </p>
         </div>
@@ -448,23 +514,23 @@ export default function ComptabilitePage() {
       <ScanSection S={S} />
 
       {/* Revenue chart */}
-      <div style={{ backgroundColor: S.surface, border: `1px solid ${S.border}`, borderRadius: 16, padding: 24, marginBottom: 24 }}>
-        <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700, color: S.text }}>Évolution des loyers {year}</h3>
+      <div style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24, marginBottom: 24 }}>
+        <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700, color: C.text }}>Évolution des loyers {year}</h3>
         <RevenueChart data={chartData} />
       </div>
 
       {/* Monthly breakdown table */}
-      <div style={{ backgroundColor: S.surface, border: `1px solid ${S.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 24 }}>
-        <div style={{ padding: "18px 24px", borderBottom: `1px solid ${S.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: S.text }}>État locatif mensuel {year}</h3>
-          <span style={{ fontSize: 12, color: S.text3 }}>Tous les biens</span>
+      <div style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden", marginBottom: 24 }}>
+        <div style={{ padding: "18px 24px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: C.text }}>État locatif mensuel {year}</h3>
+          <span style={{ fontSize: 12, color: C.text3 }}>Tous les biens</span>
         </div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ backgroundColor: S.surface2 }}>
+              <tr style={{ backgroundColor: C.surface2 }}>
                 {["Mois","Encaissé","Attendu","Écart","Impayés","Statut"].map(h => (
-                  <th key={h} style={{ padding: "10px 16px", textAlign: h === "Mois" ? "left" : "right", fontSize: 11, fontWeight: 600, color: S.text3, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{h}</th>
+                  <th key={h} style={{ padding: "10px 16px", textAlign: h === "Mois" ? "left" : "right", fontSize: 11, fontWeight: 600, color: C.text3, textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -476,19 +542,19 @@ export default function ComptabilitePage() {
                 const late     = expected - received > 200 && i < new Date().getMonth() ? Math.round((expected - received) * 0.5) : 0;
                 const ok       = i < new Date().getMonth();
                 return (
-                  <tr key={month} style={{ borderTop: `1px solid ${S.border}`, backgroundColor: i % 2 === 0 ? "transparent" : S.surface2 }}>
-                    <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600, color: S.text }}>{month} {year}</td>
-                    <td style={{ padding: "10px 16px", textAlign: "right", fontSize: 13, color: ok ? S.green : S.text3, fontWeight: ok ? 600 : 400 }}>{ok ? fmt(received) : "—"}</td>
-                    <td style={{ padding: "10px 16px", textAlign: "right", fontSize: 13, color: S.text2 }}>{fmt(expected)}</td>
-                    <td style={{ padding: "10px 16px", textAlign: "right", fontSize: 13, color: ok && received >= expected ? S.green : ok ? S.amber : S.text3 }}>
+                  <tr key={month} style={{ borderTop: `1px solid ${C.border}`, backgroundColor: i % 2 === 0 ? "transparent" : C.surface2 }}>
+                    <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600, color: C.text }}>{month} {year}</td>
+                    <td style={{ padding: "10px 16px", textAlign: "right", fontSize: 13, color: ok ? C.green : C.text3, fontWeight: ok ? 600 : 400 }}>{ok ? fmt(received) : "—"}</td>
+                    <td style={{ padding: "10px 16px", textAlign: "right", fontSize: 13, color: C.text2 }}>{fmt(expected)}</td>
+                    <td style={{ padding: "10px 16px", textAlign: "right", fontSize: 13, color: ok && received >= expected ? C.green : ok ? C.amber : C.text3 }}>
                       {ok ? (received >= expected ? `+${fmt(received - expected)}` : fmt(received - expected)) : "—"}
                     </td>
-                    <td style={{ padding: "10px 16px", textAlign: "right", fontSize: 13, color: late > 0 ? S.red : S.text3 }}>{late > 0 ? fmt(late) : "—"}</td>
+                    <td style={{ padding: "10px 16px", textAlign: "right", fontSize: 13, color: late > 0 ? C.red : C.text3 }}>{late > 0 ? fmt(late) : "—"}</td>
                     <td style={{ padding: "10px 16px", textAlign: "right" }}>
                       <span style={{
                         padding: "2px 8px", borderRadius: 20, fontSize: 10.5, fontWeight: 600,
-                        backgroundColor: !ok ? S.surface2 : received >= expected ? S.greenBg : S.amberBg,
-                        color: !ok ? S.text3 : received >= expected ? S.green : S.amber,
+                        backgroundColor: !ok ? C.surface2 : received >= expected ? C.greenBg : C.amberBg,
+                        color: !ok ? C.text3 : received >= expected ? C.green : C.amber,
                       }}>
                         {!ok ? "À venir" : received >= expected ? "Complet" : "Partiel"}
                       </span>
@@ -498,12 +564,12 @@ export default function ComptabilitePage() {
               })}
             </tbody>
             <tfoot>
-              <tr style={{ borderTop: `2px solid ${S.border}`, backgroundColor: S.surface2 }}>
-                <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 700, color: S.text }}>TOTAL {year}</td>
-                <td style={{ padding: "12px 16px", textAlign: "right", fontSize: 13, fontWeight: 700, color: S.green }}>{fmt(stats?.total_received)}</td>
-                <td style={{ padding: "12px 16px", textAlign: "right", fontSize: 13, fontWeight: 700, color: S.text }}>{fmt(stats?.total_expected)}</td>
-                <td style={{ padding: "12px 16px", textAlign: "right", fontSize: 13, fontWeight: 700, color: S.green }}>{stats ? fmt(stats.total_received - stats.total_expected) : "—"}</td>
-                <td style={{ padding: "12px 16px", textAlign: "right", fontSize: 13, fontWeight: 700, color: stats?.total_late ? S.red : S.text3 }}>{fmt(stats?.total_late ?? 0)}</td>
+              <tr style={{ borderTop: `2px solid ${C.border}`, backgroundColor: C.surface2 }}>
+                <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 700, color: C.text }}>TOTAL {year}</td>
+                <td style={{ padding: "12px 16px", textAlign: "right", fontSize: 13, fontWeight: 700, color: C.green }}>{fmt(stats?.total_received)}</td>
+                <td style={{ padding: "12px 16px", textAlign: "right", fontSize: 13, fontWeight: 700, color: C.text }}>{fmt(stats?.total_expected)}</td>
+                <td style={{ padding: "12px 16px", textAlign: "right", fontSize: 13, fontWeight: 700, color: C.green }}>{stats ? fmt(stats.total_received - stats.total_expected) : "—"}</td>
+                <td style={{ padding: "12px 16px", textAlign: "right", fontSize: 13, fontWeight: 700, color: stats?.total_late ? C.red : C.text3 }}>{fmt(stats?.total_late ?? 0)}</td>
                 <td />
               </tr>
             </tfoot>
@@ -512,26 +578,7 @@ export default function ComptabilitePage() {
       </div>
 
       {/* Export section */}
-      <div style={{ backgroundColor: S.surface, border: `1px solid ${S.border}`, borderRadius: 16, padding: 24 }}>
-        <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700, color: S.text }}>Exports disponibles</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-          {[
-            { icon: "📄", title: "État locatif annuel",     sub: "Récapitulatif loyers par bien · PDF",    btn: "Générer PDF" },
-            { icon: "📊", title: "Export Excel fiduciaire", sub: "Format compatible ERP suisse · XLSX",    btn: "Générer Excel" },
-            { icon: "🧾", title: "Déclaration fiscale IA",  sub: "Revenus locatifs préremplis · PDF",      btn: "Préparer" },
-            { icon: "📈", title: "Rapport de gestion",      sub: "Performances & rendements · PDF",        btn: "Générer" },
-          ].map(e => (
-            <div key={e.title} style={{ padding: "16px 18px", border: `1px solid ${S.border}`, borderRadius: 12 }}>
-              <div style={{ fontSize: 24, marginBottom: 8 }}>{e.icon}</div>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: S.text, marginBottom: 3 }}>{e.title}</div>
-              <div style={{ fontSize: 11.5, color: S.text3, marginBottom: 12 }}>{e.sub}</div>
-              <button style={{ padding: "7px 14px", border: `1px solid ${S.border}`, borderRadius: 8, backgroundColor: S.surface2, color: S.text2, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                {e.btn}
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
+      <ExportSection S={S} year={year} />
     </div>
   );
 }

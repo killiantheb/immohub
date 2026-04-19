@@ -20,7 +20,7 @@ router = APIRouter()
 DbDep = Annotated[AsyncSession, Depends(get_db)]
 AuthDep = Annotated[User, Depends(get_current_user)]
 
-ADMIN_ROLES = {"admin", "super_admin", "proprietaire", "agence", "owner", "agency"}
+ADMIN_ROLES = {"super_admin", "proprio_solo", "agence"}
 
 
 def _compute_global(

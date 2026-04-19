@@ -5,8 +5,8 @@ import Link from "next/link";
 import { C } from "@/lib/design-tokens";
 
 const API   = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
-const serif = "var(--font-serif, 'Fraunces', Georgia, serif)";
-const sans  = "var(--font-sans, 'DM Sans', system-ui, sans-serif)";
+const serif = "var(--font-serif)";
+const sans  = "var(--font-sans)";
 
 interface EstimResult { min: number; max: number; moyen: number }
 

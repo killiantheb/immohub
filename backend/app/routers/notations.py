@@ -30,12 +30,9 @@ _ROLE_MAP = {
     "artisan":         "artisan",
     "opener":          "opener",
     "agence":          "agence",
-    "agency":          "agence",
     "proprio_solo":    "proprio",
-    "owner":           "proprio",
     "portail_proprio": "proprio",
     "locataire":       "locataire",
-    "tenant":          "locataire",
     "hunter":          "hunter",
     "expert":          "expert",
 }

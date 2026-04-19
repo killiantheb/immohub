@@ -4,8 +4,9 @@
 import { useParams, usePathname } from "next/navigation";
 import { FilAriane } from "@/components/FilAriane";
 import { BienTabs } from "@/components/BienTabs";
-import { BienHeader, S } from "./_shared";
+import { BienHeader } from "./_shared";
 import { useBien } from "@/lib/hooks/useBiens";
+import { C } from "@/lib/design-tokens";
 
 export default function BienDetailLayout({ children }: { children: React.ReactNode }) {
   const { id } = useParams<{ id: string }>();
@@ -20,7 +21,7 @@ export default function BienDetailLayout({ children }: { children: React.ReactNo
     : "…";
 
   return (
-    <div style={{ background: S.bg, minHeight: "100vh" }}>
+    <div style={{ background: C.bg, minHeight: "100vh" }}>
       <FilAriane items={[
         { label: "Tableau de bord", href: "/app" },
         { label: "Biens",           href: "/app/biens" },

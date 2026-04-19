@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mail, RefreshCw, Inbox, Link2, Unlink } from "lucide-react";
+import { Mail, RefreshCw, Inbox, Link2, Unlink, Info } from "lucide-react";
 import { api, baseURL } from "@/lib/api";
 import { createClient } from "@/lib/supabase";
 
@@ -40,7 +40,7 @@ const S = {
     display: "inline-flex", alignItems: "center", gap: 6,
     padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600,
     background: connected ? "rgba(34,197,94,0.1)" : "rgba(232,96,44,0.08)",
-    color: connected ? "#16a34a" : "var(--althy-orange)",
+    color: connected ? "var(--althy-green)" : "var(--althy-orange)",
     border: `1px solid ${connected ? "rgba(34,197,94,0.2)" : "rgba(232,96,44,0.2)"}`,
   }),
 };
@@ -105,6 +105,7 @@ export function MessagerieContent() {
   const [emails,  setEmails]  = useState<EmailItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [syncToast, setSyncToast] = useState<string | null>(null);
 
   const googleStatus  = statuts.find(s => s.provider === "google")    ?? null;
   const outlookStatus = statuts.find(s => s.provider === "microsoft") ?? null;
@@ -142,12 +143,17 @@ export function MessagerieContent() {
 
   async function handleSync() {
     setSyncing(true);
+    setSyncToast(null);
     try {
       await api.post("/messagerie/synchroniser");
+      setSyncToast("Synchronisation en cours, cela peut prendre quelques minutes.");
+      setTimeout(() => setSyncToast(null), 6000);
       const r = await api.get<EmailItem[]>("/messagerie/");
       setEmails(r.data);
-    } catch { /* ignore */ }
-    finally { setSyncing(false); }
+    } catch {
+      setSyncToast("Erreur lors de la synchronisation.");
+      setTimeout(() => setSyncToast(null), 5000);
+    } finally { setSyncing(false); }
   }
 
   if (loading) {
@@ -160,6 +166,28 @@ export function MessagerieContent() {
 
   return (
     <div style={{ maxWidth: 860 }}>
+
+      {/* Banner — sync pas encore implémentée */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "12px 16px", marginBottom: 16,
+        background: "rgba(232,96,44,0.06)", border: "1px solid rgba(232,96,44,0.15)",
+        borderRadius: 10, fontSize: 13, color: "var(--althy-text-2)",
+      }}>
+        <Info size={15} color="var(--althy-orange)" style={{ flexShrink: 0 }} />
+        Synchronisation email bientôt disponible. Nous vous enverrons un email dès l&apos;activation.
+      </div>
+
+      {/* Toast sync */}
+      {syncToast && (
+        <div style={{
+          padding: "10px 16px", marginBottom: 12,
+          background: "var(--althy-surface)", border: "1px solid var(--althy-border)",
+          borderRadius: 10, fontSize: 13, color: "var(--althy-text)",
+        }}>
+          {syncToast}
+        </div>
+      )}
 
       {/* Toolbar */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
@@ -235,7 +263,7 @@ export function MessagerieContent() {
       ) : (
         <div style={{ ...S.card, textAlign: "center", padding: "40px 24px" }}>
           <Mail size={40} color="var(--althy-border)" style={{ marginBottom: 16 }} />
-          <h3 style={{ fontFamily: "Cormorant Garamond, serif", fontSize: 22, fontWeight: 300, color: "var(--althy-text)", margin: "0 0 8px" }}>
+          <h3 style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 300, color: "var(--althy-text)", margin: "0 0 8px" }}>
             Connectez votre messagerie
           </h3>
           <p style={{ fontSize: 13, color: "var(--althy-text-3)", maxWidth: 420, margin: "0 auto 24px" }}>

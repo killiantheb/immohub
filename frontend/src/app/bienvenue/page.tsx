@@ -98,7 +98,7 @@ const inputStyle: React.CSSProperties = {
 function Step1Role({ role, setRole }: { role: Role | null; setRole: (r: Role) => void }) {
   return (
     <div>
-      <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: 'var(--althy-text)', margin: '0 0 8px' }}>
+      <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 300, color: 'var(--althy-text)', margin: '0 0 8px' }}>
         Je suis…
       </h2>
       <p style={{ fontSize: 13, color: 'var(--althy-text-3)', margin: '0 0 24px' }}>
@@ -146,7 +146,7 @@ function Step2Questions({ role, questions, answers, setAnswers }: {
         <span style={{ fontSize: 16 }}>{roleData.icon}</span>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--althy-orange)' }}>{roleData.label}</span>
       </div>
-      <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 26, fontWeight: 300, color: 'var(--althy-text)', margin: '0 0 8px' }}>
+      <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, fontWeight: 300, color: 'var(--althy-text)', margin: '0 0 8px' }}>
         Quelques questions rapides
       </h2>
       <p style={{ fontSize: 13, color: 'var(--althy-text-3)', margin: '0 0 24px' }}>
@@ -201,7 +201,7 @@ function Step3Bien({ bien, setBien }: {
 }) {
   return (
     <div>
-      <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 26, fontWeight: 300, color: 'var(--althy-text)', margin: '0 0 8px' }}>
+      <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, fontWeight: 300, color: 'var(--althy-text)', margin: '0 0 8px' }}>
         Votre premier bien ou zone
       </h2>
       <p style={{ fontSize: 13, color: 'var(--althy-text-3)', margin: '0 0 24px' }}>
@@ -237,7 +237,7 @@ function Step3Bien({ bien, setBien }: {
 function Step4Email({ onSkip }: { onSkip: () => void }) {
   return (
     <div>
-      <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 26, fontWeight: 300, color: 'var(--althy-text)', margin: '0 0 8px' }}>
+      <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, fontWeight: 300, color: 'var(--althy-text)', margin: '0 0 8px' }}>
         Connectez votre messagerie
       </h2>
       <p style={{ fontSize: 13, color: 'var(--althy-text-3)', margin: '0 0 24px', lineHeight: 1.6 }}>
@@ -273,7 +273,7 @@ function Step5Go({ firstName, sphereState, role }: { firstName: string; sphereSt
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28, filter: 'drop-shadow(0 12px 36px rgba(181,90,48,0.22))' }}>
         <AlthySphereCore state={sphereState} size={140} />
       </div>
-      <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: 'var(--althy-text)', margin: '0 0 16px', lineHeight: 1.3 }}>
+      <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 300, color: 'var(--althy-text)', margin: '0 0 16px', lineHeight: 1.3 }}>
         Bonjour{name}, je suis Althy,<br />votre assistant immobilier.
       </h2>
       <p style={{ fontSize: 14, color: 'var(--althy-text-3)', margin: '0 0 8px', lineHeight: 1.6, maxWidth: 420, marginLeft: 'auto', marginRight: 'auto' }}>
@@ -318,13 +318,13 @@ function AutoVerification({ data, agentChecks, setAgentChecks, onConfirm, saving
   return (
     <div style={{ minHeight: '100vh', background: 'var(--althy-bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 16px 40px', fontFamily: 'var(--font-sans, DM Sans, system-ui)' }}>
       <header style={{ width: '100%', maxWidth: 680, display: 'flex', alignItems: 'center', padding: '20px 0', marginBottom: 32 }}>
-        <Link href="/" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 20, fontWeight: 300, letterSpacing: 4, color: 'var(--althy-orange)', textDecoration: 'none' }}>ALTHY</Link>
+        <Link href="/" style={{ fontFamily: "var(--font-serif)", fontSize: 20, fontWeight: 300, letterSpacing: 4, color: 'var(--althy-orange)', textDecoration: 'none' }}>ALTHY</Link>
       </header>
       <div style={{ width: '100%', maxWidth: 680 }}>
         <p style={{ fontSize: 13, color: 'var(--althy-text-3)', marginBottom: 8, textAlign: 'center' }}>
           Bienvenue dans l&apos;écosystème Althy — votre assistant immobilier.
         </p>
-        <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, fontWeight: 300, color: 'var(--althy-text)', margin: '0 0 24px', textAlign: 'center' }}>
+        <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 300, color: 'var(--althy-text)', margin: '0 0 24px', textAlign: 'center' }}>
           Vérifiez vos informations{firstName ? `, ${firstName}` : ''}
         </h2>
 
@@ -490,7 +490,7 @@ function BienvenueContent() {
 
       {/* Header */}
       <header style={{ width: '100%', maxWidth: 680, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 0' }}>
-        <Link href="/" style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 20, fontWeight: 300, letterSpacing: 4, color: 'var(--althy-orange)', textDecoration: 'none' }}>ALTHY</Link>
+        <Link href="/" style={{ fontFamily: "var(--font-serif)", fontSize: 20, fontWeight: 300, letterSpacing: 4, color: 'var(--althy-orange)', textDecoration: 'none' }}>ALTHY</Link>
         <span style={{ fontSize: 12, color: 'var(--althy-text-3)' }}>Étape {step} sur {TOTAL_STEPS}</span>
       </header>
 

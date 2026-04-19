@@ -13,7 +13,7 @@ import type { NominatimResult } from "@/hooks/useNominatim";
 const CARTO_TILES = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 const CARTO_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
+// ── Design tokens — Mapbox/Leaflet require hex, do not replace with CSS var ──
 const ORANGE = "#E8602C";
 const ORANGE_FILL = "#FAE4D6";
 const ORANGE_FILL_TEMP = "rgba(181,90,48,0.08)";

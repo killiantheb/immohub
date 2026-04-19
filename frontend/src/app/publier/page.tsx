@@ -20,9 +20,9 @@ import {
   GripVertical,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
+import { C } from "@/lib/design-tokens";
 
 const API    = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
-const ORANGE = "#E8602C";
 const BUCKET = "listings-photos";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ function StepIndicator({ current }: { current: number }) {
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
               <div style={{
                 width: 32, height: 32, borderRadius: "50%",
-                background: done ? "#2E5E22" : active ? ORANGE : "var(--althy-border)",
+                background: done ? "var(--althy-green)" : active ? C.orange : "var(--althy-border)",
                 color: done || active ? "#fff" : "var(--althy-text-3)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 13, fontWeight: 600, transition: "background 0.2s",
@@ -123,7 +123,7 @@ function StepIndicator({ current }: { current: number }) {
               </div>
               <span style={{
                 fontSize: 11, fontWeight: active ? 600 : 400,
-                color: active ? ORANGE : done ? "#2E5E22" : "var(--althy-text-3)",
+                color: active ? C.orange : done ? "var(--althy-green)" : "var(--althy-text-3)",
                 whiteSpace: "nowrap",
               }}>
                 {label}
@@ -132,7 +132,7 @@ function StepIndicator({ current }: { current: number }) {
             {i < STEPS.length - 1 && (
               <div style={{
                 flex: 1, height: 2, margin: "0 8px", marginBottom: 20,
-                background: done ? "#2E5E22" : "var(--althy-border)",
+                background: done ? "var(--althy-green)" : "var(--althy-border)",
                 transition: "background 0.2s",
               }} />
             )}
@@ -151,9 +151,9 @@ function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: bool
       style={{
         display: "flex", alignItems: "center", gap: 8,
         padding: "7px 14px", borderRadius: 20,
-        border: `1.5px solid ${value ? ORANGE : "var(--althy-border)"}`,
+        border: `1.5px solid ${value ? C.orange : "var(--althy-border)"}`,
         background: value ? "rgba(232,96,44,0.08)" : "transparent",
-        color: value ? ORANGE : "var(--althy-text-2)",
+        color: value ? C.orange : "var(--althy-text-2)",
         cursor: "pointer", fontSize: 13, fontWeight: value ? 600 : 400,
         transition: "all 0.15s",
       }}
@@ -168,7 +168,7 @@ function Field({ label, children, required, hint }: { label: string; children: R
   return (
     <div>
       <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--althy-text-2)", marginBottom: 5 }}>
-        {label}{required && <span style={{ color: ORANGE }}> *</span>}
+        {label}{required && <span style={{ color: C.orange }}> *</span>}
       </label>
       {children}
       {hint && <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--althy-text-3)" }}>{hint}</p>}
@@ -248,12 +248,12 @@ function Step1({
             onClick={() => set("mode", m)}
             style={{
               padding: "16px 14px", borderRadius: "var(--radius-card)",
-              border: `2px solid ${form.mode === m ? ORANGE : "var(--althy-border)"}`,
+              border: `2px solid ${form.mode === m ? C.orange : "var(--althy-border)"}`,
               background: form.mode === m ? "rgba(232,96,44,0.06)" : "var(--althy-surface)",
               cursor: "pointer", textAlign: "left", transition: "all 0.15s",
             }}
           >
-            <div style={{ fontSize: 13, fontWeight: 700, color: form.mode === m ? ORANGE : "var(--althy-text)", marginBottom: 3 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: form.mode === m ? C.orange : "var(--althy-text)", marginBottom: 3 }}>
               {m === "existing" ? "🏠 Mes biens existants" : "➕ Nouveau bien"}
             </div>
             <div style={{ fontSize: 12, color: "var(--althy-text-3)" }}>
@@ -280,7 +280,7 @@ function Step1({
               Aucun bien dans votre portefeuille.{" "}
               <button
                 onClick={() => set("mode", "new")}
-                style={{ background: "none", border: "none", color: ORANGE, fontWeight: 600, cursor: "pointer", fontSize: 13 }}
+                style={{ background: "none", border: "none", color: C.orange, fontWeight: 600, cursor: "pointer", fontSize: 13 }}
               >
                 Créer un nouveau bien →
               </button>
@@ -342,7 +342,7 @@ function Step1({
             {geocodeResult && (
               <p style={{
                 margin: "5px 0 0", fontSize: 11,
-                color: geocodeResult.startsWith("✓") ? "#2E5E22" : "#B45309",
+                color: geocodeResult.startsWith("✓") ? "var(--althy-green)" : "#B45309",
               }}>
                 {geocodeResult}
               </p>
@@ -463,7 +463,7 @@ function Step2({
           onDrop={e => { e.preventDefault(); setDragOver(false); uploadFiles(e.dataTransfer.files); }}
           onClick={() => inputRef.current?.click()}
           style={{
-            border: `2px dashed ${dragOver ? ORANGE : "var(--althy-border)"}`,
+            border: `2px dashed ${dragOver ? C.orange : "var(--althy-border)"}`,
             borderRadius: "var(--radius-card)",
             background: dragOver ? "rgba(232,96,44,0.06)" : "var(--althy-bg)",
             padding: "36px 24px", textAlign: "center",
@@ -480,10 +480,10 @@ function Step2({
           />
           {uploading ? (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-              <Loader2 size={28} color={ORANGE} style={{ animation: "pub-spin 0.9s linear infinite" }} />
+              <Loader2 size={28} color={C.orange} style={{ animation: "pub-spin 0.9s linear infinite" }} />
               <p style={{ color: "var(--althy-text-2)", fontSize: 14, margin: 0 }}>Téléchargement… {progress}%</p>
               <div style={{ width: "60%", height: 4, borderRadius: 2, background: "var(--althy-border)", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${progress}%`, background: ORANGE, transition: "width 0.2s" }} />
+                <div style={{ height: "100%", width: `${progress}%`, background: C.orange, transition: "width 0.2s" }} />
               </div>
             </div>
           ) : (
@@ -513,7 +513,7 @@ function Step2({
               style={{
                 position: "relative", borderRadius: "var(--radius-elem)",
                 overflow: "hidden", aspectRatio: "4/3",
-                border: i === 0 ? `2px solid ${ORANGE}` : "2px solid transparent",
+                border: i === 0 ? `2px solid ${C.orange}` : "2px solid transparent",
                 cursor: "grab",
               }}
             >
@@ -541,7 +541,7 @@ function Step2({
               {i === 0 ? (
                 <span style={{
                   position: "absolute", bottom: 6, left: 6,
-                  background: ORANGE, color: "#fff",
+                  background: C.orange, color: "#fff",
                   fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 3,
                 }}>
                   Couverture
@@ -564,7 +564,7 @@ function Step2({
         </div>
       )}
 
-      <p style={{ color: form.photos.length === 0 ? "var(--althy-text-3)" : ORANGE, fontSize: 12, textAlign: "center", margin: 0, fontWeight: form.photos.length === 0 ? 400 : 600 }}>
+      <p style={{ color: form.photos.length === 0 ? "var(--althy-text-3)" : C.orange, fontSize: 12, textAlign: "center", margin: 0, fontWeight: form.photos.length === 0 ? 400 : 600 }}>
         {form.photos.length === 0
           ? "1 photo minimum requise · les biens avec photos reçoivent 3× plus de contacts"
           : `${form.photos.length} photo${form.photos.length > 1 ? "s" : ""} prête${form.photos.length > 1 ? "s" : ""} ✓`}
@@ -671,9 +671,9 @@ function Step3({
               onClick={() => set("transaction_type", tx)}
               style={{
                 padding: "8px 18px", borderRadius: 20,
-                border: `2px solid ${form.transaction_type === tx ? ORANGE : "var(--althy-border)"}`,
+                border: `2px solid ${form.transaction_type === tx ? C.orange : "var(--althy-border)"}`,
                 background: form.transaction_type === tx ? "rgba(232,96,44,0.08)" : "transparent",
-                color: form.transaction_type === tx ? ORANGE : "var(--althy-text-2)",
+                color: form.transaction_type === tx ? C.orange : "var(--althy-text-2)",
                 cursor: "pointer", fontSize: 13, fontWeight: form.transaction_type === tx ? 700 : 400,
                 transition: "all 0.15s",
               }}
@@ -742,7 +742,7 @@ function Step3({
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10,
               background: "rgba(255,255,255,0.82)", borderRadius: "var(--radius-elem)", backdropFilter: "blur(2px)",
             }}>
-              <Sparkles size={24} color={ORANGE} style={{ animation: "pub-pulse 1.2s ease-in-out infinite" }} />
+              <Sparkles size={24} color={C.orange} style={{ animation: "pub-pulse 1.2s ease-in-out infinite" }} />
               <span style={{ fontSize: 13, color: "var(--althy-text-2)", fontWeight: 600 }}>Althy rédige votre annonce…</span>
             </div>
           )}
@@ -756,7 +756,7 @@ function Step3({
               padding: "7px 16px", borderRadius: "var(--radius-elem)",
               border: "none",
               background: generating ? "var(--althy-border)" : "rgba(232,96,44,0.1)",
-              color: ORANGE, fontSize: 12, fontWeight: 700,
+              color: C.orange, fontSize: 12, fontWeight: 700,
               cursor: generating ? "not-allowed" : "pointer",
             }}
           >
@@ -779,13 +779,13 @@ function Step3({
           {form.tags_ia.map(tag => (
             <span key={tag} style={{
               display: "flex", alignItems: "center", gap: 5,
-              background: "rgba(232,96,44,0.08)", color: ORANGE,
+              background: "rgba(232,96,44,0.08)", color: C.orange,
               fontSize: 12, padding: "4px 10px", borderRadius: 20,
             }}>
               {tag}
               <button
                 onClick={() => set("tags_ia", form.tags_ia.filter(t => t !== tag))}
-                style={{ background: "none", border: "none", cursor: "pointer", color: ORANGE, padding: 0, lineHeight: 1 }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: C.orange, padding: 0, lineHeight: 1 }}
               >
                 <X size={11} />
               </button>
@@ -805,8 +805,8 @@ function Step3({
             disabled={!tagInput.trim()}
             style={{
               padding: "8px 16px", borderRadius: "var(--radius-elem)",
-              border: `1.5px solid ${ORANGE}`, background: "transparent",
-              color: ORANGE, fontSize: 13, fontWeight: 600,
+              border: `1.5px solid ${C.orange}`, background: "transparent",
+              color: C.orange, fontSize: 13, fontWeight: 600,
               cursor: tagInput.trim() ? "pointer" : "not-allowed",
               opacity: tagInput.trim() ? 1 : 0.5,
             }}
@@ -853,7 +853,7 @@ function Step4({
           {form.photos.length > 0 ? (
             <div style={{ height: 168, position: "relative" }}>
               <img src={form.photos[0]} alt="Cover" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              <span style={{ position: "absolute", top: 10, left: 10, background: ORANGE, color: "#fff", fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 4 }}>
+              <span style={{ position: "absolute", top: 10, left: 10, background: C.orange, color: "#fff", fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 4 }}>
                 {TX_LABELS[form.transaction_type]}
               </span>
               {form.photos.length > 1 && (
@@ -864,7 +864,7 @@ function Step4({
             </div>
           ) : (
             <div style={{ height: 100, background: "linear-gradient(135deg, #FEF2EB, rgba(232,96,44,0.1))", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Building2 size={32} color={ORANGE} style={{ opacity: 0.3 }} />
+              <Building2 size={32} color={C.orange} style={{ opacity: 0.3 }} />
             </div>
           )}
 
@@ -878,7 +878,7 @@ function Step4({
                   <MapPin size={11} />{form.adresse || "Adresse non définie"}, {form.ville}
                 </p>
               </div>
-              <p style={{ fontSize: 20, fontWeight: 700, color: ORANGE, margin: 0 }}>
+              <p style={{ fontSize: 20, fontWeight: 700, color: C.orange, margin: 0 }}>
                 {form.prix ? fmtCHF(form.prix) : "—"}
                 {form.transaction_type !== "vente" && <span style={{ fontSize: 11, fontWeight: 400, color: "var(--althy-text-3)" }}>/mois</span>}
               </p>
@@ -886,7 +886,7 @@ function Step4({
             {form.tags_ia.length > 0 && (
               <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                 {form.tags_ia.slice(0, 4).map(tag => (
-                  <span key={tag} style={{ background: "rgba(232,96,44,0.08)", color: ORANGE, fontSize: 11, padding: "2px 8px", borderRadius: 20 }}>{tag}</span>
+                  <span key={tag} style={{ background: "rgba(232,96,44,0.08)", color: C.orange, fontSize: 11, padding: "2px 8px", borderRadius: 20 }}>{tag}</span>
                 ))}
               </div>
             )}
@@ -911,19 +911,19 @@ function Step4({
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{
                 width: 20, height: 20, borderRadius: "50%",
-                background: c.ok ? "#EBF4E8" : "rgba(231,76,60,0.10)",
+                background: c.ok ? "var(--althy-green-bg)" : "rgba(231,76,60,0.10)",
                 display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
               }}>
                 {c.ok
-                  ? <Check size={12} color="#2E5E22" strokeWidth={2.5} />
-                  : <X size={11} color="#C0392B" strokeWidth={2.5} />}
+                  ? <Check size={12} color="var(--althy-green)" strokeWidth={2.5} />
+                  : <X size={11} color="var(--althy-red)" strokeWidth={2.5} />}
               </div>
-              <span style={{ fontSize: 13, color: c.ok ? "var(--althy-text)" : "#C0392B" }}>{c.label}</span>
+              <span style={{ fontSize: 13, color: c.ok ? "var(--althy-text)" : "var(--althy-red)" }}>{c.label}</span>
             </div>
             {!c.ok && (
               <button
                 onClick={() => onEdit(c.step)}
-                style={{ background: "none", border: "none", color: ORANGE, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+                style={{ background: "none", border: "none", color: C.orange, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
               >
                 Compléter →
               </button>
@@ -939,7 +939,7 @@ function Step4({
             <p style={{ margin: "0 0 3px", fontSize: 13, fontWeight: 600, color: "var(--althy-text)" }}>Durée de publication</p>
             <p style={{ margin: 0, fontSize: 12, color: "var(--althy-text-3)" }}>30 jours · renouvelable automatiquement</p>
           </div>
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#2E5E22" }}>Gratuit</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--althy-green)" }}>Gratuit</span>
         </div>
 
         <div style={{ borderTop: "1px solid var(--althy-border)", paddingTop: 14 }}>
@@ -949,7 +949,7 @@ function Step4({
             style={{
               display: "flex", alignItems: "flex-start", gap: 12,
               background: form.is_premium ? "rgba(245,158,11,0.06)" : "transparent",
-              border: `1.5px solid ${form.is_premium ? "#F59E0B" : "var(--althy-border)"}`,
+              border: `1.5px solid ${form.is_premium ? "var(--althy-warning)" : "var(--althy-border)"}`,
               borderRadius: "var(--radius-elem)", padding: "12px 14px",
               cursor: "pointer", width: "100%", textAlign: "left",
               transition: "all 0.15s",
@@ -957,7 +957,7 @@ function Step4({
           >
             <div style={{
               width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
-              background: form.is_premium ? "#F59E0B" : "var(--althy-border)",
+              background: form.is_premium ? "var(--althy-warning)" : "var(--althy-border)",
               display: "flex", alignItems: "center", justifyContent: "center", marginTop: 1,
             }}>
               {form.is_premium ? <Check size={12} color="#fff" strokeWidth={3} /> : <Star size={11} color="#fff" />}
@@ -978,7 +978,7 @@ function Step4({
         <div style={{
           padding: "10px 14px", borderRadius: "var(--radius-elem)",
           background: "rgba(231,76,60,0.07)", border: "1px solid rgba(231,76,60,0.20)",
-          color: "#C0392B", fontSize: 13,
+          color: "var(--althy-red)", fontSize: 13,
         }}>
           Complétez les éléments manquants avant de publier.
         </div>
@@ -1110,7 +1110,7 @@ export default function PublierPage() {
   if (authLoading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--althy-bg)" }}>
-        <Loader2 size={28} color={ORANGE} style={{ animation: "pub-spin 0.9s linear infinite" }} />
+        <Loader2 size={28} color={C.orange} style={{ animation: "pub-spin 0.9s linear infinite" }} />
         <style>{`@keyframes pub-spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
       </div>
     );
@@ -1127,8 +1127,8 @@ export default function PublierPage() {
           maxWidth: 440, width: "100%", textAlign: "center",
           boxShadow: "0 8px 40px rgba(0,0,0,0.08)",
         }}>
-          <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#EBF4E8", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px" }}>
-            <Check size={28} color="#2E5E22" />
+          <div style={{ width: 60, height: 60, borderRadius: "50%", background: "var(--althy-green-bg)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px" }}>
+            <Check size={28} color="var(--althy-green)" />
           </div>
           <h2 style={{ fontFamily: "var(--font-serif)", fontWeight: 300, fontSize: 26, color: "var(--althy-text)", margin: "0 0 8px" }}>
             Votre bien est en ligne !
@@ -1142,7 +1142,7 @@ export default function PublierPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <Link href={`/biens/${publishedId}`} style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              background: ORANGE, color: "#fff", padding: "12px 20px",
+              background: C.orange, color: "#fff", padding: "12px 20px",
               borderRadius: "var(--radius-elem)", textDecoration: "none",
               fontSize: 14, fontWeight: 600,
             }}>
@@ -1180,7 +1180,7 @@ export default function PublierPage() {
       }}>
         <Link href="/" style={{ textDecoration: "none" }}>
           <span style={{ fontFamily: "var(--font-serif)", fontSize: 20, fontWeight: 300, color: "var(--althy-text)", letterSpacing: "0.05em" }}>
-            ALT<span style={{ color: ORANGE }}>H</span>Y
+            ALT<span style={{ color: C.orange }}>H</span>Y
           </span>
         </Link>
         <Link href="/biens" style={{ fontSize: 13, color: "var(--althy-text-3)", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
@@ -1209,7 +1209,7 @@ export default function PublierPage() {
           boxShadow: "0 2px 14px rgba(0,0,0,0.04)", marginBottom: 20,
         }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--althy-text)", margin: "0 0 24px", display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ width: 26, height: 26, borderRadius: "50%", background: ORANGE, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+            <span style={{ width: 26, height: 26, borderRadius: "50%", background: C.orange, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
               {step}
             </span>
             {STEPS[step - 1]}
@@ -1224,9 +1224,9 @@ export default function PublierPage() {
         {/* Erreur */}
         {error && (
           <div style={{
-            background: "#FDECEA", border: "1px solid #F5C6CB",
+            background: "var(--althy-red-bg)", border: "1px solid #F5C6CB",
             borderRadius: "var(--radius-elem)", padding: "10px 14px",
-            color: "#C0392B", fontSize: 13, marginBottom: 16,
+            color: "var(--althy-red)", fontSize: 13, marginBottom: 16,
           }}>
             {error}
           </div>
@@ -1251,7 +1251,7 @@ export default function PublierPage() {
               onClick={handleNext}
               style={{
                 display: "flex", alignItems: "center", gap: 6,
-                background: ORANGE, border: "none",
+                background: C.orange, border: "none",
                 borderRadius: "var(--radius-elem)", padding: "9px 22px",
                 fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer",
               }}
@@ -1264,7 +1264,7 @@ export default function PublierPage() {
               disabled={publishing}
               style={{
                 display: "flex", alignItems: "center", gap: 7,
-                background: publishing ? "var(--althy-border)" : ORANGE, border: "none",
+                background: publishing ? "var(--althy-border)" : C.orange, border: "none",
                 borderRadius: "var(--radius-elem)", padding: "10px 24px",
                 fontSize: 14, fontWeight: 700, color: publishing ? "var(--althy-text-3)" : "#fff",
                 cursor: publishing ? "not-allowed" : "pointer",

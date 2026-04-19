@@ -1,6 +1,6 @@
 import { C } from "@/lib/design-tokens";
 
-const serif = "var(--font-serif, 'Fraunces', Georgia, serif)";
+const serif = "var(--font-serif)";
 
 const CHIFFRES = [
   { n: "130", label: "biens gérés" },

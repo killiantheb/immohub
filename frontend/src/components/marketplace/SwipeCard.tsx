@@ -21,13 +21,13 @@ import {
   Ruler,
   Building2,
 } from "lucide-react";
+import { C } from "@/lib/design-tokens";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const ORANGE          = "#E8602C";
 const SWIPE_THRESHOLD = 100;
-const serif           = "var(--font-serif, Fraunces, Georgia, serif)";
-const sans            = "var(--font-sans, 'DM Sans', system-ui, sans-serif)";
+const serif           = "var(--font-serif)";
+const sans            = "var(--font-sans)";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -128,7 +128,7 @@ function AlthyInsightWidget({ bien }: { bien: BienSwipe }) {
           display: "flex", alignItems: "center", gap: 8,
           background: "none", border: "none", cursor: "pointer",
           padding: 0, fontFamily: sans,
-          color: ORANGE, fontSize: 13, fontWeight: 600,
+          color: C.orange, fontSize: 13, fontWeight: 600,
           width: "100%", textAlign: "left",
         }}
       >
@@ -144,7 +144,7 @@ function AlthyInsightWidget({ bien }: { bien: BienSwipe }) {
 
       {open && loading && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, color: "rgba(26,22,18,0.45)", fontSize: 12 }}>
-          <div style={{ width: 14, height: 14, borderRadius: "50%", border: `2px solid ${ORANGE}`, borderTopColor: "transparent", animation: "sw-spin 0.7s linear infinite" }} />
+          <div style={{ width: 14, height: 14, borderRadius: "50%", border: `2px solid ${C.orange}`, borderTopColor: "transparent", animation: "sw-spin 0.7s linear infinite" }} />
           Althy analyse ce bien…
         </div>
       )}
@@ -156,8 +156,8 @@ function AlthyInsightWidget({ bien }: { bien: BienSwipe }) {
           borderRadius: 10, border: `1px solid rgba(232,96,44,0.12)`,
           animation: "sw-slidein 0.25s ease",
         }}>
-          <p style={{ margin: 0, fontSize: 13, color: "#3D3830", lineHeight: 1.65 }}>
-            <span style={{ color: ORANGE, fontWeight: 700 }}>✦ </span>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--althy-text)", lineHeight: 1.65 }}>
+            <span style={{ color: C.orange, fontWeight: 700 }}>✦ </span>
             {insight}
           </p>
           <p style={{ margin: "8px 0 0", fontSize: 11, color: "rgba(26,22,18,0.40)", fontStyle: "italic" }}>— Althy IA</p>
@@ -296,7 +296,7 @@ function DesktopCard({
             }}
           >
             <div style={{ border: "4px solid #4CAF50", borderRadius: 14, padding: "10px 24px", transform: "rotate(-14deg)" }}>
-              <span style={{ fontSize: 38, fontWeight: 900, color: "#4CAF50" }}>♥ AIMER</span>
+              <span style={{ fontSize: 38, fontWeight: 900, color: "var(--althy-green)" }}>♥ AIMER</span>
             </div>
           </motion.div>
 
@@ -311,7 +311,7 @@ function DesktopCard({
             }}
           >
             <div style={{ border: "4px solid #E74C3C", borderRadius: 14, padding: "10px 24px", transform: "rotate(14deg)" }}>
-              <span style={{ fontSize: 38, fontWeight: 900, color: "#E74C3C" }}>✕ PASSER</span>
+              <span style={{ fontSize: 38, fontWeight: 900, color: "var(--althy-red)" }}>✕ PASSER</span>
             </div>
           </motion.div>
         </motion.div>
@@ -347,7 +347,7 @@ function DesktopCard({
         {totalPics > 1 && (
           <div style={{ position: "absolute", bottom: 12, right: 16, display: "flex", gap: 5, pointerEvents: "none", zIndex: 10 }}>
             {Array.from({ length: Math.min(totalPics, 5) }).map((_, i) => (
-              <div key={i} style={{ width: i === photoIdx ? 18 : 6, height: 6, borderRadius: 3, background: i === photoIdx ? ORANGE : "rgba(255,255,255,0.50)", transition: "all 0.2s" }} />
+              <div key={i} style={{ width: i === photoIdx ? 18 : 6, height: 6, borderRadius: 3, background: i === photoIdx ? C.orange : "rgba(255,255,255,0.50)", transition: "all 0.2s" }} />
             ))}
           </div>
         )}
@@ -363,12 +363,12 @@ function DesktopCard({
       }}>
         {/* Progress */}
         <div style={{ padding: "14px 22px", borderBottom: "1px solid rgba(26,22,18,0.06)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 12, color: "#7A7469", fontWeight: 500 }}>
+          <span style={{ fontSize: 12, color: "var(--althy-text-3)", fontWeight: 500 }}>
             {current}/{total} biens · {bien.ville}
           </span>
           <div style={{ display: "flex", gap: 4 }}>
             {Array.from({ length: Math.min(total, 6) }).map((_, i) => (
-              <div key={i} style={{ width: 22, height: 3, borderRadius: 2, background: i < current ? ORANGE : "rgba(26,22,18,0.12)", transition: "background 0.2s" }} />
+              <div key={i} style={{ width: 22, height: 3, borderRadius: 2, background: i < current ? C.orange : "rgba(26,22,18,0.12)", transition: "background 0.2s" }} />
             ))}
           </div>
         </div>
@@ -377,60 +377,60 @@ function DesktopCard({
         <div style={{ flex: 1, overflowY: "auto", padding: "22px 22px 0" }}>
           {/* Badges */}
           <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
-            <span style={{ background: ORANGE, color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 20 }}>
+            <span style={{ background: C.orange, color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 20 }}>
               {bien.transaction_type === "location" ? "Location" : bien.transaction_type === "colocation" ? "Colocation" : "Vente"}
             </span>
             {bien.type_label && (
-              <span style={{ background: "rgba(26,22,18,0.07)", color: "#5C5650", fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20 }}>
+              <span style={{ background: "rgba(26,22,18,0.07)", color: "var(--althy-text-2)", fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20 }}>
                 {bien.type_label}
               </span>
             )}
             {bien.is_premium && (
-              <span style={{ background: "#FEF2EB", color: "#B45309", fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20 }}>
+              <span style={{ background: "var(--althy-orange-light)", color: "#B45309", fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20 }}>
                 ✦ Premium
               </span>
             )}
           </div>
 
           {/* Title */}
-          <h2 style={{ fontFamily: serif, fontSize: 23, fontWeight: 300, color: "#1A1612", margin: "0 0 6px", lineHeight: 1.25 }}>
+          <h2 style={{ fontFamily: serif, fontSize: 23, fontWeight: 300, color: "var(--althy-text)", margin: "0 0 6px", lineHeight: 1.25 }}>
             {bien.titre}
           </h2>
 
           {/* Address */}
-          <p style={{ margin: "0 0 16px", fontSize: 13, color: "#7A7469", display: "flex", alignItems: "center", gap: 5 }}>
+          <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--althy-text-3)", display: "flex", alignItems: "center", gap: 5 }}>
             <MapPin size={13} /> {bien.adresse_affichee}
           </p>
 
           {/* Specs */}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
             {bien.pieces ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, background: "rgba(26,22,18,0.04)", fontSize: 13, color: "#3D3830", fontWeight: 500 }}>
-                <Home size={13} color="#7A7469" /> {bien.pieces} pièce{bien.pieces > 1 ? "s" : ""}
+              <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, background: "rgba(26,22,18,0.04)", fontSize: 13, color: "var(--althy-text)", fontWeight: 500 }}>
+                <Home size={13} color="var(--althy-text-3)" /> {bien.pieces} pièce{bien.pieces > 1 ? "s" : ""}
               </div>
             ) : null}
             {bien.surface ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, background: "rgba(26,22,18,0.04)", fontSize: 13, color: "#3D3830", fontWeight: 500 }}>
-                <Ruler size={13} color="#7A7469" /> {bien.surface} m²
+              <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, background: "rgba(26,22,18,0.04)", fontSize: 13, color: "var(--althy-text)", fontWeight: 500 }}>
+                <Ruler size={13} color="var(--althy-text-3)" /> {bien.surface} m²
               </div>
             ) : null}
             {bien.etage ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, background: "rgba(26,22,18,0.04)", fontSize: 13, color: "#3D3830", fontWeight: 500 }}>
-                <Building2 size={13} color="#7A7469" /> {bien.etage}
+              <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, background: "rgba(26,22,18,0.04)", fontSize: 13, color: "var(--althy-text)", fontWeight: 500 }}>
+                <Building2 size={13} color="var(--althy-text-3)" /> {bien.etage}
               </div>
             ) : null}
           </div>
 
           {/* Prix */}
           <div style={{ marginBottom: 18 }}>
-            <span style={{ fontFamily: serif, fontSize: 34, fontWeight: 300, color: "#1A1612" }}>
+            <span style={{ fontFamily: serif, fontSize: 34, fontWeight: 300, color: "var(--althy-text)" }}>
               {bien.prix ? fmtPrix(bien.prix) : "Sur demande"}
             </span>
             {["location","colocation"].includes(bien.transaction_type) && bien.prix ? (
-              <span style={{ fontSize: 14, color: "#7A7469", marginLeft: 6 }}>/mois</span>
+              <span style={{ fontSize: 14, color: "var(--althy-text-3)", marginLeft: 6 }}>/mois</span>
             ) : null}
             {bien.charges ? (
-              <span style={{ display: "block", fontSize: 12, color: "#7A7469", marginTop: 3 }}>
+              <span style={{ display: "block", fontSize: 12, color: "var(--althy-text-3)", marginTop: 3 }}>
                 + CHF {bien.charges} charges
               </span>
             ) : null}
@@ -440,7 +440,7 @@ function DesktopCard({
           {bien.tags_ia?.length > 0 && (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 18 }}>
               {bien.tags_ia.slice(0, 6).map(tag => (
-                <span key={tag} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, background: "rgba(232,96,44,0.07)", color: ORANGE, fontWeight: 500 }}>
+                <span key={tag} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, background: "rgba(232,96,44,0.07)", color: C.orange, fontWeight: 500 }}>
                   {tag}
                 </span>
               ))}
@@ -450,7 +450,7 @@ function DesktopCard({
           {/* Description (max 3 lignes) */}
           {bien.description && (
             <p style={{
-              margin: "0 0 18px", fontSize: 13, color: "#5C5650", lineHeight: 1.65,
+              margin: "0 0 18px", fontSize: 13, color: "var(--althy-text-2)", lineHeight: 1.65,
               display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical",
               overflow: "hidden",
             }}>
@@ -461,7 +461,7 @@ function DesktopCard({
           {/* Althy IA widget */}
           <AlthyInsightWidget bien={bien} />
 
-          <Link href={`/biens/${bien.id}`} style={{ display: "block", margin: "14px 0 22px", fontSize: 12, color: "#7A7469", textDecoration: "none", textAlign: "center" }}>
+          <Link href={`/biens/${bien.id}`} style={{ display: "block", margin: "14px 0 22px", fontSize: 12, color: "var(--althy-text-3)", textDecoration: "none", textAlign: "center" }}>
             Voir la fiche complète →
           </Link>
         </div>
@@ -475,7 +475,7 @@ function DesktopCard({
               flex: 1, height: 52, borderRadius: 14,
               border: "2px solid #E74C3C", background: "#fff",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              cursor: "pointer", fontSize: 14, fontWeight: 700, color: "#E74C3C",
+              cursor: "pointer", fontSize: 14, fontWeight: 700, color: "var(--althy-red)",
               boxShadow: "0 2px 10px rgba(231,76,60,0.12)",
               transition: "transform 0.15s, box-shadow 0.15s",
               fontFamily: sans,
@@ -488,7 +488,7 @@ function DesktopCard({
             onClick={() => triggerSwipe("right")}
             style={{
               flex: 1, height: 52, borderRadius: 14,
-              border: "none", background: "#4CAF50",
+              border: "none", background: "var(--althy-green)",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               cursor: "pointer", fontSize: 14, fontWeight: 700, color: "#fff",
               boxShadow: "0 2px 10px rgba(76,175,80,0.22)",
@@ -614,12 +614,12 @@ function MobileCard({
         {/* Swipe overlays */}
         <motion.div style={{ position: "absolute", inset: 0, background: "rgba(20,80,20,1)", opacity: rightOp, display: "flex", alignItems: "center", justifyContent: "flex-start", paddingLeft: 30, pointerEvents: "none" }}>
           <div style={{ border: "4px solid #4CAF50", borderRadius: 12, padding: "8px 16px", transform: "rotate(-14deg)" }}>
-            <span style={{ fontSize: 28, fontWeight: 900, color: "#4CAF50" }}>♥</span>
+            <span style={{ fontSize: 28, fontWeight: 900, color: "var(--althy-green)" }}>♥</span>
           </div>
         </motion.div>
         <motion.div style={{ position: "absolute", inset: 0, background: "rgba(120,20,20,1)", opacity: leftOp, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 30, pointerEvents: "none" }}>
           <div style={{ border: "4px solid #E74C3C", borderRadius: 12, padding: "8px 16px", transform: "rotate(14deg)" }}>
-            <span style={{ fontSize: 28, fontWeight: 900, color: "#E74C3C" }}>✕</span>
+            <span style={{ fontSize: 28, fontWeight: 900, color: "var(--althy-red)" }}>✕</span>
           </div>
         </motion.div>
 
@@ -637,19 +637,19 @@ function MobileCard({
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
-                <p style={{ margin: "0 0 2px", fontSize: 15, fontWeight: 700, color: "#1A1612" }}>
+                <p style={{ margin: "0 0 2px", fontSize: 15, fontWeight: 700, color: "var(--althy-text)" }}>
                   {bien.ville}{bien.pieces ? ` · ${bien.pieces}p` : ""}{bien.surface ? ` · ${bien.surface}m²` : ""}
                 </p>
-                <p style={{ margin: 0, fontFamily: serif, fontSize: 22, fontWeight: 300, color: "#1A1612" }}>
+                <p style={{ margin: 0, fontFamily: serif, fontSize: 22, fontWeight: 300, color: "var(--althy-text)" }}>
                   {prixLabel}
                 </p>
               </div>
-              <span style={{ fontSize: 11, color: "#7A7469", marginTop: 2 }}>{showDetail ? "▲" : "▼"}</span>
+              <span style={{ fontSize: 11, color: "var(--althy-text-3)", marginTop: 2 }}>{showDetail ? "▲" : "▼"}</span>
             </div>
 
             {/* Tags teaser */}
             {bien.tags_ia?.length > 0 && !showDetail && (
-              <p style={{ margin: "7px 0 0", fontSize: 12, color: ORANGE, fontWeight: 500 }}>
+              <p style={{ margin: "7px 0 0", fontSize: 12, color: C.orange, fontWeight: 500 }}>
                 ✦ {bien.tags_ia[0]}{bien.tags_ia[1] ? `, ${bien.tags_ia[1]}` : ""}
               </p>
             )}
@@ -657,12 +657,12 @@ function MobileCard({
             {/* Expanded detail */}
             {showDetail && (
               <div style={{ marginTop: 12, animation: "sw-slidein 0.22s ease" }}>
-                <p style={{ margin: "0 0 8px", fontSize: 13, color: "#5C5650" }}>
+                <p style={{ margin: "0 0 8px", fontSize: 13, color: "var(--althy-text-2)" }}>
                   {bien.adresse_affichee}
                 </p>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
                   {bien.tags_ia?.slice(0, 4).map(tag => (
-                    <span key={tag} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 6, background: "rgba(232,96,44,0.08)", color: ORANGE }}>
+                    <span key={tag} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 6, background: "rgba(232,96,44,0.08)", color: C.orange }}>
                       {tag}
                     </span>
                   ))}
@@ -678,7 +678,7 @@ function MobileCard({
               onClick={() => triggerSwipe("left")}
               style={{ width: 56, height: 56, borderRadius: "50%", border: "2px solid #E74C3C", background: "rgba(255,255,255,0.94)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 14px rgba(231,76,60,0.18)", flexShrink: 0 }}
             >
-              <X size={22} color="#E74C3C" strokeWidth={2.5} />
+              <X size={22} color="var(--althy-red)" strokeWidth={2.5} />
             </button>
 
             <Link
@@ -690,7 +690,7 @@ function MobileCard({
 
             <button
               onClick={() => triggerSwipe("right")}
-              style={{ width: 56, height: 56, borderRadius: "50%", border: "none", background: "#4CAF50", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 14px rgba(76,175,80,0.28)", flexShrink: 0 }}
+              style={{ width: 56, height: 56, borderRadius: "50%", border: "none", background: "var(--althy-green)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 4px 14px rgba(76,175,80,0.28)", flexShrink: 0 }}
             >
               <Heart size={22} color="#fff" strokeWidth={2.5} />
             </button>

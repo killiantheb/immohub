@@ -15,6 +15,7 @@ celery_app = Celery(
         "app.tasks.onboarding_scan",
         "app.tasks.import_elements",
         "app.tasks.email_sequences",
+        "app.tasks.sync_tasks",
     ],
 )
 

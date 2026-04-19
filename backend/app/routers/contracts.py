@@ -42,7 +42,7 @@ async def create_contract(
     current_user: AuthUserDep,
     db: DbDep,
 ) -> ContractRead:
-    if current_user.role not in ("owner", "agency", "super_admin"):
+    if current_user.role not in ("proprio_solo", "agence", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
     contract = await ContractService(db).create(payload, current_user=current_user)
     return ContractRead.model_validate(contract)

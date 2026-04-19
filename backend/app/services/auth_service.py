@@ -79,7 +79,7 @@ async def _get_or_create_db_user(
     first_name: str | None = None,
     last_name: str | None = None,
     phone: str | None = None,
-    role: str = "owner",
+    role: str = "proprio_solo",
 ) -> User:
     result = await db.execute(select(User).where(User.supabase_uid == supabase_uid))
     user = result.scalar_one_or_none()
@@ -208,7 +208,7 @@ class AuthService:
             email=req.email,
             first_name=meta.get("first_name"),
             last_name=meta.get("last_name"),
-            role=meta.get("role", "owner"),
+            role=meta.get("role", "proprio_solo"),
         )
 
         return AuthResponse(

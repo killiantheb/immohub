@@ -8,7 +8,8 @@ import {
   Trash2, Upload, UserCheck,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { S, fmtDate, fmtCHF, Card, Badge } from "../_shared";
+import { fmtDate, fmtCHF, Card, Badge } from "../_shared";
+import { C } from "@/lib/design-tokens";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -55,17 +56,17 @@ const PIECES_DEFAUT: Piece[] = [
 ];
 
 const PHASES_INFO: Record<Phase | "termine", { label: string; icon: React.ElementType; color: string }> = {
-  depart_annonce: { label: "Départ annoncé",       icon: LogOut,      color: S.amber },
-  recherche:      { label: "Recherche locataire",  icon: Search,      color: S.blue },
-  checkout:       { label: "Check-out (EDL sortie)", icon: ClipboardList, color: S.orange },
-  checkin:        { label: "Check-in (EDL entrée)", icon: LogIn,       color: S.green },
-  termine:        { label: "Cycle terminé",         icon: CheckCircle2, color: S.green },
+  depart_annonce: { label: "Départ annoncé",       icon: LogOut,      color: C.amber },
+  recherche:      { label: "Recherche locataire",  icon: Search,      color: C.blue },
+  checkout:       { label: "Check-out (EDL sortie)", icon: ClipboardList, color: C.orange },
+  checkin:        { label: "Check-in (EDL entrée)", icon: LogIn,       color: C.green },
+  termine:        { label: "Cycle terminé",         icon: CheckCircle2, color: C.green },
 };
 
 const ETAT_OPTIONS = [
-  { value: "bon",          label: "Bon état",       color: S.green },
-  { value: "usure_normale", label: "Usure normale",  color: S.amber },
-  { value: "degradation",  label: "Dégradation",    color: S.red },
+  { value: "bon",          label: "Bon état",       color: C.green },
+  { value: "usure_normale", label: "Usure normale",  color: C.amber },
+  { value: "degradation",  label: "Dégradation",    color: C.red },
 ] as const;
 
 // ── Sous-composants ───────────────────────────────────────────────────────────
@@ -80,7 +81,7 @@ function PhaseSteps({ current }: { current: Phase }) {
         const info = PHASES_INFO[p];
         const done = i < currentIdx || current === "termine";
         const active = i === currentIdx && current !== "termine";
-        const color = done ? S.green : active ? S.orange : S.border;
+        const color = done ? C.green : active ? C.orange : C.border;
 
         return (
           <div key={p} style={{ display: "flex", alignItems: "center", flex: 1 }}>
@@ -88,10 +89,10 @@ function PhaseSteps({ current }: { current: Phase }) {
               <div
                 style={{
                   width: 36, height: 36, borderRadius: "50%",
-                  background: done ? S.green : active ? S.orange : S.surface,
+                  background: done ? C.green : active ? C.orange : C.surface,
                   border: `2px solid ${color}`,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  color: done || active ? "#fff" : S.text3,
+                  color: done || active ? "#fff" : C.text3,
                   fontSize: 14,
                   flexShrink: 0,
                 }}
@@ -103,7 +104,7 @@ function PhaseSteps({ current }: { current: Phase }) {
               </div>
               <span style={{
                 fontSize: 11, marginTop: 4, textAlign: "center",
-                color: active ? S.orange : done ? S.green : S.text3,
+                color: active ? C.orange : done ? C.green : C.text3,
                 fontWeight: active ? 600 : 400,
                 whiteSpace: "nowrap",
               }}>
@@ -113,7 +114,7 @@ function PhaseSteps({ current }: { current: Phase }) {
             {i < phases.length - 1 && (
               <div style={{
                 height: 2, flex: 1, marginBottom: 20,
-                background: i < currentIdx ? S.green : S.border,
+                background: i < currentIdx ? C.green : C.border,
                 minWidth: 12,
               }} />
             )}
@@ -132,8 +133,8 @@ function ChecklistCard({ items, onToggle }: {
   return (
     <Card style={{ marginBottom: "1rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <span style={{ fontWeight: 600, color: S.text, fontSize: 14 }}>Checklist départ</span>
-        <span style={{ fontSize: 12, color: S.text3 }}>{done}/{items.length}</span>
+        <span style={{ fontWeight: 600, color: C.text, fontSize: 14 }}>Checklist départ</span>
+        <span style={{ fontSize: 12, color: C.text3 }}>{done}/{items.length}</span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {items.map(item => (
@@ -142,10 +143,10 @@ function ChecklistCard({ items, onToggle }: {
               type="checkbox"
               checked={item.done}
               onChange={() => onToggle(item.id)}
-              style={{ accentColor: S.orange, width: 16, height: 16 }}
+              style={{ accentColor: C.orange, width: 16, height: 16 }}
             />
             <span style={{
-              fontSize: 13, color: item.done ? S.text3 : S.text,
+              fontSize: 13, color: item.done ? C.text3 : C.text,
               textDecoration: item.done ? "line-through" : "none",
             }}>
               {item.label}
@@ -154,7 +155,7 @@ function ChecklistCard({ items, onToggle }: {
         ))}
       </div>
       {done === items.length && (
-        <div style={{ marginTop: 12, fontSize: 12, color: S.green, fontWeight: 600 }}>
+        <div style={{ marginTop: 12, fontSize: 12, color: C.green, fontWeight: 600 }}>
           ✓ Toutes les tâches sont effectuées
         </div>
       )}
@@ -182,7 +183,7 @@ function EdlCard({
 
   return (
     <Card style={{ marginBottom: "1rem" }}>
-      <div style={{ fontWeight: 600, color: S.text, fontSize: 14, marginBottom: 12 }}>{title}</div>
+      <div style={{ fontWeight: 600, color: C.text, fontSize: 14, marginBottom: 12 }}>{title}</div>
       {pieces.map((piece, idx) => {
         const isOpen = open === idx;
         const refPiece = edlRef?.pieces?.[idx];
@@ -190,37 +191,37 @@ function EdlCard({
         return (
           <div
             key={idx}
-            style={{ borderBottom: `1px solid ${S.border}`, paddingBottom: 8, marginBottom: 8 }}
+            style={{ borderBottom: `1px solid ${C.border}`, paddingBottom: 8, marginBottom: 8 }}
           >
             <button
               onClick={() => setOpen(isOpen ? null : idx)}
               style={{
                 width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
                 background: "none", border: "none", cursor: "pointer",
-                padding: "6px 0", color: S.text, fontSize: 13, fontWeight: 500,
+                padding: "6px 0", color: C.text, fontSize: 13, fontWeight: 500,
               }}
             >
               <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <Home size={14} color={S.text3} />
+                <Home size={14} color={C.text3} />
                 {piece.nom}
                 {piece.etat && (
                   <span style={{
                     fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 20,
                     background: piece.etat === "bon" ? "var(--althy-green-bg)" : piece.etat === "usure_normale" ? "var(--althy-amber-bg)" : "var(--althy-red-bg)",
-                    color: piece.etat === "bon" ? S.green : piece.etat === "usure_normale" ? "var(--althy-amber)" : S.red,
+                    color: piece.etat === "bon" ? C.green : piece.etat === "usure_normale" ? "var(--althy-amber)" : C.red,
                   }}>
                     {ETAT_OPTIONS.find(e => e.value === piece.etat)?.label}
                   </span>
                 )}
               </span>
-              {isOpen ? <ChevronUp size={14} color={S.text3} /> : <ChevronDown size={14} color={S.text3} />}
+              {isOpen ? <ChevronUp size={14} color={C.text3} /> : <ChevronDown size={14} color={C.text3} />}
             </button>
 
             {isOpen && (
               <div style={{ paddingTop: 8, display: "flex", flexDirection: "column", gap: 10 }}>
                 {/* Comparaison EDL ref */}
                 {refPiece?.etat && (
-                  <div style={{ fontSize: 12, color: S.text3, background: S.surface, border: `1px solid ${S.border}`, borderRadius: 6, padding: "6px 10px" }}>
+                  <div style={{ fontSize: 12, color: C.text3, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, padding: "6px 10px" }}>
                     <strong>EDL entrée :</strong> {ETAT_OPTIONS.find(e => e.value === refPiece.etat)?.label}
                     {refPiece.commentaire && <> — {refPiece.commentaire}</>}
                   </div>
@@ -234,9 +235,9 @@ function EdlCard({
                       onClick={() => setPiece(idx, { etat: opt.value as Piece["etat"] })}
                       style={{
                         flex: 1, padding: "6px 0", borderRadius: 8, cursor: "pointer",
-                        border: `2px solid ${piece.etat === opt.value ? opt.color : S.border}`,
-                        background: piece.etat === opt.value ? (opt.value === "bon" ? "var(--althy-green-bg)" : opt.value === "usure_normale" ? "var(--althy-amber-bg)" : "var(--althy-red-bg)") : S.surface,
-                        color: piece.etat === opt.value ? opt.color : S.text3,
+                        border: `2px solid ${piece.etat === opt.value ? opt.color : C.border}`,
+                        background: piece.etat === opt.value ? (opt.value === "bon" ? "var(--althy-green-bg)" : opt.value === "usure_normale" ? "var(--althy-amber-bg)" : "var(--althy-red-bg)") : C.surface,
+                        color: piece.etat === opt.value ? opt.color : C.text3,
                         fontSize: 11, fontWeight: 600,
                       }}
                     >
@@ -252,9 +253,9 @@ function EdlCard({
                   placeholder="Observations, remarques..."
                   rows={2}
                   style={{
-                    width: "100%", borderRadius: 8, border: `1px solid ${S.border}`,
-                    padding: "8px 10px", fontSize: 12, color: S.text, resize: "none",
-                    background: S.surface, fontFamily: "inherit", boxSizing: "border-box",
+                    width: "100%", borderRadius: 8, border: `1px solid ${C.border}`,
+                    padding: "8px 10px", fontSize: 12, color: C.text, resize: "none",
+                    background: C.surface, fontFamily: "inherit", boxSizing: "border-box",
                   }}
                 />
 
@@ -265,7 +266,7 @@ function EdlCard({
                       <img src={url} alt="" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 6 }} />
                       <button
                         onClick={() => setPiece(idx, { photos: piece.photos.filter((_, j) => j !== pi) })}
-                        style={{ position: "absolute", top: -4, right: -4, background: S.red, border: "none", borderRadius: "50%", width: 18, height: 18, cursor: "pointer", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                        style={{ position: "absolute", top: -4, right: -4, background: C.red, border: "none", borderRadius: "50%", width: 18, height: 18, cursor: "pointer", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
                       >
                         <Trash2 size={10} />
                       </button>
@@ -274,9 +275,9 @@ function EdlCard({
                   <label
                     style={{
                       width: 64, height: 64, borderRadius: 6,
-                      border: `2px dashed ${S.border}`, display: "flex",
+                      border: `2px dashed ${C.border}`, display: "flex",
                       flexDirection: "column", alignItems: "center", justifyContent: "center",
-                      cursor: "pointer", color: S.text3, gap: 2,
+                      cursor: "pointer", color: C.text3, gap: 2,
                     }}
                   >
                     <Upload size={14} />
@@ -300,8 +301,8 @@ function EdlCard({
         onClick={() => onChange([...pieces, { nom: `Pièce ${pieces.length + 1}`, etat: "", commentaire: "", photos: [] }])}
         style={{
           display: "flex", alignItems: "center", gap: 6, marginTop: 8,
-          background: "none", border: `1px dashed ${S.border}`, borderRadius: 8,
-          padding: "6px 12px", cursor: "pointer", color: S.text3, fontSize: 12,
+          background: "none", border: `1px dashed ${C.border}`, borderRadius: 8,
+          padding: "6px 12px", cursor: "pointer", color: C.text3, fontSize: 12,
         }}
       >
         <Plus size={12} /> Ajouter une pièce
@@ -451,7 +452,7 @@ export default function ChangementPage() {
 
   if (loading) {
     return (
-      <div style={{ padding: "2rem", color: S.text3, fontSize: 14 }}>Chargement…</div>
+      <div style={{ padding: "2rem", color: C.text3, fontSize: 14 }}>Chargement…</div>
     );
   }
 
@@ -459,35 +460,35 @@ export default function ChangementPage() {
   if (!changement) {
     return (
       <div style={{ padding: "1.5rem 1rem", maxWidth: 560 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, color: S.text, marginBottom: 6 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: C.text, marginBottom: 6 }}>
           Cycle de changement de locataire
         </h2>
-        <p style={{ fontSize: 13, color: S.text3, marginBottom: "1.5rem", lineHeight: 1.6 }}>
+        <p style={{ fontSize: 13, color: C.text3, marginBottom: "1.5rem", lineHeight: 1.6 }}>
           Démarrez le processus de départ / arrivée : checklist, état des lieux de sortie et d&apos;entrée, gestion de la caution, remise des clés.
         </p>
 
         {error && (
-          <div style={{ background: "var(--althy-red-bg)", border: `1px solid ${S.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: S.red, marginBottom: "1rem", display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{ background: "var(--althy-red-bg)", border: `1px solid ${C.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: C.red, marginBottom: "1rem", display: "flex", gap: 8, alignItems: "center" }}>
             <AlertTriangle size={14} /> {error}
           </div>
         )}
 
         <Card>
-          <label style={{ display: "block", fontSize: 12, color: S.text3, marginBottom: 4 }}>
+          <label style={{ display: "block", fontSize: 12, color: C.text3, marginBottom: 4 }}>
             Date de départ prévue (optionnel)
           </label>
           <input
             type="date"
             value={dateDepart}
             onChange={e => setDateDepart(e.target.value)}
-            style={{ width: "100%", borderRadius: 8, border: `1px solid ${S.border}`, padding: "8px 10px", fontSize: 13, color: S.text, background: S.surface, boxSizing: "border-box", marginBottom: 12 }}
+            style={{ width: "100%", borderRadius: 8, border: `1px solid ${C.border}`, padding: "8px 10px", fontSize: 13, color: C.text, background: C.surface, boxSizing: "border-box", marginBottom: 12 }}
           />
           <button
             onClick={creer}
             disabled={saving}
             style={{
               width: "100%", padding: "11px 0", borderRadius: 10, border: "none",
-              background: S.orange, color: "#fff", fontSize: 14, fontWeight: 600,
+              background: C.orange, color: "#fff", fontSize: 14, fontWeight: 600,
               cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1,
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             }}
@@ -505,19 +506,19 @@ export default function ChangementPage() {
     return (
       <div style={{ padding: "1.5rem 1rem", maxWidth: 560 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "1.5rem" }}>
-          <CheckCircle2 size={28} color={S.green} />
+          <CheckCircle2 size={28} color={C.green} />
           <div>
-            <h2 style={{ fontSize: 16, fontWeight: 600, color: S.text, margin: 0 }}>Cycle terminé</h2>
-            <p style={{ fontSize: 12, color: S.text3, margin: 0 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 600, color: C.text, margin: 0 }}>Cycle terminé</h2>
+            <p style={{ fontSize: 12, color: C.text3, margin: 0 }}>
               Check-in effectué le {fmtDate(changement.date_checkin)}
             </p>
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {changement.bail_signe && <Badge label="Bail signé" color={S.green} bg="var(--althy-green-bg)" />}
-          {changement.premier_loyer_envoye && <Badge label="1er QR-loyer envoyé" color={S.blue} bg="var(--althy-blue-bg)" />}
+          {changement.bail_signe && <Badge label="Bail signé" color={C.green} bg="var(--althy-green-bg)" />}
+          {changement.premier_loyer_envoye && <Badge label="1er QR-loyer envoyé" color={C.blue} bg="var(--althy-blue-bg)" />}
           {changement.caution_retenue != null && changement.caution_retenue > 0 && (
-            <Badge label={`Caution retenue : ${fmtCHF(changement.caution_retenue)}`} color={S.amber} bg="var(--althy-amber-bg)" />
+            <Badge label={`Caution retenue : ${fmtCHF(changement.caution_retenue)}`} color={C.amber} bg="var(--althy-amber-bg)" />
           )}
         </div>
       </div>
@@ -529,16 +530,16 @@ export default function ChangementPage() {
   return (
     <div style={{ padding: "1.5rem 1rem", maxWidth: 640 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, color: S.text, margin: 0 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: C.text, margin: 0 }}>
           Cycle de changement
         </h2>
-        <Badge label="En cours" color={S.orange} bg="var(--althy-orange-bg)" />
+        <Badge label="En cours" color={C.orange} bg="var(--althy-orange-bg)" />
       </div>
 
       {error && (
-        <div style={{ background: "var(--althy-red-bg)", border: `1px solid ${S.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: S.red, marginBottom: "1rem", display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{ background: "var(--althy-red-bg)", border: `1px solid ${C.red}`, borderRadius: 8, padding: "10px 14px", fontSize: 13, color: C.red, marginBottom: "1rem", display: "flex", gap: 8, alignItems: "center" }}>
           <AlertTriangle size={14} /> {error}
-          <button onClick={() => setError(null)} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: S.red, fontSize: 16 }}>×</button>
+          <button onClick={() => setError(null)} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: C.red, fontSize: 16 }}>×</button>
         </div>
       )}
 
@@ -549,13 +550,13 @@ export default function ChangementPage() {
         <div>
           <Card style={{ marginBottom: "1rem" }}>
             <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-              <LogOut size={18} color={S.amber} style={{ flexShrink: 0, marginTop: 1 }} />
+              <LogOut size={18} color={C.amber} style={{ flexShrink: 0, marginTop: 1 }} />
               <div>
-                <div style={{ fontWeight: 600, color: S.text, fontSize: 14, marginBottom: 2 }}>
+                <div style={{ fontWeight: 600, color: C.text, fontSize: 14, marginBottom: 2 }}>
                   Départ du locataire actuel
                 </div>
                 {changement.date_depart_prevu && (
-                  <div style={{ fontSize: 12, color: S.text3 }}>
+                  <div style={{ fontSize: 12, color: C.text3 }}>
                     Date prévue : <strong>{fmtDate(changement.date_depart_prevu)}</strong>
                   </div>
                 )}
@@ -570,7 +571,7 @@ export default function ChangementPage() {
             disabled={saving}
             style={{
               width: "100%", padding: "11px 0", borderRadius: 10, border: "none",
-              background: S.orange, color: "#fff", fontSize: 14, fontWeight: 600,
+              background: C.orange, color: "#fff", fontSize: 14, fontWeight: 600,
               cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1,
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             }}
@@ -586,19 +587,19 @@ export default function ChangementPage() {
         <div>
           <Card style={{ marginBottom: "1rem" }}>
             <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-              <Search size={18} color={S.blue} style={{ flexShrink: 0 }} />
+              <Search size={18} color={C.blue} style={{ flexShrink: 0 }} />
               <div>
-                <div style={{ fontWeight: 600, color: S.text, fontSize: 14, marginBottom: 4 }}>
+                <div style={{ fontWeight: 600, color: C.text, fontSize: 14, marginBottom: 4 }}>
                   Recherche en cours
                 </div>
-                <div style={{ fontSize: 12, color: S.text3, lineHeight: 1.6 }}>
+                <div style={{ fontSize: 12, color: C.text3, lineHeight: 1.6 }}>
                   L&apos;annonce a été publiée sur le marketplace. Les candidatures sont consultables depuis l&apos;onglet <strong>Locataire</strong>.
                 </div>
               </div>
             </div>
           </Card>
 
-          <div style={{ fontSize: 13, color: S.text2, marginBottom: "1rem", fontWeight: 500 }}>
+          <div style={{ fontSize: 13, color: C.text2, marginBottom: "1rem", fontWeight: 500 }}>
             État des lieux de sortie
           </div>
           <EdlCard
@@ -608,10 +609,10 @@ export default function ChangementPage() {
           />
 
           <Card style={{ marginBottom: "1rem" }}>
-            <div style={{ fontWeight: 500, color: S.text, fontSize: 13, marginBottom: 10 }}>Caution</div>
+            <div style={{ fontWeight: 500, color: C.text, fontSize: 13, marginBottom: 10 }}>Caution</div>
             <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 11, color: S.text3, display: "block", marginBottom: 4 }}>
+                <label style={{ fontSize: 11, color: C.text3, display: "block", marginBottom: 4 }}>
                   Montant retenu (CHF)
                 </label>
                 <input
@@ -620,7 +621,7 @@ export default function ChangementPage() {
                   value={cautionRetenue}
                   onChange={e => setCautionRetenue(e.target.value)}
                   placeholder="0"
-                  style={{ width: "100%", borderRadius: 8, border: `1px solid ${S.border}`, padding: "7px 10px", fontSize: 13, background: S.surface, boxSizing: "border-box" }}
+                  style={{ width: "100%", borderRadius: 8, border: `1px solid ${C.border}`, padding: "7px 10px", fontSize: 13, background: C.surface, boxSizing: "border-box" }}
                 />
               </div>
             </div>
@@ -629,7 +630,7 @@ export default function ChangementPage() {
               onChange={e => setCautionMotif(e.target.value)}
               placeholder="Motif de retenue (optionnel)..."
               rows={2}
-              style={{ width: "100%", borderRadius: 8, border: `1px solid ${S.border}`, padding: "8px 10px", fontSize: 12, resize: "none", background: S.surface, fontFamily: "inherit", boxSizing: "border-box" }}
+              style={{ width: "100%", borderRadius: 8, border: `1px solid ${C.border}`, padding: "8px 10px", fontSize: 12, resize: "none", background: C.surface, fontFamily: "inherit", boxSizing: "border-box" }}
             />
           </Card>
 
@@ -637,14 +638,14 @@ export default function ChangementPage() {
             <button
               onClick={() => sauvegarderEdl("sortie")}
               disabled={saving}
-              style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: `2px solid ${S.orange}`, background: S.surface, color: S.orange, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+              style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: `2px solid ${C.orange}`, background: C.surface, color: C.orange, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
             >
               Sauvegarder EDL
             </button>
             <button
               onClick={finaliserDepart}
               disabled={saving}
-              style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: S.orange, color: "#fff", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}
+              style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: C.orange, color: "#fff", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}
             >
               {saving ? "Validation…" : "Valider le check-out →"}
             </button>
@@ -665,7 +666,7 @@ export default function ChangementPage() {
             </div>
           </Card>
 
-          <div style={{ fontSize: 13, color: S.text2, marginBottom: "1rem", fontWeight: 500 }}>
+          <div style={{ fontSize: 13, color: C.text2, marginBottom: "1rem", fontWeight: 500 }}>
             État des lieux d&apos;entrée — nouveau locataire
           </div>
           <EdlCard
@@ -679,13 +680,13 @@ export default function ChangementPage() {
             <button
               onClick={() => sauvegarderEdl("entree")}
               disabled={saving}
-              style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: `2px solid ${S.orange}`, background: S.surface, color: S.orange, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+              style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: `2px solid ${C.orange}`, background: C.surface, color: C.orange, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
             >
               Sauvegarder EDL
             </button>
             <button
               onClick={() => setChangement({ ...changement, phase: "checkin" as Phase })}
-              style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: S.orange, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+              style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: C.orange, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
             >
               Passer au check-in →
             </button>
@@ -720,8 +721,8 @@ function CheckinPhase({
   return (
     <div>
       <Card style={{ marginBottom: "1rem" }}>
-        <div style={{ fontWeight: 600, color: S.text, fontSize: 14, marginBottom: 14, display: "flex", gap: 8, alignItems: "center" }}>
-          <LogIn size={16} color={S.green} /> Check-in — remise des clés
+        <div style={{ fontWeight: 600, color: C.text, fontSize: 14, marginBottom: 14, display: "flex", gap: 8, alignItems: "center" }}>
+          <LogIn size={16} color={C.green} /> Check-in — remise des clés
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {[
@@ -734,12 +735,12 @@ function CheckinPhase({
                 type="checkbox"
                 checked={item.checked}
                 onChange={e => item.set(e.target.checked)}
-                style={{ accentColor: S.green, width: 16, height: 16 }}
+                style={{ accentColor: C.green, width: 16, height: 16 }}
               />
-              <span style={{ fontSize: 13, color: item.checked ? S.text3 : S.text, textDecoration: item.checked ? "line-through" : "none" }}>
+              <span style={{ fontSize: 13, color: item.checked ? C.text3 : C.text, textDecoration: item.checked ? "line-through" : "none" }}>
                 {item.label}
               </span>
-              {item.checked && <CheckCircle2 size={14} color={S.green} />}
+              {item.checked && <CheckCircle2 size={14} color={C.green} />}
             </label>
           ))}
         </div>
@@ -754,8 +755,8 @@ function CheckinPhase({
         disabled={saving || !bailSigne}
         style={{
           width: "100%", padding: "13px 0", borderRadius: 10, border: "none",
-          background: bailSigne ? S.green : S.border,
-          color: bailSigne ? "#fff" : S.text3,
+          background: bailSigne ? C.green : C.border,
+          color: bailSigne ? "#fff" : C.text3,
           fontSize: 14, fontWeight: 600,
           cursor: saving || !bailSigne ? "not-allowed" : "pointer",
           opacity: saving ? 0.7 : 1,
@@ -766,7 +767,7 @@ function CheckinPhase({
         {saving ? "Finalisation…" : "Finaliser le check-in ✓"}
       </button>
       {!bailSigne && (
-        <p style={{ fontSize: 11, color: S.text3, textAlign: "center", marginTop: 6 }}>
+        <p style={{ fontSize: 11, color: C.text3, textAlign: "center", marginTop: 6 }}>
           Le bail doit être signé pour finaliser
         </p>
       )}

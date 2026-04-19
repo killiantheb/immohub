@@ -178,6 +178,30 @@ async def refuse_mission(
     return MissionOuvreurRead.model_validate(m)
 
 
+# ── Start — marque le début effectif de la mission ───────────────────────────
+
+
+@router.post("/missions/{mission_id}/start", response_model=MissionOuvreurRead)
+async def start_mission(
+    mission_id: uuid.UUID,
+    current_user: AuthDep,
+    db: DbDep,
+) -> MissionOuvreurRead:
+    """L'ouvreur signale qu'il commence la mission. Set heure_debut = now."""
+    result = await db.execute(select(MissionOuvreur).where(MissionOuvreur.id == mission_id))
+    m = result.scalar_one_or_none()
+    if not m:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Mission introuvable")
+    if m.statut != "acceptee":
+        raise HTTPException(status.HTTP_409_CONFLICT, "La mission doit être acceptée pour être démarrée")
+    if m.heure_debut:
+        raise HTTPException(status.HTTP_409_CONFLICT, "La mission a déjà été démarrée")
+    m.heure_debut = datetime.now(UTC).time()
+    await db.flush()
+    await db.refresh(m)
+    return MissionOuvreurRead.model_validate(m)
+
+
 # ── Complete + paiement Stripe Connect (15 % Althy) ───────────────────────────
 
 

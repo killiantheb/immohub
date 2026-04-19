@@ -30,18 +30,18 @@ class ListingCreate(BaseModel):
     monthly_rent: float | None = None
     sale_price: float | None = None
     property_id: str | None = None
+    on_flatfox: bool = False
     on_homegate: bool = False
     on_immoscout: bool = False
-    on_booking: bool = False
-    on_airbnb: bool = False
+    on_immobilier: bool = False
 
 
 class ListingUpdate(BaseModel):
     status: str | None = None
+    on_flatfox: bool | None = None
     on_homegate: bool | None = None
     on_immoscout: bool | None = None
-    on_booking: bool | None = None
-    on_airbnb: bool | None = None
+    on_immobilier: bool | None = None
 
 
 class ListingRead(BaseModel):
@@ -53,10 +53,10 @@ class ListingRead(BaseModel):
     sale_price: float | None
     views_count: int
     inquiries_count: int
+    on_flatfox: bool
     on_homegate: bool
     on_immoscout: bool
-    on_booking: bool
-    on_airbnb: bool
+    on_immobilier: bool
     published_at: Any | None
     created_at: Any
 
@@ -72,10 +72,10 @@ def _to_read(listing: Listing) -> ListingRead:
         sale_price=p.get("sale_price") or (float(listing.price) if listing.price else None),
         views_count=listing.views,
         inquiries_count=listing.leads_count,
+        on_flatfox=bool(p.get("on_flatfox", False)),
         on_homegate=bool(p.get("on_homegate", False)),
         on_immoscout=bool(p.get("on_immoscout", False)),
-        on_booking=bool(p.get("on_booking", False)),
-        on_airbnb=bool(p.get("on_airbnb", False)),
+        on_immobilier=bool(p.get("on_immobilier", False)),
         published_at=listing.published_at,
         created_at=listing.created_at,
     )
@@ -146,10 +146,10 @@ async def create_listing(
         "listing_type": body.listing_type,
         "monthly_rent": body.monthly_rent,
         "sale_price": body.sale_price,
+        "on_flatfox": body.on_flatfox,
         "on_homegate": body.on_homegate,
         "on_immoscout": body.on_immoscout,
-        "on_booking": body.on_booking,
-        "on_airbnb": body.on_airbnb,
+        "on_immobilier": body.on_immobilier,
     }
 
     listing = Listing(
@@ -186,7 +186,7 @@ async def update_listing(
 
     # Update portal flags inside portals JSONB
     portals = dict(listing.portals or {})
-    for flag in ("on_homegate", "on_immoscout", "on_booking", "on_airbnb"):
+    for flag in ("on_flatfox", "on_homegate", "on_immoscout", "on_immobilier"):
         val = getattr(body, flag, None)
         if val is not None:
             portals[flag] = val
@@ -195,6 +195,57 @@ async def update_listing(
     await db.commit()
     await db.refresh(listing)
     return _to_read(listing)
+
+
+# ── Publish (diffusion portails) ─────────────────────────────────────────────
+
+CHANNEL_TO_FLAG = {
+    "flatfox": "on_flatfox",
+    "homegate": "on_homegate",
+    "immoscout24": "on_immoscout",
+    "immobilier_ch": "on_immobilier",
+}
+
+
+class PublishRequest(BaseModel):
+    channel: str  # flatfox | homegate | immoscout24 | immobilier_ch
+
+
+@router.post("/{listing_id}/publish")
+async def publish_listing(
+    listing_id: uuid.UUID,
+    body: PublishRequest,
+    db: DbDep,
+    user: AuthUserDep,
+):
+    """Diffuser une annonce sur un portail.
+
+    Pour l'instant, met à jour le flag portail dans la DB.
+    L'intégration SMG / Flatfox / immobilier.ch viendra en Phase 2.
+    """
+    flag = CHANNEL_TO_FLAG.get(body.channel)
+    if not flag:
+        raise HTTPException(400, f"Canal inconnu : {body.channel}")
+
+    prop_ids = await _get_user_property_ids(db, user.id)
+    result = await db.execute(
+        select(Listing).where(Listing.id == listing_id, Listing.is_active == True)
+    )
+    listing = result.scalar_one_or_none()
+    if not listing or listing.property_id not in prop_ids:
+        raise HTTPException(404, "Listing not found")
+
+    portals = dict(listing.portals or {})
+    portals[flag] = True
+    listing.portals = portals
+
+    if not listing.published_at:
+        from datetime import datetime, timezone
+        listing.published_at = datetime.now(timezone.utc)
+
+    await db.commit()
+    await db.refresh(listing)
+    return {"status": "published", "channel": body.channel, "listing_id": str(listing.id)}
 
 
 @router.delete("/{listing_id}", status_code=status.HTTP_204_NO_CONTENT)

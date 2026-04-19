@@ -17,8 +17,8 @@ from app.schemas.intervention import (
     InterventionRead,
     InterventionUpdate,
 )
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
@@ -58,6 +58,7 @@ async def create_intervention(
     payload: InterventionCreate,
     current_user: AuthDep,
     db: DbDep,
+    bg: BackgroundTasks = Depends(),
 ) -> InterventionRead:
     data = payload.model_dump()
     data["signale_par_id"] = current_user.id
@@ -65,7 +66,89 @@ async def create_intervention(
     db.add(inter)
     await db.flush()
     await db.refresh(inter)
+
+    # Notify property owner in background
+    bg.add_task(
+        _notify_owner_new_intervention,
+        bien_id=str(payload.bien_id),
+        titre=payload.titre,
+        description=payload.description or "",
+        categorie=payload.categorie,
+        urgence=payload.urgence,
+    )
+
     return InterventionRead.model_validate(inter)
+
+
+async def _notify_owner_new_intervention(
+    bien_id: str,
+    titre: str,
+    description: str,
+    categorie: str,
+    urgence: str,
+) -> None:
+    """Send email notification to property owner about a new intervention."""
+    import logging
+
+    from app.core.config import settings
+    from app.core.database import AsyncSessionLocal
+
+    logger = logging.getLogger("althy.interventions")
+
+    try:
+        async with AsyncSessionLocal() as db:
+            row = (await db.execute(
+                text("""
+                    SELECT u.email, p.address
+                    FROM properties p
+                    JOIN auth.users u ON u.id = p.owner_id
+                    WHERE p.id = :bid
+                """),
+                {"bid": bien_id},
+            )).one_or_none()
+            if not row:
+                logger.warning("Notify intervention: bien %s not found", bien_id)
+                return
+
+            owner_email, address = row.email, row.address
+
+        if not settings.RESEND_API_KEY:
+            logger.info("[intervention] DEV — email ignoré: %s → %s", titre, owner_email)
+            return
+
+        import httpx
+        html = f"""
+        <div style="font-family:DM Sans,sans-serif;max-width:560px;margin:0 auto">
+            <h2 style="color:#E8602C">Nouveau signalement — {categorie}</h2>
+            <p><strong>Bien :</strong> {address}</p>
+            <p><strong>Urgence :</strong> {urgence}</p>
+            <p><strong>Titre :</strong> {titre}</p>
+            <p>{description}</p>
+            <hr style="border:none;border-top:1px solid #E8E4DC;margin:20px 0" />
+            <p style="font-size:13px;color:#7A7469">
+                Connectez-vous à <a href="https://althy.ch/app/interventions" style="color:#E8602C">Althy</a>
+                pour traiter ce signalement.
+            </p>
+        </div>
+        """
+        async with httpx.AsyncClient(timeout=12) as client:
+            resp = await client.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from": f"Althy <{settings.EMAILS_FROM}>",
+                    "to": [owner_email],
+                    "subject": f"Signalement locataire — {titre}",
+                    "html": html,
+                },
+            )
+            if resp.status_code not in (200, 201):
+                logger.warning("[intervention] Resend %s: %s", resp.status_code, resp.text[:200])
+    except Exception as exc:
+        logger.error("[intervention] Notification error: %s", exc)
 
 
 @router.get("/{intervention_id}", response_model=InterventionRead)

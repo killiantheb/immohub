@@ -58,6 +58,9 @@ async def list_events(current_user: AuthDep, db: DbDep, limit: int = 100) -> lis
 
 
 @router.post("/synchroniser")
-async def synchroniser(current_user: AuthDep, db: DbDep) -> dict:
-    """Déclenche une synchronisation du calendrier (placeholder — traitement Celery à venir)."""
-    return {"ok": True, "message": "Synchronisation planifiée"}
+async def synchroniser(current_user: AuthDep) -> dict:
+    """Déclenche une synchronisation du calendrier via Celery."""
+    from app.tasks.sync_tasks import sync_agenda_task
+
+    result = sync_agenda_task.delay(str(current_user.id))
+    return {"ok": True, "task_id": result.id, "message": "Synchronisation planifiée"}

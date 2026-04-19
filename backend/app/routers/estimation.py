@@ -24,6 +24,9 @@ router = APIRouter(prefix="/estimation", tags=["estimation"])
 
 DbDep = Annotated[AsyncSession, Depends(get_db)]
 
+import logging
+_logger = logging.getLogger("althy.estimation")
+
 MODEL      = "claude-sonnet-4-20250514"
 MAX_TOKENS = 300
 
@@ -140,3 +143,96 @@ async def estimation_rapide(
         pass  # Ne jamais bloquer l'estimation sur un échec de log
 
     return result
+
+
+# ── Deferred estimation (fallback when AI estimation fails) ──────────────────
+
+class DeferredEstimationRequest(BaseModel):
+    address: str = Field(..., min_length=1, max_length=200)
+    city:    str = Field(..., min_length=1, max_length=100)
+    type:    str = Field("apartment")
+    surface: float = Field(..., ge=5, le=5000)
+    rooms:   int | None = None
+    email:   str = Field(..., min_length=3, max_length=200)
+
+
+@router.post("/deferred")
+async def estimation_deferred(
+    request: Request,
+    body: DeferredEstimationRequest,
+    db: DbDep,
+):
+    """Enregistre une demande d'estimation différée quand l'IA est indisponible.
+
+    - Insère dans estimation_logs avec status='deferred'
+    - Envoie un email à l'admin pour traitement manuel si besoin
+    - Retourne { status: "queued", eta: "24h" }
+    """
+    ip = request.client.host if request.client else "unknown"
+
+    # Log the deferred request
+    try:
+        await db.execute(
+            text("""
+                INSERT INTO estimation_logs
+                    (adresse, pieces, surface_m2, type, resultat, ip, created_at)
+                VALUES
+                    (:adresse, :pieces, :surface_m2, :type, :resultat::jsonb, :ip, :created_at)
+            """),
+            {
+                "adresse":    f"{body.address}, {body.city}",
+                "pieces":     body.rooms or 0,
+                "surface_m2": body.surface,
+                "type":       body.type,
+                "resultat":   json.dumps({
+                    "status": "deferred",
+                    "email":  body.email,
+                }),
+                "ip":         ip,
+                "created_at": datetime.now(timezone.utc),
+            },
+        )
+        await db.commit()
+    except Exception as exc:
+        _logger.warning("[estimation/deferred] DB log failed: %s", exc)
+        # Best-effort — don't block the response
+
+    # Notify admin via Resend
+    try:
+        if settings.RESEND_API_KEY:
+            import httpx
+            html = f"""
+            <div style="font-family:DM Sans,sans-serif;max-width:560px;margin:0 auto">
+                <h2 style="color:#E8602C">Estimation différée — à traiter</h2>
+                <p><strong>Adresse :</strong> {body.address}, {body.city}</p>
+                <p><strong>Type :</strong> {body.type} · {body.surface} m²{f" · {body.rooms} pièces" if body.rooms else ""}</p>
+                <p><strong>Email client :</strong> {body.email}</p>
+                <p><strong>IP :</strong> {ip}</p>
+                <hr style="border:none;border-top:1px solid #E8E4DC;margin:20px 0" />
+                <p style="font-size:13px;color:#7A7469">
+                    L'estimation IA a échoué. Répondre manuellement à {body.email} sous 24h.
+                </p>
+            </div>
+            """
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.post(
+                    "https://api.resend.com/emails",
+                    headers={
+                        "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "from": f"Althy <{settings.EMAILS_FROM}>",
+                        "to": [settings.EMAILS_FROM],
+                        "subject": f"Estimation différée — {body.address}, {body.city}",
+                        "html": html,
+                    },
+                )
+                if resp.status_code not in (200, 201):
+                    _logger.warning("[estimation/deferred] Resend %s: %s", resp.status_code, resp.text[:200])
+        else:
+            _logger.info("[estimation/deferred] DEV — email ignoré pour %s", body.email)
+    except Exception as exc:
+        _logger.error("[estimation/deferred] Admin notification error: %s", exc)
+
+    return {"status": "queued", "eta": "24h"}

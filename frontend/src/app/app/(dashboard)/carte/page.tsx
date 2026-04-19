@@ -7,7 +7,7 @@ const CarteMapboxPage = dynamic(
     <div style={{
       display: "flex", alignItems: "center", justifyContent: "center",
       height: "100vh", background: "#FAF8F5",
-      fontSize: 14, color: "#8A7A6A",
+      fontSize: 14, color: "var(--althy-text-3)",
     }}>
       Chargement de la carte…
     </div>
