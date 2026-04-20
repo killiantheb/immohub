@@ -12,8 +12,6 @@ Sécurité : require_roles("super_admin"). RLS Postgres refuse tout accès direc
 Clé API chiffrée : encrypt/decrypt via SECRET_KEY (partner_service.encrypt_api_key).
 """
 
-from __future__ import annotations
-
 import uuid
 from datetime import date, datetime, timezone
 from decimal import Decimal

@@ -8,8 +8,6 @@ Endpoints admin (super_admin) :
   POST /api/v1/waitlist/{id}/notify       — envoi notification d'ouverture
 """
 
-from __future__ import annotations
-
 import html as _html
 import logging
 import uuid

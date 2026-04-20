@@ -22,8 +22,6 @@ Protocole SSE
 
 Le front utilise `intent` + `entities` pour réagir (zoom Mapbox, filtre biens).
 """
-from __future__ import annotations
-
 import hashlib
 import hmac
 import json
