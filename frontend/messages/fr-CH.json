@@ -1,0 +1,89 @@
+{
+  "common": {
+    "appName": "Althy",
+    "tagline": "L'assistant immobilier suisse",
+    "loading": "Chargement…",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "back": "Retour",
+    "next": "Suivant",
+    "close": "Fermer",
+    "continue": "Continuer",
+    "confirm": "Confirmer",
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "auth": {
+    "login": "Connexion",
+    "register": "Inscription",
+    "logout": "Déconnexion",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "signupCTA": "Commencer gratuitement"
+  },
+  "dashboard": {
+    "welcome": "Bienvenue",
+    "sphere": "Sphère IA",
+    "biens": "Biens",
+    "finances": "Finances",
+    "comptabilite": "Comptabilité",
+    "documents": "Documents",
+    "messagerie": "Messagerie",
+    "profil": "Mon profil",
+    "settings": "Paramètres"
+  },
+  "landing": {
+    "hero": {
+      "title1": "L'immobilier suisse,",
+      "title2": "sans agence.",
+      "subtitle": "Gérez votre bien, trouvez un locataire, encaissez vos loyers — en 2 clics, avec l'IA.",
+      "statBiens": "biens disponibles",
+      "statVilles": "{count} villes actives",
+      "cta": "Déjà propriétaire ? <link>Commencer gratuitement →</link>",
+      "searchPlaceholder": "Ville, quartier, adresse…",
+      "mapStandard": "Standard",
+      "mapSatellite": "Satellite"
+    }
+  },
+  "pricing": {
+    "labelProprio": "Tarifs propriétaire",
+    "labelAgence": "Tarifs agence",
+    "titleProprio": "Gratuit à vie pour votre premier bien.",
+    "subtitleProprio": "30 jours d'essai sur tous les plans · Sans carte bancaire · Sans engagement",
+    "titleAgence": "Pour les régies et agences immobilières",
+    "subtitleAgence": "Multi-agents · Biens illimités · IA Sphère pour toute l'équipe",
+    "autonomieLine": "Vous quittez votre agence ?",
+    "autonomieLink": "Althy Autonomie à CHF 39/mois →",
+    "disclaimer": "Tous les prix sont en CHF, TVA non applicable (art. 10 LTVA). Commission 3% sur loyers encaissés, prélevée uniquement sur les flux effectifs.",
+    "free": "Gratuit",
+    "freeSubtitle": "Pour toujours · 1 bien",
+    "popular": "Le plus populaire"
+  },
+  "autonomie": {
+    "calculator": {
+      "title": "Combien économisez-vous ?",
+      "subtitle": "Comparaison annuelle Autonomie vs régie traditionnelle (~5% des loyers).",
+      "fieldNbBiens": "Nombre de biens",
+      "fieldLoyer": "Loyer moyen mensuel",
+      "costRegieLabel": "Régie traditionnelle",
+      "costRegieSublabel": "5% des loyers + {admin} CHF admin",
+      "costAutonomieLabel": "Althy Autonomie",
+      "costAutonomieSublabel": "CHF 39 × 12 mois",
+      "economyLabel": "Économie annuelle",
+      "economyPctSuffix": "soit {pct}% de moins chaque année"
+    }
+  },
+  "legal": {
+    "cgu": "Conditions générales d'utilisation",
+    "confidentialite": "Politique de confidentialité",
+    "cookies": "Cookies",
+    "disclaimerIa": "Disclaimer IA"
+  },
+  "errors": {
+    "generic": "Une erreur est survenue. Veuillez réessayer.",
+    "network": "Erreur réseau — vérifiez votre connexion.",
+    "unauthorized": "Accès non autorisé.",
+    "notFound": "Ressource introuvable."
+  }
+}

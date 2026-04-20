@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle2 } from 'lucide-react'
 import { AlthySphereCore } from '@/components/sphere/AlthySphereCore'
+import { AlthyLogo } from '@/components/AlthyLogo'
 import { api, baseURL } from '@/lib/api'
 import { createClient } from '@/lib/supabase'
 import { useUser } from '@/lib/auth'
@@ -318,7 +319,9 @@ function AutoVerification({ data, agentChecks, setAgentChecks, onConfirm, saving
   return (
     <div style={{ minHeight: '100vh', background: 'var(--althy-bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 16px 40px', fontFamily: 'var(--font-sans, DM Sans, system-ui)' }}>
       <header style={{ width: '100%', maxWidth: 680, display: 'flex', alignItems: 'center', padding: '20px 0', marginBottom: 32 }}>
-        <Link href="/" style={{ fontFamily: "var(--font-serif)", fontSize: 20, fontWeight: 300, letterSpacing: 4, color: 'var(--althy-orange)', textDecoration: 'none' }}>ALTHY</Link>
+        <Link href="/" style={{ display: 'inline-flex', textDecoration: 'none' }}>
+          <AlthyLogo variant="full" size={26} />
+        </Link>
       </header>
       <div style={{ width: '100%', maxWidth: 680 }}>
         <p style={{ fontSize: 13, color: 'var(--althy-text-3)', marginBottom: 8, textAlign: 'center' }}>
@@ -490,7 +493,9 @@ function BienvenueContent() {
 
       {/* Header */}
       <header style={{ width: '100%', maxWidth: 680, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 0' }}>
-        <Link href="/" style={{ fontFamily: "var(--font-serif)", fontSize: 20, fontWeight: 300, letterSpacing: 4, color: 'var(--althy-orange)', textDecoration: 'none' }}>ALTHY</Link>
+        <Link href="/" style={{ display: 'inline-flex', textDecoration: 'none' }}>
+          <AlthyLogo variant="full" size={26} />
+        </Link>
         <span style={{ fontSize: 12, color: 'var(--althy-text-3)' }}>Étape {step} sur {TOTAL_STEPS}</span>
       </header>
 

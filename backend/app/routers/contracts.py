@@ -7,6 +7,7 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.schemas.contract import ContractCreate, ContractRead, ContractUpdate, PaginatedContracts
 from app.services.contract_service import ContractService
+from app.services.partner_hooks import on_contract_signed
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -94,6 +95,8 @@ async def sign_contract(
     if forwarded:
         client_ip = forwarded.split(",")[0].strip()
     contract = await ContractService(db).sign(contract_id, ip=client_ip, current_user=current_user)
+    # Partner hook P1 : propose assurance au propriétaire (best-effort, RGPD-gated).
+    await on_contract_signed(db, contract)
     return ContractRead.model_validate(contract)
 
 

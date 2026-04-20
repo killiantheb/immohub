@@ -404,6 +404,22 @@ async def postuler(request: Request, body: PostulerRequest, db: DbDep, user: Aut
     listing.contacts_count = (listing.contacts_count or 0) + 1
     await db.commit()
     await db.refresh(candidature)
+
+    # Partner hook P2 : si pas de caution dans le dossier, proposer SwissCaution.
+    # Best-effort, RGPD-gated via consent `partner_caution`.
+    from app.services.partner_hooks import on_candidature_no_caution
+    has_caution = any(
+        (d.get("type") or "").lower() in ("caution", "garantie_loyer") for d in docs
+    )
+    if not has_caution:
+        await on_candidature_no_caution(
+            db,
+            tenant_id=user.id,
+            listing_id=body.listing_id,
+            monthly_rent=float(listing.prix or 0),
+            canton=getattr(prop, "canton", None),
+        )
+
     return serialize_candidature(candidature)
 
 

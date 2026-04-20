@@ -22,9 +22,8 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
       <header style={{ borderBottom: "1px solid var(--althy-border)", background: "#fff", padding: "0 1.5rem", position: "sticky", top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 900, margin: "0 auto", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-            <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
-              <AlthyLogo size={28} />
-              <span style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 400, color: "var(--althy-text)" }}>Althy</span>
+            <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+              <AlthyLogo variant="full" size={24} />
             </Link>
             <span style={{ color: "var(--althy-border)" }}>|</span>
             <span style={{ fontSize: 12, color: "var(--althy-text-3)", letterSpacing: "1px", textTransform: "uppercase" as const }}>Informations légales</span>

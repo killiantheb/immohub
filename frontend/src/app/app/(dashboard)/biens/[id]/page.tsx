@@ -671,7 +671,7 @@ function SectionLocataire({ bienId }: { bienId: string }) {
           Aucun locataire — ce bien est vacant.
         </p>
         <Link
-          href="/app/listings"
+          href="/app/annonces"
           style={{
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "9px 16px", borderRadius: 10,

@@ -907,7 +907,7 @@ function TabImportCSV() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: "sphere", label: "Sphère IA",    icon: <Sparkles size={14} /> },
+  { id: "sphere", label: "Althy IA",     icon: <Sparkles size={14} /> },
   { id: "lien",   label: "Lien magique", icon: <Link2 size={14} /> },
   { id: "qr",     label: "QR Code",      icon: <QrCode size={14} /> },
   { id: "csv",    label: "Import CSV",   icon: <FileUp size={14} /> },

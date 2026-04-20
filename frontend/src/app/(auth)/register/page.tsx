@@ -181,15 +181,14 @@ function RegisterForm() {
 
       {/* Panneau gauche — branding desktop */}
       <div className="hidden lg:flex lg:w-5/12 flex-col items-center justify-center bg-primary-600 p-12 text-white">
-        <Link href="/" className="mb-6 flex items-center gap-4" style={{ textDecoration: "none", color: "inherit" }}>
-          <AlthyLogo size={52} />
-          <span className="text-4xl font-bold tracking-tight">ALTHY</span>
+        <Link href="/" className="mb-6 flex items-center" style={{ textDecoration: "none", color: "inherit" }}>
+          <AlthyLogo variant="inverted" size={48} />
         </Link>
         <p className="max-w-xs text-center text-primary-100">
           Gérez vos biens, contrats et locataires en Suisse — simplement, en français.
         </p>
         <div className="mt-10 space-y-3 text-sm text-primary-200 max-w-xs">
-          {["Inscription gratuite, sans carte bancaire", "Sphère IA disponible 24h/24", "Données hébergées en Suisse"].map(v => (
+          {["Inscription gratuite, sans carte bancaire", "Althy IA disponible 24h/24", "Données hébergées en Suisse"].map(v => (
             <div key={v} className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-primary-300 shrink-0" />
               <span>{v}</span>
@@ -202,9 +201,8 @@ function RegisterForm() {
       <div className="flex w-full items-center justify-center bg-beige-100 px-6 py-12 lg:w-7/12">
         <div className="w-full max-w-md">
           {/* Logo mobile */}
-          <Link href="/" className="mb-8 flex items-center justify-center gap-2 lg:hidden" style={{ textDecoration: "none", color: "inherit" }}>
-            <AlthyLogo size={32} />
-            <span className="text-2xl font-bold text-gray-900">ALTHY</span>
+          <Link href="/" className="mb-8 flex items-center justify-center lg:hidden" style={{ textDecoration: "none", color: "inherit" }}>
+            <AlthyLogo variant="full" size={32} />
           </Link>
 
           {/* ═══ ÉTAPE 1 — Email + mot de passe ═══ */}

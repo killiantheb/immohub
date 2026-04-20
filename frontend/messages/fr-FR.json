@@ -1,0 +1,89 @@
+{
+  "common": {
+    "appName": "Althy",
+    "tagline": "L'assistant immobilier",
+    "loading": "",
+    "save": "",
+    "cancel": "",
+    "back": "",
+    "next": "",
+    "close": "",
+    "continue": "",
+    "confirm": "",
+    "yes": "",
+    "no": ""
+  },
+  "auth": {
+    "login": "",
+    "register": "",
+    "logout": "",
+    "email": "",
+    "password": "",
+    "forgotPassword": "",
+    "signupCTA": ""
+  },
+  "dashboard": {
+    "welcome": "",
+    "sphere": "",
+    "biens": "",
+    "finances": "",
+    "comptabilite": "",
+    "documents": "",
+    "messagerie": "",
+    "profil": "",
+    "settings": ""
+  },
+  "landing": {
+    "hero": {
+      "title1": "L'immobilier en France,",
+      "title2": "sans agence.",
+      "subtitle": "Gérez votre bien, trouvez un locataire, encaissez vos loyers — en 2 clics, avec l'IA.",
+      "statBiens": "biens disponibles",
+      "statVilles": "{count} villes actives",
+      "cta": "Déjà propriétaire ? <link>Commencer gratuitement →</link>",
+      "searchPlaceholder": "Ville, quartier, adresse…",
+      "mapStandard": "Standard",
+      "mapSatellite": "Satellite"
+    }
+  },
+  "pricing": {
+    "labelProprio": "",
+    "labelAgence": "",
+    "titleProprio": "",
+    "subtitleProprio": "",
+    "titleAgence": "",
+    "subtitleAgence": "",
+    "autonomieLine": "",
+    "autonomieLink": "",
+    "disclaimer": "",
+    "free": "",
+    "freeSubtitle": "",
+    "popular": ""
+  },
+  "autonomie": {
+    "calculator": {
+      "title": "",
+      "subtitle": "",
+      "fieldNbBiens": "",
+      "fieldLoyer": "",
+      "costRegieLabel": "",
+      "costRegieSublabel": "",
+      "costAutonomieLabel": "",
+      "costAutonomieSublabel": "",
+      "economyLabel": "",
+      "economyPctSuffix": ""
+    }
+  },
+  "legal": {
+    "cgu": "",
+    "confidentialite": "",
+    "cookies": "",
+    "disclaimerIa": ""
+  },
+  "errors": {
+    "generic": "",
+    "network": "",
+    "unauthorized": "",
+    "notFound": ""
+  }
+}

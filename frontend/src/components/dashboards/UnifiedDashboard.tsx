@@ -102,7 +102,7 @@ export const DASHBOARD_CONFIGS: Record<UserRole, DashboardConfig> = {
       { label: "Voir les impayés",   action: "/app/finances",       icon: AlertTriangle },
     ],
     sections: [
-      { key: "actions_sphere",        title: "Actions Sphère IA",       component: "actions_sphere" },
+      { key: "actions_sphere",        title: "Actions Althy IA",        component: "actions_sphere" },
       { key: "biens_recent",          title: "Mes biens",               component: "biens_recent" },
       { key: "loyers_status",         title: "Loyers du mois",          component: "loyers_status" },
       { key: "interventions_actives", title: "Interventions actives",   component: "interventions_actives" },
@@ -229,7 +229,7 @@ export const DASHBOARD_CONFIGS: Record<UserRole, DashboardConfig> = {
       { key: "documents",    label: "Alertes actives",      icon: Bell,      endpoint: "/listings/" },
     ],
     quickActions: [
-      { label: "Voir les annonces", action: "/app/listings", icon: Building2 },
+      { label: "Voir les annonces", action: "/app/annonces", icon: Building2 },
     ],
     sections: [
       { key: "biens_recent", title: "Annonces récentes", component: "biens_recent" },
@@ -578,7 +578,7 @@ function SectionActionsSphere({ data }: SectionProps) {
   const actions = data.briefingActions;
   return (
     <div style={{ marginBottom: "2rem" }}>
-      <DSectionTitle>Actions urgentes Sphère</DSectionTitle>
+      <DSectionTitle>Actions urgentes Althy IA</DSectionTitle>
       {actions.length === 0 ? (
         <DEmptyState icon={Sparkles} title="Aucune action urgente" subtitle="Tout est en ordre — profitez de votre journée !" />
       ) : (
@@ -1302,7 +1302,7 @@ function HHighlightCard({ value, label }: { value: string; label: string }) {
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 500 }}>
         <Sparkles size={16} />
-        Ouvrir la Sphère IA
+        Ouvrir Althy IA
         <ArrowRight size={14} style={{ marginLeft: "auto" }} />
       </div>
     </Link>

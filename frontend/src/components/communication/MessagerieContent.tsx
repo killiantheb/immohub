@@ -209,7 +209,7 @@ export function MessagerieContent() {
           Comptes connectés
         </p>
         <p style={{ fontSize: 12, color: "var(--althy-text-3)", marginBottom: 16 }}>
-          Althy analyse vos emails immobiliers pour créer automatiquement des actions dans la Sphère.
+          Althy analyse vos emails immobiliers pour créer automatiquement des actions dans Althy IA.
         </p>
         <ProviderCard status={googleStatus}  provider="google"    onConnect={() => handleConnect("google")}    onDisconnect={() => handleDisconnect("google")} />
         <ProviderCard status={outlookStatus} provider="microsoft" onConnect={() => handleConnect("microsoft")} onDisconnect={() => handleDisconnect("microsoft")} />
@@ -267,7 +267,7 @@ export function MessagerieContent() {
             Connectez votre messagerie
           </h3>
           <p style={{ fontSize: 13, color: "var(--althy-text-3)", maxWidth: 420, margin: "0 auto 24px" }}>
-            Althy analyse vos emails immobiliers et crée automatiquement des actions dans la Sphère.
+            Althy analyse vos emails immobiliers et crée automatiquement des actions dans Althy IA.
           </p>
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
             <button onClick={() => handleConnect("google")} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 10, border: "1px solid var(--althy-border)", background: "var(--althy-surface)", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "var(--althy-text)", fontFamily: "inherit" }}>

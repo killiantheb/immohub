@@ -1,0 +1,21 @@
+{
+  "name": "Althy",
+  "short_name": "Althy",
+  "description": "L'assistant immobilier suisse",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0F2E4C",
+  "background_color": "#F4F6F9",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
+    {
+      "src": "/apple-touch-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "180x180"
+    }
+  ]
+}

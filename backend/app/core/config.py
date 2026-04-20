@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     # Stripe Connect — frais plateforme
     STRIPE_PLATFORM_FEE_PCT: float = 4.0        # 4% loyers (affiché "loyer net reçu")
     STRIPE_OPENER_FEE_PCT: float = 15.0          # 15% openers (10% Pro)
-    STRIPE_ARTISAN_FEE_PCT: float = 10.0         # 10% artisans
+    STRIPE_ARTISAN_FEE_PCT: float = 5.0          # 5% marketplace artisans (T2 — 2026-04-20)
     # DEPRECATED (2026-04-20) — remplacé par OWNER_DOSSIER_FEE_CHF. Conservé pour compat.
     STRIPE_APPLICATION_FEE_CHF: int = 90
     # Frais dossier payés par le PROPRIÉTAIRE lorsqu'il accepte une candidature.
@@ -121,10 +121,11 @@ class Settings(BaseSettings):
     ALTHY_CREDITOR_COUNTRY: str = "CH"
 
     # Feature flags — rôles autorisés à l'inscription
-    # En prod Phase 1 : seuls proprio_solo + locataire + super_admin peuvent s'inscrire.
-    # Les autres rôles sont en liste d'attente.
+    # Phase 1 : proprio_solo + locataire + super_admin.
+    # Phase 3 partielle (2026-04-20) : artisan activé pour lancement marketplace (M1).
+    # Les autres rôles restent en liste d'attente (/bientot/[role]).
     FEATURE_FLAGS_STRICT: bool = True  # True en prod, False en staging/dev
-    ALLOWED_SIGNUP_ROLES: list[str] = ["proprio_solo", "locataire", "super_admin"]
+    ALLOWED_SIGNUP_ROLES: list[str] = ["proprio_solo", "locataire", "super_admin", "artisan"]
 
     @property
     def is_production(self) -> bool:

@@ -372,7 +372,7 @@ export default function CarteMapboxPage() {
             fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
           }}>
             <AlthySphereCore state="idle" size={16} />
-            Sphère IA
+            Althy IA
           </Link>
 
           {/* Avatar utilisateur */}
@@ -397,7 +397,7 @@ export default function CarteMapboxPage() {
             display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
           }}>
             <span style={{ fontSize: 12, color: PRUSSIAN, fontWeight: 700 }}>
-              Sphère IA
+              Althy IA
             </span>
             <span style={{ fontSize: 12, color: "#8A7A6A" }}>
               {result.ville}

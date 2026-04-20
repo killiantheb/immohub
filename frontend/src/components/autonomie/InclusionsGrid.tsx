@@ -56,7 +56,7 @@ const INCLUSIONS: Inclusion[] = [
   },
   {
     icon: "🤖",
-    title: "Sphère IA 24/24",
+    title: "Althy IA 24/24",
     description:
       "L'assistant Althy rédige vos annonces, répond à vos locataires, trie vos candidatures.",
   },

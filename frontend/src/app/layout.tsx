@@ -1,5 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, DM_Sans } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import { Providers } from "./providers";
 import { CookieBanner } from "@/components/CookieBanner";
@@ -46,7 +48,16 @@ export const metadata: Metadata = {
     images: ["/og-image.png"],
   },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
-  icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }], shortcut: "/icon.svg", apple: "/icon.svg" },
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    shortcut: "/favicon.svg",
+    apple: "/apple-touch-icon.svg",
+  },
+  manifest: "/site.webmanifest",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0F2E4C",
 };
 
 const JSON_LD = {
@@ -87,20 +98,26 @@ const JSON_LD = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+  const htmlLang = locale.split("-")[0];
+
   return (
-    <html lang="fr" suppressHydrationWarning className={`${fraunces.variable} ${dmSans.variable}`}>
+    <html lang={htmlLang} suppressHydrationWarning className={`${fraunces.variable} ${dmSans.variable}`}>
       <body className={`${fraunces.variable} ${dmSans.variable} font-sans`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
         />
-        <Providers>{children}</Providers>
-        <CookieBanner />
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <Providers>{children}</Providers>
+          <CookieBanner />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

@@ -60,7 +60,7 @@ function buildNavSet(role: string | null, planId: string | null): NavSet {
   const candidatures:  NavItem = { label: "Candidatures",       href: "/app/candidatures",    icon: ic(Users),             section: "candidatures" };
   const mesCandid:     NavItem = { label: "Mes candidatures",   href: "/app/mes-candidatures",icon: ic(FileCheck),         section: "mes_candidatures" };
   const portail:       NavItem = { label: "Portail proprios",   href: "/app/portail",         icon: ic(Users2),            section: "portail" };
-  const profile:       NavItem = { label: "Mon profil",         href: "/app/profile",         icon: ic(User),              section: "profile" };
+  const profile:       NavItem = { label: "Mon profil",         href: "/app/profil",          icon: ic(User),              section: "profile" };
   const settings:      NavItem = { label: "Paramètres",         href: "/app/settings",        icon: ic(SlidersHorizontal), section: "settings" };
 
   // Althy Autonomie — entrée dédiée selon le plan de l'utilisateur
@@ -342,12 +342,11 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
       {/* ── Brand ── */}
       <div style={S.brand(collapsed)}>
         {!collapsed ? (
-          <Link href="/app" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
-            <AlthyLogo size={44} animated />
-            <span style={{ fontSize: 20, fontWeight: 600, color: "var(--charcoal)", fontFamily: "var(--font-serif)" }}>Althy</span>
+          <Link href="/app" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+            <AlthyLogo variant="full" size={32} />
           </Link>
         ) : (
-          <AlthyLogo size={44} animated />
+          <AlthyLogo variant="mark" size={40} />
         )}
         <button
           onClick={() => setCollapsed(c => !c)}

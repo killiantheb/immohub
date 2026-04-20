@@ -50,7 +50,7 @@ const NAV_PILL: React.CSSProperties = {
 export function DTopNav() {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24 }}>
-      <Link href="/app/sphere" style={NAV_PILL}>← Sphère IA</Link>
+      <Link href="/app/sphere" style={NAV_PILL}>← Althy IA</Link>
       <Link href="/app/carte"  style={NAV_PILL}>Carte</Link>
     </div>
   );
@@ -213,7 +213,7 @@ export function DRoleHeader({ role, badge, badgeBg, initials }: DRoleHeaderProps
             textDecoration: "none",
           }}
         >
-          ← Sphère IA
+          ← Althy IA
         </Link>
         {initials && (
           <div

@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
+import { AlthyLogo } from '@/components/AlthyLogo'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -31,7 +32,9 @@ export default function ForgotPasswordPage() {
       </div>
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <Link href="/" style={{ fontFamily: 'var(--font-serif)', fontSize: 28, fontWeight: 300, color: 'var(--althy-orange)', letterSpacing: '3px', textDecoration: 'none', display: 'block' }}>Althy</Link>
+          <Link href="/" style={{ display: 'inline-flex', textDecoration: 'none' }}>
+            <AlthyLogo variant="full" size={36} />
+          </Link>
           <h1 className="mt-4 text-2xl font-bold text-gray-900">Mot de passe oublié</h1>
           <p className="mt-1 text-sm text-gray-500">
             Entrez votre email pour recevoir un lien de réinitialisation.

@@ -92,7 +92,7 @@ export function SphereInput({
         libelle_cta2:  "Voir la comptabilité",
       });
       // Notify user in the chat
-      onSend(`📸 Facture analysée — ${fournisseur}${montantStr ? ", " + montantStr : ""}. Elle est dans votre Sphère pour affectation.`);
+      onSend(`📸 Facture analysée — ${fournisseur}${montantStr ? ", " + montantStr : ""}. Elle est dans Althy IA pour affectation.`);
     } catch {
       onSend("📸 Impossible d'analyser cette facture. Réessayez ou utilisez la section Comptabilité.");
     } finally {

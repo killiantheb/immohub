@@ -1,50 +1,57 @@
 """Réconciliation des paiements reçus sur le compte Althy.
 
-Supporte :
-  - Fichiers CAMT.054 V04 et V08 (SIX Group, banking suisse)
-  - Listes manuelles [{reference, montant, date}]
+Phase 1 : CAMT.054 (SIX Group, QR-facture SPC 2.0) pour la Suisse.
+Phase Europe (Y3-Y4) : CAMT.053 pour SEPA via
+`app.services.bank_parsers.get_parser("EU", "camt.053")`.
+
+API publique conservée :
+  - `parse_camt054(xml_bytes) -> list[dict]`
+  - `parse_statement(payload, bank_country, format) -> list[dict]` (nouveau)
+  - `reconcile_payments(incoming, db) -> dict`
 """
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# Namespaces CAMT.054 (V04 et V08)
-_CAMT_NS = [
-    "urn:iso:std:iso:20022:tech:xsd:camt.054.001.04",
-    "urn:iso:std:iso:20022:tech:xsd:camt.054.001.08",
-]
+from app.services.bank_parsers import BankEntry, get_parser
 
 
 def parse_camt054(xml_bytes: bytes) -> list[dict]:
+    """Parse un fichier CAMT.054 (wrapper back-compat → nouveau registry)."""
+    return _to_dicts(get_parser("CH", "camt.054").parse(xml_bytes))
+
+
+def parse_statement(
+    payload: bytes,
+    bank_country: str = "CH",
+    format: str = "camt.054",
+) -> list[dict]:
+    """Parse générique : délègue au registry `bank_parsers`.
+
+    Args:
+        payload: bytes du fichier (XML CAMT).
+        bank_country: ISO-3166-1 alpha-2 (CH, FR, DE, IT, EU).
+        format: identifiant format ("camt.054", "camt.053", ...).
+
+    Returns:
+        Liste normalisée [{reference, montant, date, currency}].
     """
-    Parse un fichier CAMT.054.
-    Retourne une liste de {reference: str, montant: float, date: str}.
-    """
-    root = ET.fromstring(xml_bytes)
-    entries: list[dict] = []
+    return _to_dicts(get_parser(bank_country, format).parse(payload))
 
-    for ns_uri in _CAMT_NS:
-        nsp = {"n": ns_uri}
-        for ntry in root.findall(".//n:Ntry", nsp):
-            amt_el  = ntry.find("n:Amt", nsp)
-            date_el = ntry.find("n:BookgDt/n:Dt", nsp) or ntry.find("n:ValDt/n:Dt", nsp)
-            ref_el  = ntry.find(".//n:RmtInf/n:Strd/n:CdtrRefInf/n:Ref", nsp)
 
-            if amt_el is None or ref_el is None:
-                continue
-            ref = ref_el.text.strip().replace(" ", "")
-            try:
-                amt = float(amt_el.text.strip())
-            except (ValueError, AttributeError):
-                continue
-            dt = date_el.text.strip() if date_el is not None else datetime.utcnow().date().isoformat()
-            entries.append({"reference": ref, "montant": amt, "date": dt})
-
-    return entries
+def _to_dicts(entries: list[BankEntry]) -> list[dict]:
+    return [
+        {
+            "reference": e.reference,
+            "montant": e.montant,
+            "date": e.date,
+            "currency": e.currency,
+        }
+        for e in entries
+    ]
 
 
 async def reconcile_payments(incoming: list[dict], db: AsyncSession) -> dict:

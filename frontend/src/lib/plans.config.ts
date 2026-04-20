@@ -1,7 +1,7 @@
 // Source de vérité unique pour les plans tarifaires Althy (v3 — pricing 2026-04-20)
 // Importé dans : /app/abonnement/page.tsx · /components/landing/Tarifs.tsx
 
-export type PlanCategory = "proprio" | "agence" | "invited" | "enterprise" | "autonomie"
+export type PlanCategory = "proprio" | "agence" | "invited" | "enterprise" | "autonomie" | "artisan"
 
 export interface Plan {
   id: string
@@ -19,6 +19,8 @@ export interface Plan {
   category: PlanCategory
   /** Limite de biens inclus (null = illimité) */
   maxBiens: number | null
+  /** Plan réservé aux 50 premiers artisans vérifiés par canton (stratégie Uber) */
+  is_founding_member?: boolean
 }
 
 // ── Propriétaire — 4 paliers payants + 1 gratuit ───────────────────────────
@@ -76,7 +78,7 @@ export const PLANS_PROPRIO: Plan[] = [
       "4 à 10 biens",
       "Tout Particulier inclus",
       "Rapports fiscaux annuels",
-      "Sphère IA complète 24h/24",
+      "Althy IA complète 24h/24",
       "Rapport mensuel automatique",
       "Comptabilité simplifiée",
       "3% commission sur loyers encaissés",
@@ -124,7 +126,7 @@ export const PLAN_AUTONOMIE: Plan = {
   fonctionnalites: [
     "Jusqu'à 10 biens",
     "Tout l'arsenal Althy : QR-factures, relances, contrats, EDL",
-    "Sphère IA dédiée 24h/24",
+    "Althy IA dédiée 24h/24",
     "Documents juridiques validés Suisse",
     "Réseau d'artisans et d'ouvreurs",
     "Onboarding accompagné (récupération données agence)",
@@ -151,7 +153,7 @@ export const PLANS_AGENCE: Plan[] = [
     fonctionnalites: [
       "Biens illimités par agent",
       "Multi-agents (2–50)",
-      "Sphère IA pour toute l'équipe",
+      "Althy IA pour toute l'équipe",
       "CRM locataires et propriétaires",
       "Documents IA illimités",
       "Portail proprio inclus",
@@ -183,6 +185,56 @@ export const PLANS_AGENCE: Plan[] = [
     note: "CHF 1 500 à 5 000/mois · Facturation personnalisée",
     vedette: false,
     category: "enterprise",
+    maxBiens: null,
+  },
+]
+
+// ── Artisan (marketplace M1) — 2 plans : vérifié payant + founding gratuit ─
+
+export const PLANS_ARTISAN: Plan[] = [
+  {
+    id: "artisan_free_early",
+    nom: "Artisan Fondateur",
+    prix: 0,
+    periode: "À vie",
+    description: "Réservé aux 50 premiers artisans de votre canton",
+    fonctionnalites: [
+      "Profil artisan vérifié (badge Fondateur à vie)",
+      "Missions prioritaires de votre canton",
+      "Devis IA assistés",
+      "Suivi chantiers + facturation",
+      "Paiements automatiques via Stripe Connect",
+      "5% commission Althy sur chaque facture",
+      "Accès gratuit à vie si vous restez actif",
+    ],
+    cta: "Rejoindre les fondateurs",
+    note: "Stratégie Uber : plus que {{spots}} places dans votre canton",
+    vedette: true,
+    badge: "50 premiers — gratuit à vie",
+    category: "artisan",
+    maxBiens: null,
+    is_founding_member: true,
+  },
+  {
+    id: "artisan_verified",
+    nom: "Artisan Vérifié",
+    prix: 49,
+    prixAnnuel: 42,
+    periode: "/mois",
+    description: "Pour artisans certifiés Suisse (RC + UID)",
+    fonctionnalites: [
+      "Profil vérifié (badge Althy) + avis clients",
+      "Missions illimitées (canton + spécialités)",
+      "Devis IA assistés (génération + relances)",
+      "Suivi chantiers + facturation automatique",
+      "Paiements via Stripe Connect (95% reversés)",
+      "5% commission Althy sur facture finale",
+      "Support dédié artisan",
+    ],
+    cta: "S'inscrire comme artisan",
+    note: "CHF 42/mois si annuel · 30 jours d'essai gratuit",
+    vedette: false,
+    category: "artisan",
     maxBiens: null,
   },
 ]

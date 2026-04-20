@@ -52,7 +52,7 @@ export default function RejoindreTokenPage() {
       {/* Header */}
       <div style={{ marginBottom: 36, textAlign: "center" }}>
         <a href="/" style={{ display: "inline-block", marginBottom: 24 }}>
-          <AlthyLogo />
+          <AlthyLogo variant="mark" size={56} />
         </a>
         <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--althy-text)", margin: "0 0 8px", letterSpacing: "-0.02em" }}>
           Rejoindre Althy

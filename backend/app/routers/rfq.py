@@ -13,6 +13,7 @@ from app.schemas.rfq import (
     RFQRating,
     RFQRead,
 )
+from app.services.artisan_service import match_artisans_for_rfq
 from app.services.rfq_service import RFQService, qualify_need
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
@@ -20,6 +21,23 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
+
+
+# ── Matching : category → specialty (M1 marketplace) ─────────────────────────
+
+_CATEGORY_TO_SPECIALTY = {
+    "plumbing":    "plomberie",
+    "electricity": "electricite",
+    "cleaning":    "nettoyage",
+    "painting":    "peinture",
+    "locksmith":   "serrurerie",
+    "roofing":     "toiture",
+    "gardening":   "jardinage",
+    "masonry":     "maconnerie",
+    "hvac":        "cvc",
+    "renovation":  "renovation",
+    "other":       None,
+}
 
 
 # ── Marketplace companies ──────────────────────────────────────────────────────
@@ -106,6 +124,58 @@ async def get_rfq(
     result = RFQRead.model_validate(rfq)
     result.quotes = await svc._load_quotes(rfq_id)
     return result
+
+
+# ── Matching artisans éligibles (M1 marketplace) ─────────────────────────────
+
+
+class ArtisanMatch(BaseModel):
+    profile_id: str
+    user_id: str
+    raison_sociale: str | None
+    canton: str | None
+    specialties: list[str] | None
+    note_moyenne: float
+    nb_chantiers: int
+    is_founding_member: bool
+    rayon_km: int
+
+
+@router.get("/{rfq_id}/matches", response_model=list[ArtisanMatch])
+async def match_artisans(
+    rfq_id: str,
+    canton: str | None = Query(None, description="Override canton (sinon = canton propriétaire)"),
+    limit: int = Query(20, ge=1, le=50),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Retourne la liste d'artisans éligibles pour une RFQ.
+
+    Filtre : subscription_plan actif + canton match + specialty correspondante.
+    Ordre : fondateurs d'abord, puis note_moyenne desc.
+    """
+    svc = RFQService(db)
+    rfq = await svc.get_rfq(rfq_id, current_user)
+    specialty = _CATEGORY_TO_SPECIALTY.get(rfq.category)
+    match_canton = (canton or "").upper() if canton else None
+
+    artisans = await match_artisans_for_rfq(
+        db, canton=match_canton, specialty=specialty, limit=limit,
+    )
+    return [
+        ArtisanMatch(
+            profile_id=str(a.id),
+            user_id=str(a.user_id),
+            raison_sociale=a.raison_sociale,
+            canton=a.canton,
+            specialties=a.specialties,
+            note_moyenne=a.note_moyenne,
+            nb_chantiers=a.nb_chantiers,
+            is_founding_member=a.is_founding_member,
+            rayon_km=a.rayon_km,
+        )
+        for a in artisans
+    ]
 
 
 # ── Quote lifecycle ────────────────────────────────────────────────────────────

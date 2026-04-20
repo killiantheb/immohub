@@ -184,7 +184,7 @@ export default function AlthyHome() {
   const homeByRole: Record<string, string> = {
     owner: "/app", agency: "/app", super_admin: "/app",
     opener: "/app/ouvreurs", tenant: "/app/locataire",
-    company: "/app/artisans/devis", insurance: "/app/insurance",
+    company: "/app/artisans/devis", insurance: "/app/assurance",
   };
   const homePath = homeByRole[profile?.role ?? ""] ?? "/app";
 

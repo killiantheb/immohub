@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { C } from "@/lib/design-tokens"
+import { AlthyLogo } from "@/components/AlthyLogo"
 
 export function Footer() {
   return (
@@ -26,20 +27,8 @@ export function Footer() {
         >
           {/* Logo + tagline */}
           <div>
-            <Link href="/" style={{ textDecoration: "none" }}>
-              <span
-                style={{
-                  fontFamily: "var(--font-serif)",
-                  color: C.prussian,
-                  fontSize: "1.625rem",
-                  fontWeight: 500,
-                  letterSpacing: "0.16em",
-                  display: "block",
-                  marginBottom: "0.5rem",
-                }}
-              >
-                Althy
-              </span>
+            <Link href="/" style={{ textDecoration: "none", display: "inline-flex", marginBottom: "0.5rem" }}>
+              <AlthyLogo variant="full" size={32} />
             </Link>
             <p style={{ color: C.textMuted, fontSize: "0.8125rem", margin: 0, lineHeight: 1.6 }}>
               L&apos;assistant immobilier suisse

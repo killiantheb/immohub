@@ -3,8 +3,12 @@
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Search, Mic, SlidersHorizontal, ChevronDown, Menu, X } from "lucide-react";
+import { ChevronDown, Menu, X, Sparkles } from "lucide-react";
 import { C } from "@/lib/design-tokens";
+import { AlthyLogo } from "@/components/AlthyLogo";
+import { HeroConversational } from "@/components/landing/HeroConversational";
+import { LandingChatPanel, type LandingTurnInfo } from "@/components/landing/LandingChatPanel";
+import { TopographyOverlay } from "@/components/landing/TopographyOverlay";
 import { Footer } from "@/components/landing/Footer";
 import { LandingEstimation } from "@/components/landing/LandingEstimation";
 import { LandingBiens }      from "@/components/landing/LandingBiens";
@@ -21,28 +25,34 @@ import { CTAFinal }          from "@/components/landing/CTAFinal";
 import { ProprioSolo }       from "@/components/landing/ProprioSolo";
 import { AutonomieHighlight } from "@/components/landing/AutonomieHighlight";
 
-// ── Tokens ─────────────────────────────────────────────────────────────────────
 // Mapbox GL requires hex — do not replace with CSS var
 const PRUSSIAN_HEX = "#0F2E4C";
+const GOLD_HEX     = "#C9A961";
 
-const serif  = "var(--font-serif)";
-const sans   = "var(--font-sans)";
-const API    = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+const serif = "var(--font-serif)";
+const sans  = "var(--font-sans)";
+const API   = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
 const ACTIVE_CANTONS = ["Genève", "Vaud", "Valais", "Fribourg", "Neuchâtel", "Jura"];
 
-const CITY_COORDS: Record<string, [number, number]> = {
-  "genève": [6.143, 46.204], "geneve": [6.143, 46.204],
-  "lausanne": [6.632, 46.519], "fribourg": [7.161, 46.806],
-  "neuchâtel": [6.931, 46.992], "neuchatel": [6.931, 46.992],
-  "sion": [7.359, 46.233], "valais": [7.359, 46.233],
-  "nyon": [6.239, 46.383], "montreux": [6.911, 46.433],
+// Ville → (coords, zoom)
+const VILLE_FLY: Record<string, { center: [number, number]; zoom: number }> = {
+  genève:    { center: [6.143, 46.204], zoom: 11.5 },
+  lausanne:  { center: [6.632, 46.519], zoom: 11.5 },
+  fribourg:  { center: [7.161, 46.806], zoom: 11.5 },
+  neuchâtel: { center: [6.931, 46.992], zoom: 11.5 },
+  sion:      { center: [7.359, 46.233], zoom: 11.5 },
+  vaud:      { center: [6.63, 46.62],   zoom: 9.0 },
+  valais:    { center: [7.4, 46.2],     zoom: 8.8 },
+  montreux:  { center: [6.911, 46.433], zoom: 11.5 },
+  vevey:     { center: [6.843, 46.463], zoom: 12 },
+  nyon:      { center: [6.239, 46.383], zoom: 12 },
 };
 
 const ETAPES = [
-  { n: "01", titre: "Inscrivez-vous",    desc: "Choisissez votre rôle en 2 minutes : propriétaire, agence, artisan, locataire. Aucune carte bancaire requise." },
-  { n: "02", titre: "La Sphère analyse", desc: "Notre agent IA lit votre contexte chaque matin et vous propose des actions prioritaires à valider." },
-  { n: "03", titre: "Vous décidez",      desc: "Un clic pour valider. Althy exécute — envoi d'email, génération de document, coordination artisan." },
+  { n: "01", titre: "Posez votre question",     desc: "Althy IA comprend votre besoin — estimation, recherche, gestion. Pas de formulaire, pas de jargon." },
+  { n: "02", titre: "Althy IA analyse",         desc: "Notre agent lit votre contexte et vous propose une réponse précise, ancrée dans le marché suisse." },
+  { n: "03", titre: "Vous décidez",             desc: "Un clic pour valider. Althy exécute — document, annonce, coordination artisan, envoi d'email." },
 ] as const;
 
 const CSS = `
@@ -52,25 +62,31 @@ const CSS = `
     .lp-nav-tag      { display:none !important; }
     .lp-nav-cta      { display:none !important; }
     .lp-nav-burger   { display:flex !important; }
+    .lp-hero-title   { font-size: clamp(30px, 8vw, 44px) !important; }
   }
-  @media (max-width:768px) { .lp-stats-card { display:none !important; } }
   @keyframes lp-bounce {
     0%, 100% { transform:translateY(0); opacity:0.6; }
     50%       { transform:translateY(5px); opacity:1; }
   }
+  @keyframes lp-pulse-gold {
+    0%, 100% { opacity: 0.9; transform: scale(1); }
+    50%      { opacity: 0.55; transform: scale(1.25); }
+  }
 `;
 
-// ── Component ──────────────────────────────────────────────────────────────────
+// ── Component ────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const mapRef       = useRef<any>(null);
+  const mapContainer      = useRef<HTMLDivElement>(null);
+  const mapRef            = useRef<any>(null);
+  const pulseIntervalRef  = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const [query,        setQuery]       = useState("");
-  const [mapMode,      setMapMode]     = useState<"standard" | "satellite">("standard");
-  const [mapInteracted, setMapInteracted] = useState(false);
-  const [stats, setStats] = useState<{ total_biens: number; total_villes: number } | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [stats,         setStats]         = useState<{ total_biens: number; total_villes: number } | null>(null);
+  const [menuOpen,      setMenuOpen]      = useState(false);
+  const [chatOpen,      setChatOpen]      = useState(false);
+  const [pendingQ,      setPendingQ]      = useState<string | null>(null);
+  const [hidden,        setHidden]        = useState(false); // hide hero text when chat opens or map interacted
+  const [showFloating,  setShowFloating]  = useState(false); // floating "Parler à Althy IA" button post-hero
 
   // Fetch stats marketplace
   useEffect(() => {
@@ -80,7 +96,7 @@ export default function LandingPage() {
       .catch(() => null);
   }, []);
 
-  // Mapbox init
+  // Mapbox init (dark style + gold points)
   useEffect(() => {
     let map: any;
     let ro: ResizeObserver | null = null;
@@ -90,66 +106,179 @@ export default function LandingPage() {
       mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
       map = new mapboxgl.Map({
         container: mapContainer.current,
-        style: "mapbox://styles/mapbox/standard",
-        center: [7.5, 46.8], zoom: 7.2,
-        minZoom: 5.5, maxZoom: 20,
-        pitch: 50, bearing: -8,
+        style: "mapbox://styles/mapbox/dark-v11",
+        center: [7.2, 46.6], zoom: 7.6,
+        minZoom: 5.5, maxZoom: 18,
+        pitch: 42, bearing: -8,
         antialias: true, attributionControl: false,
+        interactive: true,
       });
       mapRef.current = map;
       map.resize();
       ro = new ResizeObserver(() => map.resize());
       ro.observe(mapContainer.current!);
-      const onInteract = () => setMapInteracted(true);
+
+      const onInteract = () => setHidden(true);
       map.on("dragstart", onInteract);
       map.on("zoomstart", onInteract);
-      map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "bottom-right");
+
       map.on("load", () => {
-        map.addSource("mapbox-dem", { type: "raster-dem", url: "mapbox://mapbox.mapbox-terrain-dem-v1", tileSize: 512, maxzoom: 14 });
-        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
+        // Terrain subtle
+        map.addSource("mapbox-dem", {
+          type: "raster-dem",
+          url:  "mapbox://mapbox.mapbox-terrain-dem-v1",
+          tileSize: 512, maxzoom: 14,
+        });
+        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.3 });
+
+        // Cantons glow (bleu Prusse)
         map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
-        map.addLayer({ id: "romande-fill", type: "fill", source: "cantons",
+        map.addLayer({
+          id: "romande-fill", type: "fill", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "fill-color": PRUSSIAN_HEX, "fill-opacity": 0.10 } });
-        map.addLayer({ id: "romande-border-glow", type: "line", source: "cantons",
+          paint: { "fill-color": PRUSSIAN_HEX, "fill-opacity": 0.22 },
+        });
+        map.addLayer({
+          id: "romande-border-glow", type: "line", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "line-color": PRUSSIAN_HEX, "line-width": 8, "line-opacity": 0.18, "line-blur": 6 } });
-        map.addLayer({ id: "romande-border", type: "line", source: "cantons",
+          paint: { "line-color": PRUSSIAN_HEX, "line-width": 10, "line-opacity": 0.35, "line-blur": 8 },
+        });
+        map.addLayer({
+          id: "romande-border", type: "line", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "line-color": PRUSSIAN_HEX, "line-width": 2, "line-opacity": 0.85 } });
+          paint: { "line-color": GOLD_HEX, "line-width": 1.2, "line-opacity": 0.45 },
+        });
+
+        // Public biens (gold points)
+        fetch(`${API}/marketplace/carte`)
+          .then(r => r.json())
+          .then(geojson => {
+            if (!map || !geojson?.features) return;
+            map.addSource("biens", { type: "geojson", data: geojson });
+
+            // Halo (pulsating via JS loop)
+            map.addLayer({
+              id: "biens-glow", type: "circle", source: "biens",
+              paint: {
+                "circle-radius":  14,
+                "circle-color":   GOLD_HEX,
+                "circle-opacity": 0.28,
+                "circle-blur":    1.2,
+                "circle-radius-transition":  { duration: 1100 },
+                "circle-opacity-transition": { duration: 1100 },
+              },
+            });
+
+            // Highlight layer (only biens matching the detected city — hidden by default)
+            map.addLayer({
+              id: "biens-highlight", type: "circle", source: "biens",
+              filter: ["==", ["get", "ville"], "__none__"],
+              paint: {
+                "circle-radius":  22,
+                "circle-color":   GOLD_HEX,
+                "circle-opacity": 0.6,
+                "circle-blur":    0.9,
+                "circle-stroke-color": GOLD_HEX,
+                "circle-stroke-width": 2,
+                "circle-stroke-opacity": 0.9,
+              },
+            });
+
+            // Core point
+            map.addLayer({
+              id: "biens-core", type: "circle", source: "biens",
+              paint: {
+                "circle-radius":       4,
+                "circle-color":        GOLD_HEX,
+                "circle-stroke-color": "#ffffff",
+                "circle-stroke-width": 1,
+                "circle-opacity":      0.95,
+              },
+            });
+
+            // JS pulse loop — alternate glow radius/opacity
+            let big = false;
+            pulseIntervalRef.current = setInterval(() => {
+              if (!mapRef.current || !mapRef.current.getLayer("biens-glow")) return;
+              big = !big;
+              mapRef.current.setPaintProperty("biens-glow", "circle-radius",  big ? 22 : 14);
+              mapRef.current.setPaintProperty("biens-glow", "circle-opacity", big ? 0.12 : 0.34);
+            }, 1100);
+          })
+          .catch(() => null);
       });
     })();
-    return () => { ro?.disconnect(); map?.remove(); mapRef.current = null; };
+    return () => {
+      ro?.disconnect();
+      if (pulseIntervalRef.current) clearInterval(pulseIntervalRef.current);
+      pulseIntervalRef.current = null;
+      map?.remove();
+      mapRef.current = null;
+    };
   }, []);
 
-  const handleSearch = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    const coords = CITY_COORDS[query.trim().toLowerCase()];
-    if (coords && mapRef.current) mapRef.current.flyTo({ center: coords, zoom: 12, duration: 1800, essential: true });
-  }, [query]);
+  // Scroll-based floating "Parler à Althy IA" widget
+  useEffect(() => {
+    const onScroll = () => {
+      const threshold = window.innerHeight * 0.85;
+      setShowFloating(window.scrollY > threshold);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
-  const toggleMapMode = useCallback((next: "standard" | "satellite") => {
-    if (!mapRef.current || next === mapMode) return;
+  // Handler from hero input & suggestion chips
+  const handleHeroSubmit = useCallback((question: string) => {
+    setPendingQ(question);
+    setChatOpen(true);
+    setHidden(true);
+  }, []);
+
+  // Chat intent → zoom map on relevant canton/ville + highlight matching biens
+  const handleTurnUpdate = useCallback((info: LandingTurnInfo) => {
     const map = mapRef.current;
-    map.setStyle(next === "satellite"
-      ? "mapbox://styles/mapbox/satellite-streets-v12"
-      : "mapbox://styles/mapbox/standard");
-    map.once("style.load", () => {
-      if (next === "standard") {
-        if (!map.getSource("mapbox-dem")) map.addSource("mapbox-dem", { type: "raster-dem", url: "mapbox://mapbox.mapbox-terrain-dem-v1", tileSize: 512, maxzoom: 14 });
-        map.setTerrain({ source: "mapbox-dem", exaggeration: 1.4 });
-      }
-      if (!map.getSource("cantons")) map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
-      if (!map.getLayer("romande-fill")) map.addLayer({ id: "romande-fill", type: "fill", source: "cantons",
-        filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-        paint: { "fill-color": PRUSSIAN_HEX, "fill-opacity": next === "satellite" ? 0.18 : 0.09 } });
-    });
-    setMapMode(next);
-  }, [mapMode]);
+    if (!map) return;
 
-  const scrollToList = () => document.getElementById("liste")?.scrollIntoView({ behavior: "smooth" });
+    const villeRaw = info.entities.ville?.toLowerCase();
+    if (!villeRaw) return;
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+    // Fly to city
+    const key = villeRaw.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const fly = VILLE_FLY[villeRaw] ?? VILLE_FLY[key];
+    if (fly) {
+      map.flyTo({ center: fly.center, zoom: fly.zoom, duration: 2000, essential: true });
+    }
+
+    // Highlight biens whose ville matches (case-insensitive contains)
+    if (map.getLayer("biens-highlight")) {
+      // Mapbox can't do ILIKE — we use downcase + == with both accented/unaccented forms
+      const accented   = villeRaw.charAt(0).toUpperCase() + villeRaw.slice(1);
+      const unaccented = key.charAt(0).toUpperCase() + key.slice(1);
+      map.setFilter("biens-highlight", [
+        "any",
+        ["==", ["downcase", ["coalesce", ["get", "ville"], ""]], villeRaw],
+        ["==", ["get", "ville"], accented],
+        ["==", ["get", "ville"], unaccented],
+      ]);
+    }
+  }, []);
+
+  const closeChatAndReset = useCallback(() => {
+    setChatOpen(false);
+    setPendingQ(null);
+    // Clear highlight
+    if (mapRef.current?.getLayer("biens-highlight")) {
+      mapRef.current.setFilter("biens-highlight", ["==", ["get", "ville"], "__none__"]);
+    }
+  }, []);
+
+  const openChatFromFloating = useCallback(() => {
+    setPendingQ(null);
+    setChatOpen(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const scrollToNext = () => document.getElementById("lp-next")?.scrollIntoView({ behavior: "smooth" });
 
   return (
     <>
@@ -158,134 +287,120 @@ export default function LandingPage() {
 
         {/* ── Navbar ── */}
         <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 30 }}>
-          <div style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", background: "transparent" }}>
-            <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
-              <span style={{ fontFamily: serif, fontSize: 28, fontWeight: 400, letterSpacing: "0.22em", color: C.prussian, textShadow: "0 2px 16px rgba(255,255,255,0.50)" }}>
-                ALTHY
-              </span>
+          <div style={{ height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px" }}>
+            <Link href="/" style={{ textDecoration: "none", display: "inline-flex", filter: "drop-shadow(0 2px 18px rgba(15,46,76,0.5))" }}>
+              <AlthyLogo variant="inverted" size={34} />
             </Link>
-            <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}>
-              <span className="lp-nav-tag" style={{ fontFamily: sans, fontSize: 11, letterSpacing: "0.14em", color: "var(--althy-surface)" }}>
-                Votre agent personnel
-              </span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-              <Link href="/login" style={{ fontSize: 11, textDecoration: "none", padding: "7px 16px", borderRadius: 100, border: "1px solid rgba(26,18,8,0.20)", background: "rgba(255,255,255,0.60)", backdropFilter: "blur(12px)", color: "#1A1208", fontFamily: sans }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Link href="/login" style={{ fontSize: 13, textDecoration: "none", padding: "8px 18px", borderRadius: 100, border: "1px solid rgba(255,255,255,0.35)", background: "rgba(255,255,255,0.08)", backdropFilter: "blur(12px)", color: "#fff", fontFamily: sans, fontWeight: 500 }}>
                 Se connecter
               </Link>
-              <Link href="/register" className="lp-nav-cta" style={{ fontSize: 11, fontWeight: 500, textDecoration: "none", padding: "7px 16px", borderRadius: 100, background: C.prussian, color: "#fff", boxShadow: "0 2px 10px rgba(15,46,76,0.35)", fontFamily: sans }}>
-                Commencer gratuitement
+              <Link href="/register" className="lp-nav-cta" style={{ fontSize: 13, fontWeight: 600, textDecoration: "none", padding: "8px 18px", borderRadius: 100, background: C.gold, color: C.prussian, boxShadow: "0 2px 12px rgba(201,169,97,0.45)", fontFamily: sans }}>
+                Commencer
               </Link>
               <button
                 className="lp-nav-burger"
                 onClick={() => setMenuOpen(o => !o)}
                 aria-label="Menu"
-                style={{ display: "none", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 10, border: "none", background: "rgba(255,255,255,0.60)", backdropFilter: "blur(12px)", cursor: "pointer", color: C.text }}
+                style={{ display: "none", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 10, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.12)", backdropFilter: "blur(12px)", cursor: "pointer", color: "#fff" }}
               >
                 {menuOpen ? <X size={18} /> : <Menu size={18} />}
               </button>
             </div>
           </div>
 
-          {/* Mobile menu */}
           {menuOpen && (
-            <div style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", padding: "16px 28px 20px", display: "flex", flexDirection: "column", gap: 10, borderBottom: `1px solid ${C.border}` }}>
-              <Link href="/login" onClick={() => setMenuOpen(false)} style={{ fontSize: 14, textDecoration: "none", padding: "10px 16px", borderRadius: 10, border: `1px solid ${C.border}`, color: C.text, fontFamily: sans, textAlign: "center" }}>
+            <div style={{ background: "rgba(15,46,76,0.96)", backdropFilter: "blur(20px)", padding: "16px 28px 20px", display: "flex", flexDirection: "column", gap: 10, borderBottom: "1px solid rgba(255,255,255,0.15)" }}>
+              <Link href="/login" onClick={() => setMenuOpen(false)} style={{ fontSize: 14, textDecoration: "none", padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.25)", color: "#fff", fontFamily: sans, textAlign: "center" }}>
                 Se connecter
               </Link>
-              <Link href="/register" onClick={() => setMenuOpen(false)} style={{ fontSize: 14, fontWeight: 600, textDecoration: "none", padding: "10px 16px", borderRadius: 10, background: C.prussian, color: "#fff", fontFamily: sans, textAlign: "center" }}>
+              <Link href="/register" onClick={() => setMenuOpen(false)} style={{ fontSize: 14, fontWeight: 600, textDecoration: "none", padding: "12px 16px", borderRadius: 10, background: C.gold, color: C.prussian, fontFamily: sans, textAlign: "center" }}>
                 Commencer gratuitement
               </Link>
             </div>
           )}
         </nav>
 
-        {/* ── Hero — 60vh Mapbox ── */}
-        <section style={{ position: "relative", height: "60dvh", minHeight: 480, overflow: "hidden", width: "100vw" }}>
+        {/* ── Hero — immersive full screen ── */}
+        <section style={{ position: "relative", height: "100dvh", minHeight: 620, overflow: "hidden", width: "100vw", background: PRUSSIAN_HEX }}>
           <div ref={mapContainer} style={{ position: "absolute", inset: 0 }} />
 
-          {/* Gradients */}
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 130, background: "linear-gradient(to bottom, rgba(20,16,12,0.50) 0%, transparent 100%)", pointerEvents: "none", zIndex: 5 }} />
-          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 160, background: "linear-gradient(to top, rgba(20,16,12,0.35) 0%, transparent 100%)", pointerEvents: "none", zIndex: 5 }} />
-
-          {/* H1 */}
-          <div style={{ position: "absolute", top: "26%", left: "50%", transform: "translateX(-50%)", textAlign: "center", zIndex: 10, pointerEvents: "none", width: "min(680px, calc(100vw - 48px))", opacity: mapInteracted ? 0 : 1, transition: "opacity 0.5s ease" }}>
-            {/* A/B variant A (active) — propriétaire solo */}
-            <h1 style={{ fontFamily: serif, fontSize: "clamp(40px,6vw,82px)", fontWeight: 300, color: "var(--althy-surface)", margin: 0, letterSpacing: "-0.03em", lineHeight: 1.02, textShadow: "0 2px 32px rgba(0,0,0,0.45)" }}>
-              L&apos;immobilier suisse,<br />
-              <span style={{ color: C.prussian, textShadow: "0 2px 24px rgba(15,46,76,0.35)" }}>sans agence.</span>
-            </h1>
-            <p style={{ fontFamily: sans, fontSize: "clamp(14px,1.5vw,17px)", color: "rgba(255,255,255,0.82)", margin: "22px auto 0", maxWidth: 560, fontWeight: 400, lineHeight: 1.55, letterSpacing: "0.01em", textShadow: "0 1px 10px rgba(0,0,0,0.35)" }}>
-              Gérez votre bien, trouvez un locataire, encaissez vos loyers —
-              en 2 clics, avec l&apos;IA.
-            </p>
+          {/* Topographic pattern overlay (subtle gold contours drifting) */}
+          <div style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none" }}>
+            <TopographyOverlay color="#C9A961" opacity={0.09} />
           </div>
 
-          {/* Stats card */}
-          <div className="lp-stats-card" style={{ position: "absolute", top: "4.25rem", left: "1.25rem", zIndex: 20, background: "rgba(255,255,255,0.75)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.85)", borderRadius: 14, padding: "14px 18px", boxShadow: "0 4px 20px rgba(0,0,0,0.07)", minWidth: 140 }}>
-            <div style={{ fontFamily: serif, fontSize: 30, fontWeight: 300, color: C.text, lineHeight: 1 }}>
-              {stats?.total_biens ?? "—"}
+          {/* Vignette + gradient overlays (prussian tint) */}
+          <div style={{
+            position: "absolute", inset: 0, pointerEvents: "none",
+            background: "radial-gradient(ellipse at center, rgba(15,46,76,0.25) 0%, rgba(15,46,76,0.55) 60%, rgba(15,46,76,0.80) 100%)",
+            zIndex: 2,
+          }} />
+          <div style={{
+            position: "absolute", top: 0, left: 0, right: 0, height: 160,
+            background: "linear-gradient(to bottom, rgba(15,46,76,0.75), transparent)",
+            pointerEvents: "none", zIndex: 3,
+          }} />
+          <div style={{
+            position: "absolute", bottom: 0, left: 0, right: 0, height: 180,
+            background: "linear-gradient(to top, rgba(15,46,76,0.85), transparent)",
+            pointerEvents: "none", zIndex: 3,
+          }} />
+
+          {/* Hero conversational center */}
+          <div style={{
+            position: "absolute", inset: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "0 24px",
+            zIndex: 10,
+            pointerEvents: "none",
+          }}>
+            <div style={{ pointerEvents: "auto" }}>
+              <HeroConversational onSubmit={handleHeroSubmit} visible={!hidden} />
             </div>
-            <div style={{ fontSize: 10, letterSpacing: "0.06em", color: C.textMuted, fontFamily: sans, marginTop: 2 }}>
-              biens disponibles
+          </div>
+
+          {/* Stats pill top-left */}
+          {stats && (
+            <div style={{
+              position: "absolute", top: 82, left: 20, zIndex: 15,
+              display: "flex", alignItems: "center", gap: 10,
+              background: "rgba(255,255,255,0.14)",
+              backdropFilter: "blur(18px)",
+              border: "1px solid rgba(255,255,255,0.22)",
+              borderRadius: 100, padding: "7px 14px",
+              color: "#fff", fontFamily: sans, fontSize: 12, fontWeight: 500,
+              letterSpacing: "0.02em",
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.gold, animation: "lp-pulse-gold 2s ease-in-out infinite" }} />
+              {stats.total_biens} biens actifs · {stats.total_villes} villes
             </div>
-            <div style={{ fontSize: 11, color: C.prussian, fontWeight: 700, marginTop: 5 }}>
-              {stats?.total_villes ?? 5} villes actives
-            </div>
-          </div>
-
-          {/* Micro-copy proprio */}
-          <div style={{ position: "absolute", bottom: 100, left: "50%", transform: "translateX(-50%)", zIndex: 10, textAlign: "center", opacity: mapInteracted ? 0 : 1, transition: "opacity 0.5s ease" }}>
-            <Link href="/register?role=proprio_solo" style={{ fontSize: 13, color: "rgba(255,255,255,0.70)", textDecoration: "none", fontFamily: sans, fontWeight: 500, textShadow: "0 1px 6px rgba(0,0,0,0.30)" }}>
-              Déjà propriétaire ? <span style={{ color: C.prussian, fontWeight: 600 }}>Commencer gratuitement →</span>
-            </Link>
-          </div>
-
-          {/* Search bar */}
-          <div style={{ position: "absolute", bottom: 52, left: "50%", transform: "translateX(-50%)", zIndex: 10, width: "min(580px, calc(100vw - 32px))" }}>
-            <form onSubmit={handleSearch} style={{ position: "relative", width: "100%", display: "flex", alignItems: "center" }}>
-              <input type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder="Ville, quartier, adresse…"
-                style={{ width: "100%", boxSizing: "border-box" as const, padding: "14px 160px 14px 20px", borderRadius: 32, border: "1.5px solid rgba(255,255,255,0.6)", background: "rgba(255,255,255,0.82)", backdropFilter: "blur(20px)", fontSize: 14, color: C.text, outline: "none", boxShadow: "0 8px 32px rgba(26,22,18,0.18)", fontFamily: sans }} />
-              <div style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", gap: 4 }}>
-                <button type="button" disabled title="Bientôt disponible" style={{ width: 34, height: 34, borderRadius: "50%", background: "transparent", border: "none", color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center", cursor: "not-allowed", opacity: 0.4 }}>
-                  <Mic size={15} />
-                </button>
-                <button type="button" disabled title="Bientôt disponible" style={{ width: 34, height: 34, borderRadius: "50%", background: "transparent", border: "none", color: C.textMuted, display: "flex", alignItems: "center", justifyContent: "center", cursor: "not-allowed", opacity: 0.4 }}>
-                  <SlidersHorizontal size={15} />
-                </button>
-                <div style={{ width: 1, height: 18, background: "rgba(26,22,18,0.15)" }} />
-                <button type="submit" style={{ padding: "7px 16px", borderRadius: 24, background: C.prussian, color: "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: sans, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 10px rgba(15,46,76,0.35)" }}>
-                  <Search size={14} />
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Toggle carte */}
-          <div style={{ position: "absolute", bottom: "2.5rem", left: "1.25rem", zIndex: 20, display: "flex", flexDirection: "column", gap: 3 }}>
-            {(["standard", "satellite"] as const).map(mode => (
-              <button key={mode} onClick={() => toggleMapMode(mode)} style={{ background: mapMode === mode ? C.text : "rgba(255,255,255,0.80)", backdropFilter: "blur(16px)", color: mapMode === mode ? "#fff" : C.textMuted, border: mapMode === mode ? `1px solid ${C.text}` : "1px solid rgba(255,255,255,0.90)", borderRadius: 9, padding: "7px 13px", fontSize: 9, fontWeight: 600, fontFamily: sans, letterSpacing: "0.09em", textTransform: "uppercase" as const, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.10)", transition: "all 0.18s" }}>
-                {mode === "standard" ? "Standard" : "Satellite"}
-              </button>
-            ))}
-          </div>
+          )}
 
           {/* Scroll indicator */}
-          <div onClick={scrollToList} style={{ position: "absolute", bottom: 14, left: "50%", transform: "translateX(-50%)", zIndex: 10, cursor: "pointer", padding: 8, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-            <span style={{ fontSize: 9, letterSpacing: "0.12em", color: "rgba(255,255,255,0.50)", fontFamily: sans, textTransform: "uppercase" as const }}>
+          <div
+            onClick={scrollToNext}
+            style={{
+              position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)",
+              zIndex: 10, cursor: "pointer", padding: 8,
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+              opacity: chatOpen ? 0 : 1,
+              transition: "opacity 0.3s",
+            }}
+          >
+            <span style={{ fontSize: 10, letterSpacing: "0.14em", color: "rgba(255,255,255,0.65)", fontFamily: sans, textTransform: "uppercase" }}>
               Découvrir
             </span>
-            <ChevronDown size={22} color="rgba(255,255,255,0.65)" style={{ animation: "lp-bounce 1.8s ease-in-out infinite" }} />
+            <ChevronDown size={22} color="rgba(255,255,255,0.8)" style={{ animation: "lp-bounce 1.8s ease-in-out infinite" }} />
           </div>
         </section>
 
-        {/* ── Social Proof marquee ── */}
+        <div id="lp-next" />
+
+        {/* ── Sections ── */}
         <SocialProof />
+        <PourQui />
 
-        {/* ── Estimation IA ── */}
-        <LandingEstimation />
-
-        {/* ── Bandeau stats dynamique ── */}
         {stats && (
           <div style={{ background: C.prussian, padding: "18px 24px", textAlign: "center" }}>
             <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#fff", letterSpacing: "0.06em", fontFamily: sans }}>
@@ -294,28 +409,23 @@ export default function LandingPage() {
           </div>
         )}
 
-        {/* ── Proprio solo — douleur + valeur ── */}
+        <AutonomieHighlight />
         <ProprioSolo />
-
-        {/* ── Vrais biens ── */}
         <LandingBiens />
-
-        {/* ── Feature : Assistant IA ── */}
+        <LandingEstimation />
         <FeatureIA />
-
-        {/* ── Feature : Tableau de bord biens ── */}
         <FeatureBiens />
-
-        {/* ── Feature : Réseau ouvreurs + artisans ── */}
         <FeatureReseau />
 
-        {/* ── Comment ça marche ── */}
+        {/* Comment ça marche */}
         <section style={{ maxWidth: 1100, margin: "0 auto", padding: "88px 24px" }}>
           <div style={{ textAlign: "center", marginBottom: 52 }}>
             <h2 style={{ fontFamily: serif, fontSize: "clamp(26px,3.5vw,38px)", fontWeight: 300, color: C.text, margin: "0 0 12px" }}>
               Comment ça marche
             </h2>
-            <p style={{ fontSize: 15, color: C.textMuted, margin: 0 }}>Trois étapes — deux minutes.</p>
+            <p style={{ fontSize: 15, color: C.textMuted, margin: 0 }}>
+              Trois étapes — deux minutes.
+            </p>
           </div>
           <div className="lp-grid-etapes">
             {ETAPES.map(e => (
@@ -328,28 +438,62 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ── Pour qui ── */}
-        <PourQui />
-
-        {/* ── Témoignages ── */}
         <Testimonials />
-
-        {/* ── Preuve sociale (chiffres) ── */}
         <LandingPreuve />
-
-        {/* ── Garanties ── */}
         <Garanties />
-
-        {/* ── Althy Autonomie (pivot stratégique CHF 39/mois) ── */}
-        <AutonomieHighlight />
-
-        {/* ── Tarifs ── */}
         <Tarifs />
-
-        {/* ── CTA final ── */}
         <CTAFinal />
-
         <Footer />
+
+        {/* Floating "Parler à Althy IA" — visible après scroll hero */}
+        <button
+          onClick={openChatFromFloating}
+          aria-label="Parler à Althy IA"
+          style={{
+            position: "fixed",
+            bottom: 24,
+            right: 24,
+            zIndex: 40,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "14px 20px 14px 16px",
+            borderRadius: 100,
+            border: "none",
+            background: C.prussian,
+            color: "#fff",
+            fontFamily: sans,
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: "pointer",
+            boxShadow: "0 10px 30px rgba(15,46,76,0.4), 0 4px 10px rgba(0,0,0,0.12)",
+            opacity: showFloating && !chatOpen ? 1 : 0,
+            transform: showFloating && !chatOpen ? "translateY(0) scale(1)" : "translateY(16px) scale(0.92)",
+            transition: "opacity 300ms ease, transform 300ms ease",
+            pointerEvents: showFloating && !chatOpen ? "auto" : "none",
+          }}
+        >
+          <span style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 28, height: 28,
+            borderRadius: "50%",
+            background: C.gold,
+            color: C.prussian,
+          }}>
+            <Sparkles size={15} />
+          </span>
+          Parler à Althy IA
+        </button>
+
+        {/* Chat panel — slide from right */}
+        <LandingChatPanel
+          open={chatOpen}
+          onClose={closeChatAndReset}
+          initialQuestion={pendingQ}
+          onTurnUpdate={handleTurnUpdate}
+        />
       </div>
     </>
   );

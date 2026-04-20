@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { LOCALE_COOKIE, DEFAULT_LOCALE, isSupportedLocale } from "@/i18n/config";
 
 // Routes accessibles sans authentification
 const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password", "/reset-password", "/legal", "/legal/cgu", "/legal/confidentialite", "/legal/cookies", "/legal/disclaimer-ia", "/contact", "/bientot"];
@@ -12,9 +13,38 @@ const LEGACY_PORTALS: Record<string, string> = {
   "/company": "/app",
 };
 
+/**
+ * Détecte un préfixe locale dans l'URL (ex: /fr-FR/biens, /de-CH/).
+ * Si trouvé : pose le cookie NEXT_LOCALE, rewrite vers l'URL sans le préfixe.
+ * Permet le switch via URL sans restructurer app/ en app/[locale]/.
+ */
+function detectLocalePrefix(pathname: string): { locale: string | null; stripped: string } {
+  const match = pathname.match(/^\/([a-z]{2}(?:-[A-Z]{2})?)(\/.*|$)/);
+  if (match && isSupportedLocale(match[1])) {
+    return { locale: match[1], stripped: match[2] || "/" };
+  }
+  return { locale: null, stripped: pathname };
+}
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
   const { pathname } = request.nextUrl;
+
+  // ── i18n : URL locale-préfixée → redirige vers URL canonique + pose cookie
+  //          ex: /fr-FR/biens → cookie NEXT_LOCALE=fr-FR, redirect /biens
+  const { locale: urlLocale, stripped } = detectLocalePrefix(pathname);
+  if (urlLocale) {
+    const redirectUrl = new URL(stripped + request.nextUrl.search, request.url);
+    const redirectResponse = NextResponse.redirect(redirectUrl);
+    redirectResponse.cookies.set(LOCALE_COOKIE, urlLocale, { path: "/", sameSite: "lax" });
+    return redirectResponse;
+  }
+
+  // Pose le cookie locale par défaut si aucun n'est présent (pour SSR cohérent)
+  const currentLocaleCookie = request.cookies.get(LOCALE_COOKIE)?.value;
+  if (!currentLocaleCookie || !isSupportedLocale(currentLocaleCookie)) {
+    response.cookies.set(LOCALE_COOKIE, DEFAULT_LOCALE, { path: "/", sameSite: "lax" });
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

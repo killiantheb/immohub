@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AlthyLogo } from "@/components/AlthyLogo";
 import { CheckCircle2, ArrowLeft } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
+
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
 const ROLE_INFO: Record<string, { label: string; icon: string; description: string }> = {
   agence:           { label: "Agence immobilière",   icon: "🏢", description: "Gérez vos agents, portefeuille et portail propriétaire depuis un seul espace." },
@@ -18,16 +21,46 @@ const ROLE_INFO: Record<string, { label: string; icon: string; description: stri
 
 const FALLBACK = { label: "Ce rôle", icon: "🚀", description: "Cette fonctionnalité sera bientôt disponible sur Althy." };
 
+const ALLOWED_ROLES = new Set([
+  "artisan", "ouvreur", "expert", "hunter",
+  "acheteur_premium", "agence", "portail_proprio",
+]);
+
 export default function BientotPage() {
   const { role } = useParams<{ role: string }>();
   const info = ROLE_INFO[role] ?? FALLBACK;
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: POST to /api/v1/waitlist or store in Supabase
-    setSubmitted(true);
+    setError(null);
+    setSubmitting(true);
+    const apiRole = ALLOWED_ROLES.has(role) ? role : "other";
+    try {
+      const resp = await fetch(`${API}/waitlist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          role: apiRole,
+          source: "bientot_page",
+          metadata: { raw_role: role },
+        }),
+      });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw new Error(data?.detail ?? "Inscription échouée — réessayez.");
+      }
+      trackEvent("waitlist_joined", { role: apiRole, source: "bientot_page" });
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur réseau — réessayez.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -37,14 +70,13 @@ export default function BientotPage() {
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "16px 24px", borderBottom: "1px solid var(--althy-border, #E8E4DC)",
       }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", color: "inherit" }}>
-          <AlthyLogo size={28} />
-          <span style={{ fontSize: 18, fontWeight: 700, color: "var(--althy-text, #3D3830)" }}>ALTHY</span>
+        <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none", color: "inherit" }}>
+          <AlthyLogo variant="full" size={26} />
         </Link>
         <Link
           href="/register"
           style={{
-            fontSize: 14, color: "var(--althy-orange)", fontWeight: 600,
+            fontSize: 14, color: "var(--althy-prussian)", fontWeight: 600,
             textDecoration: "none",
           }}
         >
@@ -75,7 +107,7 @@ export default function BientotPage() {
           </h1>
           <p style={{
             fontSize: 13, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1,
-            color: "var(--althy-orange)", marginBottom: 16,
+            color: "var(--althy-prussian)", marginBottom: 16,
           }}>
             Bientôt disponible
           </p>
@@ -88,31 +120,43 @@ export default function BientotPage() {
 
           {/* Waitlist form */}
           {!submitted ? (
-            <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8, maxWidth: 400, margin: "0 auto" }}>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="votre@email.com"
-                style={{
-                  flex: 1, padding: "10px 14px", borderRadius: "var(--radius-elem, 8px)",
-                  border: "1px solid var(--althy-border, #E8E4DC)",
-                  fontSize: 14, outline: "none",
-                }}
-              />
-              <button
-                type="submit"
-                style={{
-                  padding: "10px 20px", borderRadius: "var(--radius-elem, 8px)",
-                  background: "var(--althy-orange)", color: "#fff",
-                  fontWeight: 600, fontSize: 14, border: "none", cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Me prévenir
-              </button>
-            </form>
+            <>
+              <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8, maxWidth: 400, margin: "0 auto" }}>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="votre@email.com"
+                  disabled={submitting}
+                  style={{
+                    flex: 1, padding: "10px 14px", borderRadius: "var(--radius-elem, 8px)",
+                    border: "1px solid var(--althy-border, #E8E4DC)",
+                    fontSize: 14, outline: "none",
+                    opacity: submitting ? 0.6 : 1,
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  style={{
+                    padding: "10px 20px", borderRadius: "var(--radius-elem, 8px)",
+                    background: "var(--althy-prussian)", color: "#fff",
+                    fontWeight: 600, fontSize: 14, border: "none",
+                    cursor: submitting ? "progress" : "pointer",
+                    whiteSpace: "nowrap",
+                    opacity: submitting ? 0.7 : 1,
+                  }}
+                >
+                  {submitting ? "Envoi…" : "Me prévenir"}
+                </button>
+              </form>
+              {error && (
+                <p style={{ color: "#b91c1c", fontSize: 13, marginTop: 10, margin: "10px 0 0" }}>
+                  {error}
+                </p>
+              )}
+            </>
           ) : (
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -121,7 +165,7 @@ export default function BientotPage() {
               fontWeight: 600, fontSize: 14,
             }}>
               <CheckCircle2 size={18} />
-              Inscrit ! Nous vous préviendrons dès le lancement.
+              Merci — nous vous contacterons dès l&apos;ouverture.
             </div>
           )}
 

@@ -19,7 +19,7 @@ const RESTRICTED_PAGES: Record<string, string[]> = {
   "/app/hunters":          ["proprio_solo", "agence", "super_admin"],
   "/app/hunter":           ["hunter",       "super_admin"],
   "/app/vente":            ["proprio_solo", "agence", "super_admin"],
-  "/app/listings":         ["proprio_solo", "agence", "super_admin"],
+  "/app/annonces":         ["proprio_solo", "agence", "super_admin"],
   "/app/ouvreurs":         ["opener",       "super_admin"],
   "/app/ouvreur":          ["opener",       "super_admin"],
   "/app/comptabilite":     ["proprio_solo", "agence", "super_admin"],
@@ -27,7 +27,7 @@ const RESTRICTED_PAGES: Record<string, string[]> = {
   "/app/candidatures":     ["proprio_solo", "agence", "super_admin"],
   "/app/acheteur":         ["acheteur_premium", "super_admin"],
   "/app/expert":           ["expert",       "super_admin"],
-  "/app/insurance":        ["proprio_solo", "locataire", "super_admin"],
+  "/app/assurance":        ["proprio_solo", "locataire", "super_admin"],
   "/app/transactions":     ["proprio_solo", "agence", "super_admin"],
   "/app/portail":          ["agence",       "super_admin"],
 };
@@ -39,7 +39,7 @@ const RESTRICTED_PAGES: Record<string, string[]> = {
 import type { FlagName } from "@/lib/flags";
 const FLAG_GATED_PAGES: Record<string, FlagName> = {
   "/app/vente":        "FEATURE_VENTE",
-  "/app/insurance":    "FEATURE_INSURANCE",
+  "/app/assurance":    "FEATURE_INSURANCE",
   "/app/transactions": "FEATURE_TRANSACTIONS",
   "/app/hunters":      "ROLE_HUNTER",
   "/app/hunter":       "ROLE_HUNTER",
@@ -97,7 +97,7 @@ function RoleEnPreparation({ role }: { role: string }) {
                 fontWeight: 600, fontSize: 14, textDecoration: "none",
               }}
             >
-              Accéder à la Sphère IA →
+              Accéder à Althy IA →
             </Link>
             <Link
               href="/contact"

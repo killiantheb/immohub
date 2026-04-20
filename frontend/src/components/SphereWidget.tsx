@@ -164,7 +164,7 @@ export function SphereWidget() {
               onClick={() => setOpen(false)}
               style={{ display: 'block', marginTop: 10, textAlign: 'center', fontSize: 12, color: 'var(--althy-orange)', textDecoration: 'none', fontWeight: 600 }}
             >
-              Ouvrir la Sphère complète →
+              Ouvrir Althy IA →
             </Link>
           </div>
         </div>

@@ -28,7 +28,7 @@ export function AlthySphereCore({ state, size = 200 }: Props) {
         height: size,
         flexShrink: 0,
       }}
-      aria-label="Sphère Althy"
+      aria-label="Althy IA"
       role="img"
     >
       {/* ── Glow halo ── */}

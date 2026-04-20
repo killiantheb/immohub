@@ -1,18 +1,35 @@
 // @ts-check
 const { withSentryConfig } = require("@sentry/nextjs");
+const createNextIntlPlugin = require("next-intl/plugin");
+
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // ── Redirects routes anglaises → françaises ──────────────────────────────────
+  // ── Redirects routes anglaises → françaises (301 permanent, SEO-safe) ────────
   async redirects() {
     return [
-      { source: "/app/properties/:path*",  destination: "/app/biens/:path*",           permanent: true },
+      // Pages publiques legacy
+      { source: "/privacy",                destination: "/legal/confidentialite",       permanent: true },
+      { source: "/terms",                  destination: "/legal/cgu",                   permanent: true },
+
+      // Dashboard — URLs anglaises → françaises
+      { source: "/app/properties/:path*",  destination: "/app/biens/:path*",            permanent: true },
       { source: "/app/openers/:path*",     destination: "/app/ouvreurs/:path*",         permanent: true },
       { source: "/app/tenant",             destination: "/app/locataire",               permanent: true },
       { source: "/app/accounting",         destination: "/app/comptabilite",            permanent: true },
       { source: "/app/advisor",            destination: "/app/sphere",                  permanent: true },
       { source: "/app/dashboard",          destination: "/app/sphere",                  permanent: true },
-      { source: "/app/rfqs/:path*",        destination: "/app/artisans/devis/:path*",   permanent: true },
+      { source: "/app/profile",            destination: "/app/profil",                  permanent: true },
+      { source: "/app/listings",           destination: "/app/annonces",                permanent: true },
+      { source: "/app/insurance",          destination: "/app/assurance",               permanent: true },
+
+      // Redirects fonctionnels (pages consolidées)
+      { source: "/app/overview",           destination: "/app",                         permanent: true },
+      { source: "/app/companies",          destination: "/app/agence",                  permanent: true },
+      { source: "/app/favorites",          destination: "/app/biens?tab=favoris",       permanent: true },
+      { source: "/app/publications/:path*",destination: "/app/annonces",                permanent: true },
+      { source: "/app/rfqs/:path*",        destination: "/app/artisans/devis",          permanent: true },
       { source: "/onboarding",             destination: "/bienvenue",                   permanent: true },
     ];
   },
@@ -86,7 +103,7 @@ const nextConfig = {
   },
 };
 
-module.exports = withSentryConfig(nextConfig, {
+module.exports = withSentryConfig(withNextIntl(nextConfig), {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,

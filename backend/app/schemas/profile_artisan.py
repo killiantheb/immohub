@@ -36,6 +36,9 @@ class ProfileArtisanBase(BaseModel):
     virement_auto: bool = False
     facturation_auto: bool = False
     relance_auto: bool = False
+    # Marketplace M1 (migration 0036)
+    canton: Optional[str] = None
+    specialties: Optional[list[str]] = None
 
 
 class ProfileArtisanCreate(ProfileArtisanBase):
@@ -65,6 +68,9 @@ class ProfileArtisanUpdate(BaseModel):
     virement_auto: Optional[bool] = None
     facturation_auto: Optional[bool] = None
     relance_auto: Optional[bool] = None
+    # Marketplace M1
+    canton: Optional[str] = None
+    specialties: Optional[list[str]] = None
 
 
 class ProfileArtisanRead(ProfileArtisanBase):
@@ -75,3 +81,33 @@ class ProfileArtisanRead(ProfileArtisanBase):
     note_moyenne: float
     nb_chantiers: int
     created_at: datetime
+    subscription_plan: Optional[str] = None
+    is_founding_member: bool = False
+    stripe_connect_id: Optional[str] = None
+    stripe_connect_ready: bool = False
+    subscription_activated_at: Optional[datetime] = None
+
+
+# ── Subscribe (marketplace M1) ───────────────────────────────────────────────
+
+class ArtisanSubscribeRequest(BaseModel):
+    """Requête de souscription marketplace — décide plan final (founding si dispo)."""
+    canton: str
+    specialties: list[str]
+    # Si desired_plan = artisan_free_early mais le canton est plein → fallback verified.
+    desired_plan: str = "artisan_free_early"
+
+
+class ArtisanSubscribeResponse(BaseModel):
+    assigned_plan: str               # artisan_free_early ou artisan_verified
+    is_founding_member: bool
+    founding_spots_remaining: int    # sur 50
+    requires_stripe_kyc: bool
+    requires_payment: bool           # false si fondateur, true sinon
+
+
+class FoundingSpotRead(BaseModel):
+    canton: str
+    total_spots: int
+    taken: int
+    remaining: int

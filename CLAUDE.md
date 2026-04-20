@@ -135,10 +135,10 @@ grep -rn '#E8602C' frontend/src --include="*.css"  → 0 occurrence attendue
 
 ```
 frontend/   Next.js 14 App Router + TypeScript          → Vercel
-backend/    FastAPI + Celery + Redis (54 routers)       → Railway
+backend/    FastAPI + Celery + Redis (56 routers)       → Railway
 mobile/     React Native / Expo                          → (en pause)
 supabase/   PostgreSQL + Auth + Storage + Realtime
-            16 migrations actives (004 → 0033)
+            19 migrations actives (004 → 0036)
 ```
 
 ### Dépendances clés (frontend)
@@ -159,7 +159,7 @@ NEXT_PUBLIC_POSTHOG_HOST=https://eu.posthog.com
 # Feature flags (Phase 1 : tout à false en prod)
 NEXT_PUBLIC_FLAG_AGENCE=false
 NEXT_PUBLIC_FLAG_PORTAIL=false
-NEXT_PUBLIC_FLAG_ARTISAN=false
+NEXT_PUBLIC_FLAG_ARTISAN=true        # Phase 3 partielle : marketplace M1 ouvert (GE + VD)
 NEXT_PUBLIC_FLAG_OPENER=false
 
 # backend/.env
@@ -181,7 +181,7 @@ GOOGLE_CLIENT_ID= / GOOGLE_CLIENT_SECRET=
 MICROSOFT_CLIENT_ID= / MICROSOFT_CLIENT_SECRET=
 WHATSAPP_API_TOKEN= / WHATSAPP_PHONE_ID= / META_APP_SECRET=
 FEATURE_FLAGS_STRICT=true            # Phase 1 : refuse inscription rôles secondaires
-ALLOWED_SIGNUP_ROLES=["proprio_solo","locataire","super_admin"]
+ALLOWED_SIGNUP_ROLES=["proprio_solo","locataire","super_admin","artisan"]
 ```
 
 ---
@@ -197,7 +197,7 @@ ALLOWED_SIGNUP_ROLES=["proprio_solo","locataire","super_admin"]
 | `super_admin` | **1 (actif)** | aucun | admin pages |
 | `agence` | 2 | `ROLE_AGENCE` | `DashboardAgence` |
 | `portail_proprio` | 2 | `ROLE_PORTAIL_PROPRIO` | `DashboardPortail` |
-| `artisan` | 3 | `ROLE_ARTISAN` | `DashboardArtisan` |
+| `artisan` | **3 (actif partiel — 2026-04-20)** | `ROLE_ARTISAN` | `DashboardArtisan` |
 | `opener` | 3 | `ROLE_OPENER` | `DashboardOpener` |
 | `expert` | hors phase | hardcodé `false` | `DashboardExpert` |
 | `hunter` | hors phase | hardcodé `false` | `DashboardHunter` |
@@ -219,6 +219,8 @@ ALLOWED_SIGNUP_ROLES=["proprio_solo","locataire","super_admin"]
 | A5   | `agence`      | Agence        | CHF 49/agent/mois     | Régies / agences     | agence     |
 | A6   | `invite`      | Compte invité | CHF 9/mois            | Proprio rattaché agence | invited |
 | A7   | `enterprise`  | Enterprise    | CHF 1500–5000/mois    | White-label, grandes régies | enterprise |
+| M1   | `artisan_verified`    | Artisan Vérifié   | CHF 49/mois   | Artisans certifiés CH (RC + UID) | artisan |
+| M1★  | `artisan_free_early`  | Artisan Fondateur | CHF 0 à vie   | 50 premiers artisans / canton (Uber) | artisan |
 
 **Commission T1 (transit loyer)** : conservée à **3%** (baissera à 2% Y5+).
 
@@ -295,28 +297,32 @@ Althy Autonomie. Le backend (`stripe_webhooks._trigger_autonomy_upgrade`) :
 /app/interventions   Interventions
 /app/candidatures    Candidatures (côté proprio)
 /app/mes-candidatures Candidatures (côté locataire)
-/app/artisans        Marketplace artisans
-/app/artisans/{sous-pages}  devis, chantiers, paiements, historique
+/app/artisans        Marketplace artisans (côté proprio : liste + carte)
+/app/artisans/{sous-pages}  devis, chantiers, paiements, historique, missions, revenus, profil
 /app/ouvreurs        Marketplace ouvreurs
 /app/ouvreurs/{sous-pages}  missions, revenus, historique
-/app/listings        Annonces
-/app/publications    → redirect → /app/listings
+/app/annonces        Annonces (ex /app/listings)
 /app/vente           Vente (flag-gated)
 /app/hunters         Hunters (flag-gated)
 /app/portail         Portail proprio (flag-gated)
-/app/insurance       Assurance (flag-gated)
+/app/assurance       Assurance (flag-gated, ex /app/insurance)
 /app/transactions    Transactions (flag-gated)
 /app/settings        Paramètres + sous-pages (notifs, paiement, preferences, zone)
-/app/profile         Profil (legacy URL, devrait être /profil)
+/app/profil          Mon profil (ex /app/profile)
 /app/abonnement      Abonnement + comparaison plans
 /app/autonomie       Althy Autonomie (dashboard ou pitch selon plan_id)
 /app/admin           Admin
 /app/admin/users     Admin utilisateurs
 /app/admin/transactions Admin transactions
 /app/admin/integration Admin intégrations
+/app/admin/waitlist  Admin waitlist (`/bientot/[role]` collectés)
+/app/admin/partners  Admin partenariats (6 verticales, leads, commissions)
 ```
 
-**Redirections actives :** `/app/overview` → `/app`, `/app/companies` → `/app/agence`, `/app/favorites` → `/app/biens?tab=favoris`, `/app/rfqs` → `/app/artisans/devis`, `/app/publications` → `/app/listings`
+**Redirections 301 permanents (`next.config.js`) :**
+- Publiques : `/privacy` → `/legal/confidentialite`, `/terms` → `/legal/cgu`
+- Renommage FR : `/app/profile` → `/app/profil`, `/app/listings` → `/app/annonces`, `/app/insurance` → `/app/assurance`, `/app/properties/*` → `/app/biens/*`, `/app/openers/*` → `/app/ouvreurs/*`, `/app/tenant` → `/app/locataire`, `/app/accounting` → `/app/comptabilite`
+- Consolidation : `/app/overview` → `/app`, `/app/companies` → `/app/agence`, `/app/favorites` → `/app/biens?tab=favoris`, `/app/rfqs/*` → `/app/artisans/devis`, `/app/publications/*` → `/app/annonces`, `/app/advisor` → `/app/sphere`, `/app/dashboard` → `/app/sphere`, `/onboarding` → `/bienvenue`
 
 ### Feature flags — `lib/flags.ts`
 
@@ -324,7 +330,7 @@ Althy Autonomie. Le backend (`stripe_webhooks._trigger_autonomy_upgrade`) :
 |------|-------|---------|-----------|
 | `ROLE_AGENCE` | 2 | `NEXT_PUBLIC_FLAG_AGENCE` | `false` |
 | `ROLE_PORTAIL_PROPRIO` | 2 | `NEXT_PUBLIC_FLAG_PORTAIL` | `false` |
-| `ROLE_ARTISAN` | 3 | `NEXT_PUBLIC_FLAG_ARTISAN` | `false` |
+| `ROLE_ARTISAN` | 3 (actif partiel) | `NEXT_PUBLIC_FLAG_ARTISAN` | `true` (GE + VD) |
 | `ROLE_OPENER` | 3 | `NEXT_PUBLIC_FLAG_OPENER` | `false` |
 | `ROLE_EXPERT` | - | hardcodé | `false` |
 | `ROLE_HUNTER` | - | hardcodé | `false` |
@@ -370,7 +376,7 @@ Tout nouveau rôle nécessite la mise à jour simultanée de :
 
 ### 7. Langue
 - Tout en français : URLs, labels, boutons, messages d'erreur.
-- **Exceptions legacy :** `/app/profile`, `/app/listings`, `/app/insurance`, `/app/transactions` — à corriger progressivement.
+- **Exception résiduelle :** `/app/transactions` (flag-gated, rarement accessible). Toutes les autres URLs anglaises ont été migrées (2026-04-20) avec 301 permanents vers les URLs françaises.
 
 ### 8. Entité légale
 - Source unique : `lib/legal-entity.ts` → `LEGAL.name`, `LEGAL.form`, etc.
@@ -477,7 +483,66 @@ POST /autonomie/legal-request          → 501 stub (assistance juridique parten
 POST /autonomie/fiscal-export          → 501 stub (export PDF fiscal)
 ```
 
-### 54 routers au total dans `main.py`
+### Partenariats (admin — super_admin uniquement)
+
+6 verticales : `insurance` (La Mobilière) · `caution` (SwissCaution) · `mortgage` (Raiffeisen) · `moving` · `energy` · `telecom`.
+Phases deal : `affiliation` → `exclusive_with_minimum` → `strategic` (ou `revenue_share`).
+
+```
+GET    /partners                       → liste partenaires (filtre vertical / status)
+POST   /partners                       → créer partenaire (clé API chiffrée SECRET_KEY)
+GET    /partners/{id}                  → détail
+PATCH  /partners/{id}                  → mise à jour (name, api_key, status, ...)
+DELETE /partners/{id}                  → supprime (refus si leads — passer status=terminated)
+
+GET    /partners/{id}/deals            → contrats actifs/passés
+POST   /partners/{id}/deals            → créer un contrat
+PATCH  /partners/{id}/deals/{deal_id}  → modifier un contrat
+
+GET    /partners/leads                 → tous leads (filtres partner_id, vertical, status, since)
+GET    /partners/{id}/leads            → leads d'un partenaire
+POST   /partners/{id}/leads            → lead manuel (vérifie consent `partner_<vertical>`)
+PATCH  /partners/leads/{lead_id}       → changer statut (qualified/signed/rejected + commission)
+
+GET    /partners/{id}/stats            → KPIs ce mois + conversion + volume 6 mois
+GET    /partners/{id}/commissions      → liste rollups mensuels
+POST   /partners/{id}/commissions      → calcule + persiste rollup (body: {year, month})
+POST   /partners/commissions/{id}/mark-invoiced
+POST   /partners/commissions/{id}/mark-paid
+```
+
+**RGPD** : tout lead nécessite un `consents.consent_type = partner_<vertical>` actif pour l'user. `send_lead_to_partner()` lève `PartnerConsentRequired` sinon.
+**Adaptateurs** : `backend/app/services/partners/{la_mobiliere,swisscaution,raiffeisen}.py` — stubs. Aucun appel API live tant que les contrats ne sont pas signés.
+
+### Marketplace artisans (M1 — pricing 2026-04-20)
+
+Stratégie Uber : les 50 premiers artisans par canton sont **fondateurs** (gratuit à vie).
+Au-delà : plan `artisan_verified` CHF 49/mois. Commission T2 = 5% sur chaque facture.
+
+```
+GET    /profiles-artisans/founding-spots         → places fondateurs restantes par canton
+GET    /profiles-artisans/founding-spots/{canton}
+POST   /profiles-artisans/subscribe              → choisit plan final (founding ou verified)
+POST   /profiles-artisans/stripe-connect/onboard → URL d'onboarding Stripe Express (KYC + IBAN)
+POST   /profiles-artisans/stripe-connect/refresh → sync charges_enabled / payouts_enabled
+POST   /profiles-artisans/settle-intervention    → PaymentIntent propriétaire, 5% Althy / 95% artisan
+GET    /profiles-artisans/commission/preview     → simule commission 5% sur un montant
+GET    /rfqs/{rfq_id}/matches                    → artisans éligibles (canton + specialty)
+```
+
+**Matching** : `category` RFQ → `specialty` artisan via `_CATEGORY_TO_SPECIALTY` dans `rfq.py`.
+Ordre : fondateurs d'abord, puis `note_moyenne desc`.
+
+**Stripe Connect Express** : `artisan_profiles.stripe_connect_id` + `_ready`. Paiement propriétaire →
+`application_fee_amount = 5%` → `transfer_data.destination = artisan`. 95% virés sous 2-3 j sur IBAN artisan.
+
+**Service** : `backend/app/services/artisan_service.py` — `subscribe`, `match_artisans_for_rfq`,
+`compute_commission`, `create_stripe_connect_link`, `settle_intervention_payment`.
+
+**Events PostHog** : `artisan_signup_completed` · `artisan_subscription_activated` ·
+`artisan_mission_received` · `artisan_quote_sent` · `artisan_intervention_completed`.
+
+### 56 routers au total dans `main.py`
 ```
 auth · properties · contracts · transactions · openers · missions · companies · dashboard
 ai_documents · ai_scoring · ai_listings · rfq · admin · smart_onboarding · tenants
@@ -486,14 +551,14 @@ biens · locataires · docs_althy · paiements · interventions_althy · mission
 profiles_artisans · scoring · notifications · matching · geocode · listings · marketplace
 hunters · stripe_webhooks · portail · integrations · vente · rgpd
 sphere_agent · notations · oauth · factures · messagerie · agenda
-whatsapp · onboarding · sphere_carte · contact · estimation · loyers · changements · autonomie
+whatsapp · onboarding · sphere_carte · contact · estimation · loyers · changements · autonomie · waitlist · partners
 ```
 
 ---
 
 ## I. Migrations DB
 
-16 fichiers dans `supabase/migrations/` (004 → 0033).
+20 fichiers dans `supabase/migrations/` (004 → 0037).
 
 | Migration | Contenu |
 |-----------|---------|
@@ -506,6 +571,10 @@ whatsapp · onboarding · sphere_carte · contact · estimation · loyers · cha
 | 0031 | Pricing v3 : `plan_category`, `agency_relationships`, `grandfathered_price`, mapping `agence_premium` → `enterprise` |
 | 0032 | `autonomy_subscriptions` (A4 — CHF 39/mois) : compteurs annuels (4 vérifs + 4 missions ouvreur), `previous_agency_id`, RLS |
 | 0033 | Pivot facturation dossier locataire : `owner_fee_amount` (CHF 45), `owner_fee_paid_at`, `owner_fee_stripe_intent_id`, `owner_fee_failed_at`/`reason`. Le locataire ne paie plus jamais. |
+| 0034 | Table `waitlist` (email + role + source + metadata + notified_at) : collecte `/bientot/[role]` via `POST /api/v1/waitlist`. Index unique `(lower(email), role)`. RLS fermée (accès backend service key uniquement). |
+| 0035 | Partenariats : `partners` (6 verticales + clé API chiffrée SECRET_KEY) + `partner_deals` (affiliation/exclusive/strategic/revshare) + `partner_leads` (consent_id obligatoire RGPD) + `partner_commissions` (rollup mensuel). RLS fermée. |
+| 0036 | Marketplace artisans (M1) : ALTER `profiles_artisans` ADD `subscription_plan`, `is_founding_member`, `canton` (26 CH), `specialties text[]`, `stripe_connect_id`, `stripe_connect_ready`, `subscription_activated_at`. Fonction `count_founding_artisans_by_canton(canton)` + vue `founding_artisans_spots_remaining` (50 places/canton). |
+| 0037 | Fondations multi-pays : `currency TEXT DEFAULT 'CHF'` sur properties/biens/contracts/subscriptions/transactions/loyer_transactions + `country TEXT DEFAULT 'CH'` sur properties/biens/profiles/companies + `locale TEXT DEFAULT 'fr-CH'` sur profiles + `bank_country TEXT DEFAULT 'CH'` sur loyer_transactions. Checks ISO-4217 / ISO-3166 / BCP-47. Retrocompatible 100% (DEFAULTs). |
 
 ---
 
@@ -522,6 +591,55 @@ minZoom: 5.5, maxZoom: 16
 **Cantons actifs :** Genève, Vaud, Valais, Fribourg, Neuchâtel, Jura
 **Villes actives :** Genève, Lausanne, Fribourg, Neuchâtel, Sion
 **Villes inactives (An 2) :** Berne, Zürich, Bâle
+
+---
+
+## K-bis. Internationalisation (fondations 2026-04-20)
+
+> Objectif : permettre l'expansion Europe (FR/DE/IT) Y3-Y4 sans refactoring
+> majeur. Aucune traduction produit en Phase 1 — seules les fondations
+> existent. Guide complet : `docs/i18n-guide.md`.
+
+- **Lib :** `next-intl` (Next 14 App Router).
+- **Source locales :** `frontend/src/i18n/config.ts` (`LOCALES`, `LOCALES_ENABLED`, `DEFAULT_LOCALE`).
+- **Locales déclarées :** `fr-CH` (default), `fr-FR`, `de-CH`, `de-DE`, `it-CH`, `it-IT`, `en`.
+- **Locales activées prod :** `fr-CH` uniquement.
+- **Bascule :** cookie `NEXT_LOCALE` ; préfixe URL (`/fr-FR/…`) → redirect 302 + cookie (middleware).
+- **Messages :** `frontend/messages/{locale}.json` — 8 namespaces (`common`, `auth`, `dashboard`, `landing`, `autonomie`, `pricing`, `legal`, `errors`).
+
+### Règles
+
+- **Toujours** passer par `useTranslations("namespace")` / `getTranslations()` — jamais de string hardcodée visible utilisateur dans un nouveau composant.
+- **Ne pas** déplacer `app/` vers `app/[locale]/` tant qu'une seule locale est active.
+- **Ne pas** utiliser `rewrite` dans le middleware pour le préfixe locale — `redirect` est nécessaire pour que la chaîne Supabase auth reste intacte.
+- Ajouter une locale → suivre la checklist `docs/i18n-guide.md` §6.
+
+### Colonnes multi-pays (migration 0037)
+
+| Table                 | Colonne        | Défaut      | Rôle                                 |
+|-----------------------|----------------|-------------|--------------------------------------|
+| properties / biens    | `currency`     | `CHF`       | ISO-4217                             |
+| properties / biens    | `country`      | `CH`        | ISO-3166 alpha-2                     |
+| contracts             | `currency`     | `CHF`       | idem                                 |
+| subscriptions         | `currency`     | `CHF`       | Stripe billing                       |
+| transactions          | `currency`     | `CHF`       | idem                                 |
+| loyer_transactions    | `currency`     | `CHF`       | QR CHF ou SEPA EUR                   |
+| loyer_transactions    | `bank_country` | `CH`        | route le parser (`app.services.bank_parsers`) |
+| profiles              | `country`      | `CH`        | résidence fiscale                    |
+| profiles              | `locale`       | `fr-CH`     | BCP-47                               |
+| companies             | `country`      | `CH`        | entité légale                        |
+
+### Backend
+
+- `app.services.currency_service` — `get_exchange_rate`, `convert`, `format_currency`. Taux figés en Phase 1.
+- `app.services.bank_parsers` — registry (`get_parser(country, format)`). CAMT.054 (CH) actif, CAMT.053 (SEPA) prêt mais non routé en prod.
+- `app.services.reconciliation.parse_statement()` — nouvelle API générique, `parse_camt054()` conservée pour back-compat.
+
+### Contenus légaux par pays
+
+- `frontend/src/legal/{CH,FR,DE,IT}/` — placeholders FR/DE/IT à remplir avant activation.
+- `backend/legal/{CH,FR,DE,IT}/` — snippets PDF / emails.
+- **Ne jamais activer une locale sans validation juridique locale** (RGPD FR, DSGVO+Impressum DE, Codice Privacy IT).
 
 ---
 
@@ -549,18 +667,6 @@ Phase 4            — SEO local + LinkedIn + hunters/vente
 | OCR facture | Route existe, dépend d'Anthropic vision | `routers/sphere_agent.py` |
 | Email sequences | Table `email_sequence_logs` existe, worker Celery à brancher | migration 0027 |
 
-### Pages legacy à supprimer
-
-| Page | Raison |
-|------|--------|
-| `/privacy/page.tsx` | Remplacée par `/legal/confidentialite` |
-| `/terms/page.tsx` | Remplacée par `/legal/cgu` |
-| `/app/overview/page.tsx` | Redirect vers `/app` — garder la redirect, supprimer si plus nécessaire |
-| `/app/companies/page.tsx` | Redirect vers `/app/agence` |
-| `/app/favorites/page.tsx` | Redirect vers `/app/biens?tab=favoris` |
-| `/app/rfqs/*` | Redirect vers `/app/artisans/devis` |
-| `/app/publications/*` | Redirect vers `/app/listings` |
-
 ### Intégrations non finalisées
 
 | Intégration | État | Prochaine étape |
@@ -576,8 +682,6 @@ Phase 4            — SEO local + LinkedIn + hunters/vente
 
 | Sujet | Détails |
 |-------|---------|
-| Alias `--althy-orange*` dans `globals.css` | Transition palette v8 — supprimer quand plus aucune ref `C.orange` / `var(--althy-orange)` | 
+| Alias `--althy-orange*` dans `globals.css` | Transition palette v8 — supprimer quand plus aucune ref `C.orange` / `var(--althy-orange)` |
 | 4 `const S` résiduels | Structurels (CSSProperties) — garder tels quels |
-| `comptabilite/page.tsx` | 2 références `S` cassées (TS error) — à corriger |
-| URLs legacy anglaises | `/app/profile`, `/app/listings`, `/app/insurance`, `/app/transactions` |
-| `/bientot` waitlist POST | Formulaire email sans backend — implémenter table `waitlist` ou Resend list |
+| URL legacy `/app/transactions` | Flag-gated, renommage reporté (page peu visible) |

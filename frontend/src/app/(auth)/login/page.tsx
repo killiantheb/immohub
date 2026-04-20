@@ -75,9 +75,8 @@ function LoginContent() {
 
       {/* ── Left branding panel ── */}
       <div className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center bg-primary-600 p-12 text-white">
-        <Link href="/" className="mb-8 flex items-center gap-4" style={{ textDecoration: "none", color: "inherit" }}>
-          <AlthyLogo size={52} />
-          <span className="text-4xl font-bold tracking-tight">ALTHY</span>
+        <Link href="/" className="mb-8 flex items-center" style={{ textDecoration: "none", color: "inherit" }}>
+          <AlthyLogo variant="inverted" size={48} />
         </Link>
         <p className="max-w-sm text-center text-lg text-primary-100">
           La plateforme tout-en-un pour gérer vos biens, contrats et transactions
@@ -102,9 +101,8 @@ function LoginContent() {
       <div className="flex w-full items-center justify-center bg-beige-100 px-6 lg:w-1/2">
         <div className="w-full max-w-md">
           {/* Mobile logo */}
-          <Link href="/" className="mb-8 flex items-center justify-center gap-2 lg:hidden" style={{ textDecoration: "none", color: "inherit" }}>
-            <AlthyLogo size={32} />
-            <span className="text-2xl font-bold text-gray-900">ALTHY</span>
+          <Link href="/" className="mb-8 flex items-center justify-center lg:hidden" style={{ textDecoration: "none", color: "inherit" }}>
+            <AlthyLogo variant="full" size={32} />
           </Link>
 
           <div className="mb-8">

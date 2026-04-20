@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { SphereWidget } from "@/components/SphereWidget";
-import { AlthySphere } from "@/components/AlthySphere";
+import { AlthyLogo } from "@/components/AlthyLogo";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -16,8 +16,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       {/* ── Mobile top bar ─────────────────────────────────────── */}
       <header className="althy-topbar">
         <Link href="/app" className="althy-topbar-brand">
-          <AlthySphere size={26} />
-          <span>Althy</span>
+          <AlthyLogo variant="full" size={24} />
         </Link>
         <button
           className="althy-topbar-menu"

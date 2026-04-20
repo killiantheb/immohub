@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { C } from "@/lib/design-tokens";
 import { trackEvent } from "@/lib/analytics";
 
@@ -19,6 +20,7 @@ export function ComparisonCalculator({
 }: {
   onCalculated?: (economie: number) => void;
 }) {
+  const t = useTranslations("autonomie.calculator");
   const [nbBiens, setNbBiens] = useState(2);
   const [loyerMoyen, setLoyerMoyen] = useState(2000);
 
@@ -65,10 +67,10 @@ export function ComparisonCalculator({
           marginBottom: 4,
         }}
       >
-        Combien économisez-vous&nbsp;?
+        {t("title")}
       </h3>
       <p style={{ color: C.text3, fontSize: 13, margin: 0, marginBottom: 24 }}>
-        Comparaison annuelle Autonomie vs régie traditionnelle (~5% des loyers).
+        {t("subtitle")}
       </p>
 
       <div
@@ -80,7 +82,7 @@ export function ComparisonCalculator({
         }}
       >
         <Field
-          label="Nombre de biens"
+          label={t("fieldNbBiens")}
           value={nbBiens}
           suffix=""
           min={1}
@@ -90,7 +92,7 @@ export function ComparisonCalculator({
           onRelease={fireTracking}
         />
         <Field
-          label="Loyer moyen mensuel"
+          label={t("fieldLoyer")}
           value={loyerMoyen}
           suffix=" CHF"
           min={800}
@@ -110,16 +112,16 @@ export function ComparisonCalculator({
         }}
       >
         <CostCard
-          label="Régie traditionnelle"
+          label={t("costRegieLabel")}
           amount={result.coutRegie}
           accent="muted"
-          sublabel={`5% des loyers + ${AGENCY_ADMIN_YEARLY} CHF admin`}
+          sublabel={t("costRegieSublabel", { admin: AGENCY_ADMIN_YEARLY })}
         />
         <CostCard
-          label="Althy Autonomie"
+          label={t("costAutonomieLabel")}
           amount={result.coutAutonomie}
           accent="prussian"
-          sublabel="CHF 39 × 12 mois"
+          sublabel={t("costAutonomieSublabel")}
         />
       </div>
 
@@ -142,7 +144,7 @@ export function ComparisonCalculator({
             marginBottom: 6,
           }}
         >
-          Économie annuelle
+          {t("economyLabel")}
         </p>
         <p
           style={{
@@ -157,7 +159,7 @@ export function ComparisonCalculator({
           CHF&nbsp;{result.economie.toLocaleString("fr-CH")}
         </p>
         <p style={{ color: C.text2, fontSize: 13, margin: 0, marginTop: 6 }}>
-          soit {result.economiePct}% de moins chaque année
+          {t("economyPctSuffix", { pct: result.economiePct })}
         </p>
       </div>
     </div>

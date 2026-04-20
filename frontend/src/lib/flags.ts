@@ -18,6 +18,8 @@ export const FLAGS = {
   ROLE_PORTAIL_PROPRIO:  process.env.NEXT_PUBLIC_FLAG_PORTAIL === "true",
 
   // ── Phase 3 — marketplace artisans + ouvreurs ─────────────────────────────
+  // ROLE_ARTISAN : rollout progressif canton par canton (2026-04-20 : GE + VD).
+  // Activation prod = NEXT_PUBLIC_FLAG_ARTISAN=true côté Vercel.
   ROLE_ARTISAN:          process.env.NEXT_PUBLIC_FLAG_ARTISAN === "true",
   ROLE_OPENER:           process.env.NEXT_PUBLIC_FLAG_OPENER === "true",
 

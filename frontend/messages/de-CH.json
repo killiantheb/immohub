@@ -1,0 +1,89 @@
+{
+  "common": {
+    "appName": "Althy",
+    "tagline": "Der Schweizer Immobilienassistent",
+    "loading": "",
+    "save": "",
+    "cancel": "",
+    "back": "",
+    "next": "",
+    "close": "",
+    "continue": "",
+    "confirm": "",
+    "yes": "",
+    "no": ""
+  },
+  "auth": {
+    "login": "",
+    "register": "",
+    "logout": "",
+    "email": "",
+    "password": "",
+    "forgotPassword": "",
+    "signupCTA": ""
+  },
+  "dashboard": {
+    "welcome": "",
+    "sphere": "",
+    "biens": "",
+    "finances": "",
+    "comptabilite": "",
+    "documents": "",
+    "messagerie": "",
+    "profil": "",
+    "settings": ""
+  },
+  "landing": {
+    "hero": {
+      "title1": "Schweizer Immobilien,",
+      "title2": "ohne Agentur.",
+      "subtitle": "Verwalten Sie Ihre Immobilie, finden Sie einen Mieter, kassieren Sie Ihre Mieten — in 2 Klicks, mit KI.",
+      "statBiens": "verfügbare Objekte",
+      "statVilles": "{count} aktive Städte",
+      "cta": "Bereits Eigentümer? <link>Kostenlos starten →</link>",
+      "searchPlaceholder": "Stadt, Quartier, Adresse…",
+      "mapStandard": "Standard",
+      "mapSatellite": "Satellit"
+    }
+  },
+  "pricing": {
+    "labelProprio": "",
+    "labelAgence": "",
+    "titleProprio": "",
+    "subtitleProprio": "",
+    "titleAgence": "",
+    "subtitleAgence": "",
+    "autonomieLine": "",
+    "autonomieLink": "",
+    "disclaimer": "",
+    "free": "",
+    "freeSubtitle": "",
+    "popular": ""
+  },
+  "autonomie": {
+    "calculator": {
+      "title": "",
+      "subtitle": "",
+      "fieldNbBiens": "",
+      "fieldLoyer": "",
+      "costRegieLabel": "",
+      "costRegieSublabel": "",
+      "costAutonomieLabel": "",
+      "costAutonomieSublabel": "",
+      "economyLabel": "",
+      "economyPctSuffix": ""
+    }
+  },
+  "legal": {
+    "cgu": "",
+    "confidentialite": "",
+    "cookies": "",
+    "disclaimerIa": ""
+  },
+  "errors": {
+    "generic": "",
+    "network": "",
+    "unauthorized": "",
+    "notFound": ""
+  }
+}

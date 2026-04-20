@@ -1,6 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { useTranslations } from "next-intl"
 import { PLANS_PROPRIO, PLANS_AGENCE } from "@/lib/plans.config"
 import type { Plan } from "@/lib/plans.config"
 import { C } from "@/lib/design-tokens"
@@ -24,6 +25,7 @@ function PlanCard({ plan, i, accent = C.prussian, registerHref }: {
   accent?: string
   registerHref: string
 }) {
+  const t = useTranslations("pricing")
   const border = accent === C.gold ? goldBorder : prussianBorder
   const bg = accent === C.gold ? C.goldBg : C.prussianBg
   return (
@@ -51,7 +53,7 @@ function PlanCard({ plan, i, accent = C.prussian, registerHref }: {
           padding: "0.3rem 0.9rem", borderRadius: "100px",
           letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap",
         }}>
-          {plan.badge ?? "Le plus populaire"}
+          {plan.badge ?? t("popular")}
         </div>
       )}
 
@@ -64,11 +66,11 @@ function PlanCard({ plan, i, accent = C.prussian, registerHref }: {
 
       <div style={{ marginBottom: "0.5rem" }}>
         <span style={{ color: C.text, fontSize: "3rem", fontWeight: 700, lineHeight: 1, letterSpacing: "-0.03em" }}>
-          {plan.prix === 0 ? "Gratuit" : `CHF ${plan.prix}`}
+          {plan.prix === 0 ? t("free") : `CHF ${plan.prix}`}
         </span>
       </div>
       <div style={{ color: C.textMuted, fontSize: "0.8125rem", marginBottom: "2rem" }}>
-        {plan.prix === 0 ? "Pour toujours · 1 bien" : plan.periode}
+        {plan.prix === 0 ? t("freeSubtitle") : plan.periode}
       </div>
 
       <Link
@@ -109,6 +111,7 @@ function PlanCard({ plan, i, accent = C.prussian, registerHref }: {
 }
 
 export function Tarifs() {
+  const t = useTranslations("pricing")
   // 4 cards proprio sur la landing : gratuit, starter (A1), pro (A2), proprio_pro (A3)
   const proprioCards = PLANS_PROPRIO
 
@@ -123,7 +126,7 @@ export function Tarifs() {
           style={{ marginBottom: "1.25rem", textAlign: "center" }}
         >
           <span style={{ color: C.prussian, fontSize: "0.75rem", fontWeight: 500, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-            Tarifs propriétaire
+            {t("labelProprio")}
           </span>
         </motion.div>
 
@@ -132,7 +135,7 @@ export function Tarifs() {
           viewport={{ once: true }} transition={{ duration: 0.6, delay: 0.1 }}
           style={{ color: C.text, fontSize: "clamp(2rem, 4vw, 3rem)", fontWeight: 700, lineHeight: 1.1, letterSpacing: "-0.02em", margin: "0 0 0.875rem 0", textAlign: "center" }}
         >
-          Gratuit à vie pour votre premier bien.
+          {t("titleProprio")}
         </motion.h2>
 
         <motion.p
@@ -140,7 +143,7 @@ export function Tarifs() {
           viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.2 }}
           style={{ color: C.textMuted, fontSize: "0.9375rem", textAlign: "center", margin: "0 0 4rem 0", letterSpacing: "0.02em" }}
         >
-          30 jours d&apos;essai sur tous les plans · Sans carte bancaire · Sans engagement
+          {t("subtitleProprio")}
         </motion.p>
 
         {/* Cards proprio — 4 paliers (gratuit + A1 + A2 + A3) */}
@@ -167,9 +170,9 @@ export function Tarifs() {
             textAlign: "center", margin: "2.5rem 0 0", lineHeight: 1.65,
           }}
         >
-          Vous quittez votre agence ?{" "}
+          {t("autonomieLine")}{" "}
           <Link href="/autonomie" style={{ color: C.gold, fontWeight: 700, textDecoration: "none" }}>
-            Althy Autonomie à CHF 39/mois →
+            {t("autonomieLink")}
           </Link>
         </motion.p>
 
@@ -182,13 +185,13 @@ export function Tarifs() {
           style={{ marginTop: "6rem", textAlign: "center", marginBottom: "3rem" }}
         >
           <span style={{ color: C.prussian, fontSize: "0.75rem", fontWeight: 500, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-            Tarifs agence
+            {t("labelAgence")}
           </span>
           <h3 style={{ color: C.text, fontSize: "clamp(1.6rem, 3vw, 2.25rem)", fontWeight: 700, lineHeight: 1.15, letterSpacing: "-0.02em", margin: "0.875rem 0 0.5rem" }}>
-            Pour les régies et agences immobilières
+            {t("titleAgence")}
           </h3>
           <p style={{ color: C.textMuted, fontSize: "0.95rem", margin: 0 }}>
-            Multi-agents · Biens illimités · IA Sphère pour toute l&apos;équipe
+            {t("subtitleAgence")}
           </p>
         </motion.div>
 
@@ -210,7 +213,7 @@ export function Tarifs() {
           viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.5 }}
           style={{ color: C.textMuted, fontSize: "0.8rem", textAlign: "center", marginTop: "3rem", lineHeight: 1.7 }}
         >
-          Tous les prix sont en CHF, TVA non applicable (art. 10 LTVA). Commission 3% sur loyers encaissés, prélevée uniquement sur les flux effectifs.
+          {t("disclaimer")}
         </motion.p>
       </div>
     </section>

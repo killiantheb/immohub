@@ -1,138 +1,219 @@
-"use client";
-
-interface AlthyLogoProps {
-  size?:      number;
-  animated?:  boolean;
-  className?: string;
-}
+import React from "react";
 
 /**
- * AlthyLogo — sphère 3D miniature avec glow + shimmer.
- * Utilisée dans DashboardSidebar et partout où on a besoin d'un logo compact.
- * `animated` ajoute un léger pulse (breath) via CSS keyframes inline.
+ * Logo officiel Althy — le "A-toit".
+ *
+ * Un A stylisé dont les deux jambages forment la silhouette d'un toit de
+ * maison. Barre horizontale centrale = plancher. Rectangle en bas = fondation.
+ *
+ * 4 variantes :
+ *   - "full"     : monogramme + texte "althy" (défaut — headers, emails, PDFs)
+ *   - "mark"     : monogramme seul (sidebar, avatars, favicons compacts)
+ *   - "inverted" : fond sombre — stroke blanc + plancher/fondation en Or
+ *   - "favicon"  : carré arrondi Bleu de Prusse, A-toit blanc, plancher Or
+ *
+ * `size` = hauteur en pixels (la largeur s'adapte au ratio).
  */
-export function AlthyLogo({ size = 36, animated = false, className = "" }: AlthyLogoProps) {
-  const uid = "althy-logo"; // IDs stables (pas de crypto.randomUUID côté serveur)
 
+type AlthyLogoProps = {
+  variant?: "full" | "mark" | "inverted" | "favicon";
+  size?: number;
+  className?: string;
+  style?: React.CSSProperties;
+};
+
+export function AlthyLogo({
+  variant = "full",
+  size,
+  className,
+  style,
+}: AlthyLogoProps) {
+  if (variant === "mark") {
+    const s = size ?? 40;
+    return (
+      <svg
+        width={s}
+        height={s}
+        viewBox="0 0 40 40"
+        className={className}
+        style={style}
+        xmlns="http://www.w3.org/2000/svg"
+        aria-label="Althy"
+        role="img"
+      >
+        <rect
+          x="12"
+          y="28"
+          width="16"
+          height="6"
+          rx="1.5"
+          fill="var(--althy-prussian, #0F2E4C)"
+          opacity="0.15"
+        />
+        <path
+          d="M6 32L20 6L34 32"
+          fill="none"
+          stroke="var(--althy-prussian, #0F2E4C)"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <line
+          x1="11"
+          y1="22"
+          x2="29"
+          y2="22"
+          stroke="var(--althy-prussian, #0F2E4C)"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+  }
+
+  if (variant === "inverted") {
+    const h = size ?? 56;
+    const w = (h * 220) / 56;
+    return (
+      <svg
+        width={w}
+        height={h}
+        viewBox="0 0 220 56"
+        className={className}
+        style={style}
+        xmlns="http://www.w3.org/2000/svg"
+        aria-label="Althy"
+        role="img"
+      >
+        <rect
+          x="14"
+          y="38"
+          width="16"
+          height="6"
+          rx="1.5"
+          fill="var(--althy-gold, #C9A961)"
+          opacity="0.3"
+        />
+        <path
+          d="M8 44L22 8L36 44"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <line
+          x1="13"
+          y1="32"
+          x2="31"
+          y2="32"
+          stroke="var(--althy-gold, #C9A961)"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+        <text
+          x="48"
+          y="38"
+          fontFamily="var(--font-serif), 'Fraunces', serif"
+          fontSize="28"
+          fontWeight="500"
+          fill="#FFFFFF"
+          letterSpacing="-0.5"
+        >
+          althy
+        </text>
+      </svg>
+    );
+  }
+
+  if (variant === "favicon") {
+    const s = size ?? 32;
+    return (
+      <svg
+        width={s}
+        height={s}
+        viewBox="0 0 32 32"
+        className={className}
+        style={style}
+        xmlns="http://www.w3.org/2000/svg"
+        aria-label="Althy"
+        role="img"
+      >
+        <rect width="32" height="32" rx="6" fill="#0F2E4C" />
+        <path
+          d="M6 26L16 6L26 26"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <line
+          x1="10"
+          y1="19"
+          x2="22"
+          y2="19"
+          stroke="#C9A961"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+  }
+
+  // variant === "full" (default)
+  const h = size ?? 56;
+  const w = (h * 220) / 56;
   return (
     <svg
-      width={size}
-      height={size}
-      viewBox="0 0 100 100"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+      width={w}
+      height={h}
+      viewBox="0 0 220 56"
       className={className}
-      style={animated ? { animation: "althy-logo-breath 3.5s ease-in-out infinite" } : undefined}
+      style={style}
+      xmlns="http://www.w3.org/2000/svg"
+      aria-label="Althy"
+      role="img"
     >
-      {animated && (
-        <style>{`
-          @keyframes althy-logo-breath {
-            0%, 100% { filter: drop-shadow(0 0 6px rgba(15,46,76,0.35)); transform: scale(1); }
-            50%       { filter: drop-shadow(0 0 14px rgba(15,46,76,0.55)); transform: scale(1.04); }
-          }
-        `}</style>
-      )}
-
-      <defs>
-        {/* Gradient principal — highlight Bleu de Prusse avec reflet or subtil */}
-        <radialGradient id={`${uid}-main`} cx="35%" cy="30%" r="70%" fx="32%" fy="27%">
-          <stop offset="0%"   stopColor="#4C73A0" />
-          <stop offset="28%"  stopColor="#1A4975" />
-          <stop offset="75%"  stopColor="#0F2E4C" />
-          <stop offset="100%" stopColor="#061422" />
-        </radialGradient>
-
-        {/* Gradient glow ambiant derrière la sphère */}
-        <radialGradient id={`${uid}-glow`} cx="50%" cy="52%" r="50%">
-          <stop offset="0%"   stopColor="#1A4975" stopOpacity="0.30" />
-          <stop offset="60%"  stopColor="#1A4975" stopOpacity="0.10" />
-          <stop offset="100%" stopColor="#1A4975" stopOpacity="0" />
-        </radialGradient>
-
-        {/* Shimmer principal */}
-        <radialGradient id={`${uid}-shimmer1`} cx="38%" cy="32%" r="45%">
-          <stop offset="0%"   stopColor="#FFFFFF" stopOpacity="0.72" />
-          <stop offset="55%"  stopColor="#FFFFFF" stopOpacity="0.18" />
-          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
-        </radialGradient>
-
-        {/* Shimmer secondaire (petite tache) */}
-        <radialGradient id={`${uid}-shimmer2`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%"   stopColor="#FFFFFF" stopOpacity="0.50" />
-          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
-        </radialGradient>
-
-        {/* Ombre portée douce en bas */}
-        <radialGradient id={`${uid}-shadow`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%"   stopColor="#030B14" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="#030B14" stopOpacity="0" />
-        </radialGradient>
-
-        {/* Filtre blob (légère distorsion organique) */}
-        <filter id={`${uid}-blob`} x="-8%" y="-8%" width="116%" height="116%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="7" result="noise" />
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="3.5" xChannelSelector="R" yChannelSelector="G" />
-        </filter>
-
-        {/* Filtre glow externe */}
-        <filter id={`${uid}-glow-filter`} x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="4" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
-        </filter>
-      </defs>
-
-      {/* ── Glow ambiant (halo derrière) ── */}
-      <circle
-        cx="50" cy="52" r="46"
-        fill={`url(#${uid}-glow)`}
+      <rect
+        x="14"
+        y="38"
+        width="16"
+        height="6"
+        rx="1.5"
+        fill="var(--althy-prussian, #0F2E4C)"
+        opacity="0.15"
       />
-
-      {/* ── Sphère principale (avec distorsion organique) ── */}
-      <circle
-        cx="50" cy="50" r="40"
-        fill={`url(#${uid}-main)`}
-        filter={`url(#${uid}-blob)`}
-      />
-
-      {/* ── Rebord subtil (donne l'épaisseur 3D) ── */}
-      <circle
-        cx="50" cy="50" r="40"
+      <path
+        d="M8 44L22 8L36 44"
         fill="none"
-        stroke="rgba(6,20,34,0.18)"
-        strokeWidth="1"
+        stroke="var(--althy-prussian, #0F2E4C)"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-
-      {/* ── Ombre interne bas ── */}
-      <ellipse
-        cx="50" cy="76"
-        rx="28" ry="16"
-        fill={`url(#${uid}-shadow)`}
+      <line
+        x1="13"
+        y1="32"
+        x2="31"
+        y2="32"
+        stroke="var(--althy-prussian, #0F2E4C)"
+        strokeWidth="2.5"
+        strokeLinecap="round"
       />
-
-      {/* ── Shimmer principal (grande tache diffuse haut-gauche) ── */}
-      <ellipse
-        cx="38" cy="33"
-        rx="19" ry="13"
-        fill={`url(#${uid}-shimmer1)`}
-        transform="rotate(-22 38 33)"
-      />
-
-      {/* ── Shimmer secondaire (petite tache nette) ── */}
-      <ellipse
-        cx="57" cy="26"
-        rx="6" ry="4"
-        fill={`url(#${uid}-shimmer2)`}
-        transform="rotate(-18 57 26)"
-        opacity="0.55"
-      />
-
-      {/* ── Micro-highlight (point de lumière) ── */}
-      <circle
-        cx="44" cy="29"
-        r="2.5"
-        fill="white"
-        opacity="0.40"
-      />
+      <text
+        x="48"
+        y="38"
+        fontFamily="var(--font-serif), 'Fraunces', serif"
+        fontSize="28"
+        fontWeight="500"
+        fill="var(--althy-prussian, #0F2E4C)"
+        letterSpacing="-0.5"
+      >
+        althy
+      </text>
     </svg>
   );
 }
+
+export default AlthyLogo;
