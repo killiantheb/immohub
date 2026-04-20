@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowRight, TrendingUp } from "lucide-react";
 import { C } from "@/lib/design-tokens";
-import type { LandingEntities } from "./LandingChatPanel";
+import type { LandingEntities } from "./InlineChat";
 
 const sans = "var(--font-sans)";
 

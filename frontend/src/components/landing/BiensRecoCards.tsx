@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Home } from "lucide-react";
 import { C } from "@/lib/design-tokens";
-import type { LandingEntities } from "./LandingChatPanel";
+import type { LandingEntities } from "./InlineChat";
 
 const sans = "var(--font-sans)";
 const API  = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
