@@ -291,7 +291,7 @@ async def _get_partner_or_404(db: AsyncSession, partner_id: uuid.UUID) -> Partne
 @router.get("/partners", response_model=list[PartnerRead])
 async def list_partners(
     db: DbDep,
-    _user=Depends(SuperAdmin),
+    _user=SuperAdmin,
     vertical: Vertical | None = Query(default=None),
     status: PartnerStatus | None = Query(default=None),
 ):
@@ -306,7 +306,7 @@ async def list_partners(
 
 
 @router.post("/partners", response_model=PartnerRead, status_code=201)
-async def create_partner(body: PartnerCreate, db: DbDep, _user=Depends(SuperAdmin)):
+async def create_partner(body: PartnerCreate, db: DbDep, _user=SuperAdmin):
     p = Partner(
         id=uuid.uuid4(),
         name=body.name,
@@ -330,14 +330,14 @@ async def create_partner(body: PartnerCreate, db: DbDep, _user=Depends(SuperAdmi
 
 
 @router.get("/partners/{partner_id}", response_model=PartnerRead)
-async def get_partner(partner_id: uuid.UUID, db: DbDep, _user=Depends(SuperAdmin)):
+async def get_partner(partner_id: uuid.UUID, db: DbDep, _user=SuperAdmin):
     p = await _get_partner_or_404(db, partner_id)
     return _partner_to_read(p)
 
 
 @router.patch("/partners/{partner_id}", response_model=PartnerRead)
 async def update_partner(
-    partner_id: uuid.UUID, body: PartnerUpdate, db: DbDep, _user=Depends(SuperAdmin)
+    partner_id: uuid.UUID, body: PartnerUpdate, db: DbDep, _user=SuperAdmin
 ):
     p = await _get_partner_or_404(db, partner_id)
     data = body.model_dump(exclude_unset=True)
@@ -351,7 +351,7 @@ async def update_partner(
 
 
 @router.delete("/partners/{partner_id}", status_code=204)
-async def delete_partner(partner_id: uuid.UUID, db: DbDep, _user=Depends(SuperAdmin)):
+async def delete_partner(partner_id: uuid.UUID, db: DbDep, _user=SuperAdmin):
     """Supprime un partenaire — attention : cascade sur partner_deals uniquement.
     Les leads/commissions sont conservés (ON DELETE RESTRICT) ; passer status=terminated
     plutôt que delete si le partenaire a déjà des leads."""
@@ -373,7 +373,7 @@ async def delete_partner(partner_id: uuid.UUID, db: DbDep, _user=Depends(SuperAd
 
 
 @router.get("/partners/{partner_id}/deals", response_model=list[DealRead])
-async def list_deals(partner_id: uuid.UUID, db: DbDep, _user=Depends(SuperAdmin)):
+async def list_deals(partner_id: uuid.UUID, db: DbDep, _user=SuperAdmin):
     await _get_partner_or_404(db, partner_id)
     rows = (await db.execute(
         select(PartnerDeal)
@@ -385,7 +385,7 @@ async def list_deals(partner_id: uuid.UUID, db: DbDep, _user=Depends(SuperAdmin)
 
 @router.post("/partners/{partner_id}/deals", response_model=DealRead, status_code=201)
 async def create_deal(
-    partner_id: uuid.UUID, body: DealCreate, db: DbDep, _user=Depends(SuperAdmin)
+    partner_id: uuid.UUID, body: DealCreate, db: DbDep, _user=SuperAdmin
 ):
     await _get_partner_or_404(db, partner_id)
     d = PartnerDeal(
@@ -413,7 +413,7 @@ async def update_deal(
     deal_id: uuid.UUID,
     body: DealUpdate,
     db: DbDep,
-    _user=Depends(SuperAdmin),
+    _user=SuperAdmin,
 ):
     d = (await db.execute(
         select(PartnerDeal).where(
@@ -435,7 +435,7 @@ async def update_deal(
 @router.get("/partners/leads", response_model=list[LeadRead])
 async def list_all_leads(
     db: DbDep,
-    _user=Depends(SuperAdmin),
+    _user=SuperAdmin,
     partner_id: uuid.UUID | None = Query(default=None),
     status: LeadStatus | None = Query(default=None),
     vertical: Vertical | None = Query(default=None),
@@ -460,7 +460,7 @@ async def list_all_leads(
 async def list_partner_leads(
     partner_id: uuid.UUID,
     db: DbDep,
-    _user=Depends(SuperAdmin),
+    _user=SuperAdmin,
     status: LeadStatus | None = Query(default=None),
     since: date | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=500),
@@ -481,7 +481,7 @@ async def create_lead_manual(
     partner_id: uuid.UUID,
     body: LeadManualCreate,
     db: DbDep,
-    _user=Depends(SuperAdmin),
+    _user=SuperAdmin,
 ):
     """Admin crée un lead manuellement (test, simulation, injection manuelle).
 
@@ -510,7 +510,7 @@ async def update_lead_status(
     lead_id: uuid.UUID,
     body: LeadStatusUpdate,
     db: DbDep,
-    _user=Depends(SuperAdmin),
+    _user=SuperAdmin,
 ):
     lead = (await db.execute(
         select(PartnerLead).where(PartnerLead.id == lead_id)
@@ -541,7 +541,7 @@ async def update_lead_status(
 
 @router.get("/partners/{partner_id}/stats", response_model=PartnerStats)
 async def partner_stats(
-    partner_id: uuid.UUID, db: DbDep, _user=Depends(SuperAdmin)
+    partner_id: uuid.UUID, db: DbDep, _user=SuperAdmin
 ):
     await _get_partner_or_404(db, partner_id)
 
@@ -618,7 +618,7 @@ async def partner_stats(
 
 @router.get("/partners/{partner_id}/commissions", response_model=list[CommissionRead])
 async def list_commissions(
-    partner_id: uuid.UUID, db: DbDep, _user=Depends(SuperAdmin)
+    partner_id: uuid.UUID, db: DbDep, _user=SuperAdmin
 ):
     await _get_partner_or_404(db, partner_id)
     rows = (await db.execute(
@@ -634,7 +634,7 @@ async def compute_commission(
     partner_id: uuid.UUID,
     body: CommissionCompute,
     db: DbDep,
-    _user=Depends(SuperAdmin),
+    _user=SuperAdmin,
 ):
     """Calcule + persiste la commission mensuelle pour ce partenaire."""
     await _get_partner_or_404(db, partner_id)
@@ -644,7 +644,7 @@ async def compute_commission(
 
 @router.post("/partners/commissions/{commission_id}/mark-invoiced", response_model=CommissionRead)
 async def mark_invoiced(
-    commission_id: uuid.UUID, db: DbDep, _user=Depends(SuperAdmin)
+    commission_id: uuid.UUID, db: DbDep, _user=SuperAdmin
 ):
     c = (await db.execute(
         select(PartnerCommission).where(PartnerCommission.id == commission_id)
@@ -659,7 +659,7 @@ async def mark_invoiced(
 
 @router.post("/partners/commissions/{commission_id}/mark-paid", response_model=CommissionRead)
 async def mark_paid(
-    commission_id: uuid.UUID, db: DbDep, _user=Depends(SuperAdmin)
+    commission_id: uuid.UUID, db: DbDep, _user=SuperAdmin
 ):
     c = (await db.execute(
         select(PartnerCommission).where(PartnerCommission.id == commission_id)

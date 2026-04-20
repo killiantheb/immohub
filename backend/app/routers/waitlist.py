@@ -139,7 +139,7 @@ async def join_waitlist(request: Request, body: WaitlistJoin, db: DbDep):
 
 
 @router.get("/waitlist/stats", response_model=WaitlistStats)
-async def waitlist_stats(db: DbDep, _user=Depends(SuperAdmin)):
+async def waitlist_stats(db: DbDep, _user=SuperAdmin):
     rows = (await db.execute(text("""
         select role, count(*)::int as n,
                sum(case when notified_at is null then 1 else 0 end)::int as pending
@@ -164,7 +164,7 @@ async def waitlist_stats(db: DbDep, _user=Depends(SuperAdmin)):
 @router.get("/waitlist", response_model=WaitlistPage)
 async def list_waitlist(
     db: DbDep,
-    _user=Depends(SuperAdmin),
+    _user=SuperAdmin,
     role: str | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     size: int = Query(default=50, ge=1, le=500),
@@ -215,7 +215,7 @@ async def notify_entry(
     entry_id: str,
     body: NotifyBody,
     db: DbDep,
-    _user=Depends(SuperAdmin),
+    _user=SuperAdmin,
 ):
     try:
         eid = uuid.UUID(entry_id)
