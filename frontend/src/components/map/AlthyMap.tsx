@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 // Mapbox GL requires hex — do not replace with CSS var
-const ORANGE = "#E8602C";
+const PRUSSIAN = "#0F2E4C";
 const ACTIVE_CANTONS = ["Genève", "Vaud", "Valais", "Fribourg", "Neuchâtel", "Jura"];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -60,21 +60,21 @@ const MARKER_CSS = `
     border-top: 6px solid rgba(255,255,255,0.92);
   }
   .althy-map-pin:hover {
-    background: rgba(232,96,44,0.90);
+    background: rgba(15,46,76,0.90);
     color: #fff;
     border-color: rgba(255,255,255,0.3);
     transform: scale(1.07) translateY(-2px);
-    box-shadow: 0 6px 18px rgba(232,96,44,0.38);
+    box-shadow: 0 6px 18px rgba(15,46,76,0.38);
   }
-  .althy-map-pin:hover::after { border-top-color: rgba(232,96,44,0.90); }
+  .althy-map-pin:hover::after { border-top-color: rgba(15,46,76,0.90); }
   .althy-map-pin.active {
-    background: #E8602C;
+    background: #0F2E4C;
     color: #fff;
     border-color: rgba(255,255,255,0.25);
     transform: scale(1.11) translateY(-3px);
-    box-shadow: 0 8px 22px rgba(232,96,44,0.44);
+    box-shadow: 0 8px 22px rgba(15,46,76,0.44);
   }
-  .althy-map-pin.active::after { border-top-color: #E8602C; }
+  .althy-map-pin.active::after { border-top-color: #0F2E4C; }
 `;
 
 // ── Composant ─────────────────────────────────────────────────────────────────
@@ -138,17 +138,17 @@ export function AlthyMap({ markers, selectedId, onMarkerClick, height = "100%" }
         map.addLayer({
           id: "romande-fill", type: "fill", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "fill-color": ORANGE, "fill-opacity": 0.10 },
+          paint: { "fill-color": PRUSSIAN, "fill-opacity": 0.10 },
         });
         map.addLayer({
           id: "romande-border-glow", type: "line", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "line-color": ORANGE, "line-width": 8, "line-opacity": 0.18, "line-blur": 6 },
+          paint: { "line-color": PRUSSIAN, "line-width": 8, "line-opacity": 0.18, "line-blur": 6 },
         });
         map.addLayer({
           id: "romande-border", type: "line", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "line-color": ORANGE, "line-width": 2, "line-opacity": 0.85 },
+          paint: { "line-color": PRUSSIAN, "line-width": 2, "line-opacity": 0.85 },
         });
 
         mapLoadedRef.current = true;

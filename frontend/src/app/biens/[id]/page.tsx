@@ -121,7 +121,7 @@ function Header() {
             fontSize: 13,
             padding: "6px 14px",
             borderRadius: "var(--radius-elem)",
-            background: "var(--althy-orange-bg, rgba(232,96,44,0.08))",
+            background: "var(--althy-orange-bg, rgba(15,46,76,0.08))",
             color: C.orange,
             border: `1px solid ${C.orange}`,
             textDecoration: "none",
@@ -407,7 +407,7 @@ function AlthyIAWidget({ bien }: { bien: BienDetail }) {
             <div
               key={i}
               style={{
-                background: m.role === "user" ? "rgba(232,96,44,0.08)" : "var(--althy-bg)",
+                background: m.role === "user" ? "rgba(15,46,76,0.08)" : "var(--althy-bg)",
                 border: "1px solid var(--althy-border)",
                 borderRadius: "var(--radius-elem)",
                 padding: "7px 11px",
@@ -548,7 +548,7 @@ function Galerie({
   );
 
   const Placeholder = () => (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: "linear-gradient(135deg, #FEF2EB 0%, rgba(232,96,44,0.1) 100%)" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: "linear-gradient(135deg, #FEF2EB 0%, rgba(15,46,76,0.1) 100%)" }}>
       <Building2 size={48} color={C.orange} style={{ opacity: 0.3 }} />
     </div>
   );
@@ -729,7 +729,7 @@ export default function BienDetailPage({
           background: ${C.orange};
           border: 2px solid #fff;
           transform: rotate(-45deg);
-          box-shadow: 0 2px 8px rgba(232,96,44,0.4);
+          box-shadow: 0 2px 8px rgba(15,46,76,0.4);
         `;
         new mapboxgl.Marker({ element: el })
           .setLngLat([bien.lng!, bien.lat!])
@@ -992,7 +992,7 @@ export default function BienDetailPage({
                   <span
                     key={tag}
                     style={{
-                      background: "var(--althy-orange-bg, rgba(232,96,44,0.08))",
+                      background: "var(--althy-orange-bg, rgba(15,46,76,0.08))",
                       color: C.orange,
                       fontSize: 12,
                       padding: "4px 12px",

@@ -211,7 +211,7 @@ export default function AlthyHome() {
       <div style={{ position: "relative", width: 160, height: 160, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1.8rem" }}>
         <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid var(--althy-orange)", animation: "ripple 3s ease-out infinite" }} />
         <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid var(--althy-orange)", animation: "ripple2 3s ease-out infinite 1.5s" }} />
-        <div onClick={toggleTalk} style={{ width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #F5A050 0%, var(--althy-orange) 45%, #8A3008 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", animation: isTalking ? "speaking 0.4s ease-in-out infinite" : "breathe 3.5s ease-in-out infinite", cursor: "pointer", zIndex: 2, boxShadow: "0 8px 40px rgba(232,96,44,0.3)" }}>
+        <div onClick={toggleTalk} style={{ width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #F5A050 0%, var(--althy-orange) 45%, #8A3008 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", animation: isTalking ? "speaking 0.4s ease-in-out infinite" : "breathe 3.5s ease-in-out infinite", cursor: "pointer", zIndex: 2, boxShadow: "0 8px 40px rgba(15,46,76,0.3)" }}>
           <span style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 300, color: "#fff", letterSpacing: 4, textTransform: "uppercase" }}>Althy</span>
           <span style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", letterSpacing: 1.5, textTransform: "uppercase", marginTop: 2 }}>parler</span>
         </div>

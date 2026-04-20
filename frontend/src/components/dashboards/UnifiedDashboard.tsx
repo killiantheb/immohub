@@ -288,7 +288,7 @@ const STATUT_MAP: Record<string, { label: string; color: string; bg: string }> =
   recu:        { label: "Reçu ✓",     color: "var(--althy-green)", bg: "var(--althy-green-bg)" },
   en_attente:  { label: "En attente", color: "var(--althy-warning)",            bg: "var(--althy-warning-bg)" },
   retard:      { label: "En retard",  color: "var(--althy-red)",   bg: "rgba(239,68,68,0.10)" },
-  "en cours":  { label: "En cours",   color: DC.orange,            bg: "rgba(232,96,44,0.10)" },
+  "en cours":  { label: "En cours",   color: DC.orange,            bg: "rgba(15,46,76,0.10)" },
   confirmée:   { label: "Confirmée",  color: "var(--althy-green)", bg: "var(--althy-green-bg)" },
   terminée:    { label: "Terminée",   color: DC.muted,             bg: "rgba(107,94,82,0.10)" },
   proposee:    { label: "Proposée",   color: "var(--althy-blue)",            bg: "rgba(37,99,235,0.10)" },
@@ -1044,7 +1044,7 @@ function SectionPortailPaiements({ data }: SectionProps) {
                 <div style={{ fontSize: 13, fontWeight: 500, color: DC.text }}>{p.mois}</div>
                 <div style={{ fontSize: 12, color: DC.muted }}>CHF {p.montant.toLocaleString("fr-CH")}</div>
               </div>
-              <span style={{ fontSize: 11.5, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: p.statut === "paye" ? "var(--althy-green-bg)" : "rgba(232,96,44,0.10)", color: p.statut === "paye" ? "var(--althy-green)" : "var(--terracotta-primary)" }}>
+              <span style={{ fontSize: 11.5, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: p.statut === "paye" ? "var(--althy-green-bg)" : "rgba(15,46,76,0.10)", color: p.statut === "paye" ? "var(--althy-green)" : "var(--terracotta-primary)" }}>
                 {p.statut === "paye" ? "Payé ✓" : "En attente"}
               </span>
             </div>
@@ -1267,19 +1267,19 @@ function HKpiCard({ icon: Icon, iconColor, iconBg, value, label, sub, isUrgent }
   );
 }
 
-// ── H-care Orange highlight card ──────────────────────────────────────────────
+// ── H-care Bleu de Prusse highlight card ─────────────────────────────────────
 
 function HHighlightCard({ value, label }: { value: string; label: string }) {
   return (
     <Link href="/app/sphere" style={{
-      background: "linear-gradient(145deg, var(--terracotta-primary), var(--terracotta-deep, #C84E1E))",
+      background: "linear-gradient(145deg, var(--althy-prussian), var(--althy-signature, #1A4975))",
       borderRadius: 24, padding: "28px 24px",
       color: "#fff", textDecoration: "none",
       display: "flex", flexDirection: "column", justifyContent: "space-between",
       position: "relative", overflow: "hidden", minHeight: 200,
       transition: "transform 0.2s, box-shadow 0.2s",
     }}
-      onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(232,96,44,0.3)"; }}
+      onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(15,46,76,0.3)"; }}
       onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
     >
       {/* Cercle décoratif */}

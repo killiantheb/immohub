@@ -3,12 +3,18 @@
  *
  * Chaque valeur est un pointeur vers une CSS variable définie dans globals.css.
  * Usage : import { C } from "@/lib/design-tokens"
- *         style={{ color: C.orange, background: C.orangeBg }}
+ *         style={{ color: C.prussian, background: C.prussianBg }}
  *
- * RÈGLE : ne jamais déclarer `const S = { orange: "...", ... }` ou
- *         `const ORANGE = "#E8602C"` dans un fichier composant.
- *         Toujours importer C depuis ce fichier.
- *         Exception : `const ORANGE_HEX` dans les fichiers map/ (Mapbox exige du hex).
+ * Palette Bleu de Prusse + Or (2026-04-20) :
+ *   - Principale   : Bleu de Prusse #0F2E4C (C.prussian)
+ *   - Hover/accent : Bleu signature #1A4975 (C.signature)
+ *   - Premium      : Or Althy     #C9A961 (C.gold)
+ *
+ * RÈGLE : ne jamais déclarer `const S = { ... }` ou `const PRUSSIAN = "#0F2E4C"`
+ *         dans un fichier composant. Toujours importer C depuis ce fichier.
+ *         Exception : `const PRUSSIAN_HEX` dans les fichiers map/ (Mapbox exige du hex).
+ *
+ * Rétro-compat : C.orange* = alias vers C.prussian* (à supprimer après migration).
  */
 
 export const C = {
@@ -16,6 +22,7 @@ export const C = {
   bg:           "var(--althy-bg)",
   surface:      "var(--althy-surface)",
   surface2:     "var(--althy-surface-2)",
+  glacier:      "var(--althy-glacier)",
 
   // ── Bordures ────────────────────────────────────────────────────────────────
   border:       "var(--althy-border)",
@@ -28,12 +35,26 @@ export const C = {
   textMid:      "var(--althy-text-2)",
   textMuted:    "var(--althy-text-3)",
 
-  // ── Orange (couleur principale) ─────────────────────────────────────────────
-  orange:       "var(--althy-orange)",
-  orangeLight:  "var(--althy-orange-light)",
-  orangeBg:     "var(--althy-orange-bg)",
-  orangeHover:  "var(--althy-orange-hover)",
-  orangeBorder: "var(--althy-orange-border)",
+  // ── Bleu de Prusse (couleur principale) ─────────────────────────────────────
+  prussian:       "var(--althy-prussian)",
+  prussianLight:  "var(--althy-prussian-light)",
+  prussianBg:     "var(--althy-prussian-bg)",
+  prussianBorder: "var(--althy-prussian-border)",
+  signature:      "var(--althy-signature)",
+
+  // ── Or Althy (accents premium : badges "populaire", CTA valorisation) ───────
+  gold:         "var(--althy-gold)",
+  goldLight:    "var(--althy-gold-light)",
+  goldBg:       "var(--althy-gold-bg)",
+  goldHover:    "var(--althy-gold-hover)",
+  goldBorder:   "var(--althy-gold-border)",
+
+  // ── Alias transition (ex-orange → prussian) — à supprimer après migration ─
+  orange:       "var(--althy-prussian)",
+  orangeLight:  "var(--althy-prussian-light)",
+  orangeBg:     "var(--althy-prussian-bg)",
+  orangeHover:  "var(--althy-signature)",
+  orangeBorder: "var(--althy-prussian-border)",
 
   // ── Couleurs sémantiques ────────────────────────────────────────────────────
   green:        "var(--althy-green)",
@@ -64,10 +85,6 @@ export const C = {
   swipeYesBg:   "var(--althy-swipe-yes-bg)",
   swipeNo:      "var(--althy-swipe-no)",
   swipeNoBg:    "var(--althy-swipe-no-bg)",
-
-  // ── Premium gold ────────────────────────────────────────────────────────────
-  gold:         "var(--althy-gold)",
-  goldBg:       "var(--althy-gold-bg)",
 
   // ── Ombres ──────────────────────────────────────────────────────────────────
   shadow:       "var(--althy-shadow)",

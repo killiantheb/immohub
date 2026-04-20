@@ -96,7 +96,7 @@ function CommunicationInner() {
               style={{
                 display: "flex", alignItems: "center", gap: 7,
                 padding: "10px 18px",
-                background:  active ? "var(--althy-orange-bg, rgba(232,96,44,0.08))" : "transparent",
+                background:  active ? "var(--althy-orange-bg, rgba(15,46,76,0.08))" : "transparent",
                 color:       active ? "var(--terracotta-primary)" : "var(--text-tertiary)",
                 border:      "none",
                 borderBottom: active ? "2px solid var(--terracotta-primary)" : "2px solid transparent",

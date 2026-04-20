@@ -107,7 +107,7 @@ export function FeatureIA() {
                 boxShadow: "0 1px 4px rgba(40,18,8,0.06)",
               }}
               whileHover={{
-                borderColor: "rgba(232,96,44,0.28)",
+                borderColor: "rgba(15,46,76,0.28)",
               }}
             >
               <span style={{ color: C.orange, fontSize: "0.7rem", flexShrink: 0 }}>✦</span>

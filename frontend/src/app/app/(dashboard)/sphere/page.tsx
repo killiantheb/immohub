@@ -62,7 +62,7 @@ function OrganicSphere({ state }: { state: string }) {
       {/* Outer glow */}
       <div style={{
         position: "absolute", inset: -24,
-        background: "radial-gradient(circle, rgba(232,96,44,0.10) 0%, transparent 70%)",
+        background: "radial-gradient(circle, rgba(15,46,76,0.10) 0%, transparent 70%)",
         borderRadius: "50%",
         animation: "sphereGlow 4s ease-in-out infinite",
       }} />
@@ -74,7 +74,7 @@ function OrganicSphere({ state }: { state: string }) {
           width:  140 + i * 28,
           height: 140 + i * 28,
           borderRadius: "50%",
-          border: `1px solid rgba(232,96,44,${0.18 - i * 0.05})`,
+          border: `1px solid rgba(15,46,76,${0.18 - i * 0.05})`,
           animation: "pulseRing 3s ease-in-out infinite",
           animationDelay: `${i * 0.7}s`,
           opacity: isActive ? 1 : 0.6,
@@ -87,11 +87,11 @@ function OrganicSphere({ state }: { state: string }) {
         width: 120, height: 120,
         borderRadius: "50%",
         background: isListening
-          ? "radial-gradient(circle at 35% 35%, #FF9066 0%, #E8602C 45%, #C84E1E 100%)"
-          : "radial-gradient(circle at 35% 35%, #FF8055 0%, #E8602C 40%, #C84E1E 100%)",
+          ? "radial-gradient(circle at 35% 35%, #5B84AE 0%, #1A4975 45%, #0F2E4C 100%)"
+          : "radial-gradient(circle at 35% 35%, #4C73A0 0%, #1A4975 40%, #0F2E4C 100%)",
         boxShadow: isActive
-          ? "0 0 60px rgba(232,96,44,0.45), 0 0 30px rgba(232,96,44,0.25), inset 0 2px 6px rgba(255,255,255,0.30)"
-          : "0 0 40px rgba(232,96,44,0.25), 0 0 20px rgba(232,96,44,0.15), inset 0 2px 4px rgba(255,255,255,0.25)",
+          ? "0 0 60px rgba(15,46,76,0.45), 0 0 30px rgba(15,46,76,0.25), inset 0 2px 6px rgba(255,255,255,0.30)"
+          : "0 0 40px rgba(15,46,76,0.25), 0 0 20px rgba(15,46,76,0.15), inset 0 2px 4px rgba(255,255,255,0.25)",
         animation: isActive ? "spherePulse 1.5s ease-in-out infinite" : "sphereBreath 4s ease-in-out infinite",
         position: "relative",
         overflow: "hidden",
@@ -265,7 +265,7 @@ function ActionCardItem({ action, onDismiss, onRegenerate }: ActionCardProps) {
           {action.acteur_id && (
             <button
               onClick={() => setShowNotationModal(true)}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 99, background: "var(--terracotta-ghost)", border: "1px solid rgba(232,96,44,0.15)", color: "var(--terracotta-primary)", fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 99, background: "var(--althy-prussian-bg)", border: "1px solid rgba(15,46,76,0.15)", color: "var(--althy-prussian)", fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}
             >
               <Star size={13} fill="var(--terracotta-primary)" strokeWidth={0} />
               Laisser un avis
@@ -675,7 +675,7 @@ export default function SpherePage() {
             )}
 
             {ROLE_LABELS[roleKey as keyof typeof ROLE_LABELS] && (
-              <span className="inline-block px-4 py-2 bg-[var(--terracotta-ghost)] text-[var(--terracotta-primary)] rounded-full text-[11px] font-medium uppercase tracking-wider border border-[rgba(232,96,44,0.15)]">
+              <span className="inline-block px-4 py-2 bg-[var(--althy-prussian-bg)] text-[var(--althy-prussian)] rounded-full text-[11px] font-medium uppercase tracking-wider border border-[rgba(15,46,76,0.15)]">
                 {ROLE_LABELS[roleKey as keyof typeof ROLE_LABELS]}{planLabel ? ` · ${planLabel}` : ""}
               </span>
             )}

@@ -238,7 +238,7 @@ export default function HuntersPage() {
       /* ── Mes leads ── */
       <>
       {/* Info banner */}
-      <div style={{ backgroundColor: C.orangeBg, border: "1px solid rgba(232,96,44,0.22)", borderRadius: 12, padding: "14px 18px", marginBottom: 24, display: "flex", gap: 10 }}>
+      <div style={{ backgroundColor: C.orangeBg, border: "1px solid rgba(15,46,76,0.22)", borderRadius: 12, padding: "14px 18px", marginBottom: 24, display: "flex", gap: 10 }}>
         <TrendingUp size={18} color={C.orange} style={{ flexShrink: 0, marginTop: 1 }} />
         <div>
           <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: 600, color: C.text }}>Comment ça marche</p>

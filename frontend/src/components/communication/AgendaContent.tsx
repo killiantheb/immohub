@@ -136,7 +136,7 @@ export function AgendaContent() {
       <div style={{
         display: "flex", alignItems: "center", gap: 10,
         padding: "12px 16px", marginBottom: 16,
-        background: "rgba(232,96,44,0.06)", border: "1px solid rgba(232,96,44,0.15)",
+        background: "rgba(15,46,76,0.06)", border: "1px solid rgba(15,46,76,0.15)",
         borderRadius: 10, fontSize: 13, color: "var(--althy-text-2)",
       }}>
         <Info size={15} color="var(--althy-orange)" style={{ flexShrink: 0 }} />
@@ -269,7 +269,7 @@ export function AgendaContent() {
                           </div>
                         </div>
                         {event.contexte_type && (
-                          <span style={{ padding: "2px 8px", borderRadius: 6, background: "var(--althy-orange-bg, rgba(232,96,44,0.08))", color: "var(--althy-orange)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0 }}>
+                          <span style={{ padding: "2px 8px", borderRadius: 6, background: "var(--althy-orange-bg, rgba(15,46,76,0.08))", color: "var(--althy-orange)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0 }}>
                             {CONTEXTE_LABELS[event.contexte_type] ?? event.contexte_type}
                           </span>
                         )}

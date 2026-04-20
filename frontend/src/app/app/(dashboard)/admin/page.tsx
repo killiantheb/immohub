@@ -324,7 +324,7 @@ export default function AdminPage() {
             width: 160,
             height: 160,
             borderRadius: "50%",
-            background: "rgba(232,96,44,0.08)",
+            background: "rgba(15,46,76,0.08)",
           }}
         />
       </div>

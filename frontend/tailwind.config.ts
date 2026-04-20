@@ -9,18 +9,35 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Althy — terre cuite sur fond stone (CLAUDE.md)
+        // Althy — Bleu de Prusse + Or (CLAUDE.md)
         primary: {
-          50:  "#FDF6F2",
-          100: "#FAE4D6",   // primaire light
-          200: "#F4C9B0",
-          300: "#ECAA88",
-          400: "#E08860",
-          500: "#E8602C",   // ← terre cuite principale
-          600: "#9E4D28",
-          700: "#7D3C1E",
-          800: "#5C2C15",
-          900: "#3B1C0D",
+          50:  "#F0F4F9",
+          100: "#D6E0ED",
+          200: "#AEC2D8",
+          300: "#7E9BBE",
+          400: "#4C73A0",
+          500: "#0F2E4C",   // ← Bleu de Prusse principal
+          600: "#0C263F",
+          700: "#091D30",
+          800: "#061422",
+          900: "#030B14",
+        },
+        prussian: {
+          DEFAULT: "#0F2E4C",
+          light:   "rgba(15,46,76,0.08)",
+          hover:   "#1A4975",
+          border:  "rgba(15,46,76,0.22)",
+        },
+        signature: "#1A4975",
+        gold: {
+          DEFAULT: "#C9A961",
+          light:   "rgba(201,169,97,0.12)",
+          bg:      "#FEF9E7",
+          hover:   "#B5975A",
+        },
+        // Transition — alias orange qui pointe vers le prussian
+        orange: {
+          500: "#0F2E4C",
         },
         // Stone — fond et surfaces
         stone: {

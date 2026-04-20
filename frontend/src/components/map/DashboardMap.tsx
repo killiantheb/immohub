@@ -156,12 +156,12 @@ export default function DashboardMap({ height = 500, onBienClick }: DashboardMap
                     <p style={{ fontWeight: 700, fontSize: 13, color: "#3D3830", margin: 0 }}>{b.nom}</p>
                   </div>
                   <p style={{ fontSize: 11, color: "#7A7469", margin: "0 0 4px" }}>{b.adresse}, {b.ville}</p>
-                  {b.loyer && <p style={{ fontSize: 12, color: "#E8602C", fontWeight: 600, margin: "4px 0" }}>CHF {b.loyer.toLocaleString("fr-CH")}/mois</p>}
+                  {b.loyer && <p style={{ fontSize: 12, color: "#0F2E4C", fontWeight: 600, margin: "4px 0" }}>CHF {b.loyer.toLocaleString("fr-CH")}/mois</p>}
                   {b.locataire && <p style={{ fontSize: 11, color: "#7A7469", margin: "2px 0" }}>Locataire : {b.locataire}</p>}
                   <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
                     <button
                       onClick={() => onBienClick?.(b.id)}
-                      style={{ flex: 1, padding: "6px 0", borderRadius: 8, background: "#E8602C", border: "none", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                      style={{ flex: 1, padding: "6px 0", borderRadius: 8, background: "#0F2E4C", border: "none", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
                     >
                       Voir la fiche
                     </button>

@@ -181,7 +181,7 @@ export function FeatureReseau() {
               style={{
                 position: "absolute",
                 inset: 0,
-                background: "radial-gradient(ellipse at center, rgba(232,96,44,0.04) 0%, transparent 70%)",
+                background: "radial-gradient(ellipse at center, rgba(15,46,76,0.04) 0%, transparent 70%)",
                 pointerEvents: "none",
               }}
             />

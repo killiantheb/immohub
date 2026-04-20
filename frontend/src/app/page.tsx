@@ -22,7 +22,7 @@ import { ProprioSolo }       from "@/components/landing/ProprioSolo";
 
 // ── Tokens ─────────────────────────────────────────────────────────────────────
 // Mapbox GL requires hex — do not replace with CSS var
-const ORANGE_HEX = "#E8602C";
+const PRUSSIAN_HEX = "#0F2E4C";
 
 const serif  = "var(--font-serif)";
 const sans   = "var(--font-sans)";
@@ -109,13 +109,13 @@ export default function LandingPage() {
         map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
         map.addLayer({ id: "romande-fill", type: "fill", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "fill-color": ORANGE_HEX, "fill-opacity": 0.10 } });
+          paint: { "fill-color": PRUSSIAN_HEX, "fill-opacity": 0.10 } });
         map.addLayer({ id: "romande-border-glow", type: "line", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "line-color": ORANGE_HEX, "line-width": 8, "line-opacity": 0.18, "line-blur": 6 } });
+          paint: { "line-color": PRUSSIAN_HEX, "line-width": 8, "line-opacity": 0.18, "line-blur": 6 } });
         map.addLayer({ id: "romande-border", type: "line", source: "cantons",
           filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-          paint: { "line-color": ORANGE_HEX, "line-width": 2, "line-opacity": 0.85 } });
+          paint: { "line-color": PRUSSIAN_HEX, "line-width": 2, "line-opacity": 0.85 } });
       });
     })();
     return () => { ro?.disconnect(); map?.remove(); mapRef.current = null; };
@@ -141,7 +141,7 @@ export default function LandingPage() {
       if (!map.getSource("cantons")) map.addSource("cantons", { type: "geojson", data: "/cantons-suisse.json" });
       if (!map.getLayer("romande-fill")) map.addLayer({ id: "romande-fill", type: "fill", source: "cantons",
         filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-        paint: { "fill-color": ORANGE_HEX, "fill-opacity": next === "satellite" ? 0.18 : 0.09 } });
+        paint: { "fill-color": PRUSSIAN_HEX, "fill-opacity": next === "satellite" ? 0.18 : 0.09 } });
     });
     setMapMode(next);
   }, [mapMode]);
@@ -172,7 +172,7 @@ export default function LandingPage() {
               <Link href="/login" style={{ fontSize: 11, textDecoration: "none", padding: "7px 16px", borderRadius: 100, border: "1px solid rgba(26,18,8,0.20)", background: "rgba(255,255,255,0.60)", backdropFilter: "blur(12px)", color: "#1A1208", fontFamily: sans }}>
                 Se connecter
               </Link>
-              <Link href="/register" className="lp-nav-cta" style={{ fontSize: 11, fontWeight: 500, textDecoration: "none", padding: "7px 16px", borderRadius: 100, background: C.orange, color: "#fff", boxShadow: "0 2px 10px rgba(232,96,44,0.35)", fontFamily: sans }}>
+              <Link href="/register" className="lp-nav-cta" style={{ fontSize: 11, fontWeight: 500, textDecoration: "none", padding: "7px 16px", borderRadius: 100, background: C.orange, color: "#fff", boxShadow: "0 2px 10px rgba(15,46,76,0.35)", fontFamily: sans }}>
                 Commencer gratuitement
               </Link>
               <button
@@ -212,7 +212,7 @@ export default function LandingPage() {
             {/* A/B variant A (active) — propriétaire solo */}
             <h1 style={{ fontFamily: serif, fontSize: "clamp(40px,6vw,82px)", fontWeight: 300, color: "var(--althy-surface)", margin: 0, letterSpacing: "-0.03em", lineHeight: 1.02, textShadow: "0 2px 32px rgba(0,0,0,0.45)" }}>
               Votre bien, géré<br />
-              <span style={{ color: C.orange, textShadow: "0 2px 24px rgba(232,96,44,0.35)" }}>sans agence.</span>
+              <span style={{ color: C.orange, textShadow: "0 2px 24px rgba(15,46,76,0.35)" }}>sans agence.</span>
             </h1>
             {/* A/B variant B: « Gérez vos biens<br/>sans vous compliquer la vie. » */}
             {/* A/B variant C: « L'immobilier simplifié<br/>pour les propriétaires. » */}
@@ -254,7 +254,7 @@ export default function LandingPage() {
                   <SlidersHorizontal size={15} />
                 </button>
                 <div style={{ width: 1, height: 18, background: "rgba(26,22,18,0.15)" }} />
-                <button type="submit" style={{ padding: "7px 16px", borderRadius: 24, background: C.orange, color: "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: sans, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 10px rgba(232,96,44,0.35)" }}>
+                <button type="submit" style={{ padding: "7px 16px", borderRadius: 24, background: C.orange, color: "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: sans, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 10px rgba(15,46,76,0.35)" }}>
                   <Search size={14} />
                 </button>
               </div>
@@ -320,7 +320,7 @@ export default function LandingPage() {
           <div className="lp-grid-etapes">
             {ETAPES.map(e => (
               <div key={e.n} style={{ background: C.surface, border: `0.5px solid ${C.border}`, borderRadius: 14, padding: "32px 28px", boxShadow: C.shadow }}>
-                <div style={{ fontFamily: serif, fontSize: 48, fontWeight: 300, color: "rgba(232,96,44,0.15)", lineHeight: 1, marginBottom: 16 }}>{e.n}</div>
+                <div style={{ fontFamily: serif, fontSize: 48, fontWeight: 300, color: "rgba(15,46,76,0.15)", lineHeight: 1, marginBottom: 16 }}>{e.n}</div>
                 <h3 style={{ fontFamily: serif, fontSize: 20, fontWeight: 400, color: C.text, margin: "0 0 10px" }}>{e.titre}</h3>
                 <p style={{ fontSize: 14, color: C.textMuted, lineHeight: 1.65, margin: 0 }}>{e.desc}</p>
               </div>

@@ -25,7 +25,7 @@ interface ParseResult {
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 // Mapbox GL requires hex — do not replace with CSS var
-const ORANGE = "#E8602C";
+const PRUSSIAN = "#0F2E4C";
 const ACTIVE_CANTONS = ["Genève", "Vaud", "Valais", "Fribourg", "Neuchâtel", "Jura"];
 
 const ACTIVE_CITIES = [
@@ -74,14 +74,14 @@ const STYLES = `
 
   /* ── Marker actif ── */
   .althy-pin-active { position: relative; width: 36px; height: 36px; cursor: pointer; transition: transform 0.3s, opacity 0.3s; }
-  .althy-pin-active__pulse { position: absolute; inset: 0; border-radius: 50%; background: rgba(232,96,44,0.28); animation: althy-ping 2.2s ease-out infinite; }
-  .althy-pin-active__dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 15px; height: 15px; border-radius: 50%; background: #E8602C; border: 2.5px solid #fff; box-shadow: 0 2px 10px rgba(232,96,44,0.55); transition: width 0.3s, height 0.3s, box-shadow 0.3s; }
+  .althy-pin-active__pulse { position: absolute; inset: 0; border-radius: 50%; background: rgba(15,46,76,0.28); animation: althy-ping 2.2s ease-out infinite; }
+  .althy-pin-active__dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 15px; height: 15px; border-radius: 50%; background: #0F2E4C; border: 2.5px solid #fff; box-shadow: 0 2px 10px rgba(15,46,76,0.55); transition: width 0.3s, height 0.3s, box-shadow 0.3s; }
   @keyframes althy-ping { 0% { transform: scale(0.7); opacity: 0.7; } 70% { transform: scale(2.4); opacity: 0; } 100% { transform: scale(0.7); opacity: 0; } }
 
   /* ── States filtres ── */
   .althy-pin-active.pin-dimmed { opacity: 0.25; pointer-events: none; }
   .althy-pin-active.pin-selected { transform: scale(1.4); }
-  .althy-pin-active.pin-selected .althy-pin-active__dot { width: 18px; height: 18px; box-shadow: 0 0 0 4px rgba(232,96,44,0.25), 0 2px 12px rgba(232,96,44,0.6); }
+  .althy-pin-active.pin-selected .althy-pin-active__dot { width: 18px; height: 18px; box-shadow: 0 0 0 4px rgba(15,46,76,0.25), 0 2px 12px rgba(15,46,76,0.6); }
 
   /* ── Marker inactif ── */
   .althy-pin-inactive { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
@@ -153,12 +153,12 @@ export default function CarteMapboxPage() {
       map.addLayer({
         id: "cantons-fill", type: "fill", source: "cantons",
         filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-        paint: { "fill-color": ORANGE, "fill-opacity": 0.10 },
+        paint: { "fill-color": PRUSSIAN, "fill-opacity": 0.10 },
       });
       map.addLayer({
         id: "cantons-line", type: "line", source: "cantons",
         filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-        paint: { "line-color": ORANGE, "line-width": 2 },
+        paint: { "line-color": PRUSSIAN, "line-width": 2 },
       });
 
       // Punaises actives — on stocke la ref DOM pour pouvoir les animer
@@ -174,7 +174,7 @@ export default function CarteMapboxPage() {
             <div>
               <p style="font-weight:700;font-size:14px;color:#1A1612;margin:0 0 4px">${city.name}</p>
               <p style="font-size:12px;color:#8A7A6A;margin:0 0 10px">${city.biens} biens disponibles</p>
-              <a href="/app/biens?ville=${city.id}" style="display:block;background:#E8602C;color:#fff;text-align:center;padding:7px 14px;border-radius:9px;font-size:12px;font-weight:600;text-decoration:none;">
+              <a href="/app/biens?ville=${city.id}" style="display:block;background:#0F2E4C;color:#fff;text-align:center;padding:7px 14px;border-radius:9px;font-size:12px;font-weight:600;text-decoration:none;">
                 Voir les biens →
               </a>
             </div>
@@ -318,7 +318,7 @@ export default function CarteMapboxPage() {
                 style={{
                   position: "absolute", left: 12, top: "50%",
                   transform: "translateY(-50%)",
-                  color: ORANGE, animation: "spin 1s linear infinite",
+                  color: PRUSSIAN, animation: "spin 1s linear infinite",
                   pointerEvents: "none",
                 }}
               />
@@ -367,7 +367,7 @@ export default function CarteMapboxPage() {
             padding: "7px 16px", borderRadius: 20,
             background: "var(--althy-orange-bg)",
             color: "var(--althy-orange)",
-            border: "1px solid rgba(232,96,44,0.25)",
+            border: "1px solid rgba(15,46,76,0.25)",
             textDecoration: "none",
             fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
           }}>
@@ -396,7 +396,7 @@ export default function CarteMapboxPage() {
             padding: "6px 20px",
             display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
           }}>
-            <span style={{ fontSize: 12, color: ORANGE, fontWeight: 700 }}>
+            <span style={{ fontSize: 12, color: PRUSSIAN, fontWeight: 700 }}>
               Sphère IA
             </span>
             <span style={{ fontSize: 12, color: "#8A7A6A" }}>
@@ -405,8 +405,8 @@ export default function CarteMapboxPage() {
             {filterLabels.map(label => (
               <span key={label} style={{
                 fontSize: 11, fontWeight: 600, padding: "2px 8px",
-                borderRadius: 10, background: `${ORANGE}14`, color: ORANGE,
-                border: `1px solid ${ORANGE}28`,
+                borderRadius: 10, background: `${PRUSSIAN}14`, color: PRUSSIAN,
+                border: `1px solid ${PRUSSIAN}28`,
               }}>
                 {label}
               </span>

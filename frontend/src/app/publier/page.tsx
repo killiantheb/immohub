@@ -152,7 +152,7 @@ function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: bool
         display: "flex", alignItems: "center", gap: 8,
         padding: "7px 14px", borderRadius: 20,
         border: `1.5px solid ${value ? C.orange : "var(--althy-border)"}`,
-        background: value ? "rgba(232,96,44,0.08)" : "transparent",
+        background: value ? "rgba(15,46,76,0.08)" : "transparent",
         color: value ? C.orange : "var(--althy-text-2)",
         cursor: "pointer", fontSize: 13, fontWeight: value ? 600 : 400,
         transition: "all 0.15s",
@@ -249,7 +249,7 @@ function Step1({
             style={{
               padding: "16px 14px", borderRadius: "var(--radius-card)",
               border: `2px solid ${form.mode === m ? C.orange : "var(--althy-border)"}`,
-              background: form.mode === m ? "rgba(232,96,44,0.06)" : "var(--althy-surface)",
+              background: form.mode === m ? "rgba(15,46,76,0.06)" : "var(--althy-surface)",
               cursor: "pointer", textAlign: "left", transition: "all 0.15s",
             }}
           >
@@ -274,7 +274,7 @@ function Step1({
           ) : properties.length === 0 ? (
             <div style={{
               padding: "14px 16px", borderRadius: "var(--radius-elem)",
-              background: "rgba(232,96,44,0.06)", border: "1px solid rgba(232,96,44,0.20)",
+              background: "rgba(15,46,76,0.06)", border: "1px solid rgba(15,46,76,0.20)",
               color: "var(--althy-text-2)", fontSize: 13,
             }}>
               Aucun bien dans votre portefeuille.{" "}
@@ -465,7 +465,7 @@ function Step2({
           style={{
             border: `2px dashed ${dragOver ? C.orange : "var(--althy-border)"}`,
             borderRadius: "var(--radius-card)",
-            background: dragOver ? "rgba(232,96,44,0.06)" : "var(--althy-bg)",
+            background: dragOver ? "rgba(15,46,76,0.06)" : "var(--althy-bg)",
             padding: "36px 24px", textAlign: "center",
             cursor: "pointer", transition: "all 0.15s",
           }}
@@ -672,7 +672,7 @@ function Step3({
               style={{
                 padding: "8px 18px", borderRadius: 20,
                 border: `2px solid ${form.transaction_type === tx ? C.orange : "var(--althy-border)"}`,
-                background: form.transaction_type === tx ? "rgba(232,96,44,0.08)" : "transparent",
+                background: form.transaction_type === tx ? "rgba(15,46,76,0.08)" : "transparent",
                 color: form.transaction_type === tx ? C.orange : "var(--althy-text-2)",
                 cursor: "pointer", fontSize: 13, fontWeight: form.transaction_type === tx ? 700 : 400,
                 transition: "all 0.15s",
@@ -755,7 +755,7 @@ function Step3({
               display: "inline-flex", alignItems: "center", gap: 6,
               padding: "7px 16px", borderRadius: "var(--radius-elem)",
               border: "none",
-              background: generating ? "var(--althy-border)" : "rgba(232,96,44,0.1)",
+              background: generating ? "var(--althy-border)" : "rgba(15,46,76,0.1)",
               color: C.orange, fontSize: 12, fontWeight: 700,
               cursor: generating ? "not-allowed" : "pointer",
             }}
@@ -779,7 +779,7 @@ function Step3({
           {form.tags_ia.map(tag => (
             <span key={tag} style={{
               display: "flex", alignItems: "center", gap: 5,
-              background: "rgba(232,96,44,0.08)", color: C.orange,
+              background: "rgba(15,46,76,0.08)", color: C.orange,
               fontSize: 12, padding: "4px 10px", borderRadius: 20,
             }}>
               {tag}
@@ -863,7 +863,7 @@ function Step4({
               )}
             </div>
           ) : (
-            <div style={{ height: 100, background: "linear-gradient(135deg, #FEF2EB, rgba(232,96,44,0.1))", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ height: 100, background: "linear-gradient(135deg, #FEF2EB, rgba(15,46,76,0.1))", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Building2 size={32} color={C.orange} style={{ opacity: 0.3 }} />
             </div>
           )}
@@ -886,7 +886,7 @@ function Step4({
             {form.tags_ia.length > 0 && (
               <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                 {form.tags_ia.slice(0, 4).map(tag => (
-                  <span key={tag} style={{ background: "rgba(232,96,44,0.08)", color: C.orange, fontSize: 11, padding: "2px 8px", borderRadius: 20 }}>{tag}</span>
+                  <span key={tag} style={{ background: "rgba(15,46,76,0.08)", color: C.orange, fontSize: 11, padding: "2px 8px", borderRadius: 20 }}>{tag}</span>
                 ))}
               </div>
             )}

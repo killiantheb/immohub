@@ -124,7 +124,7 @@ export function Testimonials() {
                   width: 36,
                   height: 36,
                   borderRadius: "50%",
-                  background: "rgba(232,96,44,0.10)",
+                  background: "rgba(15,46,76,0.10)",
                   border: `1px solid ${C.orangeBorder}`,
                   display: "flex",
                   alignItems: "center",

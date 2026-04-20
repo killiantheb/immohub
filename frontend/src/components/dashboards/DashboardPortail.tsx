@@ -267,7 +267,7 @@ export function DashboardPortail({ firstName = "" }: Props) {
               </button>
             </div>
             {iaReply && (
-              <div style={{ padding: "12px 16px", borderRadius: 12, background: "var(--terracotta-ghost)", border: "1px solid rgba(232,96,44,0.15)", fontSize: 13, color: "var(--text-primary)", lineHeight: 1.65 }}>
+              <div style={{ padding: "12px 16px", borderRadius: 12, background: "var(--terracotta-ghost)", border: "1px solid rgba(15,46,76,0.15)", fontSize: 13, color: "var(--text-primary)", lineHeight: 1.65 }}>
                 {iaReply}
               </div>
             )}

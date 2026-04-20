@@ -203,7 +203,7 @@ function ScanSection() {
       {/* Extracted data — editable */}
       {edited && !scanning && (
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: C.orangeBg, borderRadius: 9, border: `1px solid rgba(232,96,44,0.2)`, marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: C.orangeBg, borderRadius: 9, border: `1px solid rgba(15,46,76,0.2)`, marginBottom: 18 }}>
             <Check size={13} color={C.orange} />
             <span style={{ fontSize: 12, color: C.orange, fontWeight: 600 }}>Données extraites par Althy — vérifiez et complétez si nécessaire</span>
           </div>

@@ -8,20 +8,35 @@
   --althy-bg:          #FAFAF8;
   --althy-surface:     #FFFFFF;
   --althy-surface-2:   #F5F2ED;
+  --althy-glacier:     #F4F6F9;   /* fond de sections institutionnelles */
   --althy-border:      #E8E4DC;
   --althy-border-2:    rgba(61,56,48,0.06);
 
   /* Text */
-  --althy-text:        #3D3830;
-  --althy-text-2:      #5C5650;
-  --althy-text-3:      #7A7469;
+  --althy-text:        #0F172A;   /* slate-900 — texte principal */
+  --althy-text-2:      #475569;   /* Ardoise — texte secondaire */
+  --althy-text-3:      #64748B;   /* Muted — texte tertiaire */
 
-  /* Orange vif — couleur principale */
-  --althy-orange:        #E8602C;
-  --althy-orange-light:  rgba(232,96,44,0.08);
-  --althy-orange-bg:     rgba(232,96,44,0.08);
-  --althy-orange-hover:  #C84E1E;
-  --althy-orange-border: rgba(232,96,44,0.22);
+  /* Bleu de Prusse — couleur principale (ex-orange) */
+  --althy-prussian:        #0F2E4C;
+  --althy-prussian-light:  rgba(15,46,76,0.08);
+  --althy-prussian-bg:     rgba(15,46,76,0.06);
+  --althy-signature:       #1A4975;   /* hover + accents bleu plus clair */
+  --althy-prussian-border: rgba(15,46,76,0.22);
+
+  /* Or Althy — accents premium (badges, CTA valorisation) */
+  --althy-gold:            #C9A961;
+  --althy-gold-light:      rgba(201,169,97,0.12);
+  --althy-gold-bg:         #FEF9E7;
+  --althy-gold-hover:      #B5975A;
+  --althy-gold-border:     rgba(201,169,97,0.28);
+
+  /* Aliases transition (ex-orange → prussian) — à supprimer après migration complète */
+  --althy-orange:        var(--althy-prussian);
+  --althy-orange-light:  var(--althy-prussian-light);
+  --althy-orange-bg:     var(--althy-prussian-bg);
+  --althy-orange-hover:  var(--althy-signature);
+  --althy-orange-border: var(--althy-prussian-border);
 
   /* Succès */
   --althy-green:       #22B573;
@@ -47,9 +62,9 @@
   --sidebar-border:    var(--althy-border);
   --sidebar-text:      var(--althy-text-2);
   --sidebar-text-on:   var(--althy-text);
-  --sidebar-active:    rgba(232,96,44,0.08);
-  --sidebar-hover:     rgba(232,96,44,0.04);
-  --sidebar-gold:      var(--althy-orange);
+  --sidebar-active:    rgba(15,46,76,0.08);
+  --sidebar-hover:     rgba(15,46,76,0.04);
+  --sidebar-gold:      var(--althy-gold);
 
   /* Night mode (futur dark mode) */
   --althy-night:          #0F0E0D;
@@ -70,10 +85,6 @@
   --althy-swipe-no:       #C0392B;
   --althy-swipe-no-bg:    rgba(192,57,43,0.12);
 
-  /* Premium */
-  --althy-gold:           #B8860B;
-  --althy-gold-bg:        rgba(184,134,11,0.08);
-
   /* Ombres */
   --althy-shadow:      none;
   --althy-shadow-md:   0 4px 24px rgba(0,0,0,0.06);
@@ -89,10 +100,11 @@
   --font-display: var(--font-serif);
 
   /* ── Aliases Figma V2 → tokens Althy (compatibilité composants existants) ── */
-  --terracotta-primary: var(--althy-orange);
-  --terracotta-deep:    var(--althy-orange-hover);
-  --terracotta-light:   #F0997B;
-  --terracotta-ghost:   var(--althy-orange-bg);
+  /* Note : terracotta-* pointent désormais vers prussian — nom conservé pour transition */
+  --terracotta-primary: var(--althy-prussian);
+  --terracotta-deep:    var(--althy-signature);
+  --terracotta-light:   rgba(15,46,76,0.35);
+  --terracotta-ghost:   var(--althy-prussian-bg);
 
   --cream:              var(--althy-bg);
   --charcoal:           var(--althy-text);
@@ -203,11 +215,13 @@
     @apply inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium;
     border-radius: 20px;
   }
-  .badge-green  { background: var(--althy-green-bg);  color: var(--althy-green); }
-  .badge-red    { background: var(--althy-red-bg);    color: var(--althy-red); }
-  .badge-amber  { background: var(--althy-amber-bg);  color: var(--althy-amber); }
-  .badge-orange { background: var(--althy-orange-bg); color: var(--althy-orange); }
-  .badge-blue   { background: var(--althy-blue-bg);   color: var(--althy-blue); }
+  .badge-green    { background: var(--althy-green-bg);    color: var(--althy-green); }
+  .badge-red      { background: var(--althy-red-bg);      color: var(--althy-red); }
+  .badge-amber    { background: var(--althy-amber-bg);    color: var(--althy-amber); }
+  .badge-prussian { background: var(--althy-prussian-bg); color: var(--althy-prussian); }
+  .badge-orange   { background: var(--althy-prussian-bg); color: var(--althy-prussian); } /* alias transition */
+  .badge-blue     { background: var(--althy-blue-bg);     color: var(--althy-blue); }
+  .badge-gold     { background: var(--althy-gold-bg);     color: var(--althy-gold-hover); border: 1px solid var(--althy-gold-border); }
 }
 
 /* ── Fraunces Variable — utilities ──────────────────────────────────────────
@@ -302,7 +316,7 @@
 .sidebar-scroll::-webkit-scrollbar       { width: 2px; }
 .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
 .sidebar-scroll::-webkit-scrollbar-thumb {
-  background: rgba(181,90,48,0.20);
+  background: rgba(15,46,76,0.20);
   border-radius: 2px;
 }
 
@@ -479,11 +493,18 @@
     --althy-text-2:        #C8C4BC;
     --althy-text-3:        #8A8680;
 
-    /* Orange reste le même — c'est l'identité */
-    --althy-orange:        #E8602C;
-    --althy-orange-light:  rgba(232,96,44,0.15);
-    --althy-orange-bg:     rgba(232,96,44,0.12);
-    --althy-orange-border: rgba(232,96,44,0.30);
+    /* Bleu de Prusse — identité */
+    --althy-prussian:        #1A4975;   /* plus lumineux en dark mode pour contraste */
+    --althy-prussian-light:  rgba(26,73,117,0.22);
+    --althy-prussian-bg:     rgba(26,73,117,0.14);
+    --althy-prussian-border: rgba(26,73,117,0.38);
+    --althy-signature:       #2E6BA1;
+
+    /* Or Althy — conservé en dark mode */
+    --althy-gold:            #D4B978;
+    --althy-gold-light:      rgba(212,185,120,0.18);
+    --althy-gold-bg:         rgba(212,185,120,0.10);
+    --althy-gold-hover:      #C9A961;
 
     --althy-navbar-bg:     rgba(15,14,13,0.88);
 
@@ -492,8 +513,8 @@
     --sidebar-border:      rgba(255,255,255,0.08);
     --sidebar-text:        #C8C4BC;
     --sidebar-text-on:     #F0EDE8;
-    --sidebar-active:      rgba(232,96,44,0.14);
-    --sidebar-hover:       rgba(232,96,44,0.07);
+    --sidebar-active:      rgba(26,73,117,0.20);
+    --sidebar-hover:       rgba(26,73,117,0.10);
 
     /* Ombres plus sombres */
     --althy-shadow:        0 1px 3px rgba(0,0,0,0.30), 0 1px 2px rgba(0,0,0,0.20);
@@ -514,10 +535,16 @@
   --althy-text-2:        #C8C4BC;
   --althy-text-3:        #8A8680;
 
-  --althy-orange:        #E8602C;
-  --althy-orange-light:  rgba(232,96,44,0.15);
-  --althy-orange-bg:     rgba(232,96,44,0.12);
-  --althy-orange-border: rgba(232,96,44,0.30);
+  --althy-prussian:        #1A4975;
+  --althy-prussian-light:  rgba(26,73,117,0.22);
+  --althy-prussian-bg:     rgba(26,73,117,0.14);
+  --althy-prussian-border: rgba(26,73,117,0.38);
+  --althy-signature:       #2E6BA1;
+
+  --althy-gold:            #D4B978;
+  --althy-gold-light:      rgba(212,185,120,0.18);
+  --althy-gold-bg:         rgba(212,185,120,0.10);
+  --althy-gold-hover:      #C9A961;
 
   --althy-navbar-bg:     rgba(15,14,13,0.88);
 
@@ -525,8 +552,8 @@
   --sidebar-border:      rgba(255,255,255,0.08);
   --sidebar-text:        #C8C4BC;
   --sidebar-text-on:     #F0EDE8;
-  --sidebar-active:      rgba(232,96,44,0.14);
-  --sidebar-hover:       rgba(232,96,44,0.07);
+  --sidebar-active:      rgba(26,73,117,0.20);
+  --sidebar-hover:       rgba(26,73,117,0.10);
 
   --althy-shadow:        0 1px 3px rgba(0,0,0,0.30), 0 1px 2px rgba(0,0,0,0.20);
   --althy-shadow-md:     0 4px 18px rgba(0,0,0,0.40), 0 1px 4px rgba(0,0,0,0.20);

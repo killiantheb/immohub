@@ -113,9 +113,9 @@ function Step1Role({ role, setRole }: { role: Role | null; setRole: (r: Role) =>
               onClick={() => setRole(r.id)}
               style={{
                 padding: '18px 16px', borderRadius: 14, textAlign: 'left', cursor: 'pointer',
-                background: selected ? 'var(--althy-orange-bg, rgba(232,96,44,0.08))' : 'var(--althy-surface)',
+                background: selected ? 'var(--althy-orange-bg, rgba(15,46,76,0.08))' : 'var(--althy-surface)',
                 border: selected ? '2px solid var(--althy-orange)' : '1px solid var(--althy-border)',
-                boxShadow: selected ? '0 2px 12px rgba(232,96,44,0.12)' : '0 1px 4px rgba(26,22,18,0.04)',
+                boxShadow: selected ? '0 2px 12px rgba(15,46,76,0.12)' : '0 1px 4px rgba(26,22,18,0.04)',
                 transition: 'all 0.15s',
               }}
             >
@@ -142,7 +142,7 @@ function Step2Questions({ role, questions, answers, setAnswers }: {
   const roleData = ROLES.find(r => r.id === role)!
   return (
     <div>
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 8, background: 'var(--althy-orange-bg, rgba(232,96,44,0.08))', border: '1px solid rgba(232,96,44,0.2)', marginBottom: 20 }}>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 8, background: 'var(--althy-orange-bg, rgba(15,46,76,0.08))', border: '1px solid rgba(15,46,76,0.2)', marginBottom: 20 }}>
         <span style={{ fontSize: 16 }}>{roleData.icon}</span>
         <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--althy-orange)' }}>{roleData.label}</span>
       </div>
@@ -371,7 +371,7 @@ function AutoVerification({ data, agentChecks, setAgentChecks, onConfirm, saving
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {data.agents.map(agent => (
-                <label key={agent.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, background: agentChecks[agent.id] ? 'var(--althy-orange-bg, rgba(232,96,44,0.06))' : 'var(--althy-bg)', border: '1px solid var(--althy-border)', cursor: 'pointer' }}>
+                <label key={agent.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, background: agentChecks[agent.id] ? 'var(--althy-orange-bg, rgba(15,46,76,0.06))' : 'var(--althy-bg)', border: '1px solid var(--althy-border)', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     checked={agentChecks[agent.id] ?? false}

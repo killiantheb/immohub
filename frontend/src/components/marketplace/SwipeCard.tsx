@@ -135,7 +135,7 @@ function AlthyInsightWidget({ bien }: { bien: BienSwipe }) {
         <Sparkles size={14} />
         Demander à Althy
         <span style={{
-          marginLeft: "auto", fontSize: 11, color: "rgba(232,96,44,0.60)",
+          marginLeft: "auto", fontSize: 11, color: "rgba(15,46,76,0.60)",
           display: "inline-block",
           transform: open ? "rotate(90deg)" : "none",
           transition: "transform 0.2s",
@@ -152,8 +152,8 @@ function AlthyInsightWidget({ bien }: { bien: BienSwipe }) {
       {open && !loading && insight && (
         <div style={{
           marginTop: 12, padding: "12px 14px",
-          background: "rgba(232,96,44,0.05)",
-          borderRadius: 10, border: `1px solid rgba(232,96,44,0.12)`,
+          background: "rgba(15,46,76,0.05)",
+          borderRadius: 10, border: `1px solid rgba(15,46,76,0.12)`,
           animation: "sw-slidein 0.25s ease",
         }}>
           <p style={{ margin: 0, fontSize: 13, color: "var(--althy-text)", lineHeight: 1.65 }}>
@@ -440,7 +440,7 @@ function DesktopCard({
           {bien.tags_ia?.length > 0 && (
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 18 }}>
               {bien.tags_ia.slice(0, 6).map(tag => (
-                <span key={tag} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, background: "rgba(232,96,44,0.07)", color: C.orange, fontWeight: 500 }}>
+                <span key={tag} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, background: "rgba(15,46,76,0.07)", color: C.orange, fontWeight: 500 }}>
                   {tag}
                 </span>
               ))}
@@ -662,7 +662,7 @@ function MobileCard({
                 </p>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
                   {bien.tags_ia?.slice(0, 4).map(tag => (
-                    <span key={tag} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 6, background: "rgba(232,96,44,0.08)", color: C.orange }}>
+                    <span key={tag} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 6, background: "rgba(15,46,76,0.08)", color: C.orange }}>
                       {tag}
                     </span>
                   ))}

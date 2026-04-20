@@ -180,7 +180,7 @@ export function SphereWidget() {
           background: 'var(--althy-orange)',
           border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 4px 20px rgba(232,96,44,0.4)',
+          boxShadow: '0 4px 20px rgba(15,46,76,0.4)',
           transition: 'transform 0.15s, box-shadow 0.15s',
         }}
         onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.08)')}

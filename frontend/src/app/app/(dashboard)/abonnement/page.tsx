@@ -148,7 +148,7 @@ function StripeCheckout({ clientSecret, planId, planNom, onSuccess, onCancel }: 
   const appearance = {
     theme: "stripe" as const,
     variables: {
-      colorPrimary: "#E8602C",
+      colorPrimary: "#0F2E4C",
       colorBackground: "#FFFFFF",
       colorText: "#2B2B2B",
       colorDanger: "#B91C1C",
@@ -201,7 +201,7 @@ function PlanCard({ plan, annual, isCurrent, subscribing, checkoutPlan, onSubscr
           ? `2px solid ${C.orange}`
           : `1px solid ${C.border}`,
       borderRadius: 20, padding: 24, position: "relative",
-      boxShadow: plan.vedette ? "0 8px 32px rgba(232,96,44,0.15)" : C.shadow,
+      boxShadow: plan.vedette ? "0 8px 32px rgba(15,46,76,0.15)" : C.shadow,
     }}>
       {plan.vedette && (
         <div style={{
@@ -351,7 +351,7 @@ function AbonnementContent() {
       {/* Current plan banner */}
       <div style={{
         backgroundColor: C.orangeBg,
-        border: "1px solid rgba(232,96,44,0.22)",
+        border: "1px solid rgba(15,46,76,0.22)",
         borderRadius: 14, padding: "14px 20px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
         marginBottom: 32, flexWrap: "wrap", gap: 12,
@@ -477,8 +477,8 @@ function AbonnementContent() {
       {/* Savings */}
       <div style={{
         marginTop: 32, padding: 24, borderRadius: 16,
-        background: "linear-gradient(135deg, rgba(232,96,44,0.06), rgba(232,96,44,0.12))",
-        border: "1px solid rgba(232,96,44,0.22)",
+        background: "linear-gradient(135deg, rgba(15,46,76,0.06), rgba(15,46,76,0.12))",
+        border: "1px solid rgba(15,46,76,0.22)",
         display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap",
       }}>
         <div style={{ fontSize: 32 }}>💰</div>

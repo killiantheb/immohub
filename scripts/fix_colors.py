@@ -1,24 +1,63 @@
-"""Bulk replace hardcoded hex colors with CSS variables."""
+"""Bulk replace hardcoded hex colors with CSS variables.
+
+Palette Bleu de Prusse + Or (2026-04-20) :
+  - Principale   : Bleu de Prusse #0F2E4C  → var(--althy-prussian)
+  - Hover/accent : Bleu signature #1A4975  → var(--althy-signature)
+  - Premium      : Or Althy      #C9A961  → var(--althy-gold)
+  - Glacier      : #F4F6F9                 → var(--althy-glacier)
+  - Ardoise      : #475569                 → var(--althy-text-2)
+  - Muted        : #64748B                 → var(--althy-text-3)
+
+L'ancien orange (#E8602C) est migré vers le bleu de Prusse. L'alias
+var(--althy-orange) pointe vers prussian durant la phase de transition.
+"""
 import os
 
 REPLACEMENTS = {
-    '"#7A7469"': '"var(--althy-text-3)"',
+    # ── Texte ───────────────────────────────────────────────────────────────
+    '"#0F172A"': '"var(--althy-text)"',
     '"#3D3830"': '"var(--althy-text)"',
-    '"#5C5650"': '"var(--althy-text-2)"',
     '"#1A1612"': '"var(--althy-text)"',
     '"#4A4440"': '"var(--althy-text)"',
+    '"#475569"': '"var(--althy-text-2)"',
+    '"#5C5650"': '"var(--althy-text-2)"',
+    '"#64748B"': '"var(--althy-text-3)"',
+    '"#7A7469"': '"var(--althy-text-3)"',
     '"#8A7A6A"': '"var(--althy-text-3)"',
+    '"#9CA3AF"': '"var(--althy-text-3)"',
+    '"#9ca3af"': '"var(--althy-text-3)"',
+
+    # ── Surfaces ────────────────────────────────────────────────────────────
     '"#FAFAF8"': '"var(--althy-bg)"',
     '"#FFFFFF"': '"var(--althy-surface)"',
     '"#F5F2ED"': '"var(--althy-surface-2)"',
     '"#F5F3EF"': '"var(--althy-surface-2)"',
     '"#F5F2EE"': '"var(--althy-surface-2)"',
+    '"#F4F6F9"': '"var(--althy-glacier)"',
+
+    # ── Bordures ────────────────────────────────────────────────────────────
     '"#E8E4DC"': '"var(--althy-border)"',
     '"#EAE3D9"': '"var(--althy-border)"',
-    '"#E8602C"': '"var(--althy-orange)"',
-    '"#FAE4D6"': '"var(--althy-orange-light)"',
-    '"#FEF2EB"': '"var(--althy-orange-light)"',
-    '"#FEF0EA"': '"var(--althy-orange-light)"',
+
+    # ── Bleu de Prusse (couleur principale) ─────────────────────────────────
+    '"#0F2E4C"': '"var(--althy-prussian)"',
+    '"#1A4975"': '"var(--althy-signature)"',
+    # legacy orange → prussian (migration automatique)
+    '"#E8602C"': '"var(--althy-prussian)"',
+    '"#C84E1E"': '"var(--althy-signature)"',
+
+    # Teintes bg claires héritées de l'orange → prussian-bg
+    '"#FAE4D6"': '"var(--althy-prussian-bg)"',
+    '"#FEF2EB"': '"var(--althy-prussian-bg)"',
+    '"#FEF0EA"': '"var(--althy-prussian-bg)"',
+    '"#FDF6F2"': '"var(--althy-prussian-bg)"',
+
+    # ── Or Althy (premium) ──────────────────────────────────────────────────
+    '"#C9A961"': '"var(--althy-gold)"',
+    '"#B5975A"': '"var(--althy-gold-hover)"',
+    '"#FEF9E7"': '"var(--althy-gold-bg)"',
+
+    # ── Sémantique ──────────────────────────────────────────────────────────
     '"#16A34A"': '"var(--althy-green)"',
     '"#16a34a"': '"var(--althy-green)"',
     '"#22C55E"': '"var(--althy-green)"',
@@ -43,18 +82,24 @@ REPLACEMENTS = {
     '"#7C3AED"': '"var(--althy-purple)"',
     '"#25D366"': '"var(--whatsapp-green)"',
     '"#F59E0B"': '"var(--althy-warning)"',
-    '"#9CA3AF"': '"var(--althy-text-3)"',
-    '"#9ca3af"': '"var(--althy-text-3)"',
-    '"#64748B"': '"var(--althy-text-3)"',
+}
+
+RGBA_REPLACEMENTS = {
+    # Migration legacy orange (232,96,44) → prussian (15,46,76)
+    'rgba(232,96,44,': 'rgba(15,46,76,',
+    'rgba(232, 96, 44,': 'rgba(15,46,76,',
 }
 
 BORDER_PATS = [
     ('1px solid #E8E4DC', '1px solid var(--althy-border)'),
     ('1px solid #EAE3D9', '1px solid var(--althy-border)'),
+    ('1px solid #0F2E4C', '1px solid var(--althy-prussian)'),
 ]
 
+# Les fichiers Mapbox/Leaflet exigent du hex brut → ne pas toucher
 SKIP_IN_PATH = ['map\\', 'map/', 'LandingHeroMap', 'OpenerMap', 'VilleMap']
-GRAD_KW = ['gradient(', 'stopColor', 'const ORANGE', "ORANGE_HEX"]
+# Les gradients (sphere, logo) et constantes PRUSSIAN_HEX utilisent du hex brut
+GRAD_KW = ['gradient(', 'stopColor', 'const PRUSSIAN', 'PRUSSIAN_HEX']
 
 base = os.path.join('C:\\', 'Users', 'Killan', 'immohub', 'frontend', 'src')
 tf = 0
@@ -72,6 +117,11 @@ for root, dirs, files in os.walk(base):
         orig = content
         count = 0
         for old, new in BORDER_PATS:
+            n = content.count(old)
+            if n:
+                content = content.replace(old, new)
+                count += n
+        for old, new in RGBA_REPLACEMENTS.items():
             n = content.count(old)
             if n:
                 content = content.replace(old, new)

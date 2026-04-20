@@ -5,7 +5,7 @@ import { PLANS_PROPRIO } from "@/lib/plans.config"
 import { C } from "@/lib/design-tokens"
 import Link from "next/link"
 
-const orangeBorder = "rgba(232,96,44,0.22)"
+const orangeBorder = "rgba(15,46,76,0.22)"
 
 function CheckIcon() {
   return (
@@ -62,7 +62,7 @@ export function Tarifs() {
                 padding: "2.25rem",
                 position: "relative",
                 transform: plan.vedette ? "scale(1.02)" : "scale(1)",
-                boxShadow: plan.vedette ? "0 8px 32px rgba(232,96,44,0.12)" : C.shadow,
+                boxShadow: plan.vedette ? "0 8px 32px rgba(15,46,76,0.12)" : C.shadow,
               }}
             >
               {plan.vedette && (

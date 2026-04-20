@@ -241,7 +241,7 @@ function BienCard({ bien }: { bien: Bien }) {
           <div
             style={{
               height: "100%",
-              background: "linear-gradient(135deg, #FEF2EB 0%, rgba(232,96,44,0.1) 100%)",
+              background: "linear-gradient(135deg, #FEF2EB 0%, rgba(15,46,76,0.1) 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -294,7 +294,7 @@ function BienCard({ bien }: { bien: Bien }) {
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
             {bien.tags_ia.slice(0, 3).map((t) => (
               <span key={t} style={{
-                background: "rgba(232,96,44,0.08)", color: C.orange,
+                background: "rgba(15,46,76,0.08)", color: C.orange,
                 fontSize: 10, padding: "2px 7px", borderRadius: 20,
               }}>
                 {t}
@@ -446,8 +446,8 @@ export async function VillePageShared({ slug }: { slug: string }) {
             {cfg.quartiers.map((q) => (
               <span key={q} style={{
                 fontSize: 12, padding: "5px 12px", borderRadius: 20,
-                background: "rgba(232,96,44,0.07)", color: C.orange,
-                border: "1px solid rgba(232,96,44,0.2)", fontWeight: 500,
+                background: "rgba(15,46,76,0.07)", color: C.orange,
+                border: "1px solid rgba(15,46,76,0.2)", fontWeight: 500,
               }}>
                 {q}
               </span>
@@ -541,7 +541,7 @@ export async function VillePageShared({ slug }: { slug: string }) {
 
               {/* CTA Propriétaire */}
               <div style={{
-                background: "#fff", border: "1.5px solid rgba(232,96,44,0.3)",
+                background: "#fff", border: "1.5px solid rgba(15,46,76,0.3)",
                 borderRadius: 12, padding: "20px 18px",
               }}>
                 <p style={{ fontSize: 13, fontWeight: 700, color: "var(--althy-text)", margin: "0 0 6px" }}>
@@ -628,8 +628,8 @@ export async function VillePageShared({ slug }: { slug: string }) {
           {/* CTA locataire bas de page */}
           <div style={{
             textAlign: "center", marginTop: 56, padding: "40px 24px",
-            background: "linear-gradient(135deg, rgba(232,96,44,0.05) 0%, rgba(232,96,44,0.12) 100%)",
-            borderRadius: 16, border: "1px solid rgba(232,96,44,0.2)",
+            background: "linear-gradient(135deg, rgba(15,46,76,0.05) 0%, rgba(15,46,76,0.12) 100%)",
+            borderRadius: 16, border: "1px solid rgba(15,46,76,0.2)",
           }}>
             <p style={{ fontSize: 18, fontWeight: 300, fontFamily: "var(--font-serif)", color: "var(--althy-text)", marginBottom: 8 }}>
               Vous cherchez un logement à {cfg.labelLong} ?

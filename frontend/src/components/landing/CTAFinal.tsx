@@ -34,7 +34,7 @@ export function CTAFinal() {
           transform: "translate(-50%, -50%)",
           width: "600px",
           height: "400px",
-          background: "radial-gradient(ellipse, rgba(232,96,44,0.06) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse, rgba(15,46,76,0.06) 0%, transparent 70%)",
           pointerEvents: "none",
         }}
       />

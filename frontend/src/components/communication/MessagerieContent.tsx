@@ -39,9 +39,9 @@ const S = {
   badge: (connected: boolean): React.CSSProperties => ({
     display: "inline-flex", alignItems: "center", gap: 6,
     padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600,
-    background: connected ? "rgba(34,197,94,0.1)" : "rgba(232,96,44,0.08)",
+    background: connected ? "rgba(34,197,94,0.1)" : "rgba(15,46,76,0.08)",
     color: connected ? "var(--althy-green)" : "var(--althy-orange)",
-    border: `1px solid ${connected ? "rgba(34,197,94,0.2)" : "rgba(232,96,44,0.2)"}`,
+    border: `1px solid ${connected ? "rgba(34,197,94,0.2)" : "rgba(15,46,76,0.2)"}`,
   }),
 };
 
@@ -171,7 +171,7 @@ export function MessagerieContent() {
       <div style={{
         display: "flex", alignItems: "center", gap: 10,
         padding: "12px 16px", marginBottom: 16,
-        background: "rgba(232,96,44,0.06)", border: "1px solid rgba(232,96,44,0.15)",
+        background: "rgba(15,46,76,0.06)", border: "1px solid rgba(15,46,76,0.15)",
         borderRadius: 10, fontSize: 13, color: "var(--althy-text-2)",
       }}>
         <Info size={15} color="var(--althy-orange)" style={{ flexShrink: 0 }} />

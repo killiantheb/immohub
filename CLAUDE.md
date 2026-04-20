@@ -3,7 +3,7 @@
 > **Repo :** github.com/killiantheb/immohub · **Prod :** althy.ch
 > **Stack :** Next.js 14 App Router + FastAPI + Supabase (PostgreSQL + Auth + Storage)
 > **Branche canonique :** `main`
-> **Dernière mise à jour :** 2026-04-19 — feature flags Phase 1, pricing 5 paliers, storage PDF
+> **Dernière mise à jour :** 2026-04-20 — palette Bleu de Prusse + Or (migration design system v8)
 
 ---
 
@@ -17,27 +17,56 @@ Althy est un assistant immobilier suisse disponible 24h/24 pour propriétaires, 
 
 ## B. Design system — état réel du code
 
+### Palette Bleu de Prusse + Or (depuis 2026-04-20)
+
+| Token | Hex | Rôle |
+|-------|-----|------|
+| Bleu de Prusse | `#0F2E4C` | Couleur principale (CTA, logos, liens actifs, icônes importantes) |
+| Bleu signature | `#1A4975` | Hover + accents bleu plus clair |
+| Or Althy | `#C9A961` | Accents premium (badges "populaire", bordures CTA premium) |
+| Or clair | `#FEF9E7` | Background subtil (sections premium, highlight) |
+| Glacier | `#F4F6F9` | Fond de sections institutionnelles |
+| Ardoise | `#475569` | Texte secondaire |
+| Muted | `#64748B` | Texte tertiaire |
+
+Règle 85/15 : ~85 % des accents sont en Bleu de Prusse, ~15 % en Or (réservé aux éléments valorisants).
+
 ### Tokens CSS — source unique : `frontend/src/app/globals.css`
 
 ```css
-/* Orange — couleur principale */
---althy-orange:        #E8602C;
---althy-orange-light:  rgba(232,96,44,0.08);
---althy-orange-bg:     rgba(232,96,44,0.08);
---althy-orange-hover:  #C84E1E;
---althy-orange-border: rgba(232,96,44,0.22);
+/* Bleu de Prusse — couleur principale */
+--althy-prussian:        #0F2E4C;
+--althy-prussian-light:  rgba(15,46,76,0.08);
+--althy-prussian-bg:     rgba(15,46,76,0.06);
+--althy-signature:       #1A4975;       /* hover */
+--althy-prussian-border: rgba(15,46,76,0.22);
+
+/* Or Althy — accents premium */
+--althy-gold:            #C9A961;
+--althy-gold-light:      rgba(201,169,97,0.12);
+--althy-gold-bg:         #FEF9E7;
+--althy-gold-hover:      #B5975A;
+--althy-gold-border:     rgba(201,169,97,0.28);
+
+/* Aliases transition (à supprimer après migration complète) */
+--althy-orange:        var(--althy-prussian);
+--althy-orange-light:  var(--althy-prussian-light);
+--althy-orange-bg:     var(--althy-prussian-bg);
+--althy-orange-hover:  var(--althy-signature);
+--althy-orange-border: var(--althy-prussian-border);
 
 /* Surfaces */
 --althy-bg:        #FAFAF8;
 --althy-surface:   #FFFFFF;
 --althy-surface-2: #F5F2ED;
+--althy-glacier:   #F4F6F9;
 --althy-border:    #E8E4DC;
 --althy-border-2:  rgba(61,56,48,0.06);
 
 /* Texte */
---althy-text:   #3D3830;
---althy-text-2: #5C5650;
---althy-text-3: #7A7469;
+--althy-text:   #0F172A;   /* slate-900 */
+--althy-text-2: #475569;   /* Ardoise */
+--althy-text-3: #64748B;   /* Muted */
 
 /* Sémantique */
 --althy-green / --althy-red / --althy-amber / --althy-warning / --althy-blue / --althy-purple
@@ -53,32 +82,37 @@ Althy est un assistant immobilier suisse disponible 24h/24 pour propriétaires, 
 
 ### Tokens JS — `import { C } from "@/lib/design-tokens"`
 
-Le fichier `lib/design-tokens.ts` expose `C.orange`, `C.text`, `C.border`, `C.radiusCard`, etc. — tous pointent vers des `var(--althy-*)`. **Toujours utiliser `C.xxx` dans le code TypeScript.**
+Le fichier `lib/design-tokens.ts` expose `C.prussian`, `C.signature`, `C.gold`, `C.text`, `C.border`, etc. — tous pointent vers des `var(--althy-*)`. **Toujours utiliser `C.xxx` dans le code TypeScript.**
+
+`C.orange` reste disponible en alias pointant vers `C.prussian` durant la phase de transition.
 
 ### Ticker hex — état réel
 
-```
-grep -rn '#[0-9A-Fa-f]{6}' frontend/src --include="*.tsx" → ~294 occurrences (cible : <100)
-```
+Post-migration v8 : 0 occurrence de `#E8602C` dans `frontend/src`. Migration orange → Bleu de Prusse effectuée via les alias CSS + renommage des constantes map.
 
-**Répartition des hex résiduels (top 5) :** `#A05C28` (8), `#FFFFFF` (6), `#E8602C` (6), `#E8E4DC` (5), `#FEF2EB` (4). Beaucoup sont dans des composants legacy non encore migrés vers `C.*`. La tendance est à la baisse (était ~500+ avant Sprint 3).
+```
+grep -rn '#E8602C' frontend/src --include="*.tsx" → 0 occurrence attendue
+grep -rn '#E8602C' frontend/src --include="*.css"  → 0 occurrence attendue
+```
 
 ### Exceptions hex documentées
 
 | Fichier | Constante | Raison |
 |---------|-----------|--------|
-| `components/map/AlthyMap.tsx` | `ORANGE = "#E8602C"` | Mapbox GL exige du hex brut |
-| `components/map/CarteMapboxPage.tsx` | `ORANGE = "#E8602C"` | idem |
-| `components/map/ZoneMap.tsx` | `ORANGE` / `ORANGE_FILL` / `ORANGE_DASH_BORDER` | idem |
-| `app/page.tsx` | `ORANGE_HEX = "#E8602C"` | Landing Mapbox layers |
+| `components/map/AlthyMap.tsx` | `PRUSSIAN = "#0F2E4C"` | Mapbox GL exige du hex brut |
+| `components/map/CarteMapboxPage.tsx` | `PRUSSIAN = "#0F2E4C"` | idem |
+| `components/map/ZoneMap.tsx` | `PRUSSIAN` / `PRUSSIAN_FILL` / `PRUSSIAN_DASH_BORDER` | idem |
+| `app/page.tsx` | `PRUSSIAN_HEX = "#0F2E4C"` | Landing Mapbox layers |
 | `globals.css` | Toutes les définitions `--althy-*` | Source des tokens |
+| `AlthyLogo.tsx` / `AICopilot.tsx` / `sphere/page.tsx` / `estimation/page.tsx` | Radial gradients sphère | SVG/CSS gradient = hex requis |
 | Stripe `appearance` | Hex dans l'objet Stripe Elements | API Stripe exige du hex |
 
 ### Alias legacy dans globals.css (ne pas étendre)
 
 ```css
---font-display: var(--font-serif);       /* alias → Fraunces */
---terracotta-primary: var(--althy-orange);
+--font-display: var(--font-serif);               /* alias → Fraunces */
+--terracotta-primary: var(--althy-prussian);     /* legacy → prussian */
+--althy-orange: var(--althy-prussian);           /* legacy → prussian */
 --charcoal: var(--althy-text);
 --cream: var(--althy-bg);
 ```
@@ -283,9 +317,10 @@ Grandfathering : colonne `is_grandfathered` en DB (migration 0029).
 
 ### 1. Couleurs
 - **Toujours** `var(--althy-*)` en CSS ou `C.xxx` en inline styles.
-- **Interdit** de hardcoder un hex dans un `.tsx` — sauf Mapbox GL (`map/` uniquement) et Stripe `appearance`.
-- **Interdit** de déclarer `const ORANGE`, `const S = { orange: "..." }` ou toute map locale de couleurs. Importer `C` depuis `@/lib/design-tokens`.
-- Exception map : `const ORANGE = "#E8602C"` dans `components/map/` uniquement (Mapbox GL ne supporte pas les CSS vars).
+- **Interdit** de hardcoder un hex dans un `.tsx` — sauf Mapbox GL (`map/` uniquement), gradients SVG (sphère, logo) et Stripe `appearance`.
+- **Interdit** de déclarer `const PRUSSIAN`, `const S = { prussian: "..." }` ou toute map locale de couleurs. Importer `C` depuis `@/lib/design-tokens`.
+- Exception map : `const PRUSSIAN = "#0F2E4C"` dans `components/map/` uniquement (Mapbox GL ne supporte pas les CSS vars).
+- Boutons primaires → `C.prussian` (Bleu de Prusse). Hover → `C.signature` (#1A4975). Badges "nouveauté"/"populaire" + bordures premium → `C.gold` (#C9A961).
 
 ### 2. Boutons
 - Chaque `<button>` doit avoir `onClick`, `type="submit"`, ou `disabled={true}`. Pas de boutons décoratifs sans handler.
@@ -360,8 +395,9 @@ sprintN-taskId-description  Branches de travail (ex: sprint3-S3.2-design-tokens)
 
 | Pattern | Pourquoi c'est un problème | Comment corriger |
 |---------|---------------------------|------------------|
-| `const S = { orange: "#E8602C", ... }` dans un .tsx | Dilue les tokens DS, couleurs dupliquées | Importer `C` depuis `@/lib/design-tokens` |
-| Hex brut (`#E8602C`) hors `map/` et `globals.css` | Bypass des CSS vars, impossible de themer | Utiliser `var(--althy-orange)` ou `C.orange` |
+| `const S = { prussian: "#0F2E4C", ... }` dans un .tsx | Dilue les tokens DS, couleurs dupliquées | Importer `C` depuis `@/lib/design-tokens` |
+| Hex brut (`#0F2E4C`, `#E8602C`, ...) hors `map/` et `globals.css` | Bypass des CSS vars, impossible de themer | Utiliser `var(--althy-prussian)` ou `C.prussian` |
+| Nouveau composant décoratif en orange | Palette retirée en 2026-04-20 | Prussian (principal) ou Gold (premium uniquement) |
 | Deux composants qui font la même chose | Confusion, maintenance double | Supprimer le doublon, garder le canonique |
 | Page dashboard sans lien dans la sidebar | Page orpheline, inatteignable | Ajouter dans `NAV_GROUPS` ou supprimer la page |
 | `"status": "sent"` quand rien n'est envoyé | L'UI affiche un succès mensonger | Lever 501 ou implémenter réellement |
@@ -500,7 +536,7 @@ Phase 4            — SEO local + LinkedIn + hunters/vente
 
 | Sujet | Détails |
 |-------|---------|
-| ~294 hex dans `.tsx` | Cible <100 — continuer migration vers `C.*` |
+| Alias `--althy-orange*` dans `globals.css` | Transition palette v8 — supprimer quand plus aucune ref `C.orange` / `var(--althy-orange)` | 
 | 4 `const S` résiduels | Structurels (CSSProperties) — garder tels quels |
 | `comptabilite/page.tsx` | 2 références `S` cassées (TS error) — à corriger |
 | URLs legacy anglaises | `/app/profile`, `/app/listings`, `/app/insurance`, `/app/transactions` |

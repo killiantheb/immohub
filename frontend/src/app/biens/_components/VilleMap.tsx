@@ -39,13 +39,13 @@ export function VilleMap({ lng, lat, zoom, label }: VilleMapProps) {
         scrollZoom: false,
       });
 
-      // Marqueur orange Althy avec animation ping
+      // Marqueur Bleu de Prusse Althy avec animation ping
       const el = document.createElement("div");
       el.setAttribute("aria-label", label);
       el.style.cssText = [
         "width:18px",
         "height:18px",
-        "background:#E8602C",
+        "background:#0F2E4C",
         "border:3px solid #fff",
         "border-radius:50%",
         "box-shadow:0 2px 8px rgba(0,0,0,.35)",
@@ -57,7 +57,7 @@ export function VilleMap({ lng, lat, zoom, label }: VilleMapProps) {
         "position:absolute",
         "inset:-6px",
         "border-radius:50%",
-        "background:rgba(232,96,44,0.35)",
+        "background:rgba(15,46,76,0.35)",
         "animation:ping-ville 1.8s cubic-bezier(0,0,.2,1) infinite",
       ].join(";");
       el.appendChild(ping);

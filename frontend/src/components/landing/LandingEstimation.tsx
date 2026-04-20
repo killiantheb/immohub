@@ -108,7 +108,7 @@ export function LandingEstimation() {
 
               <button type="submit" disabled={loading} style={{
                 width: "100%", padding: "13px 0", borderRadius: 10,
-                background: loading ? "rgba(232,96,44,0.5)" : C.orange,
+                background: loading ? "rgba(15,46,76,0.5)" : C.orange,
                 color: "#fff", border: "none", fontSize: 15, fontWeight: 600,
                 fontFamily: sans, cursor: loading ? "default" : "pointer",
               }}>

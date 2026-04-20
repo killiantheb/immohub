@@ -121,7 +121,7 @@ function SphereOrb({ state, size = 56 }: { state: SphereState; size?: number }) 
     streaming: "althy-sphere-stream 1.2s ease-in-out infinite",
   }[state];
 
-  const glowColor = "rgba(232,96,44,";
+  const glowColor = "rgba(15,46,76,";
   const glowIntensity = { idle: 0.4, listening: 0.55, streaming: 0.65 }[state];
 
   return (
@@ -155,7 +155,7 @@ function SphereOrb({ state, size = 56 }: { state: SphereState; size?: number }) 
       {/* The sphere itself */}
       <div style={{
         position: "relative", width: size, height: size, borderRadius: "50%",
-        background: "radial-gradient(circle at 33% 28%, #F9A06A 0%, #E8602C 42%, #B83C12 78%, #6E2008 100%)",
+        background: "radial-gradient(circle at 33% 28%, #4C73A0 0%, #1A4975 42%, #0F2E4C 78%, #061422 100%)",
         boxShadow: `
           0 ${size * 0.1}px ${size * 0.45}px ${glowColor}${glowIntensity + 0.05}),
           inset 0 -${size * 0.06}px ${size * 0.12}px rgba(0,0,0,0.32),
@@ -433,7 +433,7 @@ export function AICopilot() {
           {/* Header */}
           <div style={{
             padding: "14px 16px",
-            background: "radial-gradient(circle at 15% 50%, #F9A06A 0%, #E8602C 45%, #C04010 100%)",
+            background: "radial-gradient(circle at 15% 50%, #4C73A0 0%, #1A4975 45%, #0F2E4C 100%)",
             display: "flex", alignItems: "center", justifyContent: "space-between",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -573,9 +573,9 @@ export function AICopilot() {
           /* Close state — small flat circle */
           <div style={{
             width: 52, height: 52, borderRadius: "50%",
-            background: "radial-gradient(circle at 33% 28%, #F9A06A, #E8602C 45%, #B83C12 80%, #6E2008 100%)",
+            background: "radial-gradient(circle at 33% 28%, #4C73A0, #1A4975 45%, #0F2E4C 80%, #061422 100%)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 4px 16px rgba(232,96,44,0.45)",
+            boxShadow: "0 4px 16px rgba(15,46,76,0.45)",
           }}>
             <ChevronDown size={20} color="#fff" />
           </div>

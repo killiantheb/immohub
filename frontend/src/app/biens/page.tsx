@@ -96,7 +96,7 @@ function BienCard({
         textDecoration: "none",
         transition: "border-color 0.15s, box-shadow 0.15s",
         boxShadow: isHovered
-          ? "0 4px 20px rgba(232,96,44,0.12)"
+          ? "0 4px 20px rgba(15,46,76,0.12)"
           : "0 1px 4px rgba(0,0,0,0.04)",
       }}
     >
@@ -105,7 +105,7 @@ function BienCard({
         style={{
           position: "relative",
           height: 156,
-          background: "linear-gradient(135deg, #FEF2EB 0%, rgba(232,96,44,0.1) 100%)",
+          background: "linear-gradient(135deg, #FEF2EB 0%, rgba(15,46,76,0.1) 100%)",
           flexShrink: 0,
         }}
       >
@@ -235,7 +235,7 @@ function BienCard({
               <span
                 key={tag}
                 style={{
-                  background: "rgba(232,96,44,0.08)",
+                  background: "rgba(15,46,76,0.08)",
                   color: C.orange,
                   fontSize: 10,
                   padding: "2px 7px",
@@ -439,7 +439,7 @@ export default function BiensPage() {
         border: 2px solid #fff;
         transform: rotate(-45deg);
         cursor: pointer;
-        box-shadow: 0 2px 8px rgba(232,96,44,0.35);
+        box-shadow: 0 2px 8px rgba(15,46,76,0.35);
         transition: transform 0.15s ease, background 0.15s ease;
         position: relative; z-index: 1;
       `;
@@ -578,7 +578,7 @@ export default function BiensPage() {
               fontSize: 12,
               padding: "5px 12px",
               borderRadius: 20,
-              background: "rgba(232,96,44,0.08)",
+              background: "rgba(15,46,76,0.08)",
               color: C.orange,
               textDecoration: "none",
               fontWeight: 600,
@@ -669,7 +669,7 @@ export default function BiensPage() {
               padding: "4px 12px",
               borderRadius: 20,
               border: `1.5px solid ${txType === type ? C.orange : "var(--althy-border)"}`,
-              background: txType === type ? "rgba(232,96,44,0.08)" : "transparent",
+              background: txType === type ? "rgba(15,46,76,0.08)" : "transparent",
               color: txType === type ? C.orange : "var(--althy-text-2)",
               cursor: "pointer",
               fontWeight: txType === type ? 600 : 400,
@@ -693,7 +693,7 @@ export default function BiensPage() {
                   padding: "3px 9px",
                   borderRadius: 20,
                   border: `1.5px solid ${pieces === n ? C.orange : "var(--althy-border)"}`,
-                  background: pieces === n ? "rgba(232,96,44,0.08)" : "transparent",
+                  background: pieces === n ? "rgba(15,46,76,0.08)" : "transparent",
                   color: pieces === n ? C.orange : "var(--althy-text-3)",
                   cursor: "pointer",
                   fontWeight: pieces === n ? 600 : 400,

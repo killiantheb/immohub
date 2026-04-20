@@ -200,7 +200,7 @@ export function WhatsAppContent() {
               <button
                 key={conv.id}
                 onClick={() => setSelected(conv)}
-                style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: active ? "var(--althy-orange-bg, rgba(232,96,44,0.06))" : "transparent", border: "none", borderBottom: "1px solid var(--althy-border)", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}
+                style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: active ? "var(--althy-orange-bg, rgba(15,46,76,0.06))" : "transparent", border: "none", borderBottom: "1px solid var(--althy-border)", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}
               >
                 <div style={{ width: 40, height: 40, borderRadius: "50%", background: active ? "var(--althy-orange)" : "var(--althy-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: active ? "#fff" : "var(--althy-text-3)" }}>
@@ -285,7 +285,7 @@ export function WhatsAppContent() {
 
           {/* AI suggestion banner */}
           {aiSuggestion && (
-            <div style={{ margin: "0 16px 8px", padding: "10px 14px", background: "var(--althy-orange-bg, rgba(232,96,44,0.08))", border: "1px solid rgba(232,96,44,0.2)", borderRadius: 10, display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ margin: "0 16px 8px", padding: "10px 14px", background: "var(--althy-orange-bg, rgba(15,46,76,0.08))", border: "1px solid rgba(15,46,76,0.2)", borderRadius: 10, display: "flex", alignItems: "center", gap: 10 }}>
               <Sparkles size={14} color="var(--althy-orange)" />
               <p style={{ flex: 1, margin: 0, fontSize: 12, color: "var(--althy-text)", lineHeight: 1.5 }}>{aiSuggestion}</p>
               <button onClick={() => { setInput(aiSuggestion); setAiSuggestion(null); }} style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "var(--althy-orange)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>

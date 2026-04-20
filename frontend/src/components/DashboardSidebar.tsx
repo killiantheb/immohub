@@ -278,7 +278,7 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
                 width: 7, height: 7, borderRadius: "50%",
                 background: "var(--althy-orange)",
                 flexShrink: 0,
-                boxShadow: "0 0 0 2px rgba(232,96,44,0.25), 0 0 0 4px rgba(232,96,44,0.10)",
+                boxShadow: "0 0 0 2px rgba(15,46,76,0.25), 0 0 0 4px rgba(15,46,76,0.10)",
                 animation: "sidebar-pulse 2s ease-in-out infinite",
               }} />
             )}

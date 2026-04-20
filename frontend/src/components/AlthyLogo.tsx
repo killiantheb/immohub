@@ -27,26 +27,26 @@ export function AlthyLogo({ size = 36, animated = false, className = "" }: Althy
       {animated && (
         <style>{`
           @keyframes althy-logo-breath {
-            0%, 100% { filter: drop-shadow(0 0 6px rgba(232,96,44,0.35)); transform: scale(1); }
-            50%       { filter: drop-shadow(0 0 14px rgba(232,96,44,0.55)); transform: scale(1.04); }
+            0%, 100% { filter: drop-shadow(0 0 6px rgba(15,46,76,0.35)); transform: scale(1); }
+            50%       { filter: drop-shadow(0 0 14px rgba(15,46,76,0.55)); transform: scale(1.04); }
           }
         `}</style>
       )}
 
       <defs>
-        {/* Gradient principal — highlight en haut-gauche */}
+        {/* Gradient principal — highlight Bleu de Prusse avec reflet or subtil */}
         <radialGradient id={`${uid}-main`} cx="35%" cy="30%" r="70%" fx="32%" fy="27%">
-          <stop offset="0%"   stopColor="#FFA87A" />
-          <stop offset="28%"  stopColor="#E8602C" />
-          <stop offset="75%"  stopColor="#C84E1E" />
-          <stop offset="100%" stopColor="#8B2E08" />
+          <stop offset="0%"   stopColor="#4C73A0" />
+          <stop offset="28%"  stopColor="#1A4975" />
+          <stop offset="75%"  stopColor="#0F2E4C" />
+          <stop offset="100%" stopColor="#061422" />
         </radialGradient>
 
         {/* Gradient glow ambiant derrière la sphère */}
         <radialGradient id={`${uid}-glow`} cx="50%" cy="52%" r="50%">
-          <stop offset="0%"   stopColor="#E8602C" stopOpacity="0.30" />
-          <stop offset="60%"  stopColor="#E8602C" stopOpacity="0.10" />
-          <stop offset="100%" stopColor="#E8602C" stopOpacity="0" />
+          <stop offset="0%"   stopColor="#1A4975" stopOpacity="0.30" />
+          <stop offset="60%"  stopColor="#1A4975" stopOpacity="0.10" />
+          <stop offset="100%" stopColor="#1A4975" stopOpacity="0" />
         </radialGradient>
 
         {/* Shimmer principal */}
@@ -64,8 +64,8 @@ export function AlthyLogo({ size = 36, animated = false, className = "" }: Althy
 
         {/* Ombre portée douce en bas */}
         <radialGradient id={`${uid}-shadow`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%"   stopColor="#5C1A00" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="#5C1A00" stopOpacity="0" />
+          <stop offset="0%"   stopColor="#030B14" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="#030B14" stopOpacity="0" />
         </radialGradient>
 
         {/* Filtre blob (légère distorsion organique) */}
@@ -98,7 +98,7 @@ export function AlthyLogo({ size = 36, animated = false, className = "" }: Althy
       <circle
         cx="50" cy="50" r="40"
         fill="none"
-        stroke="rgba(90,30,0,0.18)"
+        stroke="rgba(6,20,34,0.18)"
         strokeWidth="1"
       />
 

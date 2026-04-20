@@ -14,10 +14,10 @@ const CARTO_TILES = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.
 const CARTO_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
 // ── Design tokens — Mapbox/Leaflet require hex, do not replace with CSS var ──
-const ORANGE = "#E8602C";
-const ORANGE_FILL = "#FAE4D6";
-const ORANGE_FILL_TEMP = "rgba(181,90,48,0.08)";
-const ORANGE_DASH_BORDER = "#E8602C";
+const PRUSSIAN = "#0F2E4C";
+const PRUSSIAN_FILL = "#D6E0ED";
+const PRUSSIAN_FILL_TEMP = "rgba(15,46,76,0.08)";
+const PRUSSIAN_DASH_BORDER = "#0F2E4C";
 
 // ── Custom icons ──────────────────────────────────────────────────────────────
 function makePin(color: string, size = 36) {
@@ -34,7 +34,7 @@ function makePin(color: string, size = 36) {
   });
 }
 
-const primaryPin = makePin(ORANGE);
+const primaryPin = makePin(PRUSSIAN);
 const tempPin = makePin("#7A7469", 28);
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ function SearchBar({ placeholder, onSelect }: SearchBarProps) {
               <button
                 onClick={() => { onSelect(r); setQ(r.display_name.split(",").slice(0, 3).join(", ")); setOpen(false); clear(); }}
                 style={{ width: "100%", textAlign: "left", padding: "8px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#3D3830", lineHeight: 1.4 }}
-                onMouseEnter={e => (e.currentTarget.style.background = "#FAE4D6")}
+                onMouseEnter={e => (e.currentTarget.style.background = "#D6E0ED")}
                 onMouseLeave={e => (e.currentTarget.style.background = "none")}
               >
                 {r.display_name}
@@ -256,7 +256,7 @@ export default function ZoneMap({
             <Circle
               center={center}
               radius={radius * 1000}
-              pathOptions={{ color: ORANGE, fillColor: ORANGE_FILL, fillOpacity: 0.35, weight: 2 }}
+              pathOptions={{ color: PRUSSIAN, fillColor: PRUSSIAN_FILL, fillOpacity: 0.35, weight: 2 }}
             />
           )}
 
@@ -276,7 +276,7 @@ export default function ZoneMap({
                 <Circle
                   center={[z.lat, z.lng]}
                   radius={z.radius_km * 1000}
-                  pathOptions={{ color: ORANGE_DASH_BORDER, fillColor: ORANGE_FILL_TEMP, fillOpacity: 0.25, weight: 1.5, dashArray: "6 5" }}
+                  pathOptions={{ color: PRUSSIAN_DASH_BORDER, fillColor: PRUSSIAN_FILL_TEMP, fillOpacity: 0.25, weight: 1.5, dashArray: "6 5" }}
                 />
               </React.Fragment>
             ) : null
@@ -294,7 +294,7 @@ export default function ZoneMap({
         </MapContainer>
 
         {/* Info badge (bottom-left) */}
-        <div style={{ position: "absolute", bottom: 10, left: 10, zIndex: 999, background: "rgba(255,255,255,0.92)", borderRadius: 10, padding: "5px 10px", fontSize: 11, fontWeight: 600, color: ORANGE, backdropFilter: "blur(4px)", border: "1px solid #FAE4D6", pointerEvents: "none" }}>
+        <div style={{ position: "absolute", bottom: 10, left: 10, zIndex: 999, background: "rgba(255,255,255,0.92)", borderRadius: 10, padding: "5px 10px", fontSize: 11, fontWeight: 600, color: PRUSSIAN, backdropFilter: "blur(4px)", border: "1px solid #D6E0ED", pointerEvents: "none" }}>
           {radius} km · ~{communes} communes
         </div>
       </div>
@@ -304,12 +304,12 @@ export default function ZoneMap({
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
             <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "#7A7469" }}>Rayon d'intervention</label>
-            <span style={{ fontSize: 12, fontWeight: 700, color: ORANGE }}>{radius} km</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: PRUSSIAN }}>{radius} km</span>
           </div>
           <input
             type="range" min={1} max={50} step={1} value={radius}
             onChange={e => setRadius(Number(e.target.value))}
-            style={{ width: "100%", accentColor: ORANGE, cursor: "pointer" }}
+            style={{ width: "100%", accentColor: PRUSSIAN, cursor: "pointer" }}
           />
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#7A7469", marginTop: 2 }}>
             <span>1 km</span><span>50 km</span>
@@ -340,7 +340,7 @@ export default function ZoneMap({
           {!showTempForm ? (
             <button
               onClick={() => setShowTempForm(true)}
-              style={{ padding: "9px 14px", borderRadius: 10, background: "none", border: "1px dashed #E8602C", color: ORANGE, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+              style={{ padding: "9px 14px", borderRadius: 10, background: "none", border: "1px dashed #0F2E4C", color: PRUSSIAN, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
             >
               + Ajouter une zone temporaire
             </button>
@@ -364,12 +364,12 @@ export default function ZoneMap({
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                   <label style={{ fontSize: 11, fontWeight: 600, color: "#7A7469", textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>Rayon</label>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: ORANGE }}>{tempDraft.radius_km} km</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: PRUSSIAN }}>{tempDraft.radius_km} km</span>
                 </div>
-                <input type="range" min={5} max={50} step={5} value={tempDraft.radius_km} onChange={e => setTempDraft(prev => ({ ...prev, radius_km: Number(e.target.value) }))} style={{ width: "100%", accentColor: ORANGE }} />
+                <input type="range" min={5} max={50} step={5} value={tempDraft.radius_km} onChange={e => setTempDraft(prev => ({ ...prev, radius_km: Number(e.target.value) }))} style={{ width: "100%", accentColor: PRUSSIAN }} />
               </div>
               <div style={{ display: "flex", gap: "0.75rem" }}>
-                <button onClick={addTempZone} disabled={!tempDraft.lat} style={{ flex: 1, padding: "9px", borderRadius: 10, background: tempDraft.lat ? ORANGE : "#E8E4DC", border: "none", color: tempDraft.lat ? "#fff" : "#7A7469", fontSize: 13, fontWeight: 600, cursor: tempDraft.lat ? "pointer" : "not-allowed" }}>
+                <button onClick={addTempZone} disabled={!tempDraft.lat} style={{ flex: 1, padding: "9px", borderRadius: 10, background: tempDraft.lat ? PRUSSIAN : "#E8E4DC", border: "none", color: tempDraft.lat ? "#fff" : "#7A7469", fontSize: 13, fontWeight: 600, cursor: tempDraft.lat ? "pointer" : "not-allowed" }}>
                   Ajouter
                 </button>
                 <button onClick={() => setShowTempForm(false)} style={{ padding: "9px 14px", borderRadius: 10, background: "none", border: "1px solid #E8E4DC", color: "#7A7469", fontSize: 13, cursor: "pointer" }}>

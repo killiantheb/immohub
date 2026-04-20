@@ -205,7 +205,7 @@ function EmptyState({
   return (
     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: sans }}>
       <div style={{ textAlign: "center", maxWidth: 320 }}>
-        <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(232,96,44,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+        <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(15,46,76,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
           <Heart size={32} color={C.orange} />
         </div>
 

@@ -130,7 +130,7 @@ export default function EstimationPage() {
         {step === "form" && (
           <>
             <div style={{ textAlign: "center", marginBottom: 40 }}>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 20, background: "var(--althy-orange-bg, rgba(232,96,44,0.08))", border: "1px solid rgba(232,96,44,0.22)", marginBottom: 16 }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 20, background: "var(--althy-orange-bg, rgba(15,46,76,0.06))", border: "1px solid rgba(15,46,76,0.22)", marginBottom: 16 }}>
                 <Sparkles size={12} color="var(--althy-orange)" />
                 <span style={{ fontSize: 12, fontWeight: 600, color: "var(--althy-orange)" }}>Estimation IA gratuite</span>
               </div>
@@ -244,7 +244,7 @@ export default function EstimationPage() {
         {/* ── LOADING ── */}
         {step === "loading" && (
           <div style={{ textAlign: "center", paddingTop: 80 }}>
-            <div style={{ width: 90, height: 90, borderRadius: "50%", margin: "0 auto 32px", background: "radial-gradient(circle at 33% 28%, #F9A06A 0%, #E8602C 42%, #B83C12 78%, #6E2008 100%)", boxShadow: "0 0 40px rgba(232,96,44,0.4)", animation: "althy-sphere-stream 1.2s ease-in-out infinite" }} />
+            <div style={{ width: 90, height: 90, borderRadius: "50%", margin: "0 auto 32px", background: "radial-gradient(circle at 33% 28%, #4C73A0 0%, #1A4975 42%, #0F2E4C 78%, #061422 100%)", boxShadow: "0 0 40px rgba(15,46,76,0.4)", animation: "althy-sphere-stream 1.2s ease-in-out infinite" }} />
             <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 24, fontWeight: 300, color: "var(--althy-text)", margin: "0 0 8px" }}>
               Analyse en cours{dots}
             </h2>
@@ -275,7 +275,7 @@ export default function EstimationPage() {
                 <div style={{ fontSize: 12, color: "var(--althy-text-3)", marginTop: 4 }}>Fourchette : {fmt(result.sale_price_min)} — {fmt(result.sale_price_max)}</div>
                 <div style={{ fontSize: 11.5, color: "var(--althy-text-3)", marginTop: 6 }}>{fmt(result.price_per_sqm)}/m²</div>
               </div>
-              <div style={{ background: "var(--althy-surface)", border: "1px solid rgba(232,96,44,0.22)", borderRadius: 16, padding: 20, boxShadow: "0 2px 12px rgba(232,96,44,0.08)" }}>
+              <div style={{ background: "var(--althy-surface)", border: "1px solid rgba(15,46,76,0.22)", borderRadius: 16, padding: 20, boxShadow: "0 2px 12px rgba(15,46,76,0.06)" }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: "var(--althy-orange)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Loyer mensuel longue durée</div>
                 <div style={{ fontSize: 26, fontWeight: 700, color: "var(--althy-orange)" }}>{fmt(Math.round((result.rent_monthly_min + result.rent_monthly_max) / 2))}</div>
                 <div style={{ fontSize: 12, color: "var(--althy-text-3)", marginTop: 4 }}>Fourchette : {fmt(result.rent_monthly_min)} — {fmt(result.rent_monthly_max)}</div>
@@ -302,13 +302,13 @@ export default function EstimationPage() {
             </div>
 
             {/* AI comment */}
-            <div style={{ background: "var(--althy-orange-bg, rgba(232,96,44,0.08))", border: "1px solid rgba(232,96,44,0.22)", borderRadius: 14, padding: "14px 16px", marginBottom: 24, display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <div style={{ background: "var(--althy-orange-bg, rgba(15,46,76,0.06))", border: "1px solid rgba(15,46,76,0.22)", borderRadius: 14, padding: "14px 16px", marginBottom: 24, display: "flex", gap: 10, alignItems: "flex-start" }}>
               <TrendingUp size={16} color="var(--althy-orange)" style={{ flexShrink: 0, marginTop: 2 }} />
               <p style={{ margin: 0, fontSize: 13, color: "var(--althy-text)", lineHeight: 1.55 }}>{result.ai_comment}</p>
             </div>
 
             {/* ── EMAIL CAPTURE après résultat ── */}
-            <div style={{ background: "var(--althy-surface)", border: "2px solid var(--althy-orange)", borderRadius: 20, padding: 28, boxShadow: "0 4px 24px rgba(232,96,44,0.12)" }}>
+            <div style={{ background: "var(--althy-surface)", border: "2px solid var(--althy-prussian)", borderRadius: 20, padding: 28, boxShadow: "0 4px 24px rgba(15,46,76,0.12)" }}>
               <div style={{ textAlign: "center", marginBottom: 20 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: "var(--althy-orange)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
                   Rapport complet + gestion du bien

@@ -18,7 +18,7 @@ export const DC = {
 
 // ── Role colors ───────────────────────────────────────────────────────────────
 export const ROLE_COLORS: Record<string, { badge: string; bg: string }> = {
-  proprio_solo:     { badge: "var(--althy-orange)", bg: "rgba(232,96,44,0.10)" },
+  proprio_solo:     { badge: "var(--althy-orange)", bg: "rgba(15,46,76,0.10)" },
   agence:           { badge: "var(--althy-blue)", bg: "rgba(37,99,235,0.10)" },
   opener:           { badge: "#0891B2", bg: "rgba(8,145,178,0.10)" },
   artisan:          { badge: "var(--althy-green)", bg: "rgba(22,163,74,0.10)" },
@@ -149,7 +149,7 @@ interface DRoleHeaderProps {
   initials?: string;
 }
 export function DRoleHeader({ role, badge, badgeBg, initials }: DRoleHeaderProps) {
-  const colors = ROLE_COLORS[role] ?? { badge: DC.orange, bg: "rgba(232,96,44,0.10)" };
+  const colors = ROLE_COLORS[role] ?? { badge: DC.orange, bg: "rgba(15,46,76,0.10)" };
   const badgeColor = badge ?? colors.badge;
   const badgeBgColor = badgeBg ?? colors.bg;
   const roleLabel = ROLE_LABEL[role] ?? role;
