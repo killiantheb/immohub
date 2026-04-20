@@ -808,7 +808,7 @@ function TabNotifications() {
               )}
             </div>
             <Toggle label="Nouveau candidat locataire" value={events.nouveau_candidat} onChange={() => toggleEvent("nouveau_candidat")} />
-            <Toggle label="Candidat retenu (→ CHF 90 prélevé)" value={events.candidat_retenu} onChange={() => toggleEvent("candidat_retenu")} />
+            <Toggle label="Candidat retenu (→ CHF 45 prélevé)" value={events.candidat_retenu} onChange={() => toggleEvent("candidat_retenu")} />
             <Toggle label="Intervention demandée" value={events.intervention_demandee} onChange={() => toggleEvent("intervention_demandee")} />
             <Toggle label="Devis reçu" value={events.devis_recu} onChange={() => toggleEvent("devis_recu")} />
             <Toggle label="Document généré" value={events.document_genere} onChange={() => toggleEvent("document_genere")} />

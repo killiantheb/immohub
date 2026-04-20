@@ -59,6 +59,7 @@ from app.routers.contact import router as contact_router
 from app.routers.estimation import router as estimation_router
 from app.routers.loyers import router as loyers_router
 from app.routers.changements import router as changements_router
+from app.routers.autonomie import router as autonomie_router
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -205,6 +206,7 @@ app.include_router(contact_router,    prefix="/api/v1",            tags=["contac
 app.include_router(estimation_router, prefix="/api/v1",            tags=["estimation"])
 app.include_router(loyers_router,     prefix="/api/v1/loyers",       tags=["loyers"])
 app.include_router(changements_router, prefix="/api/v1/biens",        tags=["changements"])
+app.include_router(autonomie_router,  prefix="/api/v1/autonomie",    tags=["autonomie"])
 
 
 # ── Health check ──────────────────────────────────────────────────────────────

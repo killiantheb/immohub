@@ -31,7 +31,7 @@ export function PourQui() {
         >
           <span
             style={{
-              color: C.orange,
+              color: C.prussian,
               fontSize: "0.75rem",
               fontWeight: 500,
               letterSpacing: "0.22em",
@@ -87,7 +87,7 @@ export function PourQui() {
                 boxShadow: "0 2px 12px rgba(40,18,8,0.05)",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = C.orangeBorder
+                e.currentTarget.style.borderColor = C.prussianBorder
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = C.border
@@ -99,7 +99,7 @@ export function PourQui() {
                   position: "absolute",
                   top: "1.25rem",
                   right: "1.25rem",
-                  color: C.orange,
+                  color: C.prussian,
                   fontSize: "0.7rem",
                   fontWeight: 600,
                   letterSpacing: "0.08em",
@@ -138,7 +138,7 @@ export function PourQui() {
               {/* Arrow */}
               <span
                 style={{
-                  color: C.orange,
+                  color: C.prussian,
                   fontSize: "1.1rem",
                   position: "absolute",
                   bottom: "1.5rem",

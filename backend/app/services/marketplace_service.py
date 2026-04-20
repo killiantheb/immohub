@@ -409,3 +409,47 @@ async def notify_owner_new_candidature(
             "lien": f"/app/biens/{property_id}/locataire",
         },
     )
+
+
+async def notify_candidature_accepted(
+    db: AsyncSession,
+    *,
+    tenant_id: uuid.UUID,
+    owner_id: uuid.UUID,
+    listing_title: str,
+    owner_fee_chf: float,
+    owner_fee_charged: bool,
+) -> None:
+    """
+    Émet deux notifications in-app lors de l'acceptation d'une candidature :
+      - locataire : "Aucun frais pour vous" (viralité absolue)
+      - proprio   : "CHF 45 prélevés pour dossier vérifié" (ou avertissement si échec)
+    L'envoi email (Resend) est déclenché par le hook `email_on_candidature_accepted`
+    dans le worker Celery (voir tasks/email_sequences.py).
+    """
+    tenant_msg = (
+        f"Votre candidature pour « {listing_title} » a été acceptée 🎉 "
+        "Aucun frais pour vous — le propriétaire va vous contacter."
+    )
+    if owner_fee_charged:
+        owner_msg = (
+            f"Candidature acceptée pour « {listing_title} ». "
+            f"CHF {owner_fee_chf:.0f} prélevés (frais de dossier vérifié)."
+        )
+    else:
+        owner_msg = (
+            f"Candidature acceptée pour « {listing_title} ». "
+            f"Le prélèvement CHF {owner_fee_chf:.0f} a échoué — mettez à jour votre carte."
+        )
+    await db.execute(
+        sa_text("""
+            INSERT INTO notifications
+                (user_id, type, titre, message, lien, created_at, updated_at)
+            VALUES
+                (:tid, 'candidature_acceptee', 'Candidature acceptée',
+                 :tmsg, '/app/mes-candidatures', now(), now()),
+                (:oid, 'candidature_acceptee', 'Candidature acceptée',
+                 :omsg, '/app/candidatures', now(), now())
+        """),
+        {"tid": str(tenant_id), "oid": str(owner_id), "tmsg": tenant_msg, "omsg": owner_msg},
+    )

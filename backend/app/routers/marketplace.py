@@ -7,10 +7,14 @@ Routes authentifiées :           POST /publier  PATCH /{id}  DELETE /{id}
                                  POST /candidature  GET /mes-candidatures
 """
 
+import logging
 import uuid
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Annotated
 
+import stripe
+from app.core.config import settings
 from app.core.rate_limit import limiter
 from app.core.database import get_db
 from app.core.security import ROLES_PROPERTY_MANAGERS, get_current_user, get_optional_current_user
@@ -24,6 +28,7 @@ from app.services.marketplace_service import (
     TYPE_LABEL,
     PublierRequest,
     get_owned_listing,
+    notify_candidature_accepted,
     notify_owner_new_candidature,
     publier_bien_service,
     score_candidature_ia,
@@ -35,6 +40,9 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Reques
 from pydantic import BaseModel
 from sqlalchemy import func, select, text as sa_text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 router  = APIRouter()
 DbDep       = Annotated[AsyncSession, Depends(get_db)]
@@ -437,7 +445,14 @@ async def traiter_candidature(
     candidature_id: uuid.UUID, body: CandidatureStatutRequest,
     db: DbDep, user: AuthUserDep,
 ):
-    """Accepte ou refuse une candidature. Réservé au propriétaire/agence."""
+    """
+    Accepte ou refuse une candidature. Réservé au propriétaire/agence.
+
+    Lors d'une acceptation : le propriétaire est facturé CHF 45 (off_session) sur sa
+    carte enregistrée — les frais de dossier sont supportés par le propriétaire,
+    jamais par le locataire. Un échec de prélèvement NE BLOQUE PAS l'acceptation :
+    la candidature passe à 'acceptee' et `owner_fee_failure_reason` est consigné.
+    """
     if body.statut not in ("acceptee", "refusee"):
         raise HTTPException(422, "statut doit être 'acceptee' ou 'refusee'")
     candidature = (await db.execute(
@@ -456,6 +471,7 @@ async def traiter_candidature(
         raise HTTPException(403, "Vous n'êtes pas propriétaire de ce bien")
 
     now = datetime.now(timezone.utc)
+    previous_statut = candidature.statut
     candidature.statut     = body.statut
     candidature.updated_at = now
     if body.visite_proposee_at:
@@ -466,10 +482,119 @@ async def traiter_candidature(
     if body.ouvreur_id:
         candidature.ouvreur_id = body.ouvreur_id
 
+    # ── Prélèvement CHF 45 propriétaire (idempotent) ─────────────────────────
+    fee_result: dict = {}
+    newly_accepted = body.statut == "acceptee" and previous_statut != "acceptee"
+    if newly_accepted and candidature.owner_fee_paid_at is None:
+        fee_result = await _charge_owner_dossier_fee(db, candidature, prop.owner_id or user.id)
+
+    # ── Notifications in-app (tenant + owner) ────────────────────────────────
+    if newly_accepted:
+        listing_title = (await db.execute(
+            sa_text("SELECT titre FROM listings WHERE id = :lid"),
+            {"lid": str(candidature.listing_id)},
+        )).scalar() or "votre bien"
+        await notify_candidature_accepted(
+            db,
+            tenant_id=candidature.user_id,
+            owner_id=prop.owner_id or user.id,
+            listing_title=str(listing_title),
+            owner_fee_chf=float(settings.OWNER_DOSSIER_FEE_CHF),
+            owner_fee_charged=bool(fee_result.get("charged")),
+        )
+
     await db.commit()
     await db.refresh(candidature)
     applicant = (await db.execute(select(User).where(User.id == candidature.user_id))).scalar_one_or_none()
-    return serialize_candidature(candidature, applicant)
+    payload = serialize_candidature(candidature, applicant)
+    if fee_result:
+        payload["owner_fee"] = fee_result
+    return payload
+
+
+async def _charge_owner_dossier_fee(
+    db: AsyncSession,
+    candidature: Candidature,
+    owner_id: uuid.UUID,
+) -> dict:
+    """
+    Prélève CHF 45 off_session sur la carte enregistrée du propriétaire.
+    Ne lève JAMAIS — un échec ne bloque pas l'acceptation ; la raison est consignée
+    sur la candidature pour relance manuelle par le proprio depuis /app/settings/paiement.
+    """
+    fee_chf = Decimal(str(settings.OWNER_DOSSIER_FEE_CHF))
+    pm_row = (await db.execute(
+        sa_text(
+            "SELECT stripe_customer_id, stripe_card_pm_id "
+            "FROM profiles WHERE user_id = :uid"
+        ),
+        {"uid": str(owner_id)},
+    )).fetchone()
+
+    customer_id = pm_row[0] if pm_row else None
+    pm_id = pm_row[1] if pm_row else None
+
+    if not customer_id or not pm_id:
+        reason = "Aucune carte enregistrée — le propriétaire doit en ajouter une dans /app/settings/paiement."
+        candidature.owner_fee_failed_at = datetime.now(timezone.utc)
+        candidature.owner_fee_failure_reason = reason
+        logger.warning(
+            "owner_fee_skipped candidature=%s owner=%s reason=no_payment_method",
+            candidature.id, owner_id,
+        )
+        return {"charged": False, "reason": reason, "amount_chf": float(fee_chf)}
+
+    try:
+        pi = stripe.PaymentIntent.create(
+            amount=int(fee_chf * 100),
+            currency="chf",
+            customer=customer_id,
+            payment_method=pm_id,
+            confirm=True,
+            off_session=True,
+            description=f"Althy — frais dossier locataire ({candidature.id})",
+            metadata={
+                "type": "owner_dossier_fee",
+                "candidature_id": str(candidature.id),
+                "owner_id": str(owner_id),
+            },
+            idempotency_key=f"owner-fee-{candidature.id}",
+        )
+        candidature.owner_fee_amount = fee_chf
+        candidature.owner_fee_stripe_intent_id = pi.id
+        if pi.status == "succeeded":
+            candidature.owner_fee_paid_at = datetime.now(timezone.utc)
+            candidature.owner_fee_failed_at = None
+            candidature.owner_fee_failure_reason = None
+            return {
+                "charged": True,
+                "payment_intent_id": pi.id,
+                "amount_chf": float(fee_chf),
+            }
+        return {
+            "charged": False,
+            "pending": True,
+            "payment_intent_id": pi.id,
+            "amount_chf": float(fee_chf),
+        }
+    except stripe.error.CardError as e:
+        reason = e.user_message or str(e)
+        candidature.owner_fee_failed_at = datetime.now(timezone.utc)
+        candidature.owner_fee_failure_reason = reason
+        logger.warning(
+            "owner_fee_declined candidature=%s owner=%s reason=%s",
+            candidature.id, owner_id, reason,
+        )
+        return {"charged": False, "reason": reason, "amount_chf": float(fee_chf)}
+    except stripe.error.StripeError as e:
+        reason = getattr(e, "user_message", None) or str(e)
+        candidature.owner_fee_failed_at = datetime.now(timezone.utc)
+        candidature.owner_fee_failure_reason = reason
+        logger.exception(
+            "owner_fee_stripe_error candidature=%s owner=%s",
+            candidature.id, owner_id,
+        )
+        return {"charged": False, "reason": reason, "amount_chf": float(fee_chf)}
 
 
 @router.post("/candidature", status_code=201)

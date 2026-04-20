@@ -189,29 +189,27 @@ async def update_dossier(
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# Retenir un candidat — prélèvement CHF 90 frais dossier
+# Retenir un candidat — validation simple (plus de prélèvement locataire)
+#
+# Pivot 2026-04-20 : les frais de dossier (CHF 45) sont à la charge du PROPRIÉTAIRE
+# et sont prélevés lors de l'acceptation d'une candidature via
+# PATCH /api/v1/marketplace/candidature/{id}. Cet endpoint ne fait plus que
+# marquer le locataire comme retenu.
 # ═════════════════════════════════════════════════════════════════════════════
 
 
-@router.post("/{locataire_id}/retenir", summary="Valider un candidat + prélever CHF 90 frais dossier")
+@router.post("/{locataire_id}/retenir", summary="Valider un candidat locataire (aucun prélèvement)")
 async def retenir_locataire(
     locataire_id: uuid.UUID,
     current_user: AuthDep,
     db: DbDep,
 ) -> dict:
     """
-    Valide un candidat locataire et prélève les frais de dossier CHF 90.
+    Valide un candidat locataire (aucun prélèvement).
 
-    Règle absolue CLAUDE.md :
-    - Le prélèvement est effectué UNIQUEMENT à ce moment (locataire retenu).
-    - La carte est enregistrée à l'inscription via Stripe SetupIntent.
-    - Jamais de prélèvement avant la validation du proprio.
+    Le locataire ne paie JAMAIS rien à Althy. Les frais de dossier sont prélevés
+    au propriétaire lors de PATCH /api/v1/marketplace/candidature/{id}.
     """
-    import stripe
-    from app.core.config import settings
-
-    stripe.api_key = settings.STRIPE_SECRET_KEY
-
     _check_admin(current_user)
 
     result = await db.execute(select(Locataire).where(Locataire.id == locataire_id))
@@ -222,52 +220,6 @@ async def retenir_locataire(
     if locataire.statut == "actif":
         raise HTTPException(status.HTTP_409_CONFLICT, "Locataire déjà retenu")
 
-    from sqlalchemy import text as _text
-
-    # Récupérer la carte enregistrée du locataire (payment_method sauvegardé)
-    pm_row = None
-    if locataire.user_id:
-        pm_row = (await db.execute(
-            _text("SELECT stripe_customer_id, stripe_card_pm_id FROM profiles WHERE user_id = :uid"),
-            {"uid": str(locataire.user_id)},
-        )).fetchone()
-
-    stripe_customer_id = pm_row[0] if pm_row else None
-    stripe_pm_id = pm_row[1] if pm_row else None
-
-    charge_result: dict = {}
-
-    if stripe_customer_id and stripe_pm_id:
-        # Prélèvement CHF 90 sur la carte du locataire
-        try:
-            pi = stripe.PaymentIntent.create(
-                amount=int(settings.STRIPE_APPLICATION_FEE_CHF) * 100,  # centimes
-                currency="chf",
-                customer=stripe_customer_id,
-                payment_method=stripe_pm_id,
-                confirm=True,
-                off_session=True,
-                description="Frais de dossier locataire Althy",
-                metadata={
-                    "locataire_id": str(locataire_id),
-                    "type": "frais_dossier",
-                },
-            )
-            charge_result = {
-                "charged": True,
-                "payment_intent_id": pi.id,
-                "amount_chf": settings.STRIPE_APPLICATION_FEE_CHF,
-            }
-        except stripe.error.CardError as e:
-            raise HTTPException(402, f"Prélèvement échoué : {e.user_message}")
-    else:
-        # Pas de carte enregistrée → marquer quand même retenu, facturer manuellement
-        charge_result = {
-            "charged": False,
-            "reason": "Aucune carte enregistrée pour ce locataire. Facturation manuelle requise.",
-        }
-
-    # Marquer le locataire comme actif (retenu)
     locataire.statut = "actif"
     await db.flush()
     await db.commit()
@@ -275,6 +227,4 @@ async def retenir_locataire(
     return {
         "locataire_id": str(locataire_id),
         "statut": "actif",
-        "frais_dossier_chf": settings.STRIPE_APPLICATION_FEE_CHF,
-        **charge_result,
     }

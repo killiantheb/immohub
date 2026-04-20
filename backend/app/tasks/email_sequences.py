@@ -363,9 +363,9 @@ def _body_locataire_j0(ctx: UserCtx) -> str:
     </table>
     <p style="color:#7A7469;font-size:13px;background:#F9F6F1;
               padding:12px 16px;border-radius:8px;margin:0">
-      💡 <strong>Zéro frais à l'avance.</strong>
-      Les CHF 90 de frais de dossier ne sont dus qu'en cas de candidature acceptée
-      par le propriétaire.
+      💡 <strong>100% gratuit.</strong>
+      Vous ne payez jamais rien à Althy — ni pour vous inscrire, ni pour postuler,
+      ni même si votre candidature est acceptée.
     </p>
     """
 
@@ -486,7 +486,7 @@ _SEQUENCES: list[SequenceDef] = [
         delay_days=0, window_days=2,
         roles=frozenset(_LOCATAIRE_ROLES),
         subject="Bienvenue sur Althy — trouvez votre logement en Suisse romande",
-        preheader="Dossier gratuit. Frais de CHF 90 uniquement si vous êtes retenu.",
+        preheader="Dossier 100% gratuit et illimité — vous ne payez jamais rien à Althy.",
         body_fn=_body_locataire_j0,
         cta_url=f"{APP_URL}/biens",
         cta_label="Voir les biens disponibles →",

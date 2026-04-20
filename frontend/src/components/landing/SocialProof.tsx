@@ -51,7 +51,7 @@ export function SocialProof() {
             </span>
             <span
               style={{
-                color: C.orange,
+                color: C.prussian,
                 fontSize: "0.5rem",
                 opacity: 0.6,
               }}

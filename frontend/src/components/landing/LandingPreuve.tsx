@@ -20,7 +20,7 @@ export function LandingPreuve() {
 
         {/* Témoignage */}
         <div style={{ textAlign: "center", marginBottom: 52 }}>
-          <div style={{ fontSize: 22, color: C.orange, letterSpacing: "0.06em", marginBottom: 20 }}>
+          <div style={{ fontSize: 22, color: C.prussian, letterSpacing: "0.06em", marginBottom: 20 }}>
             ★★★★★
           </div>
           <blockquote style={{
@@ -48,7 +48,7 @@ export function LandingPreuve() {
         }}>
           {CHIFFRES.map(item => (
             <div key={item.label}>
-              <div style={{ fontFamily: serif, fontSize: "clamp(30px,4vw,44px)", fontWeight: 300, color: C.orange, lineHeight: 1 }}>
+              <div style={{ fontFamily: serif, fontSize: "clamp(30px,4vw,44px)", fontWeight: 300, color: C.prussian, lineHeight: 1 }}>
                 {item.n}
               </div>
               <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginTop: 5 }}>

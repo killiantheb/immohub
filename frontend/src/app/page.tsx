@@ -19,6 +19,7 @@ import { Garanties }         from "@/components/landing/Garanties";
 import { Tarifs }            from "@/components/landing/Tarifs";
 import { CTAFinal }          from "@/components/landing/CTAFinal";
 import { ProprioSolo }       from "@/components/landing/ProprioSolo";
+import { AutonomieHighlight } from "@/components/landing/AutonomieHighlight";
 
 // ── Tokens ─────────────────────────────────────────────────────────────────────
 // Mapbox GL requires hex — do not replace with CSS var
@@ -159,7 +160,7 @@ export default function LandingPage() {
         <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 30 }}>
           <div style={{ height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", background: "transparent" }}>
             <Link href="/" style={{ textDecoration: "none", flexShrink: 0 }}>
-              <span style={{ fontFamily: serif, fontSize: 28, fontWeight: 400, letterSpacing: "0.22em", color: C.orange, textShadow: "0 2px 16px rgba(255,255,255,0.50)" }}>
+              <span style={{ fontFamily: serif, fontSize: 28, fontWeight: 400, letterSpacing: "0.22em", color: C.prussian, textShadow: "0 2px 16px rgba(255,255,255,0.50)" }}>
                 ALTHY
               </span>
             </Link>
@@ -172,7 +173,7 @@ export default function LandingPage() {
               <Link href="/login" style={{ fontSize: 11, textDecoration: "none", padding: "7px 16px", borderRadius: 100, border: "1px solid rgba(26,18,8,0.20)", background: "rgba(255,255,255,0.60)", backdropFilter: "blur(12px)", color: "#1A1208", fontFamily: sans }}>
                 Se connecter
               </Link>
-              <Link href="/register" className="lp-nav-cta" style={{ fontSize: 11, fontWeight: 500, textDecoration: "none", padding: "7px 16px", borderRadius: 100, background: C.orange, color: "#fff", boxShadow: "0 2px 10px rgba(15,46,76,0.35)", fontFamily: sans }}>
+              <Link href="/register" className="lp-nav-cta" style={{ fontSize: 11, fontWeight: 500, textDecoration: "none", padding: "7px 16px", borderRadius: 100, background: C.prussian, color: "#fff", boxShadow: "0 2px 10px rgba(15,46,76,0.35)", fontFamily: sans }}>
                 Commencer gratuitement
               </Link>
               <button
@@ -192,7 +193,7 @@ export default function LandingPage() {
               <Link href="/login" onClick={() => setMenuOpen(false)} style={{ fontSize: 14, textDecoration: "none", padding: "10px 16px", borderRadius: 10, border: `1px solid ${C.border}`, color: C.text, fontFamily: sans, textAlign: "center" }}>
                 Se connecter
               </Link>
-              <Link href="/register" onClick={() => setMenuOpen(false)} style={{ fontSize: 14, fontWeight: 600, textDecoration: "none", padding: "10px 16px", borderRadius: 10, background: C.orange, color: "#fff", fontFamily: sans, textAlign: "center" }}>
+              <Link href="/register" onClick={() => setMenuOpen(false)} style={{ fontSize: 14, fontWeight: 600, textDecoration: "none", padding: "10px 16px", borderRadius: 10, background: C.prussian, color: "#fff", fontFamily: sans, textAlign: "center" }}>
                 Commencer gratuitement
               </Link>
             </div>
@@ -211,13 +212,12 @@ export default function LandingPage() {
           <div style={{ position: "absolute", top: "26%", left: "50%", transform: "translateX(-50%)", textAlign: "center", zIndex: 10, pointerEvents: "none", width: "min(680px, calc(100vw - 48px))", opacity: mapInteracted ? 0 : 1, transition: "opacity 0.5s ease" }}>
             {/* A/B variant A (active) — propriétaire solo */}
             <h1 style={{ fontFamily: serif, fontSize: "clamp(40px,6vw,82px)", fontWeight: 300, color: "var(--althy-surface)", margin: 0, letterSpacing: "-0.03em", lineHeight: 1.02, textShadow: "0 2px 32px rgba(0,0,0,0.45)" }}>
-              Votre bien, géré<br />
-              <span style={{ color: C.orange, textShadow: "0 2px 24px rgba(15,46,76,0.35)" }}>sans agence.</span>
+              L&apos;immobilier suisse,<br />
+              <span style={{ color: C.prussian, textShadow: "0 2px 24px rgba(15,46,76,0.35)" }}>sans agence.</span>
             </h1>
-            {/* A/B variant B: « Gérez vos biens<br/>sans vous compliquer la vie. » */}
-            {/* A/B variant C: « L'immobilier simplifié<br/>pour les propriétaires. » */}
-            <p style={{ fontFamily: serif, fontSize: "clamp(13px,1.5vw,17px)", color: "rgba(255,255,255,0.65)", margin: "18px 0 0", fontWeight: 300, fontStyle: "italic", letterSpacing: "0.06em", textShadow: "0 1px 10px rgba(0,0,0,0.30)" }}>
-              Suisse romande — Propriétaire, sans charge mentale.
+            <p style={{ fontFamily: sans, fontSize: "clamp(14px,1.5vw,17px)", color: "rgba(255,255,255,0.82)", margin: "22px auto 0", maxWidth: 560, fontWeight: 400, lineHeight: 1.55, letterSpacing: "0.01em", textShadow: "0 1px 10px rgba(0,0,0,0.35)" }}>
+              Gérez votre bien, trouvez un locataire, encaissez vos loyers —
+              en 2 clics, avec l&apos;IA.
             </p>
           </div>
 
@@ -229,7 +229,7 @@ export default function LandingPage() {
             <div style={{ fontSize: 10, letterSpacing: "0.06em", color: C.textMuted, fontFamily: sans, marginTop: 2 }}>
               biens disponibles
             </div>
-            <div style={{ fontSize: 11, color: C.orange, fontWeight: 700, marginTop: 5 }}>
+            <div style={{ fontSize: 11, color: C.prussian, fontWeight: 700, marginTop: 5 }}>
               {stats?.total_villes ?? 5} villes actives
             </div>
           </div>
@@ -237,7 +237,7 @@ export default function LandingPage() {
           {/* Micro-copy proprio */}
           <div style={{ position: "absolute", bottom: 100, left: "50%", transform: "translateX(-50%)", zIndex: 10, textAlign: "center", opacity: mapInteracted ? 0 : 1, transition: "opacity 0.5s ease" }}>
             <Link href="/register?role=proprio_solo" style={{ fontSize: 13, color: "rgba(255,255,255,0.70)", textDecoration: "none", fontFamily: sans, fontWeight: 500, textShadow: "0 1px 6px rgba(0,0,0,0.30)" }}>
-              Déjà propriétaire ? <span style={{ color: C.orange, fontWeight: 600 }}>Commencer gratuitement →</span>
+              Déjà propriétaire ? <span style={{ color: C.prussian, fontWeight: 600 }}>Commencer gratuitement →</span>
             </Link>
           </div>
 
@@ -254,7 +254,7 @@ export default function LandingPage() {
                   <SlidersHorizontal size={15} />
                 </button>
                 <div style={{ width: 1, height: 18, background: "rgba(26,22,18,0.15)" }} />
-                <button type="submit" style={{ padding: "7px 16px", borderRadius: 24, background: C.orange, color: "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: sans, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 10px rgba(15,46,76,0.35)" }}>
+                <button type="submit" style={{ padding: "7px 16px", borderRadius: 24, background: C.prussian, color: "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: sans, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 10px rgba(15,46,76,0.35)" }}>
                   <Search size={14} />
                 </button>
               </div>
@@ -287,7 +287,7 @@ export default function LandingPage() {
 
         {/* ── Bandeau stats dynamique ── */}
         {stats && (
-          <div style={{ background: C.orange, padding: "18px 24px", textAlign: "center" }}>
+          <div style={{ background: C.prussian, padding: "18px 24px", textAlign: "center" }}>
             <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#fff", letterSpacing: "0.06em", fontFamily: sans }}>
               {stats.total_biens} biens gérés · {stats.total_villes} villes actives · 100% Suisse romande
             </p>
@@ -339,6 +339,9 @@ export default function LandingPage() {
 
         {/* ── Garanties ── */}
         <Garanties />
+
+        {/* ── Althy Autonomie (pivot stratégique CHF 39/mois) ── */}
+        <AutonomieHighlight />
 
         {/* ── Tarifs ── */}
         <Tarifs />

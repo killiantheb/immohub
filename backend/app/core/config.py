@@ -38,16 +38,26 @@ class Settings(BaseSettings):
     STRIPE_PLATFORM_FEE_PCT: float = 4.0        # 4% loyers (affiché "loyer net reçu")
     STRIPE_OPENER_FEE_PCT: float = 15.0          # 15% openers (10% Pro)
     STRIPE_ARTISAN_FEE_PCT: float = 10.0         # 10% artisans
-    STRIPE_APPLICATION_FEE_CHF: int = 90         # CHF 90 frais dossier locataire
-    # Stripe Billing — prix des plans (IDs Stripe Price)
+    # DEPRECATED (2026-04-20) — remplacé par OWNER_DOSSIER_FEE_CHF. Conservé pour compat.
+    STRIPE_APPLICATION_FEE_CHF: int = 90
+    # Frais dossier payés par le PROPRIÉTAIRE lorsqu'il accepte une candidature.
+    # Le locataire ne paie JAMAIS rien à Althy (règle absolue de viralité).
+    OWNER_DOSSIER_FEE_CHF: int = 45
+    # Stripe Billing — prix des plans (IDs Stripe Price) — pricing v3 (2026-04-20)
     # Proprio solo
-    STRIPE_PRICE_STARTER_MONTHLY: str = ""       # CHF 14/mois (1 bien, fonctions complètes)
-    STRIPE_PRICE_PRO_MONTHLY: str = ""           # CHF 29/mois (2-5 biens)
-    STRIPE_PRICE_PROPRIO_MONTHLY: str = ""       # Legacy CHF 29/mois → mappé sur "pro" (grandfathered)
+    STRIPE_PRICE_STARTER_MONTHLY: str = ""              # A1 — CHF 14/mois (1-3 biens)
+    STRIPE_PRICE_PRO_MONTHLY: str = ""                  # A2 — CHF 29/mois (4-10 biens)
+    STRIPE_PRICE_PROPRIO_PRO_MONTHLY: str = ""          # A3 — CHF 79/mois (11-50 biens)
+    STRIPE_PRICE_PROPRIO_MONTHLY: str = ""              # Legacy CHF 29 → mappé sur "pro"
+    # Pivot autonomie (proprio quittant son agence)
+    STRIPE_PRICE_AUTONOMIE_MONTHLY: str = ""            # A4 — CHF 39/mois (jusqu'à 10 biens)
     # Agence
-    STRIPE_PRICE_AGENCY_MONTHLY: str = ""        # CHF 79/agent/mois (standard)
-    STRIPE_PRICE_AGENCY_PREMIUM_MONTHLY: str = "" # CHF 129/agent/mois (premium)
-    STRIPE_PRICE_PORTAL_MONTHLY: str = ""        # CHF 9/mois portail proprio
+    STRIPE_PRICE_AGENCY_MONTHLY: str = ""               # A5 — CHF 49/agent/mois (baissé de CHF 79)
+    STRIPE_PRICE_AGENCY_PREMIUM_MONTHLY: str = ""       # Legacy CHF 129 → mappé sur "enterprise"
+    STRIPE_PRICE_ENTERPRISE_MONTHLY: str = ""           # A7 — CHF 1500+/mois (white-label)
+    # Comptes invités
+    STRIPE_PRICE_INVITED_MONTHLY: str = ""              # A6 — CHF 9/mois (compte invité par agence)
+    STRIPE_PRICE_PORTAL_MONTHLY: str = ""               # CHF 9/mois portail proprio (legacy)
 
     # AI
     ANTHROPIC_API_KEY: str = ""

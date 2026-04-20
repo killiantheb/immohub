@@ -601,7 +601,7 @@ export async function VillePageShared({ slug }: { slug: string }) {
                 },
                 {
                   q: "Y a-t-il des frais pour chercher un logement ?",
-                  a: "Non. La recherche et la candidature sont gratuites. Des frais de dossier de CHF 90 sont uniquement dus si votre candidature est acceptée par le propriétaire.",
+                  a: "Non. La recherche et la candidature sont 100% gratuites et illimitées. Vous ne payez jamais rien à Althy, même si votre candidature est acceptée.",
                 },
                 {
                   q: "Comment publier un bien gratuitement ?",
@@ -635,7 +635,7 @@ export async function VillePageShared({ slug }: { slug: string }) {
               Vous cherchez un logement à {cfg.labelLong} ?
             </p>
             <p style={{ fontSize: 14, color: "var(--althy-text-3)", marginBottom: 24 }}>
-              Créez votre dossier locataire gratuitement. Frais de CHF 90 uniquement si vous êtes retenu.
+              Créez votre dossier locataire — 100% gratuit, même si votre candidature est acceptée.
             </p>
             <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
               <Link href="/register" style={{

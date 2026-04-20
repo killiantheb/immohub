@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useRole } from "@/lib/hooks/useRole";
-import { useAuth } from "@/lib/auth";
+import { useAuth, useUser } from "@/lib/auth";
 import { isSectionEnabled } from "@/lib/flags";
 import { useAuthStore } from "@/lib/store/authStore";
 import { api } from "@/lib/api";
@@ -26,6 +26,7 @@ import {
   Wrench,
   FileCheck,
   Users,
+  Compass,
 } from "lucide-react";
 
 // ── Nav items ─────────────────────────────────────────────────────────────────
@@ -35,6 +36,7 @@ interface NavItem {
   href: string;
   icon: React.ReactNode;
   section: string;
+  badge?: "gold";
 }
 
 interface NavSet {
@@ -44,7 +46,7 @@ interface NavSet {
 
 const ICON = { size: 15, strokeWidth: 1.5 };
 
-function buildNavSet(role: string | null): NavSet {
+function buildNavSet(role: string | null, planId: string | null): NavSet {
   const ic = (I: React.ElementType) => <I {...ICON} />;
 
   // Atomes partagés
@@ -61,10 +63,38 @@ function buildNavSet(role: string | null): NavSet {
   const profile:       NavItem = { label: "Mon profil",         href: "/app/profile",         icon: ic(User),              section: "profile" };
   const settings:      NavItem = { label: "Paramètres",         href: "/app/settings",        icon: ic(SlidersHorizontal), section: "settings" };
 
+  // Althy Autonomie — entrée dédiée selon le plan de l'utilisateur
+  const autonomieActive: NavItem = {
+    label: "Althy Autonomie",
+    href: "/app/autonomie",
+    icon: ic(Compass),
+    section: "autonomie",
+  };
+  const autonomieInvite: NavItem = {
+    label: "Passer en autonomie",
+    href: "/app/autonomie",
+    icon: ic(Compass),
+    section: "autonomie",
+    badge: "gold",
+  };
+  const autonomieItem: NavItem | null =
+    planId === "autonomie" ? autonomieActive
+    : planId === "invite"  ? autonomieInvite
+    : null;
+
   switch (role) {
     case "proprio_solo":
       return {
-        main:   [althy, biens, candidatures, interventions, finances, documents, communication],
+        main: [
+          althy,
+          biens,
+          candidatures,
+          interventions,
+          finances,
+          documents,
+          communication,
+          ...(autonomieItem ? [autonomieItem] : []),
+        ],
         bottom: [profile, settings],
       };
 
@@ -208,6 +238,8 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
   const { signOut } = useAuth();
   const { user }    = useAuthStore();
   const { role, label: roleLabel } = useRole();
+  const { data: profile } = useUser();
+  const planId = profile?.plan_id ?? null;
 
   const [collapsed, setCollapsed] = useState(false);
   const [unreadMsg, setUnreadMsg] = useState(0);
@@ -225,7 +257,7 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
     return () => clearInterval(t);
   }, []);
 
-  const { main: rawMain, bottom: rawBottom } = buildNavSet(role);
+  const { main: rawMain, bottom: rawBottom } = buildNavSet(role, planId);
   const navMain   = rawMain.filter(item => isSectionEnabled(item.section));
   const navBottom = rawBottom.filter(item => isSectionEnabled(item.section));
 
@@ -281,6 +313,20 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
                 boxShadow: "0 0 0 2px rgba(15,46,76,0.25), 0 0 0 4px rgba(15,46,76,0.10)",
                 animation: "sidebar-pulse 2s ease-in-out infinite",
               }} />
+            )}
+
+            {/* Badge or "NEW" pour CTA Autonomie côté compte invité */}
+            {item.badge === "gold" && (
+              <span style={{
+                marginLeft: "auto", padding: "2px 8px",
+                borderRadius: 999,
+                background: "var(--althy-gold)",
+                color: "var(--althy-prussian)",
+                fontSize: 9, fontWeight: 800, letterSpacing: "0.08em",
+                textTransform: "uppercase",
+              }}>
+                Nouveau
+              </span>
             )}
           </>
         )}

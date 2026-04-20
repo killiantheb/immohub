@@ -83,17 +83,16 @@ export default function CguPage() {
       <P>Chaque document généré porte automatiquement un pied de page mentionnant son origine IA, la date de génération et le présent disclaimer.</P>
 
       <H2 num={5}>Frais de dossier locataire</H2>
-      <P>Althy peut percevoir des frais de dossier d'un montant de <strong>CHF 90</strong> lors de la sélection d'un candidat locataire.</P>
+      <P>Depuis le 20 avril 2026, les frais de dossier d'un montant de <strong>CHF 45</strong> sont à la charge du <strong>propriétaire</strong> qui retient un candidat, et non plus du locataire. Ils rémunèrent la vérification des documents et le scoring IA du dossier.</P>
       <Important>
-        <p><strong>Règle absolue :</strong> Ces frais sont prélevés <strong>UNIQUEMENT</strong> lorsque le propriétaire valide la candidature d'un locataire.</p>
+        <p><strong>Règle absolue :</strong> le locataire ne paie <strong>JAMAIS</strong> rien à Althy — ni pour s'inscrire, ni pour postuler, ni pour être accepté.</p>
         <ul style={{ paddingLeft: "1.25rem", margin: "0.25rem 0" }}>
-          <li>En cas de non-sélection du candidat : <strong>aucun frais n'est dû</strong></li>
-          <li>Le dossier du candidat reste actif sur la plateforme sans frais supplémentaires</li>
-          <li>La carte bancaire est enregistrée à l'inscription du candidat mais <strong>jamais débitée avant la sélection</strong></li>
-          <li>Un consentement explicite est requis du candidat avant toute soumission de dossier</li>
+          <li>Les CHF 45 sont prélevés <strong>automatiquement</strong> sur la carte enregistrée du propriétaire lorsqu'il accepte une candidature.</li>
+          <li>Si le prélèvement échoue, la candidature reste acceptée et le propriétaire peut régulariser depuis son espace.</li>
+          <li>Un consentement explicite est affiché au propriétaire avant chaque acceptation.</li>
         </ul>
       </Important>
-      <P>Ces frais sont conformes à l'art. 254 CO (interdiction des pots-de-vin dans le bail à loyer) : ils rémunèrent le service de traitement du dossier et non l'accès au logement.</P>
+      <P>Ces frais sont conformes à l'art. 254 CO : ils rémunèrent le service de traitement du dossier fourni au propriétaire.</P>
 
       <H2 num={6}>Transactions financières et loyers</H2>
       <P>Althy utilise <strong>Stripe Connect</strong> pour faciliter les paiements et virements entre utilisateurs. Althy prélève une commission de <strong>4 %</strong> sur chaque loyer traité via la plateforme. Ce montant est déduit du virement et affiché comme « loyer net reçu » dans le tableau de bord propriétaire.</P>

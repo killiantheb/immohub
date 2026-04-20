@@ -1,11 +1,11 @@
 "use client";
 
 import { Suspense, useState, useCallback } from "react";
-import { Check, Sparkles, Zap, Building2, Crown, Shield, Loader2, X, Star } from "lucide-react";
+import { Check, Sparkles, Zap, Building2, Crown, Shield, Loader2, X, Star, ArrowRight } from "lucide-react";
 import { useUser } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { PLANS_PROPRIO, PLANS_AGENCE, LEGACY_PLAN_MAP } from "@/lib/plans.config";
+import { PLANS_PROPRIO, PLANS_AGENCE, PLAN_AUTONOMIE, LEGACY_PLAN_MAP } from "@/lib/plans.config";
 import type { Plan } from "@/lib/plans.config";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -15,35 +15,50 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import { C } from "@/lib/design-tokens";
+import { Analytics } from "@/lib/analytics";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ""
 );
 
 const PLAN_META: Record<string, { icon: React.ReactNode; color: string }> = {
-  gratuit:        { icon: <Sparkles size={20} />, color: C.text2 },
-  starter:        { icon: <Star size={20} />,     color: C.orange },
-  pro:            { icon: <Zap size={20} />,      color: C.orange },
-  agence:         { icon: <Building2 size={20} />, color: C.text },
-  agence_premium: { icon: <Crown size={20} />,    color: C.text },
+  gratuit:     { icon: <Sparkles size={20} />,   color: C.text2 },
+  starter:     { icon: <Star size={20} />,       color: C.prussian },
+  pro:         { icon: <Zap size={20} />,        color: C.prussian },
+  proprio_pro: { icon: <Zap size={20} />,        color: C.prussian },
+  autonomie:   { icon: <Sparkles size={20} />,   color: C.gold },
+  agence:      { icon: <Building2 size={20} />,  color: C.text },
+  enterprise:  { icon: <Crown size={20} />,      color: C.gold },
+  invite:      { icon: <Shield size={20} />,     color: C.text2 },
 };
 
-const FEATURES_COMPARE = [
-  { name: "Biens gérés",                 gratuit: "1",    starter: "1",        pro: "2–5",      agence: "30",       agence_premium: "Illimité" },
-  { name: "Documents IA",                gratuit: "—",    starter: "Illimité", pro: "Illimité", agence: "Illimité", agence_premium: "Illimité" },
-  { name: "Chat Althy",                  gratuit: "20/mois", starter: "Illimité", pro: "Illimité", agence: "Illimité", agence_premium: "Illimité" },
-  { name: "QR-factures loyers",          gratuit: "Basique", starter: "✓",     pro: "✓",        agence: "✓",        agence_premium: "✓" },
-  { name: "Relances auto (email/WA)",    gratuit: "—",    starter: "✓",        pro: "✓",        agence: "✓",        agence_premium: "✓" },
-  { name: "Rapports fiscaux",            gratuit: "—",    starter: "—",        pro: "✓",        agence: "✓",        agence_premium: "✓" },
-  { name: "Portail proprio",             gratuit: "—",    starter: "—",        pro: "—",        agence: "—",        agence_premium: "✓" },
-  { name: "API B2B",                     gratuit: "—",    starter: "—",        pro: "—",        agence: "—",        agence_premium: "✓" },
-  { name: "Utilisateurs",                gratuit: "1",    starter: "1",        pro: "1",        agence: "2–50",     agence_premium: "2–50" },
+const FEATURES_COMPARE_PROPRIO = [
+  { name: "Biens gérés",              gratuit: "1",       starter: "1–3",   pro: "4–10",     proprio_pro: "11–50" },
+  { name: "Documents IA",             gratuit: "—",       starter: "Illimité", pro: "Illimité", proprio_pro: "Illimité" },
+  { name: "Chat Althy",               gratuit: "20/mois", starter: "Illimité", pro: "Illimité", proprio_pro: "Illimité" },
+  { name: "QR-factures loyers",       gratuit: "Basique", starter: "✓",     pro: "✓",        proprio_pro: "✓" },
+  { name: "Relances auto (email/WA)", gratuit: "—",       starter: "✓",     pro: "✓",        proprio_pro: "✓" },
+  { name: "Rapports fiscaux",         gratuit: "—",       starter: "—",     pro: "✓",        proprio_pro: "✓" },
+  { name: "Comptabilité avancée",     gratuit: "—",       starter: "—",     pro: "—",        proprio_pro: "✓" },
+  { name: "Support prioritaire",      gratuit: "—",       starter: "—",     pro: "—",        proprio_pro: "✓" },
+];
+
+const FEATURES_COMPARE_AGENCE = [
+  { name: "Biens gérés",       agence: "Illimités",          enterprise: "Illimités" },
+  { name: "Multi-agents",      agence: "2–50",               enterprise: "Illimité" },
+  { name: "CRM",               agence: "✓",                  enterprise: "✓" },
+  { name: "Portail proprio",   agence: "✓",                  enterprise: "✓" },
+  { name: "White-label",       agence: "—",                  enterprise: "✓" },
+  { name: "API B2B",           agence: "—",                  enterprise: "✓" },
+  { name: "SSO + SLA 99.9%",   agence: "—",                  enterprise: "✓" },
+  { name: "Account manager",   agence: "—",                  enterprise: "✓" },
 ];
 
 interface SubscriptionData {
   plan: string;
   status: string;
   current_period_end: string | null;
+  agency_name?: string | null;
 }
 
 // ── Formulaire de paiement inline (Payment Element) ──────────────────────────
@@ -57,6 +72,7 @@ interface CheckoutFormProps {
 }
 
 function CheckoutForm({ planId, planNom, clientSecret, onSuccess, onCancel }: CheckoutFormProps) {
+  void planId; void clientSecret;
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
@@ -125,7 +141,7 @@ function CheckoutForm({ planId, planNom, clientSecret, onSuccess, onCancel }: Ch
         disabled={!stripe || processing}
         style={{
           padding: "12px 0", borderRadius: 10, border: "none",
-          background: C.orange, color: "#fff",
+          background: C.prussian, color: "#fff",
           fontSize: 14, fontWeight: 700, cursor: processing ? "not-allowed" : "pointer",
           opacity: processing ? 0.7 : 1,
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -190,27 +206,32 @@ function PlanCard({ plan, annual, isCurrent, subscribing, checkoutPlan, onSubscr
   const prix = annual && plan.prixAnnuel ? plan.prixAnnuel : plan.prix;
   const isSelected = checkoutPlan?.id === plan.id;
   const meta = PLAN_META[plan.id] ?? { icon: <Sparkles size={20} />, color: C.text2 };
-  const isContactPlan = plan.id === "agence" || plan.id === "agence_premium";
+  const isContactPlan = plan.id === "agence" || plan.id === "enterprise";
+  const isGold = plan.id === "autonomie" || plan.id === "enterprise";
+  const accent = isGold ? C.gold : C.prussian;
 
   return (
     <div style={{
       backgroundColor: C.surface,
       border: isSelected
-        ? `2px solid ${C.orange}`
+        ? `2px solid ${accent}`
         : plan.vedette
-          ? `2px solid ${C.orange}`
+          ? `2px solid ${accent}`
           : `1px solid ${C.border}`,
       borderRadius: 20, padding: 24, position: "relative",
-      boxShadow: plan.vedette ? "0 8px 32px rgba(15,46,76,0.15)" : C.shadow,
+      boxShadow: plan.vedette
+        ? (isGold ? "0 8px 32px rgba(201,169,97,0.20)" : "0 8px 32px rgba(15,46,76,0.15)")
+        : C.shadow,
     }}>
       {plan.vedette && (
         <div style={{
           position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
-          backgroundColor: C.orange, color: "#fff",
+          backgroundColor: accent, color: "#fff",
           padding: "3px 12px", borderRadius: 20,
           fontSize: 11, fontWeight: 700, whiteSpace: "nowrap",
+          textTransform: "uppercase", letterSpacing: "0.04em",
         }}>
-          RECOMMAND&Eacute;
+          {plan.badge ?? "Recommandé"}
         </div>
       )}
 
@@ -218,6 +239,10 @@ function PlanCard({ plan, annual, isCurrent, subscribing, checkoutPlan, onSubscr
         {meta.icon}
         <span style={{ fontWeight: 700, fontSize: 16 }}>{plan.nom}</span>
       </div>
+
+      <p style={{ margin: "0 0 16px", fontSize: 12, color: C.text3, lineHeight: 1.4 }}>
+        {plan.description}
+      </p>
 
       <div style={{ marginBottom: 20 }}>
         <span style={{ fontSize: 36, fontWeight: 800, color: C.text }}>
@@ -231,7 +256,7 @@ function PlanCard({ plan, annual, isCurrent, subscribing, checkoutPlan, onSubscr
       <ul style={{ listStyle: "none", padding: 0, margin: "0 0 20px", display: "flex", flexDirection: "column", gap: 8 }}>
         {plan.fonctionnalites.map(f => (
           <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: C.text2 }}>
-            <Check size={14} color={C.orange} style={{ flexShrink: 0, marginTop: 2 }} />
+            <Check size={14} color={accent} style={{ flexShrink: 0, marginTop: 2 }} />
             {f}
           </li>
         ))}
@@ -242,14 +267,14 @@ function PlanCard({ plan, annual, isCurrent, subscribing, checkoutPlan, onSubscr
         onClick={() => {
           if (isCurrent || plan.id === "gratuit" || !!checkoutPlan) return;
           if (isContactPlan) {
-            window.location.href = "/contact?source=agence";
+            window.location.href = `/contact?source=${plan.id}`;
             return;
           }
           onSubscribe(plan.id, plan.nom);
         }}
         style={{
           width: "100%", padding: "10px 0",
-          backgroundColor: isCurrent ? C.surface2 : (isSelected || plan.vedette) ? C.orange : C.surface2,
+          backgroundColor: isCurrent ? C.surface2 : (isSelected || plan.vedette) ? accent : C.surface2,
           color: isCurrent ? C.text3 : (isSelected || plan.vedette) ? "#fff" : C.text,
           border: isCurrent ? `1px solid ${C.border}` : (isSelected || plan.vedette) ? "none" : `1px solid ${C.border}`,
           borderRadius: 10, fontSize: 13, fontWeight: 600,
@@ -290,12 +315,17 @@ function AbonnementContent() {
   const subStatus = subscription?.status ?? "no_subscription";
 
   const isAgence = profile?.role === "agence";
+  const isInvited = currentPlan === "invite";
+  const agencyName = subscription?.agency_name ?? "votre agence";
 
   const handleSubscribe = useCallback(async (planId: string, planNom: string) => {
     if (planId === "gratuit") return;
     setSubscribing(planId);
     try {
       const res = await api.post("/stripe/create-subscription-intent", { plan: planId });
+      if (planId === "autonomie") {
+        Analytics.autonomySubscriptionStarted("checkout_opened");
+      }
       setCheckoutPlan({ id: planId, nom: planNom, clientSecret: res.data.client_secret });
     } catch {
       // silencieux
@@ -306,14 +336,18 @@ function AbonnementContent() {
 
   const handleSuccess = useCallback(() => {
     setCheckoutSuccess(true);
+    if (checkoutPlan?.id === "autonomie") {
+      Analytics.autonomySubscriptionActivated(currentPlan ?? null);
+    }
     setCheckoutPlan(null);
     refetchSub();
-  }, [refetchSub]);
+  }, [refetchSub, checkoutPlan, currentPlan]);
 
-  const plans = isAgence ? PLANS_AGENCE : PLANS_PROPRIO;
+  // Plans à afficher : 5 cards proprio (gratuit + 3 paliers + autonomie) OU 2 cards agence
+  const proprioCards: Plan[] = [...PLANS_PROPRIO, PLAN_AUTONOMIE];
 
   return (
-    <div style={{ padding: "32px 24px", maxWidth: 1100, margin: "0 auto" }}>
+    <div style={{ padding: "32px 24px", maxWidth: 1280, margin: "0 auto" }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       {/* Succès paiement */}
@@ -337,30 +371,68 @@ function AbonnementContent() {
       )}
 
       {/* Header */}
-      <div style={{ marginBottom: 40 }}>
+      <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, color: C.text, margin: "0 0 8px", letterSpacing: "-0.02em" }}>
           Mon abonnement
         </h1>
         <p style={{ color: C.text3, fontSize: 14, margin: 0 }}>
           {isAgence
-            ? "Gérez votre agence avec Althy — à partir de CHF 79/agent/mois."
-            : "Gérez vos biens sans agence — gratuit pour 1 bien, CHF 14/mois pour tout débloquer."}
+            ? "Pour votre agence : à partir de CHF 49/agent/mois — biens illimités."
+            : "Gérez vos biens sans agence — gratuit pour 1 bien, à partir de CHF 14/mois."}
         </p>
       </div>
 
+      {/* Banner spécial : compte invité (A6) */}
+      {isInvited && (
+        <div style={{
+          marginBottom: 28, padding: "18px 22px", borderRadius: 16,
+          background: `linear-gradient(135deg, ${C.goldBg}, rgba(201,169,97,0.18))`,
+          border: `1px solid ${C.gold}`,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          flexWrap: "wrap", gap: 16,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 280 }}>
+            <Sparkles size={22} color={C.gold} />
+            <div>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: C.text }}>
+                Vous êtes invité par {agencyName}
+              </p>
+              <p style={{ margin: "4px 0 0", fontSize: 13, color: C.text2, lineHeight: 1.5 }}>
+                Passez en <strong>Althy Autonomie</strong> pour CHF 39/mois et reprenez la main sur vos biens.
+                Économisez jusqu'à <strong>CHF 1 600/an</strong> vs une régie classique.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => handleSubscribe("autonomie", "Althy Autonomie")}
+            disabled={subscribing === "autonomie"}
+            style={{
+              padding: "10px 18px", borderRadius: 10, border: "none",
+              background: C.gold, color: "#fff",
+              fontSize: 13, fontWeight: 700, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
+            }}
+          >
+            {subscribing === "autonomie"
+              ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Chargement…</>
+              : <>Passer à Althy Autonomie <ArrowRight size={14} /></>}
+          </button>
+        </div>
+      )}
+
       {/* Current plan banner */}
       <div style={{
-        backgroundColor: C.orangeBg,
+        backgroundColor: C.prussianBg,
         border: "1px solid rgba(15,46,76,0.22)",
         borderRadius: 14, padding: "14px 20px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
         marginBottom: 32, flexWrap: "wrap", gap: 12,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Shield size={18} color={C.orange} />
+          <Shield size={18} color={C.prussian} />
           <div>
             <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: C.text }}>
-              Plan actuel : <span style={{ color: C.orange, textTransform: "capitalize" }}>{currentPlan}</span>
+              Plan actuel : <span style={{ color: C.prussian, textTransform: "capitalize" }}>{currentPlan}</span>
             </p>
             <p style={{ margin: "2px 0 0", fontSize: 12, color: C.text3 }}>
               {subscription?.current_period_end
@@ -399,7 +471,7 @@ function AbonnementContent() {
           onClick={() => setAnnual(v => !v)}
           style={{
             width: 44, height: 24, borderRadius: 12, border: "none",
-            backgroundColor: annual ? C.orange : C.surface2,
+            backgroundColor: annual ? C.prussian : C.surface2,
             cursor: "pointer", position: "relative", transition: "background 0.2s",
           }}
         >
@@ -412,71 +484,133 @@ function AbonnementContent() {
           }} />
         </button>
         <span style={{ fontSize: 13, color: annual ? C.text : C.text3, fontWeight: annual ? 600 : 400 }}>
-          Annuel <span style={{ color: "var(--althy-green)", fontWeight: 700 }}>−20%</span>
+          Annuel <span style={{ color: "var(--althy-green)", fontWeight: 700 }}>−15%</span>
         </span>
       </div>
 
-      {/* Plan cards */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: `repeat(${plans.length}, minmax(220px, 1fr))`,
-        gap: 20, marginBottom: 48,
-      }}>
-        {plans.map(plan => (
-          <PlanCard
-            key={plan.id}
-            plan={plan}
-            annual={annual}
-            isCurrent={plan.id === currentPlan}
-            subscribing={subscribing}
-            checkoutPlan={checkoutPlan}
-            onSubscribe={handleSubscribe}
-          />
-        ))}
-      </div>
+      {/* Section proprio (5 plans) */}
+      {!isAgence && (
+        <>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: C.text, margin: "0 0 16px" }}>
+            Pour les propriétaires
+          </h2>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 18, marginBottom: 48,
+          }}>
+            {proprioCards.map(plan => (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                annual={annual}
+                isCurrent={plan.id === currentPlan}
+                subscribing={subscribing}
+                checkoutPlan={checkoutPlan}
+                onSubscribe={handleSubscribe}
+              />
+            ))}
+          </div>
 
-      {/* Comparison table */}
-      <div style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, overflow: "hidden" }}>
-        <div style={{ padding: "20px 24px", borderBottom: `1px solid ${C.border}` }}>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.text }}>Comparaison détaillée</h2>
-        </div>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ backgroundColor: C.surface2 }}>
-                <th style={{ padding: "12px 20px", textAlign: "left", fontSize: 12, fontWeight: 600, color: C.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>Fonctionnalité</th>
-                {(isAgence
-                  ? ["Agence Standard", "Agence Premium"]
-                  : ["Gratuit", "Starter", "Pro"]
-                ).map(h => (
-                  <th key={h} style={{ padding: "12px 16px", textAlign: "center", fontSize: 12, fontWeight: 600, color: h === "Starter" || h === "Agence Standard" ? C.orange : C.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {FEATURES_COMPARE.map((row, i) => {
-                const cols = isAgence
-                  ? [row.agence, row.agence_premium]
-                  : [row.gratuit, row.starter, row.pro];
-                return (
-                  <tr key={row.name} style={{ borderTop: `1px solid ${C.border}`, backgroundColor: i % 2 === 0 ? "transparent" : C.surface2 }}>
-                    <td style={{ padding: "10px 20px", fontSize: 13, color: C.text2 }}>{row.name}</td>
-                    {cols.map((val, j) => (
-                      <td key={j} style={{ padding: "10px 16px", textAlign: "center", fontSize: 13, color: val === "✓" ? "var(--althy-green)" : val === "—" ? C.text3 : C.text, fontWeight: val === "✓" ? 600 : 400 }}>
-                        {val}
-                      </td>
+          {/* Comparison table proprio */}
+          <div style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, overflow: "hidden", marginBottom: 32 }}>
+            <div style={{ padding: "20px 24px", borderBottom: `1px solid ${C.border}` }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.text }}>Comparaison propriétaire</h2>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ backgroundColor: C.surface2 }}>
+                    <th style={{ padding: "12px 20px", textAlign: "left", fontSize: 12, fontWeight: 600, color: C.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>Fonctionnalité</th>
+                    {["Gratuit", "Particulier", "Actif", "Professionnel"].map(h => (
+                      <th key={h} style={{ padding: "12px 16px", textAlign: "center", fontSize: 12, fontWeight: 600, color: h === "Actif" ? C.prussian : C.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
                     ))}
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+                <tbody>
+                  {FEATURES_COMPARE_PROPRIO.map((row, i) => {
+                    const cols = [row.gratuit, row.starter, row.pro, row.proprio_pro];
+                    return (
+                      <tr key={row.name} style={{ borderTop: `1px solid ${C.border}`, backgroundColor: i % 2 === 0 ? "transparent" : C.surface2 }}>
+                        <td style={{ padding: "10px 20px", fontSize: 13, color: C.text2 }}>{row.name}</td>
+                        {cols.map((val, j) => (
+                          <td key={j} style={{ padding: "10px 16px", textAlign: "center", fontSize: 13, color: val === "✓" ? "var(--althy-green)" : val === "—" ? C.text3 : C.text, fontWeight: val === "✓" ? 600 : 400 }}>
+                            {val}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Section agence (2 plans) */}
+      {isAgence && (
+        <>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: C.text, margin: "0 0 16px" }}>
+            Pour les agences
+          </h2>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: 20, marginBottom: 48,
+          }}>
+            {PLANS_AGENCE.map(plan => (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                annual={annual}
+                isCurrent={plan.id === currentPlan}
+                subscribing={subscribing}
+                checkoutPlan={checkoutPlan}
+                onSubscribe={handleSubscribe}
+              />
+            ))}
+          </div>
+
+          {/* Comparison table agence */}
+          <div style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, overflow: "hidden", marginBottom: 32 }}>
+            <div style={{ padding: "20px 24px", borderBottom: `1px solid ${C.border}` }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.text }}>Comparaison agence</h2>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ backgroundColor: C.surface2 }}>
+                    <th style={{ padding: "12px 20px", textAlign: "left", fontSize: 12, fontWeight: 600, color: C.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>Fonctionnalité</th>
+                    {["Agence", "Enterprise"].map(h => (
+                      <th key={h} style={{ padding: "12px 16px", textAlign: "center", fontSize: 12, fontWeight: 600, color: h === "Agence" ? C.prussian : C.gold, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {FEATURES_COMPARE_AGENCE.map((row, i) => {
+                    const cols = [row.agence, row.enterprise];
+                    return (
+                      <tr key={row.name} style={{ borderTop: `1px solid ${C.border}`, backgroundColor: i % 2 === 0 ? "transparent" : C.surface2 }}>
+                        <td style={{ padding: "10px 20px", fontSize: 13, color: C.text2 }}>{row.name}</td>
+                        {cols.map((val, j) => (
+                          <td key={j} style={{ padding: "10px 16px", textAlign: "center", fontSize: 13, color: val === "✓" ? "var(--althy-green)" : val === "—" ? C.text3 : C.text, fontWeight: val === "✓" ? 600 : 400 }}>
+                            {val}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Savings */}
       <div style={{
-        marginTop: 32, padding: 24, borderRadius: 16,
+        marginTop: 24, padding: 24, borderRadius: 16,
         background: "linear-gradient(135deg, rgba(15,46,76,0.06), rgba(15,46,76,0.12))",
         border: "1px solid rgba(15,46,76,0.22)",
         display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap",
@@ -485,13 +619,13 @@ function AbonnementContent() {
         <div>
           <p style={{ margin: "0 0 4px", fontSize: 15, fontWeight: 700, color: C.text }}>
             {isAgence
-              ? "2x moins cher qu'Immomig"
+              ? "2× moins cher que les outils d'agence classiques"
               : "Économisez CHF 150+/mois vs une régie"}
           </p>
           <p style={{ margin: 0, fontSize: 13, color: C.text3 }}>
             {isAgence
-              ? "Les outils classiques facturent CHF 80–150/agent/mois. Althy démarre à CHF 79 avec l'IA incluse."
-              : "Une régie facture 8–12% du loyer. Pour un loyer moyen CHF 1 800/mois, c'est CHF 180–216/mois. Althy Starter : CHF 14/mois."}
+              ? "Les outils classiques facturent CHF 80–150/agent/mois. Althy démarre à CHF 49 avec l'IA incluse."
+              : "Une régie facture 4–8% du loyer. Pour un loyer moyen CHF 2 300/mois, c'est CHF 92–184/mois. Althy Autonomie : CHF 39/mois + 3% transit (vs 4-8% en régie)."}
           </p>
         </div>
       </div>

@@ -40,7 +40,7 @@ export function FeatureBiens() {
         >
           <span
             style={{
-              color: C.orange,
+              color: C.prussian,
               fontSize: "0.75rem",
               fontWeight: 500,
               letterSpacing: "0.22em",
@@ -63,7 +63,7 @@ export function FeatureBiens() {
             }}
           >
             Tous vos biens.{" "}
-            <span style={{ color: C.orange }}>Un seul endroit.</span>
+            <span style={{ color: C.prussian }}>Un seul endroit.</span>
           </h2>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
@@ -75,14 +75,14 @@ export function FeatureBiens() {
                     width: 32,
                     height: 32,
                     borderRadius: "50%",
-                    background: C.orangeBg,
-                    border: `1px solid ${C.orangeBorder}`,
+                    background: C.prussianBg,
+                    border: `1px solid ${C.prussianBorder}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     fontSize: "0.65rem",
                     fontWeight: 700,
-                    color: C.orange,
+                    color: C.prussian,
                     letterSpacing: "0.05em",
                     marginTop: "0.1rem",
                   }}
@@ -147,13 +147,13 @@ export function FeatureBiens() {
               </span>
               <span
                 style={{
-                  background: C.orangeBg,
-                  color: C.orange,
+                  background: C.prussianBg,
+                  color: C.prussian,
                   fontSize: "0.65rem",
                   fontWeight: 600,
                   padding: "0.25rem 0.625rem",
                   borderRadius: "100px",
-                  border: `1px solid ${C.orangeBorder}`,
+                  border: `1px solid ${C.prussianBorder}`,
                 }}
               >
                 4 biens
@@ -183,7 +183,7 @@ export function FeatureBiens() {
                   <div style={{ color: C.textMuted, fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.25rem" }}>
                     {s.label}
                   </div>
-                  <div style={{ color: C.orange, fontSize: "0.9rem", fontWeight: 700 }}>{s.val}</div>
+                  <div style={{ color: C.prussian, fontSize: "0.9rem", fontWeight: 700 }}>{s.val}</div>
                 </div>
               ))}
             </div>
@@ -225,7 +225,7 @@ export function FeatureBiens() {
                   >
                     {bien.statut}
                   </span>
-                  <span style={{ color: C.orange, fontSize: "0.75rem", fontWeight: 700, flexShrink: 0 }}>
+                  <span style={{ color: C.prussian, fontSize: "0.75rem", fontWeight: 700, flexShrink: 0 }}>
                     CHF {bien.loyer}
                   </span>
                 </div>
@@ -237,15 +237,15 @@ export function FeatureBiens() {
               style={{
                 margin: "0 0.75rem 0.75rem",
                 padding: "0.75rem 1rem",
-                background: C.orangeBg,
+                background: C.prussianBg,
                 borderRadius: "0.75rem",
-                border: `1px solid ${C.orangeBorder}`,
+                border: `1px solid ${C.prussianBorder}`,
                 display: "flex",
                 alignItems: "center",
                 gap: "0.5rem",
               }}
             >
-              <span style={{ color: C.orange, fontSize: "0.8rem" }}>✦</span>
+              <span style={{ color: C.prussian, fontSize: "0.8rem" }}>✦</span>
               <span style={{ color: C.textMuted, fontSize: "0.7rem" }}>
                 &ldquo;Relance automatique envoyée pour Chemin des Fleurs 4 — 3 jours de retard&rdquo;
               </span>

@@ -11,6 +11,7 @@ import { AlthyLogo } from "@/components/AlthyLogo";
 import { useAuth } from "@/lib/auth";
 import { createClient } from "@/lib/supabase";
 import { isRoleEnabled } from "@/lib/flags";
+import { trackEvent } from "@/lib/analytics";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -71,6 +72,9 @@ function RegisterForm() {
   const params      = useSearchParams();
   const { signUp }  = useAuth();
 
+  const planParam = params.get("plan");
+  const isAutonomyFlow = planParam === "autonomie";
+
   const [step,        setStep]       = useState<"creds" | "role">("creds");
   const [creds,       setCreds]      = useState({ email: "", password: "" });
   const [roleLoading, setRoleLoading] = useState(false);
@@ -92,9 +96,36 @@ function RegisterForm() {
 
   // ── Étape 1 : valider email + password, avancer vers choix du rôle ───────────
 
-  const onCredsSubmit = (data: FormValues) => {
+  const onCredsSubmit = async (data: FormValues) => {
     setCreds({ email: data.email, password: data.password });
     setServerError(null);
+
+    // Flow Autonomie : rôle pré-sélectionné (proprio_solo), skip étape "role"
+    if (isAutonomyFlow) {
+      trackEvent("autonomy_subscription_started", { stage: "account_created" });
+      setRoleLoading(true);
+      try {
+        await signUp(data.email, data.password, {
+          first_name:      "",
+          last_name:       "",
+          role:            "proprio_solo",
+          cgu_accepted_at: new Date().toISOString(),
+          cgu_version:     CGU_VERSION,
+        });
+        router.push("/app/abonnement?upgrade=autonomie");
+      } catch (err: unknown) {
+        const msg = (err as { message?: string })?.message ?? "Erreur lors de l'inscription";
+        setServerError(
+          msg.includes("already registered") || msg.includes("already been registered")
+            ? "Un compte existe déjà avec cet email"
+            : msg,
+        );
+      } finally {
+        setRoleLoading(false);
+      }
+      return;
+    }
+
     setStep("role");
   };
 
@@ -179,9 +210,42 @@ function RegisterForm() {
           {/* ═══ ÉTAPE 1 — Email + mot de passe ═══ */}
           {step === "creds" && (
             <>
+              {isAutonomyFlow && (
+                <div
+                  style={{
+                    padding: "14px 18px",
+                    marginBottom: 24,
+                    background: "var(--althy-gold-bg)",
+                    border: "1px solid var(--althy-gold-border)",
+                    borderRadius: 12,
+                  }}
+                >
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 11,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      color: "var(--althy-prussian)",
+                      fontWeight: 700,
+                    }}
+                  >
+                    Althy Autonomie · CHF 39/mois
+                  </p>
+                  <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--althy-text-2)" }}>
+                    Créez votre compte, puis souscrivez en 2 minutes. Sans
+                    engagement.
+                  </p>
+                </div>
+              )}
+
               <div className="mb-8">
                 <h1 className="text-2xl font-bold text-gray-900">Créer un compte</h1>
-                <p className="mt-1 text-sm text-gray-500">Gratuit · Sans carte bancaire · 2 minutes</p>
+                <p className="mt-1 text-sm text-gray-500">
+                  {isAutonomyFlow
+                    ? "Rôle propriétaire pré-sélectionné pour Althy Autonomie"
+                    : "Gratuit · Sans carte bancaire · 2 minutes"}
+                </p>
               </div>
 
               {/* Google OAuth */}

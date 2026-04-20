@@ -57,7 +57,7 @@ export function LandingBiens() {
       `}</style>
 
       <div style={{ textAlign: "center", marginBottom: 48 }}>
-        <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.14em", color: C.orange, textTransform: "uppercase" as const, marginBottom: 10, margin: "0 0 10px" }}>
+        <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.14em", color: C.prussian, textTransform: "uppercase" as const, marginBottom: 10, margin: "0 0 10px" }}>
           Suisse romande · Genève · Vaud · Valais
         </p>
         <h2 style={{ fontFamily: serif, fontSize: "clamp(26px,3.5vw,40px)", fontWeight: 300, color: C.text, margin: "8px 0 0" }}>
@@ -79,7 +79,7 @@ export function LandingBiens() {
           </p>
           <Link href="/register" style={{
             display: "inline-block", padding: "11px 26px", borderRadius: 9,
-            background: C.orange, color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none",
+            background: C.prussian, color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none",
           }}>
             M&apos;inscrire →
           </Link>
@@ -140,16 +140,16 @@ export function LandingBiens() {
                       </p>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" as const }}>
                         {b.pieces != null && (
-                          <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 5, background: C.orangeBg, color: C.textMuted }}>
+                          <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 5, background: C.prussianBg, color: C.textMuted }}>
                             {b.pieces}p
                           </span>
                         )}
                         {b.surface != null && (
-                          <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 5, background: C.orangeBg, color: C.textMuted }}>
+                          <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 5, background: C.prussianBg, color: C.textMuted }}>
                             {b.surface} m²
                           </span>
                         )}
-                        <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 5, background: C.orangeBg, color: C.textMuted }}>
+                        <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 5, background: C.prussianBg, color: C.textMuted }}>
                           {TYPE_LABEL[b.type] ?? b.type}
                         </span>
                       </div>

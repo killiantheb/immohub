@@ -29,7 +29,7 @@ export function FeatureIA() {
         >
           <span
             style={{
-              color: C.orange,
+              color: C.prussian,
               fontSize: "0.75rem",
               fontWeight: 500,
               letterSpacing: "0.22em",
@@ -56,7 +56,7 @@ export function FeatureIA() {
           }}
         >
           Althy parle.{" "}
-          <span style={{ color: C.orange }}>Vous décidez.</span>
+          <span style={{ color: C.prussian }}>Vous décidez.</span>
         </motion.h2>
 
         {/* Description */}
@@ -110,7 +110,7 @@ export function FeatureIA() {
                 borderColor: "rgba(15,46,76,0.28)",
               }}
             >
-              <span style={{ color: C.orange, fontSize: "0.7rem", flexShrink: 0 }}>✦</span>
+              <span style={{ color: C.prussian, fontSize: "0.7rem", flexShrink: 0 }}>✦</span>
               <span
                 style={{
                   color: C.textMid,
@@ -134,7 +134,7 @@ export function FeatureIA() {
           <Link
             href="/register"
             style={{
-              color: C.orange,
+              color: C.prussian,
               textDecoration: "none",
               fontSize: "1rem",
               fontWeight: 500,

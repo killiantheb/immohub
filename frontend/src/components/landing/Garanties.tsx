@@ -6,10 +6,10 @@ import { C } from "@/lib/design-tokens"
 const sectionBg = C.surface2
 
 const ICONS: Record<string, React.ReactNode> = {
-  shield: <Shield size={20} color={C.orange} strokeWidth={1.5} />,
-  file: <FileText size={20} color={C.orange} strokeWidth={1.5} />,
-  calendar: <CalendarCheck size={20} color={C.orange} strokeWidth={1.5} />,
-  headphones: <Headphones size={20} color={C.orange} strokeWidth={1.5} />,
+  shield: <Shield size={20} color={C.prussian} strokeWidth={1.5} />,
+  file: <FileText size={20} color={C.prussian} strokeWidth={1.5} />,
+  calendar: <CalendarCheck size={20} color={C.prussian} strokeWidth={1.5} />,
+  headphones: <Headphones size={20} color={C.prussian} strokeWidth={1.5} />,
 }
 
 export function Garanties() {

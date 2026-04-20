@@ -2,6 +2,7 @@
 from app.models.agency_settings import AgencySettings
 from app.models.ai_log import AIUsageLog
 from app.models.audit_log import AuditLog
+from app.models.autonomy import AutonomySubscription
 from app.models.base import Base, BaseModel
 from app.models.bien import Bien
 from app.models.company import Company, Quote
@@ -69,4 +70,5 @@ __all__ = [
     "GeneratedDocument",
     "CRMContact",
     "CRMNote",
+    "AutonomySubscription",
 ]

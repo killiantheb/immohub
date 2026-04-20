@@ -19,7 +19,7 @@ export function CTAFinal() {
         style={{
           position: "absolute",
           inset: "2rem",
-          border: `1px solid ${C.orangeBorder}`,
+          border: `1px solid ${C.prussianBorder}`,
           borderRadius: "1.5rem",
           pointerEvents: "none",
         }}
@@ -56,7 +56,7 @@ export function CTAFinal() {
         >
           <span
             style={{
-              color: C.orange,
+              color: C.prussian,
               fontSize: "0.75rem",
               fontWeight: 500,
               letterSpacing: "0.22em",
@@ -82,7 +82,7 @@ export function CTAFinal() {
           }}
         >
           Commencez à gérer votre bien{" "}
-          <span style={{ color: C.orange }}>sans agence</span>
+          <span style={{ color: C.prussian }}>sans agence</span>
         </motion.h2>
 
         <motion.p
@@ -116,7 +116,7 @@ export function CTAFinal() {
           <Link
             href="/register"
             style={{
-              background: C.orange,
+              background: C.prussian,
               color: "var(--althy-surface)",
               textDecoration: "none",
               fontSize: "1rem",
@@ -150,7 +150,7 @@ export function CTAFinal() {
               display: "inline-block",
               transition: "border-color 0.2s",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.orangeBorder)}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.prussianBorder)}
             onMouseLeave={(e) => (e.currentTarget.style.borderColor = C.border)}
           >
             Nous contacter

@@ -2,7 +2,7 @@
 
 /**
  * /app/mes-candidatures — Candidatures envoyées par le locataire/acheteur connecté.
- * Permet de suivre l'état de ses dossiers et de payer les frais si accepté.
+ * Permet de suivre l'état de ses dossiers. Le locataire ne paie JAMAIS rien à Althy.
  */
 
 import { useEffect, useState } from "react";
@@ -34,7 +34,6 @@ interface Candidature {
     risk_flags: string[];
     summary: string;
   } | null;
-  frais_payes: boolean;
   visite_proposee_at: string | null;
   created_at: string;
   bien?: Bien;
@@ -58,7 +57,6 @@ export default function MesCandidaturesPage() {
   const [token, setToken] = useState<string | null>(null);
   const [candidatures, setCandidatures] = useState<Candidature[]>([]);
   const [loading, setLoading] = useState(true);
-  const [payingId, setPayingId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -77,32 +75,7 @@ export default function MesCandidaturesPage() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  const handlePayerFrais = async (candidatureId: string) => {
-    if (!token) return;
-    setPayingId(candidatureId);
-    try {
-      const res = await fetch(`${API}/paiements/frais-dossier`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ candidature_id: candidatureId }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        alert(err.detail || "Erreur lors du paiement");
-        return;
-      }
-      const { client_secret } = await res.json();
-      // Rediriger vers Stripe Checkout — en production on utiliserait Stripe.js
-      // Ici on signale simplement que le PaymentIntent est prêt
-      alert(`Paiement initié. client_secret: ${client_secret.slice(0, 20)}…\n(Intégration Stripe.js à brancher ici)`);
-    } catch {
-      alert("Erreur réseau");
-    } finally {
-      setPayingId(null);
-    }
-  };
 
-  
   return (
     <div style={{ padding: "24px 20px 60px", maxWidth: 760, margin: "0 auto" }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -114,6 +87,23 @@ export default function MesCandidaturesPage() {
         <p style={{ fontSize: 14, color: C.text2, margin: "6px 0 0" }}>
           Suivez l'état de vos dossiers envoyés aux propriétaires.
         </p>
+        <div
+          style={{
+            marginTop: 14,
+            padding: "10px 14px",
+            borderRadius: 8,
+            background: "var(--althy-green-bg)",
+            border: "1px solid var(--althy-green)",
+            color: "var(--althy-green)",
+            fontSize: 13,
+            fontWeight: 600,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          ✓ Votre dossier est gratuit et illimité — Althy ne vous facture rien.
+        </div>
       </div>
 
       {loading ? (
@@ -214,47 +204,18 @@ export default function MesCandidaturesPage() {
                   </Link>
                 </div>
 
-                {/* Frais dossier CTA si accepté et non payés */}
-                {c.statut === "acceptee" && !c.frais_payes && (
+                {/* Candidature acceptée — aucun paiement requis côté locataire */}
+                {c.statut === "acceptee" && (
                   <div style={{
                     borderTop: `1px solid ${C.border}`, padding: "12px 16px",
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    gap: 12, background: "var(--althy-green-bg)",
+                    background: "var(--althy-green-bg)",
                   }}>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--althy-green)" }}>
-                        Félicitations ! Votre candidature a été acceptée 🎉
-                      </div>
-                      <div style={{ fontSize: 13, color: "var(--althy-green)" }}>
-                        Réglez les frais de dossier pour finaliser votre candidature.
-                      </div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "var(--althy-green)" }}>
+                      Félicitations ! Votre candidature a été acceptée 🎉
                     </div>
-                    <button
-                      onClick={() => handlePayerFrais(c.id)}
-                      disabled={payingId === c.id}
-                      style={{
-                        background: "var(--althy-green)", color: "#fff", border: "none",
-                        borderRadius: 8, padding: "10px 20px", fontSize: 14, fontWeight: 600,
-                        cursor: payingId === c.id ? "not-allowed" : "pointer",
-                        opacity: payingId === c.id ? 0.7 : 1, flexShrink: 0,
-                        display: "flex", alignItems: "center", gap: 6,
-                      }}
-                    >
-                      {payingId === c.id ? (
-                        <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-                      ) : null}
-                      Payer CHF 90
-                    </button>
-                  </div>
-                )}
-
-                {/* Frais payés */}
-                {c.statut === "acceptee" && c.frais_payes && (
-                  <div style={{
-                    borderTop: `1px solid ${C.border}`, padding: "12px 16px",
-                    background: "var(--althy-green-bg)", fontSize: 13, color: "var(--althy-green)", fontWeight: 600,
-                  }}>
-                    ✓ Frais de dossier réglés — le propriétaire va vous contacter pour la suite.
+                    <div style={{ fontSize: 13, color: "var(--althy-green)", marginTop: 4 }}>
+                      Aucun frais pour vous. Le propriétaire va vous contacter pour la suite.
+                    </div>
                   </div>
                 )}
 

@@ -135,10 +135,10 @@ grep -rn '#E8602C' frontend/src --include="*.css"  → 0 occurrence attendue
 
 ```
 frontend/   Next.js 14 App Router + TypeScript          → Vercel
-backend/    FastAPI + Celery + Redis (53 routers)       → Railway
+backend/    FastAPI + Celery + Redis (54 routers)       → Railway
 mobile/     React Native / Expo                          → (en pause)
 supabase/   PostgreSQL + Auth + Storage + Realtime
-            13 migrations actives (004 → 0030)
+            16 migrations actives (004 → 0033)
 ```
 
 ### Dépendances clés (frontend)
@@ -205,18 +205,40 @@ ALLOWED_SIGNUP_ROLES=["proprio_solo","locataire","super_admin"]
 
 **Legacy mappings :** `owner` → `proprio_solo`, `agency` → `agence`, `tenant` → `locataire`, `company` → `artisan`
 
-### Pricing — source unique : `lib/plans.config.ts`
+### Pricing v3 (2026-04-20) — source unique : `lib/plans.config.ts`
 
-| ID | Nom | Prix |
-|----|-----|------|
-| `gratuit` | Gratuit | CHF 0 (1 bien) |
-| `starter` | Starter | CHF 14/mois (1 bien complet) |
-| `pro` | Pro | CHF 29/mois (2-5 biens) |
-| `agence` | Standard | CHF 79/agent/mois (≤30 biens) |
-| `agence_premium` | Premium | CHF 129/agent/mois (illimité) |
+7 tiers + plan gratuit, alignés sur la vision consolidée.
 
-Legacy IDs mappés via `LEGACY_PLAN_MAP` : `decouverte`/`vitrine` → `gratuit`, `solo` → `starter`, `proprio` → `pro`.
-Grandfathering : colonne `is_grandfathered` en DB (migration 0029).
+| Tier | ID | Nom | Prix | Cible | Catégorie |
+|------|----|----|------|-------|-----------|
+| —    | `gratuit`     | Gratuit       | CHF 0/mois            | 1 bien (essai)       | proprio    |
+| A1   | `starter`     | Particulier   | CHF 14/mois           | 1–3 biens            | proprio    |
+| A2   | `pro`         | Actif         | CHF 29/mois           | 4–10 biens           | proprio    |
+| A3   | `proprio_pro` | Professionnel | CHF 79/mois           | 11–50 biens          | proprio    |
+| A4   | `autonomie`   | Althy Autonomie | CHF 39/mois         | Pivot anti-agence    | autonomie  |
+| A5   | `agence`      | Agence        | CHF 49/agent/mois     | Régies / agences     | agence     |
+| A6   | `invite`      | Compte invité | CHF 9/mois            | Proprio rattaché agence | invited |
+| A7   | `enterprise`  | Enterprise    | CHF 1500–5000/mois    | White-label, grandes régies | enterprise |
+
+**Commission T1 (transit loyer)** : conservée à **3%** (baissera à 2% Y5+).
+
+**Frais de dossier locataire T3 (pivot 2026-04-20)** : **CHF 45 payés par le PROPRIÉTAIRE** lors de l'acceptation d'une candidature. Prélèvement off-session automatique via PATCH `/api/v1/marketplace/candidature/{id}`. Un échec n'annule pas l'acceptation.
+
+> **Règle absolue (viralité) : le locataire ne paie JAMAIS rien à Althy.** Ni inscription, ni candidature, ni acceptation, ni frais cachés. Tout endpoint qui facture un locataire est un bug à corriger immédiatement. Les anciennes colonnes `candidatures.frais_payes` et `candidatures.stripe_pi_id` sont conservées pour audit mais plus jamais écrites.
+
+**Pivot stratégique A6 → A4** : un proprio en compte invité peut basculer en
+Althy Autonomie. Le backend (`stripe_webhooks._trigger_autonomy_upgrade`) :
+- met `agency_relationships.status = 'left_for_autonomy'`
+- notifie l'agence (in-app + email Resend)
+- log `autonomy_activated` côté front (PostHog)
+
+**Legacy IDs mappés via `LEGACY_PLAN_MAP`** :
+`decouverte`/`vitrine` → `gratuit` · `solo` → `starter` · `proprio` → `pro` · `agence_premium` → `enterprise`
+
+**Grandfathering** :
+- `subscriptions.is_grandfathered` (migration 0029)
+- `subscriptions.grandfathered_price` + `profiles.grandfathered_price` (migration 0031)
+- Les agences actuelles à CHF 79 conservent leur prix jusqu'à résiliation/changement.
 
 ### Pages publiques (existent)
 
@@ -232,6 +254,7 @@ Grandfathering : colonne `is_grandfathered` en DB (migration 0029).
 /portail/[token]       Portail proprio public
 /portail/accept        Acceptation portail
 /bientot/[role]        Waitlist rôles désactivés (Phase 1)
+/autonomie             Landing publique Althy Autonomie (pivot CHF 39/mois)
 /biens                 Marketplace publique
 /biens/[id]            Fiche bien publique
 /biens/{ville}         SEO local (geneve, lausanne, fribourg, neuchatel, sion, valais, vaud)
@@ -286,6 +309,7 @@ Grandfathering : colonne `is_grandfathered` en DB (migration 0029).
 /app/settings        Paramètres + sous-pages (notifs, paiement, preferences, zone)
 /app/profile         Profil (legacy URL, devrait être /profil)
 /app/abonnement      Abonnement + comparaison plans
+/app/autonomie       Althy Autonomie (dashboard ou pitch selon plan_id)
 /app/admin           Admin
 /app/admin/users     Admin utilisateurs
 /app/admin/transactions Admin transactions
@@ -440,7 +464,20 @@ POST /auth/login · /auth/refresh · /auth/logout
 GET  /auth/me · PUT /auth/me
 ```
 
-### 53 routers au total dans `main.py`
+### Autonomie (A4 — pivot stratégique CHF 39/mois)
+```
+GET  /autonomie/eligibility            → éligibilité du user connecté
+POST /autonomie/comparison             → calcul économie vs régie (public)
+POST /autonomie/subscribe              → activation post-paiement Stripe
+POST /autonomie/cancel                 → résiliation
+GET  /autonomie/usage                  → compteurs unités incluses (4 vérifs + 4 missions)
+POST /autonomie/trigger-verification   → décrémente quota vérification
+POST /autonomie/trigger-opener-mission → décrémente quota mission ouvreur
+POST /autonomie/legal-request          → 501 stub (assistance juridique partenaire)
+POST /autonomie/fiscal-export          → 501 stub (export PDF fiscal)
+```
+
+### 54 routers au total dans `main.py`
 ```
 auth · properties · contracts · transactions · openers · missions · companies · dashboard
 ai_documents · ai_scoring · ai_listings · rfq · admin · smart_onboarding · tenants
@@ -449,14 +486,14 @@ biens · locataires · docs_althy · paiements · interventions_althy · mission
 profiles_artisans · scoring · notifications · matching · geocode · listings · marketplace
 hunters · stripe_webhooks · portail · integrations · vente · rgpd
 sphere_agent · notations · oauth · factures · messagerie · agenda
-whatsapp · onboarding · sphere_carte · contact · estimation · loyers · changements
+whatsapp · onboarding · sphere_carte · contact · estimation · loyers · changements · autonomie
 ```
 
 ---
 
 ## I. Migrations DB
 
-13 fichiers dans `supabase/migrations/` (004 → 0030).
+16 fichiers dans `supabase/migrations/` (004 → 0033).
 
 | Migration | Contenu |
 |-----------|---------|
@@ -466,6 +503,9 @@ whatsapp · onboarding · sphere_carte · contact · estimation · loyers · cha
 | 0028 | `changements_locataire` (cycle check-in/check-out/EDL) |
 | 0029 | Pricing v2 : `is_grandfathered` + mapping legacy plans |
 | 0030 | Bucket Storage "documents" (PDF) + RLS |
+| 0031 | Pricing v3 : `plan_category`, `agency_relationships`, `grandfathered_price`, mapping `agence_premium` → `enterprise` |
+| 0032 | `autonomy_subscriptions` (A4 — CHF 39/mois) : compteurs annuels (4 vérifs + 4 missions ouvreur), `previous_agency_id`, RLS |
+| 0033 | Pivot facturation dossier locataire : `owner_fee_amount` (CHF 45), `owner_fee_paid_at`, `owner_fee_stripe_intent_id`, `owner_fee_failed_at`/`reason`. Le locataire ne paie plus jamais. |
 
 ---
 

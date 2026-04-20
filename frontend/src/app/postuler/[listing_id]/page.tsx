@@ -592,7 +592,7 @@ export default function PostulerPage() {
               {[
                 "🔒 Documents chiffrés et sécurisés",
                 "👁 Visibles uniquement par le propriétaire",
-                "💳 CHF 90 uniquement si vous êtes retenu",
+                "✅ Postuler 100% gratuit — aucun frais pour vous",
               ].map((txt) => (
                 <div key={txt} style={{
                   background: "var(--althy-surface)", border: "1px solid var(--althy-border)",

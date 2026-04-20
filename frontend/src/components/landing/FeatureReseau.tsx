@@ -7,8 +7,8 @@ import { C } from "@/lib/design-tokens"
 function CheckIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-      <circle cx="8" cy="8" r="7.5" stroke={C.orange} strokeOpacity="0.35" />
-      <path d="M5 8l2.5 2.5L11 5.5" stroke={C.orange} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="8" cy="8" r="7.5" stroke={C.prussian} strokeOpacity="0.35" />
+      <path d="M5 8l2.5 2.5L11 5.5" stroke={C.prussian} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -42,8 +42,8 @@ function FeatureColumn({ icon, title, subtitle, features, delay = 0 }: FeatureCo
           width: 48,
           height: 48,
           borderRadius: "0.75rem",
-          background: C.orangeBg,
-          border: `1px solid ${C.orangeBorder}`,
+          background: C.prussianBg,
+          border: `1px solid ${C.prussianBorder}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -102,7 +102,7 @@ export function FeatureReseau() {
         >
           <span
             style={{
-              color: C.orange,
+              color: C.prussian,
               fontSize: "0.75rem",
               fontWeight: 500,
               letterSpacing: "0.22em",
@@ -129,7 +129,7 @@ export function FeatureReseau() {
           }}
         >
           Votre réseau.{" "}
-          <span style={{ color: C.orange }}>Géolocalisé et automatisé.</span>
+          <span style={{ color: C.prussian }}>Géolocalisé et automatisé.</span>
         </motion.h2>
 
         {/* 2-col cards */}
@@ -210,9 +210,9 @@ export function FeatureReseau() {
                       width: 8,
                       height: 8,
                       borderRadius: "50%",
-                      background: C.orange,
+                      background: C.prussian,
                       opacity: 0.7 - i * 0.08,
-                      boxShadow: `0 0 8px ${C.orange}`,
+                      boxShadow: `0 0 8px ${C.prussian}`,
                     }}
                   />
                   <span style={{ color: C.textMid, fontSize: "0.875rem" }}>{canton}</span>
@@ -223,14 +223,14 @@ export function FeatureReseau() {
             <div>
               <div
                 style={{
-                  background: C.orangeBg,
-                  border: `1px solid ${C.orangeBorder}`,
+                  background: C.prussianBg,
+                  border: `1px solid ${C.prussianBorder}`,
                   borderRadius: "0.625rem",
                   padding: "0.75rem 1.5rem",
                   display: "inline-block",
                 }}
               >
-                <span style={{ color: C.orange, fontSize: "0.8rem", fontWeight: 600, letterSpacing: "0.08em" }}>
+                <span style={{ color: C.prussian, fontSize: "0.8rem", fontWeight: 600, letterSpacing: "0.08em" }}>
                   Suisse Romande — missions actives
                 </span>
               </div>

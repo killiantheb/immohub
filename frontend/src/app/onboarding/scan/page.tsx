@@ -56,7 +56,7 @@ export default function OnboardingScanPage() {
     setConfirmes(prev => {
       const next = new Set(prev);
       if (action === "confirmer") {
-        next.has(id) ? next.delete(id) : next.add(id);
+        if (next.has(id)) next.delete(id); else next.add(id);
       } else {
         next.delete(id);
       }
@@ -65,7 +65,7 @@ export default function OnboardingScanPage() {
     setRejetes(prev => {
       const next = new Set(prev);
       if (action === "rejeter") {
-        next.has(id) ? next.delete(id) : next.add(id);
+        if (next.has(id)) next.delete(id); else next.add(id);
       } else {
         next.delete(id);
       }

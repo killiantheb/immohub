@@ -69,6 +69,9 @@ export interface UserProfile {
   // computed fields from backend
   full_name: string;
   permissions: string[];
+  // billing / plan (optionnel — peut être absent sur les vieux comptes)
+  plan_id?: string | null;
+  plan_category?: "proprio" | "agence" | "invited" | "enterprise" | "autonomie" | null;
 }
 
 // ─── Property ────────────────────────────────────────────────────────────────

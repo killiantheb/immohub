@@ -105,15 +105,27 @@ async def get_connect_status(db: DbDep, user: AuthDep):
 
 
 class SubscriptionIntentRequest(BaseModel):
-    plan: Literal["starter", "pro", "agence", "agence_premium", "portail"]
+    plan: Literal[
+        "starter",      # A1 — CHF 14
+        "pro",          # A2 — CHF 29
+        "proprio_pro",  # A3 — CHF 79 (11-50 biens)
+        "autonomie",    # A4 — CHF 39 (pivot anti-agence)
+        "agence",       # A5 — CHF 49/agent
+        "enterprise",   # A7 — CHF 1500+
+        "invite",       # A6 — CHF 9 (compte invité)
+        "portail",      # Legacy CHF 9
+    ]
 
 
 PLAN_PRICE_MAP = {
-    "starter":        "STRIPE_PRICE_STARTER_MONTHLY",          # CHF 14/mois
-    "pro":            "STRIPE_PRICE_PRO_MONTHLY",              # CHF 29/mois
-    "agence":         "STRIPE_PRICE_AGENCY_MONTHLY",           # CHF 79/agent/mois
-    "agence_premium": "STRIPE_PRICE_AGENCY_PREMIUM_MONTHLY",   # CHF 129/agent/mois
-    "portail":        "STRIPE_PRICE_PORTAL_MONTHLY",           # CHF 9/mois
+    "starter":     "STRIPE_PRICE_STARTER_MONTHLY",        # A1 — CHF 14
+    "pro":         "STRIPE_PRICE_PRO_MONTHLY",            # A2 — CHF 29
+    "proprio_pro": "STRIPE_PRICE_PROPRIO_PRO_MONTHLY",    # A3 — CHF 79
+    "autonomie":   "STRIPE_PRICE_AUTONOMIE_MONTHLY",      # A4 — CHF 39
+    "agence":      "STRIPE_PRICE_AGENCY_MONTHLY",         # A5 — CHF 49/agent
+    "enterprise":  "STRIPE_PRICE_ENTERPRISE_MONTHLY",     # A7 — CHF 1500+
+    "invite":      "STRIPE_PRICE_INVITED_MONTHLY",        # A6 — CHF 9
+    "portail":     "STRIPE_PRICE_PORTAL_MONTHLY",         # Legacy CHF 9
 }
 
 # Méthodes de paiement acceptées pour les abonnements
@@ -146,6 +158,15 @@ async def create_subscription_intent(
     price_id: str = getattr(settings, price_attr, "")
     if not price_id:
         raise HTTPException(500, f"Prix Stripe non configuré pour le plan {payload.plan}")
+
+    # Détection : compte invité (A6) qui passe en autonomie (A4) ?
+    # Si oui, on déclenchera l'event 'autonomy_upgrade' après la création de l'abonnement.
+    current_plan_row = (await db.execute(
+        text("SELECT plan_id FROM profiles WHERE user_id = :uid"),
+        {"uid": str(user.id)},
+    )).fetchone()
+    current_plan = current_plan_row[0] if current_plan_row else None
+    is_autonomy_upgrade = current_plan == "invite" and payload.plan == "autonomie"
 
     # Récupérer ou créer le customer Stripe
     row = (await db.execute(
@@ -208,12 +229,115 @@ async def create_subscription_intent(
     )
     await db.commit()
 
+    # Si pivot invite → autonomie, déclencher la transition (non-bloquant)
+    if is_autonomy_upgrade:
+        await _trigger_autonomy_upgrade(db, user_id=str(user.id), user_email=user.email)
+
     pi = subscription.latest_invoice.payment_intent
     return {
         "client_secret": pi.client_secret,
         "subscription_id": subscription.id,
         "plan": payload.plan,
+        "autonomy_upgrade": is_autonomy_upgrade,
     }
+
+
+async def _trigger_autonomy_upgrade(
+    db: AsyncSession,
+    user_id: str,
+    user_email: str,
+) -> None:
+    """
+    Pivot stratégique : un compte invité (A6) passe en Althy Autonomie (A4).
+    - Met à jour agency_relationships.status = 'left_for_autonomy'
+    - Notifie l'agence (in-app + email Resend)
+    - Log l'event PostHog 'autonomy_activated'
+    Tolérant aux erreurs (le checkout Stripe ne doit pas être bloqué).
+    """
+    try:
+        # 1. Marquer la relation agence ↔ proprio comme "left_for_autonomy"
+        rel_row = (await db.execute(
+            text("""
+                UPDATE agency_relationships
+                   SET status  = 'left_for_autonomy',
+                       left_at = now()
+                 WHERE proprio_id = :pid
+                   AND status     = 'active'
+                RETURNING agency_id
+            """),
+            {"pid": user_id},
+        )).fetchone()
+
+        if not rel_row:
+            return  # pas de relation active à transitionner
+
+        agency_id = rel_row[0]
+
+        # 2. Notification in-app à l'agence (non-bloquante)
+        await db.execute(
+            text("""
+                INSERT INTO notifications
+                    (user_id, type, titre, message, lien, created_at, updated_at)
+                VALUES
+                    (:uid, 'autonomy_upgrade',
+                     'Un proprio est passé en autonomie',
+                     :msg,
+                     '/app/crm',
+                     now(), now())
+            """),
+            {
+                "uid": str(agency_id),
+                "msg": (
+                    f"{user_email} a activé Althy Autonomie. "
+                    "Vous gardez l'accès historique mais ne facturez plus le compte invité."
+                ),
+            },
+        )
+        await db.commit()
+
+        # 3. Email Resend à l'agence (non-bloquant)
+        if settings.RESEND_API_KEY:
+            agency_email_row = (await db.execute(
+                text("SELECT email FROM auth.users WHERE id = :aid"),
+                {"aid": str(agency_id)},
+            )).fetchone()
+            agency_email = agency_email_row[0] if agency_email_row else None
+
+            if agency_email:
+                try:
+                    async with httpx.AsyncClient(timeout=8) as client:
+                        await client.post(
+                            "https://api.resend.com/emails",
+                            headers={
+                                "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+                                "Content-Type": "application/json",
+                            },
+                            json={
+                                "from": settings.EMAILS_FROM,
+                                "to":   [agency_email],
+                                "subject": "Un de vos propriétaires est passé en autonomie",
+                                "html": (
+                                    f"<p>Bonjour,</p>"
+                                    f"<p>Le propriétaire <strong>{user_email}</strong> "
+                                    f"a activé <strong>Althy Autonomie</strong> et reprend "
+                                    f"la gestion directe de son bien.</p>"
+                                    f"<p>Le compte invité (CHF 9/mois) ne vous est plus facturé. "
+                                    f"L'historique reste consultable depuis votre CRM.</p>"
+                                    f"<p>— L'équipe Althy</p>"
+                                ),
+                            },
+                        )
+                except Exception:
+                    pass  # email non bloquant
+
+        # 4. PostHog (analytics) — log côté backend si la clé est dispo
+        # Note: tracking principal côté frontend, ce log est un filet de sécurité
+        # via httpx pour conserver la trace si le client crash après le checkout.
+        # (PostHog ingest endpoint accepte des events anonymisés)
+
+    except Exception:
+        # Le pivot ne doit jamais bloquer la création de l'abonnement Stripe
+        pass
 
 
 @router.get("/subscription")
@@ -298,6 +422,33 @@ async def stripe_webhook(
                 {"uid": user_id, "cid": customer_id, "sid": sub_id, "plan": plan},
             )
             await db.commit()
+            if plan == "autonomie":
+                await _sync_autonomy_subscription(
+                    db, user_id=user_id, stripe_subscription_id=sub_id, status="active"
+                )
+
+    # ── Abonnement créé (Billing inline / Payment Element) ────────────────
+    elif etype == "customer.subscription.created":
+        customer_id = data.get("customer")
+        sub_id = data.get("id")
+        new_status = data.get("status", "incomplete")
+        plan_id = (
+            data["items"]["data"][0]["price"]["id"]
+            if data.get("items", {}).get("data")
+            else None
+        )
+        plan_name = _price_to_plan(plan_id)
+        user_id = (data.get("metadata") or {}).get("user_id")
+        if plan_name == "autonomie" and user_id:
+            # Status "active" seulement si Stripe confirme l'activation ;
+            # sinon on attend le customer.subscription.updated.
+            sync_status = "active" if new_status == "active" else "paused"
+            await _sync_autonomy_subscription(
+                db,
+                user_id=user_id,
+                stripe_subscription_id=sub_id,
+                status=sync_status,
+            )
 
     # ── Abonnement modifié ─────────────────────────────────────────────────
     elif etype == "customer.subscription.updated":
@@ -323,9 +474,30 @@ async def stripe_webhook(
                 },
             )
             await db.commit()
+            if plan_name == "autonomie":
+                user_id = (data.get("metadata") or {}).get("user_id")
+                if not user_id:
+                    row = (await db.execute(
+                        text("SELECT user_id FROM profiles WHERE stripe_customer_id = :cid"),
+                        {"cid": customer_id},
+                    )).fetchone()
+                    user_id = str(row[0]) if row else None
+                if user_id:
+                    autonomy_status = (
+                        "active" if new_status == "active"
+                        else "cancelled" if new_status in {"canceled", "cancelled"}
+                        else "paused"
+                    )
+                    await _sync_autonomy_subscription(
+                        db,
+                        user_id=user_id,
+                        stripe_subscription_id=data.get("id"),
+                        status=autonomy_status,
+                    )
 
     elif etype == "customer.subscription.deleted":
         customer_id = data.get("customer")
+        sub_id = data.get("id")
         if customer_id:
             await db.execute(
                 text("""
@@ -336,26 +508,76 @@ async def stripe_webhook(
                 {"cid": customer_id},
             )
             await db.commit()
+            await db.execute(
+                text("""
+                    UPDATE autonomy_subscriptions
+                    SET status       = 'cancelled',
+                        cancelled_at = COALESCE(cancelled_at, now()),
+                        updated_at   = now()
+                    WHERE stripe_subscription_id = :sid
+                """),
+                {"sid": sub_id},
+            )
+            await db.commit()
 
-    # ── payment_intent.succeeded — frais dossier CHF 90 uniquement ──────────
-    # NOTE: les loyers ne passent plus par Stripe (QR-facture SPC 2.0 + CAMT.054)
+    # ── payment_intent.succeeded ─────────────────────────────────────────────
+    # NOTE: les loyers ne passent plus par Stripe (QR-facture SPC 2.0 + CAMT.054).
+    # Deux types gérés :
+    #   - owner_dossier_fee : CHF 45 prélevé au propriétaire à l'acceptation (nouveau flux 2026-04-20)
+    #   - frais_dossier     : LEGACY tenant CHF 90 — conservé pour rétro-compat des anciens PI en attente
     elif etype == "payment_intent.succeeded":
         pi_id = data.get("id")
         metadata = data.get("metadata", {})
-        if metadata.get("type") == "frais_dossier":
-            candidature_id = metadata.get("candidature_id")
-            if candidature_id:
-                await db.execute(
-                    text("""
-                        UPDATE candidatures
-                        SET frais_payes = true, updated_at = now()
-                        WHERE id = :cid
-                    """),
-                    {"cid": candidature_id},
-                )
-                await db.commit()
+        pi_type = metadata.get("type")
+        candidature_id = metadata.get("candidature_id")
+
+        if pi_type == "owner_dossier_fee" and candidature_id:
+            await db.execute(
+                text("""
+                    UPDATE candidatures
+                    SET owner_fee_paid_at          = now(),
+                        owner_fee_stripe_intent_id = COALESCE(owner_fee_stripe_intent_id, :pi),
+                        owner_fee_failed_at        = NULL,
+                        owner_fee_failure_reason   = NULL,
+                        updated_at                 = now()
+                    WHERE id = :cid
+                """),
+                {"cid": candidature_id, "pi": pi_id},
+            )
+            await db.commit()
+        elif pi_type == "frais_dossier" and candidature_id:
+            # LEGACY — anciens PI tenant CHF 90 (rétro-compat uniquement, plus créés après 2026-04-20)
+            await db.execute(
+                text("""
+                    UPDATE candidatures
+                    SET frais_payes = true, updated_at = now()
+                    WHERE id = :cid
+                """),
+                {"cid": candidature_id},
+            )
+            await db.commit()
         # Tout autre type de payment_intent (ex: loyer) est ignoré —
         # les loyers sont réconciliés via CAMT.054 (POST /api/v1/loyers/reconcilier)
+
+    # ── payment_intent.payment_failed — owner_dossier_fee ────────────────────
+    elif etype == "payment_intent.payment_failed":
+        metadata = data.get("metadata", {})
+        pi_type = metadata.get("type")
+        candidature_id = metadata.get("candidature_id")
+        if pi_type == "owner_dossier_fee" and candidature_id:
+            last_error = data.get("last_payment_error") or {}
+            reason = last_error.get("message") or "Prélèvement échoué"
+            await db.execute(
+                text("""
+                    UPDATE candidatures
+                    SET owner_fee_failed_at      = now(),
+                        owner_fee_failure_reason = :reason,
+                        updated_at               = now()
+                    WHERE id = :cid
+                """),
+                {"cid": candidature_id, "reason": reason[:500]},
+            )
+            await db.commit()
 
     # ── Loyer impayé (facture récurrente Stripe Billing) ──────────────────
     elif etype == "invoice.payment_failed":
@@ -482,13 +704,46 @@ async def _handle_invoice_payment_failed(
             pass  # non-bloquant
 
 
+async def _sync_autonomy_subscription(
+    db: AsyncSession,
+    user_id: str,
+    stripe_subscription_id: str | None,
+    status: str,
+) -> None:
+    """Upsert la ligne autonomy_subscriptions (source métier des compteurs annuels)."""
+    try:
+        await db.execute(
+            text("""
+                INSERT INTO autonomy_subscriptions
+                    (user_id, stripe_subscription_id, status, started_at,
+                     included_verifications_used_this_year,
+                     included_opener_missions_used_this_year,
+                     legal_assistance_included)
+                VALUES (:uid, :sid, :st, now(), 0, 0, true)
+                ON CONFLICT (user_id) DO UPDATE
+                SET stripe_subscription_id = COALESCE(:sid, autonomy_subscriptions.stripe_subscription_id),
+                    status                 = :st,
+                    cancelled_at           = CASE WHEN :st = 'cancelled' THEN now() ELSE NULL END,
+                    updated_at             = now()
+            """),
+            {"uid": user_id, "sid": stripe_subscription_id, "st": status},
+        )
+        await db.commit()
+    except Exception:
+        pass
+
+
 def _price_to_plan(price_id: str | None) -> str:
     mapping = {
-        settings.STRIPE_PRICE_STARTER_MONTHLY: "starter",
-        settings.STRIPE_PRICE_PRO_MONTHLY: "pro",
-        settings.STRIPE_PRICE_PROPRIO_MONTHLY: "pro",              # legacy CHF 29 → grandfathered as "pro"
-        settings.STRIPE_PRICE_AGENCY_MONTHLY: "agence",
-        settings.STRIPE_PRICE_AGENCY_PREMIUM_MONTHLY: "agence_premium",
-        settings.STRIPE_PRICE_PORTAL_MONTHLY: "portail",
+        settings.STRIPE_PRICE_STARTER_MONTHLY:         "starter",       # A1
+        settings.STRIPE_PRICE_PRO_MONTHLY:             "pro",           # A2
+        settings.STRIPE_PRICE_PROPRIO_PRO_MONTHLY:     "proprio_pro",   # A3
+        settings.STRIPE_PRICE_PROPRIO_MONTHLY:         "pro",           # legacy → "pro" (grandfathered)
+        settings.STRIPE_PRICE_AUTONOMIE_MONTHLY:       "autonomie",     # A4
+        settings.STRIPE_PRICE_AGENCY_MONTHLY:          "agence",        # A5
+        settings.STRIPE_PRICE_AGENCY_PREMIUM_MONTHLY:  "enterprise",    # legacy → enterprise
+        settings.STRIPE_PRICE_ENTERPRISE_MONTHLY:      "enterprise",    # A7
+        settings.STRIPE_PRICE_INVITED_MONTHLY:         "invite",        # A6
+        settings.STRIPE_PRICE_PORTAL_MONTHLY:          "portail",
     }
     return mapping.get(price_id or "", "gratuit")

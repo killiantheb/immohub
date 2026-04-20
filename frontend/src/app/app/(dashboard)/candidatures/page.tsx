@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { C } from "@/lib/design-tokens";
+import { Analytics } from "@/lib/analytics";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 const supabase = createClient(
@@ -40,6 +41,9 @@ interface Candidature {
     summary: string;
   } | null;
   frais_payes: boolean;
+  owner_fee_amount: number | null;
+  owner_fee_paid_at: string | null;
+  owner_fee_failure_reason: string | null;
   visite_proposee_at: string | null;
   created_at: string;
   candidat?: Candidat;
@@ -100,6 +104,8 @@ export default function CandidaturesPage() {
   const [selected, setSelected] = useState<Candidature | null>(null);
   const [processing, setProcessing] = useState(false);
   const [total, setTotal] = useState(0);
+  const [confirmAcceptId, setConfirmAcceptId] = useState<string | null>(null);
+  const OWNER_FEE_CHF = 45;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -140,9 +146,16 @@ export default function CandidaturesPage() {
         prev.map((c) => (c.id === candidatureId ? { ...c, ...updated } : c))
       );
       if (selected?.id === candidatureId) setSelected((prev) => prev ? { ...prev, ...updated } : null);
+      if (statut === "acceptee") {
+        Analytics.tenantDossierAccepted(candidatureId);
+        const fee = updated?.owner_fee;
+        if (fee?.charged) Analytics.ownerFeeCharged(candidatureId, fee.amount_chf ?? OWNER_FEE_CHF);
+        else if (fee) Analytics.ownerFeeFailed(candidatureId, fee.reason ?? "unknown");
+      }
     } catch {
     } finally {
       setProcessing(false);
+      setConfirmAcceptId(null);
     }
   };
 
@@ -229,8 +242,8 @@ export default function CandidaturesPage() {
                         fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10,
                         background: cfg.bg, color: cfg.color,
                       }}>{cfg.label}</span>
-                      {c.frais_payes && (
-                        <span style={{ fontSize: 11, color: "var(--althy-green)", fontWeight: 600 }}>✓ Frais payés</span>
+                      {c.owner_fee_paid_at && (
+                        <span style={{ fontSize: 11, color: "var(--althy-green)", fontWeight: 600 }}>✓ CHF {c.owner_fee_amount ?? OWNER_FEE_CHF} prélevés</span>
                       )}
                     </div>
                     <div style={{ fontSize: 13, color: C.text2 }}>
@@ -363,7 +376,7 @@ export default function CandidaturesPage() {
                     Refuser
                   </button>
                   <button
-                    onClick={() => handleDecision(selected.id, "acceptee")}
+                    onClick={() => setConfirmAcceptId(selected.id)}
                     disabled={processing}
                     style={{
                       flex: 1, padding: "10px 0", borderRadius: 8,
@@ -377,29 +390,111 @@ export default function CandidaturesPage() {
                 </div>
               )}
 
-              {selected.statut === "acceptee" && !selected.frais_payes && (
+              {selected.statut === "acceptee" && selected.owner_fee_paid_at && (
                 <div style={{
                   background: "var(--althy-green-bg)", border: "1px solid var(--althy-green)",
                   borderRadius: 8, padding: "12px 14px", marginTop: 16,
                   fontSize: 13, color: "var(--althy-green)",
                 }}>
-                  ✓ Candidature acceptée. Le candidat doit régler CHF 90 de frais de dossier.
+                  ✓ Candidature acceptée. CHF {selected.owner_fee_amount ?? OWNER_FEE_CHF} prélevés (frais de dossier Althy).
                 </div>
               )}
 
-              {selected.statut === "acceptee" && selected.frais_payes && (
+              {selected.statut === "acceptee" && !selected.owner_fee_paid_at && selected.owner_fee_failure_reason && (
+                <div style={{
+                  background: "var(--althy-amber-bg)", border: "1px solid var(--althy-amber)",
+                  borderRadius: 8, padding: "12px 14px", marginTop: 16,
+                  fontSize: 13, color: "var(--althy-amber)",
+                }}>
+                  ⚠ Candidature acceptée, mais le prélèvement CHF {OWNER_FEE_CHF} a échoué : {selected.owner_fee_failure_reason}.
+                  <div style={{ marginTop: 6 }}>
+                    <Link href="/app/settings/paiement" style={{ color: "var(--althy-amber)", textDecoration: "underline", fontWeight: 600 }}>
+                      Mettre à jour ma carte
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {selected.statut === "acceptee" && !selected.owner_fee_paid_at && !selected.owner_fee_failure_reason && (
                 <div style={{
                   background: "var(--althy-green-bg)", border: "1px solid var(--althy-green)",
                   borderRadius: 8, padding: "12px 14px", marginTop: 16,
                   fontSize: 13, color: "var(--althy-green)",
                 }}>
-                  ✓ Frais de dossier réglés — procédez à la signature du bail.
+                  ✓ Candidature acceptée — prélèvement CHF {OWNER_FEE_CHF} en cours.
                 </div>
               )}
 
               <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ─── Modal confirmation acceptation (charge CHF 45 owner) ─────────── */}
+      {confirmAcceptId && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => !processing && setConfirmAcceptId(null)}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.55)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 100, padding: 16,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: C.surface, borderRadius: 14, padding: 24, maxWidth: 460,
+              width: "100%", boxShadow: "0 20px 60px rgba(15, 23, 42, 0.25)",
+            }}
+          >
+            <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: C.text }}>
+              Confirmer l'acceptation
+            </h3>
+            <p style={{ margin: "0 0 12px", fontSize: 14, color: C.text2, lineHeight: 1.5 }}>
+              En acceptant ce candidat, vous serez facturé <strong>CHF {OWNER_FEE_CHF}</strong> sur
+              votre carte enregistrée — frais de dossier Althy (vérification documents + scoring IA).
+            </p>
+            <p style={{ margin: "0 0 18px", fontSize: 13, color: C.text3, lineHeight: 1.5 }}>
+              Le locataire ne paie rien. Si le prélèvement échoue, la candidature restera acceptée
+              et vous pourrez mettre à jour votre carte ensuite.
+            </p>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setConfirmAcceptId(null)}
+                disabled={processing}
+                style={{
+                  padding: "10px 18px", borderRadius: 8, border: `1px solid ${C.border}`,
+                  background: C.surface, color: C.text2, fontSize: 14, fontWeight: 500,
+                  cursor: processing ? "not-allowed" : "pointer",
+                }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => handleDecision(confirmAcceptId, "acceptee")}
+                disabled={processing}
+                style={{
+                  padding: "10px 18px", borderRadius: 8, border: "none",
+                  background: "var(--althy-green)", color: "#fff", fontSize: 14, fontWeight: 600,
+                  cursor: processing ? "not-allowed" : "pointer",
+                  opacity: processing ? 0.6 : 1,
+                  display: "flex", alignItems: "center", gap: 6,
+                }}
+              >
+                {processing && (
+                  <span style={{
+                    display: "inline-block", width: 14, height: 14,
+                    border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff",
+                    borderRadius: "50%", animation: "spin 0.8s linear infinite",
+                  }} />
+                )}
+                Accepter et payer CHF {OWNER_FEE_CHF}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -18,7 +18,7 @@ export function Testimonials() {
         >
           <span
             style={{
-              color: C.orange,
+              color: C.prussian,
               fontSize: "0.75rem",
               fontWeight: 500,
               letterSpacing: "0.22em",
@@ -44,7 +44,7 @@ export function Testimonials() {
           }}
         >
           Ils ont choisi{" "}
-          <span style={{ color: C.orange }}>Althy.</span>
+          <span style={{ color: C.prussian }}>Althy.</span>
         </motion.h2>
       </div>
 
@@ -84,7 +84,7 @@ export function Testimonials() {
               boxShadow: "0 2px 12px rgba(40,18,8,0.06)",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = C.orangeBorder
+              e.currentTarget.style.borderColor = C.prussianBorder
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = C.border
@@ -93,7 +93,7 @@ export function Testimonials() {
             {/* Quote mark */}
             <div
               style={{
-                color: C.orange,
+                color: C.prussian,
                 fontSize: "3rem",
                 lineHeight: 0.8,
                 fontFamily: "var(--font-serif)",
@@ -125,11 +125,11 @@ export function Testimonials() {
                   height: 36,
                   borderRadius: "50%",
                   background: "rgba(15,46,76,0.10)",
-                  border: `1px solid ${C.orangeBorder}`,
+                  border: `1px solid ${C.prussianBorder}`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: C.orange,
+                  color: C.prussian,
                   fontSize: "0.8125rem",
                   fontWeight: 700,
                   flexShrink: 0,

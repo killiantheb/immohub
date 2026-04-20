@@ -57,7 +57,7 @@ export function LandingEstimation() {
       <div style={{ maxWidth: 700, margin: "0 auto" }}>
 
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: C.orange, textTransform: "uppercase", marginBottom: 10, margin: "0 0 10px" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", color: C.prussian, textTransform: "uppercase", marginBottom: 10, margin: "0 0 10px" }}>
             Estimation IA
           </p>
           <h2 style={{ fontFamily: serif, fontSize: "clamp(24px,3vw,36px)", fontWeight: 300, color: C.text, margin: "8px 0 10px" }}>
@@ -100,7 +100,7 @@ export function LandingEstimation() {
               {error && (
                 <p style={{ fontSize: 13, color: C.red, marginBottom: 12 }}>
                   {error}{" "}
-                  <Link href="/estimation" style={{ color: C.orange, fontWeight: 600 }}>
+                  <Link href="/estimation" style={{ color: C.prussian, fontWeight: 600 }}>
                     Rapport complet →
                   </Link>
                 </p>
@@ -108,7 +108,7 @@ export function LandingEstimation() {
 
               <button type="submit" disabled={loading} style={{
                 width: "100%", padding: "13px 0", borderRadius: 10,
-                background: loading ? "rgba(15,46,76,0.5)" : C.orange,
+                background: loading ? "rgba(15,46,76,0.5)" : C.prussian,
                 color: "#fff", border: "none", fontSize: 15, fontWeight: 600,
                 fontFamily: sans, cursor: loading ? "default" : "pointer",
               }}>
@@ -121,7 +121,7 @@ export function LandingEstimation() {
             </form>
           ) : (
             <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: C.orange, textTransform: "uppercase", marginBottom: 8 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: C.prussian, textTransform: "uppercase", marginBottom: 8 }}>
                 Résultat estimation
               </p>
               <div style={{ fontFamily: serif, fontSize: "clamp(28px,4vw,44px)", fontWeight: 300, color: C.text, margin: "0 0 8px" }}>
@@ -133,7 +133,7 @@ export function LandingEstimation() {
               </p>
               <Link href="/register?source=estimation" style={{
                 display: "inline-block", padding: "12px 28px", borderRadius: 10,
-                background: C.orange, color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none",
+                background: C.prussian, color: "#fff", fontSize: 14, fontWeight: 600, textDecoration: "none",
               }}>
                 Recevez le rapport complet → Inscription
               </Link>

@@ -69,7 +69,7 @@ export function ProprioSolo() {
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <p style={{
             fontSize: 11, fontWeight: 700, letterSpacing: "0.14em",
-            color: C.orange, textTransform: "uppercase", margin: "0 0 12px",
+            color: C.prussian, textTransform: "uppercase", margin: "0 0 12px",
           }}>
             Conçu pour vous
           </p>
@@ -91,17 +91,17 @@ export function ProprioSolo() {
               key={col.title}
               style={{
                 padding: "0 32px",
-                borderLeft: i > 0 ? `1px solid ${C.orangeBg}` : "none",
+                borderLeft: i > 0 ? `1px solid ${C.prussianBg}` : "none",
               }}
             >
               {/* Icon */}
               <div style={{
                 width: 44, height: 44, borderRadius: 10,
-                background: C.orangeBg, display: "flex",
+                background: C.prussianBg, display: "flex",
                 alignItems: "center", justifyContent: "center",
                 marginBottom: 18,
               }}>
-                <col.Icon size={22} color={C.orange} strokeWidth={1.8} />
+                <col.Icon size={22} color={C.prussian} strokeWidth={1.8} />
               </div>
 
               {/* Title */}
@@ -137,7 +137,7 @@ export function ProprioSolo() {
         <div style={{
           textAlign: "center", marginTop: 56,
           padding: "28px 24px",
-          background: C.orangeBg,
+          background: C.prussianBg,
           borderRadius: 14,
         }}>
           <p style={{
@@ -148,7 +148,7 @@ export function ProprioSolo() {
           </p>
           <Link href="/register?role=proprio_solo" style={{
             display: "inline-block", padding: "12px 28px", borderRadius: 10,
-            background: C.orange, color: "#fff", fontSize: 14, fontWeight: 600,
+            background: C.prussian, color: "#fff", fontSize: 14, fontWeight: 600,
             textDecoration: "none", fontFamily: sans,
           }}>
             Essayer Althy →

@@ -1301,7 +1301,7 @@ export default function BienDetailPage({
                   }}
                 >
                   <Check size={12} style={{ color: "var(--althy-green)", flexShrink: 0 }} />
-                  CHF 90 de frais uniquement si retenu
+                  Postuler 100% gratuit — vous ne payez jamais rien à Althy
                 </div>
               </div>
             </div>

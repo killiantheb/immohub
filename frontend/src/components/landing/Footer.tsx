@@ -30,7 +30,7 @@ export function Footer() {
               <span
                 style={{
                   fontFamily: "var(--font-serif)",
-                  color: C.orange,
+                  color: C.prussian,
                   fontSize: "1.625rem",
                   fontWeight: 500,
                   letterSpacing: "0.16em",
@@ -88,7 +88,7 @@ export function Footer() {
             <a
               href="mailto:contact@althy.ch"
               style={{
-                color: C.orange,
+                color: C.prussian,
                 textDecoration: "none",
                 fontSize: "0.875rem",
                 transition: "opacity 0.2s",
