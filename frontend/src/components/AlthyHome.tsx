@@ -119,11 +119,7 @@ export default function AlthyHome() {
     if (!action.id) return;
     setActionLoading(action.id);
     try {
-      if (action.type === "mark_paid") {
-        await api.post(`/transactions/${action.id}/mark-paid`, {});
-        setStatusText("Transaction marquée comme payée ✓");
-        setTimeout(() => fetchBriefing(), 1000);
-      } else if (action.type === "accept_mission") {
+      if (action.type === "accept_mission") {
         await api.put(`/missions/${action.id}/accept`, {});
         setStatusText("Mission acceptée ✓");
         setTimeout(() => fetchBriefing(), 1000);
@@ -183,8 +179,8 @@ export default function AlthyHome() {
 
   const homeByRole: Record<string, string> = {
     owner: "/app", agency: "/app", super_admin: "/app",
-    opener: "/app/ouvreurs", tenant: "/app/locataire",
-    company: "/app/artisans/devis", insurance: "/app/assurance",
+    opener: "/app/ouvreurs", tenant: "/app",
+    company: "/app/artisans/devis", insurance: "/bientot/assurance",
   };
   const homePath = homeByRole[profile?.role ?? ""] ?? "/app";
 

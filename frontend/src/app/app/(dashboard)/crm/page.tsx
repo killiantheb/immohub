@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '@/lib/api'
 import { C } from "@/lib/design-tokens";
+import { ComingSoon } from "@/components/ComingSoon";
+import { FLAGS } from "@/lib/flags";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Note {
@@ -88,6 +90,13 @@ function StatCard({ label, value, sub }: { label: string; value: number | string
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function CRMPage() {
+  if (!FLAGS.ROLE_AGENCE) {
+    return <ComingSoon title="Module CRM en préparation" phase="Phase 2" />;
+  }
+  return <CRMPageInner />;
+}
+
+function CRMPageInner() {
   const [stats, setStats] = useState<CRMStats | null>(null)
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)

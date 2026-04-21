@@ -7,6 +7,8 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { useCreateContract } from "@/lib/hooks/useContracts";
 import type { ContractType } from "@/lib/types";
 import { C } from "@/lib/design-tokens";
+import { ComingSoon } from "@/components/ComingSoon";
+import { FLAGS } from "@/lib/flags";
 
 const TYPE_OPTIONS: { value: ContractType; label: string }[] = [
   { value: "long_term",  label: "Longue durée" },
@@ -55,6 +57,13 @@ const sectionTitleStyle: React.CSSProperties = {
 };
 
 export default function NewContractPage() {
+  if (!FLAGS.ROLE_AGENCE) {
+    return <ComingSoon title="Module Contrats en préparation" phase="Phase 2" />;
+  }
+  return <NewContractPageInner />;
+}
+
+function NewContractPageInner() {
   const router = useRouter();
   const create = useCreateContract();
 

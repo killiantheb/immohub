@@ -27,6 +27,7 @@ import {
   FileCheck,
   Users,
   Compass,
+  Map,
 } from "lucide-react";
 
 // ── Nav items ─────────────────────────────────────────────────────────────────
@@ -52,6 +53,7 @@ function buildNavSet(role: string | null, planId: string | null): NavSet {
   // Atomes partagés
   const althy:         NavItem = { label: "Althy IA",          href: "/app/sphere",         icon: ic(Sparkles),          section: "sphere" };
   const biens:         NavItem = { label: "Biens",              href: "/app/biens",           icon: ic(Building2),         section: "biens" };
+  const carte:         NavItem = { label: "Carte",              href: "/app/carte",           icon: ic(Map),               section: "carte" };
   const finances:      NavItem = { label: "Finances",           href: "/app/finances",        icon: ic(LineChart),         section: "finances" };
   const documents:     NavItem = { label: "Documents",          href: "/app/documents",       icon: ic(FileText),          section: "documents" };
   const communication: NavItem = { label: "Communication",      href: "/app/communication",   icon: ic(Mail),              section: "communication" };
@@ -88,6 +90,7 @@ function buildNavSet(role: string | null, planId: string | null): NavSet {
         main: [
           althy,
           biens,
+          carte,
           candidatures,
           interventions,
           finances,
@@ -112,7 +115,7 @@ function buildNavSet(role: string | null, planId: string | null): NavSet {
 
     case "agence":
       return {
-        main:   [althy, biens, candidatures, interventions, finances, documents, communication, portail],
+        main:   [althy, biens, carte, candidatures, interventions, finances, documents, communication, portail],
         bottom: [profile, settings],
       };
 
@@ -129,7 +132,7 @@ function buildNavSet(role: string | null, planId: string | null): NavSet {
     case "super_admin":
       return {
         main:   [
-          althy, biens, candidatures, interventions, finances, documents, communication, portail,
+          althy, biens, carte, candidatures, interventions, finances, documents, communication, portail,
           { label: "Administration", href: "/app/admin", icon: ic(LayoutGrid), section: "admin" },
         ],
         bottom: [profile, settings],

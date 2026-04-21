@@ -16,19 +16,10 @@ const IMMERSIVE_PATHS = ["/app/sphere"];
  * Un utilisateur avec un rôle absent de la liste est redirigé vers /app/sphere.
  */
 const RESTRICTED_PAGES: Record<string, string[]> = {
-  "/app/hunters":          ["proprio_solo", "agence", "super_admin"],
-  "/app/hunter":           ["hunter",       "super_admin"],
-  "/app/vente":            ["proprio_solo", "agence", "super_admin"],
-  "/app/annonces":         ["proprio_solo", "agence", "super_admin"],
   "/app/ouvreurs":         ["opener",       "super_admin"],
   "/app/ouvreur":          ["opener",       "super_admin"],
-  "/app/comptabilite":     ["proprio_solo", "agence", "super_admin"],
   "/app/mes-candidatures": ["locataire",    "acheteur_premium", "super_admin"],
   "/app/candidatures":     ["proprio_solo", "agence", "super_admin"],
-  "/app/acheteur":         ["acheteur_premium", "super_admin"],
-  "/app/expert":           ["expert",       "super_admin"],
-  "/app/assurance":        ["proprio_solo", "locataire", "super_admin"],
-  "/app/transactions":     ["proprio_solo", "agence", "super_admin"],
   "/app/portail":          ["agence",       "super_admin"],
 };
 
@@ -38,11 +29,6 @@ const RESTRICTED_PAGES: Record<string, string[]> = {
  */
 import type { FlagName } from "@/lib/flags";
 const FLAG_GATED_PAGES: Record<string, FlagName> = {
-  "/app/vente":        "FEATURE_VENTE",
-  "/app/assurance":    "FEATURE_INSURANCE",
-  "/app/transactions": "FEATURE_TRANSACTIONS",
-  "/app/hunters":      "ROLE_HUNTER",
-  "/app/hunter":       "ROLE_HUNTER",
   "/app/portail":      "ROLE_PORTAIL_PROPRIO",
 };
 

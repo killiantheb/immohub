@@ -23,6 +23,8 @@ import type { ContractStatus, ContractType } from "@/lib/types";
 import { NotificationDraft } from "@/components/NotificationDraft";
 import { DocumentQuickGenerator } from "@/components/DocumentQuickGenerator";
 import { C } from "@/lib/design-tokens";
+import { ComingSoon } from "@/components/ComingSoon";
+import { FLAGS } from "@/lib/flags";
 
 
 const CONTRACT_TYPE_TO_BAIL: Record<string, string> = {
@@ -102,6 +104,13 @@ function fmt(date: string | null | undefined) {
 }
 
 export default function ContractDetailPage() {
+  if (!FLAGS.ROLE_AGENCE) {
+    return <ComingSoon title="Module Contrats en préparation" phase="Phase 2" />;
+  }
+  return <ContractDetailPageInner />;
+}
+
+function ContractDetailPageInner() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 

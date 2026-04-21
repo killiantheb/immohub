@@ -11,10 +11,8 @@ from app.routers import (
     contracts,
     dashboard,
     missions,
-    openers,
     properties,
     rfq,
-    transactions,
 )
 from app.routers.ai_documents import router as ai_documents_router
 from app.routers.ai_scoring import router as ai_scoring_router
@@ -26,7 +24,6 @@ from app.routers.documents import router as documents_router
 from app.routers.documents_althy import router as docs_althy_router
 from app.routers.interventions_althy import router as interventions_althy_router
 from app.routers.locataires import router as locataires_router
-from app.routers.missions_ouvreurs import router as missions_ouvreurs_router
 from app.routers.notifications import router as notifications_router
 from app.routers.paiements import router as paiements_router
 from app.routers.profiles_artisans import router as profiles_artisans_router
@@ -34,17 +31,14 @@ from app.routers.geocode import router as geocode_router
 from app.routers.matching import router as matching_router
 from app.routers.scoring import router as scoring_router
 from app.routers.favorites import router as favorites_router
-from app.routers.insurance import router as insurance_router
 from app.routers.ratings import router as ratings_router
 from app.routers.smart_onboarding import router as smart_onboarding_router
 from app.routers.tenants import router as tenants_router
 from app.routers.listings import router as listings_router
 from app.routers.marketplace import router as marketplace_router
-from app.routers.hunters import router as hunters_router
 from app.routers.stripe_webhooks import router as stripe_router
 from app.routers.portail import router as portail_router
 from app.routers.integrations import router as integrations_router
-from app.routers.vente import router as vente_router
 from app.routers.rgpd import router as rgpd_router
 from app.routers.sphere_agent import router as sphere_router
 from app.routers.notations import router as notations_router
@@ -158,8 +152,6 @@ async def add_security_headers(request: Request, call_next):
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(properties.router, prefix="/api/v1/properties", tags=["properties"])
 app.include_router(contracts.router, prefix="/api/v1/contracts", tags=["contracts"])
-app.include_router(transactions.router, prefix="/api/v1/transactions", tags=["transactions"])
-app.include_router(openers.router, prefix="/api/v1/openers", tags=["openers"])
 app.include_router(missions.router, prefix="/api/v1/missions", tags=["missions"])
 app.include_router(companies.router, prefix="/api/v1/companies", tags=["companies"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
@@ -173,7 +165,6 @@ app.include_router(tenants_router, prefix="/api/v1/tenants", tags=["tenants"])
 app.include_router(ratings_router, prefix="/api/v1/ratings", tags=["ratings"])
 app.include_router(favorites_router, prefix="/api/v1/favorites", tags=["favorites"])
 app.include_router(agency_settings_router, prefix="/api/v1/agency", tags=["agency"])
-app.include_router(insurance_router, prefix="/api/v1/insurance", tags=["insurance"])
 app.include_router(crm_router, prefix="/api/v1/crm", tags=["crm"])
 app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
 # ── Althy core routers ────────────────────────────────────────────────────────
@@ -182,7 +173,6 @@ app.include_router(locataires_router, prefix="/api/v1/locataires", tags=["locata
 app.include_router(docs_althy_router, prefix="/api/v1/docs-althy", tags=["docs-althy"])
 app.include_router(paiements_router, prefix="/api/v1/paiements", tags=["paiements"])
 app.include_router(interventions_althy_router, prefix="/api/v1/interventions-althy", tags=["interventions-althy"])
-app.include_router(missions_ouvreurs_router, prefix="/api/v1/ouvreurs", tags=["ouvreurs"])
 app.include_router(profiles_artisans_router, prefix="/api/v1/profiles-artisans", tags=["profiles-artisans"])
 app.include_router(scoring_router, prefix="/api/v1/scoring", tags=["scoring"])
 app.include_router(notifications_router, prefix="/api/v1/notifications", tags=["notifications"])
@@ -190,11 +180,9 @@ app.include_router(matching_router, prefix="/api/v1/matching", tags=["matching"]
 app.include_router(geocode_router, prefix="/api/v1/geocode", tags=["geocode"])
 app.include_router(listings_router, prefix="/api/v1/listings", tags=["listings"])
 app.include_router(marketplace_router, prefix="/api/v1/marketplace", tags=["marketplace"])
-app.include_router(hunters_router, prefix="/api/v1/hunters", tags=["hunters"])
 app.include_router(stripe_router, prefix="/api/v1/webhooks", tags=["stripe"])
 app.include_router(portail_router, prefix="/api/v1/portail", tags=["portail"])
 app.include_router(integrations_router, prefix="/api/v1/integrations", tags=["integrations"])
-app.include_router(vente_router, prefix="/api/v1/vente", tags=["vente"])
 app.include_router(rgpd_router, prefix="/api/v1/rgpd", tags=["rgpd"])
 app.include_router(sphere_router, prefix="/api/v1", tags=["sphere"])
 app.include_router(notations_router, prefix="/api/v1", tags=["notations"])

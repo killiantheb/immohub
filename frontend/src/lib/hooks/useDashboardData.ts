@@ -186,53 +186,6 @@ export function usePotentielIA(bienId: string | undefined) {
   });
 }
 
-// ── Ouvreur dashboard ─────────────────────────────────────────────────────────
-
-export function useOuvreurDashboard() {
-  const today = new Date().toISOString().slice(0, 10);
-  const mois = new Date().toISOString().slice(0, 7);
-
-  const missions = useQuery({
-    queryKey: ["dashboard", "ouvreur", "missions"],
-    queryFn: async () => {
-      const { data } = await api.get<MissionOuvreur[]>("/ouvreurs/missions", {
-        params: { size: 100 },
-      });
-      return data;
-    },
-    staleTime: 30_000,
-  });
-
-  const m = missions.data ?? [];
-
-  const missionsDuJour = m.filter(ms => ms.date_mission === today);
-  const missionsProches = m.filter(
-    ms => ms.date_mission && ms.date_mission > today && ms.statut !== "annulee"
-  ).sort((a, b) => (a.date_mission ?? "").localeCompare(b.date_mission ?? ""));
-  const missionsProposees = m.filter(ms => ms.statut === "proposee");
-  const missionsHistorique = m.filter(ms => ms.statut === "effectuee");
-  const missionsMois = m.filter(ms => ms.date_mission?.startsWith(mois));
-  const gainsMois = missionsMois
-    .filter(ms => ms.statut === "effectuee")
-    .reduce((s, ms) => s + Number(ms.remuneration ?? 0), 0);
-  const tauxAcceptation = m.length
-    ? Math.round((m.filter(ms => ms.statut !== "proposee" && ms.statut !== "annulee").length / Math.max(m.length, 1)) * 100)
-    : 0;
-
-  return {
-    isLoading: missions.isLoading,
-    missionsDuJour,
-    missionsProches,
-    missionsProposees,
-    missionsHistorique,
-    metrics: {
-      gainsMois,
-      nbMissionsMois: missionsMois.length,
-      tauxAcceptation,
-    },
-  };
-}
-
 // ── Artisan dashboard ─────────────────────────────────────────────────────────
 
 import type { Devis } from "./useBiens";

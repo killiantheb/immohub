@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   AlertTriangle, ArrowRight, Banknote, Bell, Briefcase, Building2,
   Calendar, CheckCircle2, Clock, Download, Euro,
-  FileText, Globe, Home, Layers, MapPin, Play, Plus, Send,
+  FileText, Globe, Home, Layers, MapPin, Plus, Send,
   Sparkles, Star, TrendingUp, Users, Wrench, X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -18,7 +18,7 @@ import { useAuthStore } from "@/lib/store/authStore";
 import { useUser } from "@/lib/auth";
 import type {
   Bien, Locataire, Paiement, Intervention,
-  MissionOuvreur, DocumentAlthy,
+  DocumentAlthy,
 } from "@/lib/hooks/useDashboardData";
 import { DashboardPortail } from "./DashboardPortail";
 import {
@@ -134,7 +134,7 @@ export const DASHBOARD_CONFIGS: Record<UserRole, DashboardConfig> = {
       { key: "missions_actives", label: "Chantiers actifs",    icon: Wrench,    endpoint: "/interventions-althy/" },
     ],
     quickActions: [
-      { label: "Voir les missions", action: "/app/ouvreurs/missions", icon: Briefcase },
+      { label: "Voir les missions", action: "/app/artisans/missions", icon: Briefcase },
       { label: "Mes devis",         action: "/app/artisans/devis",    icon: FileText },
     ],
     sections: [
@@ -182,16 +182,10 @@ export const DASHBOARD_CONFIGS: Record<UserRole, DashboardConfig> = {
   opener: {
     role: "opener",
     kpis: [
-      { key: "revenus_ouvreur", label: "Revenus ce mois",  icon: Euro,         endpoint: "/ouvreurs/missions" },
-      { key: "missions_mois",   label: "Missions ce mois", icon: CheckCircle2, endpoint: "/ouvreurs/missions" },
       { key: "note_moyenne",    label: "Note moyenne",     icon: Star,         endpoint: "/ratings/" },
     ],
-    quickActions: [
-      { label: "Mes missions", action: "/app/ouvreurs/missions", icon: Briefcase },
-    ],
-    sections: [
-      { key: "missions_jour", title: "Missions du jour", component: "missions_jour" },
-    ],
+    quickActions: [],
+    sections: [],
   },
 
   expert: {
@@ -211,15 +205,10 @@ export const DASHBOARD_CONFIGS: Record<UserRole, DashboardConfig> = {
   hunter: {
     role: "hunter",
     kpis: [
-      { key: "missions_actives", label: "Mandats actifs", icon: Briefcase, endpoint: "/hunters/" },
-      { key: "revenus_mois",     label: "Commissions",    icon: Euro,      endpoint: "/paiements/" },
+      { key: "revenus_mois", label: "Commissions", icon: Euro, endpoint: "/paiements/" },
     ],
-    quickActions: [
-      { label: "Mes mandats", action: "/app/hunters", icon: Briefcase },
-    ],
-    sections: [
-      { key: "missions_actives", title: "Mandats en cours", component: "chantiers_actifs" },
-    ],
+    quickActions: [],
+    sections: [],
   },
 
   acheteur_premium: {
@@ -331,10 +320,6 @@ interface UnifiedData {
   factureeMois:        number;
   // Portail
   portail:             PortailData | null;
-  // Opener
-  missionsDuJour:      MissionOuvreur[];
-  gainsMois:           number;
-  nbMissionsMois:      number;
 }
 
 function useUnifiedData(role: UserRole | null): UnifiedData {
@@ -342,7 +327,6 @@ function useUnifiedData(role: UserRole | null): UnifiedData {
   const isTenant   = role === "locataire";
   const isArtisan  = role === "artisan" || role === "expert" || role === "hunter";
   const isPortail  = role === "portail_proprio";
-  const isOpener   = role === "opener";
 
   const moisCourant = new Date().toISOString().slice(0, 7);
   const today       = new Date().toISOString().slice(0, 10);
@@ -426,13 +410,6 @@ function useUnifiedData(role: UserRole | null): UnifiedData {
     enabled: isPortail, staleTime: 60_000,
   });
 
-  // ── Opener queries ───────────────────────────────────────────────────────────
-  const missionsQ = useQuery({
-    queryKey: ["ud", "missions"],
-    queryFn: async () => { const { data } = await api.get<MissionOuvreur[]>("/ouvreurs/missions", { params: { size: 100 } }); return data; },
-    enabled: isOpener, staleTime: 30_000,
-  });
-
   // ── Derive values ─────────────────────────────────────────────────────────────
   const biensData       = biensQ.data ?? [];
   const locsData        = locatairesQ.data ?? [];
@@ -460,13 +437,8 @@ function useUnifiedData(role: UserRole | null): UnifiedData {
   const chantiersEnCours = artisanInter.filter(i => i.statut === "en_cours" || i.statut === "planifie");
   const factureeMois = artisanPai.filter(p => p.mois === moisCourant && p.statut === "recu").reduce((s, p) => s + Number(p.montant), 0);
 
-  const missions    = missionsQ.data ?? [];
-  const mduJour     = missions.filter(m => m.date_mission === today);
-  const missionsMois = missions.filter(m => m.date_mission?.startsWith(moisCourant));
-  const gainsMois   = missionsMois.filter(m => m.statut === "effectuee").reduce((s, m) => s + Number(m.remuneration ?? 0), 0);
-
   return {
-    isLoading: biensQ.isLoading || monLocataireQ.isLoading || artisanInterQ.isLoading || portailQ.isLoading || missionsQ.isLoading,
+    isLoading: biensQ.isLoading || monLocataireQ.isLoading || artisanInterQ.isLoading || portailQ.isLoading,
     biens: bwl,
     loyersMois, loyersAttente, interOuvertes, biensVacants,
     paiements: paiManagerData,
@@ -478,9 +450,6 @@ function useUnifiedData(role: UserRole | null): UnifiedData {
     paiementMois: paiementMoisQ.data ?? null,
     chantiersEnCours, factureeMois,
     portail: portailQ.data ?? null,
-    missionsDuJour: mduJour,
-    gainsMois,
-    nbMissionsMois: missionsMois.length,
   };
 }
 
@@ -528,9 +497,6 @@ function computeKpiValues(
     // Portail
     loyers_recus:          { value: fmtCHF(port.prochain_loyer), sub: port.loyer_statut === "recu" ? "Reçu ✓" : "En attente", isUrgent: false, trend: port.loyer_statut === "recu" ? "up" : "neutral" },
     bail_statut:           { value: port.bail_statut === "actif" ? "Actif" : "Expirant", sub: `Fin ${port.bail_fin}`, isUrgent: false, trend: port.bail_statut === "actif" ? "up" : "down" },
-    // Opener
-    revenus_ouvreur:       { value: fmtCHF(d.gainsMois),        sub: "Missions effectuées",            isUrgent: false, trend: "up" },
-    missions_mois:         { value: String(d.nbMissionsMois),   sub: "Ce mois-ci",                     isUrgent: false, trend: "neutral" },
     note_moyenne:          { value: "4.8 ★",                    sub: "Sur 28 avis",                    isUrgent: false, trend: "up" },
   };
 }
@@ -562,12 +528,6 @@ const DOCS_MOCK = [
   { id: "2", nom: "Quittance mars 2026",    date: "2026-03-01" },
   { id: "3", nom: "Quittance février 2026", date: "2026-02-01" },
   { id: "4", nom: "EDL entrée",             date: "2024-03-01" },
-];
-
-const MISSIONS_MOCK = [
-  { heure: "09:30", type: "Visite",           adresse: "Rue de Rive 14, Genève",       statut: "confirmée" },
-  { heure: "11:00", type: "État des lieux",   adresse: "Av. de la Gare 8, Lausanne",   statut: "en cours" },
-  { heure: "14:30", type: "Visite",           adresse: "Chemin des Fleurs 3, Nyon",    statut: "terminée" },
 ];
 
 // ── Section components ────────────────────────────────────────────────────────
@@ -1055,136 +1015,6 @@ function SectionPortailPaiements({ data }: SectionProps) {
   );
 }
 
-function fmtElapsed(startTime: string): string {
-  const [h, m] = startTime.split(":").map(Number);
-  const startMin = h * 60 + m;
-  const now = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  const diff = Math.max(0, nowMin - startMin);
-  const hours = Math.floor(diff / 60);
-  const mins = diff % 60;
-  return hours > 0 ? `${hours}h ${mins}min` : `${mins}min`;
-}
-
-function MissionCard({ mission, isMock }: { mission: { id: string; heure: string; type: string; adresse: string; statut: string; started: boolean; heure_debut?: string | null }; isMock: boolean }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [started, setStarted] = useState(mission.started);
-  const [completed, setCompleted] = useState(mission.statut === "effectuee");
-  const [startTime, setStartTime] = useState(mission.heure_debut ?? null);
-  const [, setTick] = useState(0);
-
-  // Tick every minute to update elapsed time
-  useState(() => {
-    if (!started || completed) return;
-    const iv = setInterval(() => setTick(t => t + 1), 60_000);
-    return () => clearInterval(iv);
-  });
-
-  async function handleStart() {
-    if (isMock) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await api.post(`/ouvreurs/missions/${mission.id}/start`);
-      setStarted(true);
-      setStartTime(data.heure_debut ?? new Date().toTimeString().slice(0, 5));
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setError(msg ?? "Erreur lors du démarrage");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleComplete() {
-    if (isMock) return;
-    setLoading(true);
-    setError(null);
-    try {
-      await api.post(`/ouvreurs/missions/${mission.id}/complete`);
-      setCompleted(true);
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setError(msg ?? "Erreur lors de la complétion");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const displayStatut = completed ? "effectuée" : started ? "en cours" : mission.statut;
-
-  return (
-    <DCard style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 8, background: "rgba(26,22,18,0.05)", color: DC.muted }}>{mission.heure}</span>
-        <div>
-          <p style={{ fontSize: 13, fontWeight: 600, color: DC.text, marginBottom: 2 }}>{mission.type}</p>
-          <p style={{ fontSize: 12, color: DC.muted, display: "flex", alignItems: "center", gap: 4 }}><MapPin size={11} />{mission.adresse}</p>
-          {started && !completed && startTime && (
-            <p style={{ fontSize: 11, color: DC.orange, fontWeight: 600, marginTop: 2 }}>
-              En cours depuis {fmtElapsed(startTime)}
-            </p>
-          )}
-        </div>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexDirection: "column" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <StatusBadge statut={displayStatut} />
-          {!completed && !started && mission.statut === "confirmée" && (
-            <button
-              onClick={handleStart}
-              disabled={loading}
-              style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 14px", borderRadius: 8, border: "none", background: DC.orange, color: "#fff", fontSize: 12, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1 }}
-            >
-              <Play size={11} /> {loading ? "…" : "Démarrer"}
-            </button>
-          )}
-          {started && !completed && (
-            <button
-              onClick={handleComplete}
-              disabled={loading}
-              style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 14px", borderRadius: 8, border: "none", background: "var(--althy-green)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1 }}
-            >
-              <CheckCircle2 size={11} /> {loading ? "…" : "Terminer"}
-            </button>
-          )}
-        </div>
-        {error && <p style={{ fontSize: 11, color: "var(--althy-red)", margin: 0 }}>{error}</p>}
-      </div>
-    </DCard>
-  );
-}
-
-function SectionMissionsJour({ data }: SectionProps) {
-  const isMock = data.missionsDuJour.length === 0;
-  const missions = !isMock
-    ? data.missionsDuJour.map(m => ({
-        id: m.id,
-        heure: (m.creneau_debut as unknown as string)?.slice(0, 5) ?? "–",
-        type: m.type === "edl_entree" ? "État des lieux entrée" : m.type === "edl_sortie" ? "État des lieux sortie" : m.type === "visite" ? "Visite" : m.type ?? "Mission",
-        adresse: `Bien #${m.bien_id?.slice(0, 8) ?? "–"}`,
-        statut: m.statut === "acceptee" ? "confirmée" : m.statut,
-        started: !!m.heure_debut,
-        heure_debut: m.heure_debut,
-      }))
-    : MISSIONS_MOCK.map((m, i) => ({ id: `mock-${i}`, ...m, started: false, heure_debut: null as string | null }));
-  return (
-    <div style={{ marginBottom: "2rem" }}>
-      <DSectionTitle>Missions du jour</DSectionTitle>
-      {missions.length === 0 ? (
-        <DEmptyState icon={CheckCircle2} title="Aucune mission aujourd'hui" subtitle="Profitez de votre journée !" />
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          {missions.map(m => (
-            <MissionCard key={m.id} mission={m} isMock={isMock} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Section registry ──────────────────────────────────────────────────────────
 
 type SectionRendererFn = (props: SectionProps) => React.ReactNode;
@@ -1202,7 +1032,6 @@ const SECTION_REGISTRY: Record<string, SectionRendererFn> = {
   agents:             ()  => <SectionAgents />,
   portail_documents:  (p) => <SectionPortailDocuments {...p} />,
   portail_paiements:  (p) => <SectionPortailPaiements {...p} />,
-  missions_jour:      (p) => <SectionMissionsJour {...p} />,
 };
 
 // ── H-care KPI card ───────────────────────────────────────────────────────────

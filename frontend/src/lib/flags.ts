@@ -6,7 +6,7 @@
  *
  * Usage :
  *   import { FLAGS, isEnabled } from "@/lib/flags";
- *   if (isEnabled("FEATURE_VENTE")) { ... }
+ *   if (isEnabled("ROLE_AGENCE")) { ... }
  */
 
 export const FLAGS = {
@@ -27,9 +27,6 @@ export const FLAGS = {
   ROLE_EXPERT:           false,
   ROLE_HUNTER:           false,
   ROLE_ACHETEUR_PREMIUM: false,
-  FEATURE_INSURANCE:     false,
-  FEATURE_VENTE:         false,
-  FEATURE_TRANSACTIONS:  false,
 } as const;
 
 export type FlagName = keyof typeof FLAGS;
@@ -56,9 +53,6 @@ export const ROLE_FLAG: Partial<Record<string, FlagName>> = {
  */
 export const SECTION_FLAG: Partial<Record<string, FlagName>> = {
   portail:    "ROLE_PORTAIL_PROPRIO",
-  vente:      "FEATURE_VENTE",
-  hunters:    "ROLE_HUNTER",
-  insurance:  "FEATURE_INSURANCE",
 };
 
 /** Vérifie si un rôle est activé par les feature flags. */

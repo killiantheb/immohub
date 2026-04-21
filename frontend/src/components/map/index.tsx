@@ -2,7 +2,7 @@
  * Map components — dynamic SSR-safe exports.
  *
  * Usage:
- *   import { ZoneMap, PropertyMap, DashboardMap, MapMissionProposal } from "@/components/map";
+ *   import { ZoneMap, PropertyMap, DashboardMap } from "@/components/map";
  */
 import dynamic from "next/dynamic";
 
@@ -36,11 +36,6 @@ export const PropertyMap = dynamic(() => import("./PropertyMap"), {
 export const DashboardMap = dynamic(() => import("./DashboardMap"), {
   ssr: false,
   loading: () => <MapSkeleton height={500} />,
-});
-
-export const MapMissionProposal = dynamic(() => import("./MapMissionProposal"), {
-  ssr: false,
-  loading: () => <MapSkeleton height={400} />,
 });
 
 export type { ZoneMapData, ZoneLocation, TempZone } from "./ZoneMap";

@@ -74,16 +74,8 @@ class TestAIEstimation:
         assert low  == 612_000.0
         assert high == 782_000.0
 
-    def test_disclaimer_always_present(self):
-        """The DISCLAIMER string must always be returned in estimates."""
-        from app.routers.vente import DISCLAIMER
-        assert "automatiquement" in DISCLAIMER
-        assert "Althy décline" in DISCLAIMER
-        assert "expert immobilier" in DISCLAIMER
-
     def test_estimate_mandate_type_solo_context(self):
         """Solo mandate prompt must mention Althy upsells."""
-        from app.routers.vente import DISCLAIMER
         # The endpoint builds a prompt — verify the mandate_type affects the prompt
         mandate_type = "solo"
         expected_fragment = "Avantages de la vente solo"

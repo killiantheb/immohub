@@ -16,21 +16,38 @@ const nextConfig = {
       // Dashboard — URLs anglaises → françaises
       { source: "/app/properties/:path*",  destination: "/app/biens/:path*",            permanent: true },
       { source: "/app/openers/:path*",     destination: "/app/ouvreurs/:path*",         permanent: true },
-      { source: "/app/tenant",             destination: "/app/locataire",               permanent: true },
-      { source: "/app/accounting",         destination: "/app/comptabilite",            permanent: true },
+      { source: "/app/tenant",             destination: "/app",                         permanent: true },
+      { source: "/app/accounting",         destination: "/app/finances?tab=comptabilite", permanent: true },
       { source: "/app/advisor",            destination: "/app/sphere",                  permanent: true },
       { source: "/app/dashboard",          destination: "/app/sphere",                  permanent: true },
       { source: "/app/profile",            destination: "/app/profil",                  permanent: true },
-      { source: "/app/listings",           destination: "/app/annonces",                permanent: true },
-      { source: "/app/insurance",          destination: "/app/assurance",               permanent: true },
+      { source: "/app/listings",           destination: "/app/biens",                   permanent: true },
+      { source: "/app/insurance",          destination: "/bientot/assurance",           permanent: true },
 
       // Redirects fonctionnels (pages consolidées)
       { source: "/app/overview",           destination: "/app",                         permanent: true },
       { source: "/app/companies",          destination: "/app/agence",                  permanent: true },
       { source: "/app/favorites",          destination: "/app/biens?tab=favoris",       permanent: true },
-      { source: "/app/publications/:path*",destination: "/app/annonces",                permanent: true },
+      { source: "/app/publications/:path*",destination: "/app/biens",                   permanent: true },
       { source: "/app/rfqs/:path*",        destination: "/app/artisans/devis",          permanent: true },
       { source: "/onboarding",             destination: "/bienvenue",                   permanent: true },
+
+      // Cleanup orphan pages (audit 2026-04-21) — pages supprimées
+      { source: "/app/comptabilite/:path*",destination: "/app/finances?tab=comptabilite", permanent: true },
+      { source: "/app/messagerie",         destination: "/app/communication?tab=messages", permanent: true },
+      { source: "/app/agenda",             destination: "/app/communication?tab=agenda",   permanent: true },
+      { source: "/app/whatsapp",           destination: "/app/communication?tab=whatsapp", permanent: true },
+      { source: "/app/annonces",           destination: "/app/biens",                   permanent: true },
+      { source: "/app/transactions",       destination: "/app/finances",                permanent: true },
+      { source: "/app/locataire",          destination: "/app",                         permanent: true },
+
+      // Pages rôles désactivés → waitlist /bientot/[role]
+      { source: "/app/acheteur",           destination: "/bientot/acheteur_premium",    permanent: true },
+      { source: "/app/expert",             destination: "/bientot/expert",              permanent: true },
+      { source: "/app/hunter",             destination: "/bientot/hunter",              permanent: true },
+      { source: "/app/hunters",            destination: "/bientot/hunter",              permanent: true },
+      { source: "/app/vente",              destination: "/bientot/vente",               permanent: true },
+      { source: "/app/assurance",          destination: "/bientot/assurance",           permanent: true },
     ];
   },
 

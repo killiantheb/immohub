@@ -6,6 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { AlthyMap, type AlthyMapMarker } from "@/components/map/AlthyMap";
 import { C } from "@/lib/design-tokens";
+import { ComingSoon } from "@/components/ComingSoon";
+import { FLAGS } from "@/lib/flags";
 
 // Coordonnées par canton/ville pour les ouvreurs
 const CITY_COORDS: Record<string, [number, number]> = {
@@ -131,6 +133,13 @@ function OuvreurCard({ o }: { o: Ouvreur }) {
 const CANTONS_CH = ["GE","VD","VS","FR","BE","ZH","BS","BL","AG","SO","TI","NE","JU"];
 
 export default function OuvreursPage() {
+  if (!FLAGS.ROLE_OPENER) {
+    return <ComingSoon title="Espace Ouvreur en préparation" phase="Phase 3" />;
+  }
+  return <OuvreursPageInner />;
+}
+
+function OuvreursPageInner() {
   const [search,     setSearch]     = useState("");
   const [canton,     setCanton]     = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);

@@ -17,6 +17,8 @@ import {
 import { useContracts, useDeleteContract, useSignContract } from "@/lib/hooks/useContracts";
 import type { ContractStatus, ContractType } from "@/lib/types";
 import { C } from "@/lib/design-tokens";
+import { ComingSoon } from "@/components/ComingSoon";
+import { FLAGS } from "@/lib/flags";
 
 
 // ── Labels ────────────────────────────────────────────────────────────────────
@@ -55,6 +57,13 @@ function ContractStatusBadge({ status }: { status: string }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ContractsPage() {
+  if (!FLAGS.ROLE_AGENCE) {
+    return <ComingSoon title="Module Contrats en préparation" phase="Phase 2" />;
+  }
+  return <ContractsPageInner />;
+}
+
+function ContractsPageInner() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
