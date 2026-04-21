@@ -17,7 +17,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-router = APIRouter(prefix="/ai", tags=["ai"])
+router = APIRouter(tags=["ai"])
 
 DbDep       = Annotated[AsyncSession, Depends(get_db)]
 AuthUserDep = Annotated[User, Depends(get_current_user)]

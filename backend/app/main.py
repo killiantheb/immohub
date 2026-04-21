@@ -15,9 +15,7 @@ from app.routers import (
     properties,
     rfq,
 )
-from app.routers.ai_documents import router as ai_documents_router
-from app.routers.ai_scoring import router as ai_scoring_router
-from app.routers.ai_listings import router as ai_listings_router
+from app.routers.ai import router as ai_router
 from app.routers.agency_settings import router as agency_settings_router
 from app.routers.biens import router as biens_router
 from app.routers.crm import router as crm_router
@@ -34,7 +32,6 @@ from app.routers.scoring import router as scoring_router
 from app.routers.favorites import router as favorites_router
 from app.routers.ratings import router as ratings_router
 from app.routers.smart_onboarding import router as smart_onboarding_router
-from app.routers.tenants import router as tenants_router
 from app.routers.listings import router as listings_router
 from app.routers.marketplace import router as marketplace_router
 from app.routers.stripe_webhooks import router as stripe_router
@@ -49,7 +46,6 @@ from app.routers.messagerie import router as messagerie_router
 from app.routers.agenda import router as agenda_router
 from app.routers.whatsapp import router as whatsapp_router
 from app.routers.onboarding import router as onboarding_router
-from app.routers.sphere_carte import router as sphere_carte_router
 from app.routers.contact import router as contact_router
 from app.routers.estimation import router as estimation_router
 from app.routers.loyers import router as loyers_router
@@ -166,13 +162,10 @@ app.include_router(
     dependencies=[Depends(require_flag("BACKEND_FLAG_AGENCE"))],
 )
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
-app.include_router(ai_documents_router, prefix="/api/v1", tags=["ai"])
-app.include_router(ai_scoring_router, prefix="/api/v1", tags=["ai"])
-app.include_router(ai_listings_router, prefix="/api/v1", tags=["ai"])
+app.include_router(ai_router, prefix="/api/v1")
 app.include_router(rfq.router, prefix="/api/v1/rfqs", tags=["rfqs"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(smart_onboarding_router, prefix="/api/v1")
-app.include_router(tenants_router, prefix="/api/v1/tenants", tags=["tenants"])
 app.include_router(ratings_router, prefix="/api/v1/ratings", tags=["ratings"])
 app.include_router(favorites_router, prefix="/api/v1/favorites", tags=["favorites"])
 app.include_router(
@@ -223,7 +216,6 @@ app.include_router(messagerie_router, prefix="/api/v1", tags=["messagerie"])
 app.include_router(agenda_router, prefix="/api/v1", tags=["agenda"])
 app.include_router(whatsapp_router, prefix="/api/v1", tags=["whatsapp"])
 app.include_router(onboarding_router, prefix="/api/v1", tags=["onboarding"])
-app.include_router(sphere_carte_router, prefix="/api/v1", tags=["sphere-carte"])
 app.include_router(contact_router,    prefix="/api/v1",            tags=["contact"])
 app.include_router(estimation_router, prefix="/api/v1",            tags=["estimation"])
 app.include_router(loyers_router,     prefix="/api/v1/loyers",       tags=["loyers"])
