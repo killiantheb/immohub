@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal, engine
+from app.core.flags import require_flag
 from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from app.routers import (
@@ -57,7 +58,7 @@ from app.routers.autonomie import router as autonomie_router
 from app.routers.waitlist import router as waitlist_router
 from app.routers.partners import router as partners_router
 from app.routers.landing import router as landing_router
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
@@ -151,9 +152,19 @@ async def add_security_headers(request: Request, call_next):
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(properties.router, prefix="/api/v1/properties", tags=["properties"])
-app.include_router(contracts.router, prefix="/api/v1/contracts", tags=["contracts"])
+app.include_router(
+    contracts.router,
+    prefix="/api/v1/contracts",
+    tags=["contracts"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_CONTRACTS"))],
+)
 app.include_router(missions.router, prefix="/api/v1/missions", tags=["missions"])
-app.include_router(companies.router, prefix="/api/v1/companies", tags=["companies"])
+app.include_router(
+    companies.router,
+    prefix="/api/v1/companies",
+    tags=["companies"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_AGENCE"))],
+)
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
 app.include_router(ai_documents_router, prefix="/api/v1", tags=["ai"])
 app.include_router(ai_scoring_router, prefix="/api/v1", tags=["ai"])
@@ -164,8 +175,18 @@ app.include_router(smart_onboarding_router, prefix="/api/v1")
 app.include_router(tenants_router, prefix="/api/v1/tenants", tags=["tenants"])
 app.include_router(ratings_router, prefix="/api/v1/ratings", tags=["ratings"])
 app.include_router(favorites_router, prefix="/api/v1/favorites", tags=["favorites"])
-app.include_router(agency_settings_router, prefix="/api/v1/agency", tags=["agency"])
-app.include_router(crm_router, prefix="/api/v1/crm", tags=["crm"])
+app.include_router(
+    agency_settings_router,
+    prefix="/api/v1/agency",
+    tags=["agency"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_AGENCE"))],
+)
+app.include_router(
+    crm_router,
+    prefix="/api/v1/crm",
+    tags=["crm"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_CRM"))],
+)
 app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
 # ── Althy core routers ────────────────────────────────────────────────────────
 app.include_router(biens_router, prefix="/api/v1/biens", tags=["biens"])
@@ -181,8 +202,18 @@ app.include_router(geocode_router, prefix="/api/v1/geocode", tags=["geocode"])
 app.include_router(listings_router, prefix="/api/v1/listings", tags=["listings"])
 app.include_router(marketplace_router, prefix="/api/v1/marketplace", tags=["marketplace"])
 app.include_router(stripe_router, prefix="/api/v1/webhooks", tags=["stripe"])
-app.include_router(portail_router, prefix="/api/v1/portail", tags=["portail"])
-app.include_router(integrations_router, prefix="/api/v1/integrations", tags=["integrations"])
+app.include_router(
+    portail_router,
+    prefix="/api/v1/portail",
+    tags=["portail"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_PORTAIL"))],
+)
+app.include_router(
+    integrations_router,
+    prefix="/api/v1/integrations",
+    tags=["integrations"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_INTEGRATIONS"))],
+)
 app.include_router(rgpd_router, prefix="/api/v1/rgpd", tags=["rgpd"])
 app.include_router(sphere_router, prefix="/api/v1", tags=["sphere"])
 app.include_router(notations_router, prefix="/api/v1", tags=["notations"])

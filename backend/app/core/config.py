@@ -127,6 +127,15 @@ class Settings(BaseSettings):
     FEATURE_FLAGS_STRICT: bool = True  # True en prod, False en staging/dev
     ALLOWED_SIGNUP_ROLES: list[str] = ["proprio_solo", "locataire", "super_admin", "artisan"]
 
+    # Backend feature flags — Phase 2/3 (défaut OFF, active par déploiement)
+    # Utilisé par `app.core.flags.require_flag()` → 503 si le flag est OFF.
+    # Pendant sur `frontend/src/lib/flags.ts`.
+    BACKEND_FLAG_AGENCE: bool = False          # companies + agency_settings
+    BACKEND_FLAG_PORTAIL: bool = False         # portail proprio
+    BACKEND_FLAG_CRM: bool = False             # CRM locataires
+    BACKEND_FLAG_CONTRACTS: bool = False       # contrats de bail
+    BACKEND_FLAG_INTEGRATIONS: bool = False    # Google/Microsoft OAuth, calendriers
+
     @property
     def is_production(self) -> bool:
         return self.APP_ENV == "production"
