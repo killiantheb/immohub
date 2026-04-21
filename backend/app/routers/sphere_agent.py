@@ -39,7 +39,7 @@ AuthDep    = Annotated[User, Depends(get_current_user)]
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-_MODEL = "claude-sonnet-4-20250514"
+_MODEL = "claude-sonnet-4-5-20251001"
 
 _ROLE_FR: dict[str, str] = {
     "proprio_solo":    "propriétaire solo",
@@ -582,46 +582,54 @@ Règles :
 - Sois concis, bienveillant, jamais condescendant"""
 
 
+def _fallback_briefing(user: User) -> dict:
+    """Briefing minimal servi quand Claude est indisponible — évite un 500."""
+    prenom = user.first_name or "vous"
+    return {
+        "salutation": f"Bonjour {prenom}, je suis prêt à vous aider.",
+        "resume": "Votre espace Althy est opérationnel.",
+        "actions": [
+            {
+                "id": str(_uuid.uuid4()),
+                "type_action": "info",
+                "urgence": "info",
+                "titre": "Explorer mes biens",
+                "description": "Consultez l'état de votre portefeuille immobilier.",
+                "texte_suggere": None,
+                "payload": {"path": "/app/biens"},
+                "libelle_cta": "Voir mes biens",
+                "libelle_cta2": None,
+            }
+        ],
+    }
+
+
 async def _call_claude(user: User, ctx: dict, prefs: dict, db: AsyncSession) -> dict:
-    """Appelle Claude Sonnet et retourne le JSON de briefing."""
-    client  = _client()
-    message = await client.messages.create(
-        model=_MODEL,
-        max_tokens=2000,
-        system=_SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": _build_prompt(user, ctx, prefs)}],
-    )
-    await _log_usage(db, _uid(user), "sphere_briefing", message.usage)
+    """Appelle Claude Sonnet et retourne le JSON de briefing.
 
-    raw = message.content[0].text.strip()  # type: ignore[union-attr]
-    # Strip markdown code fences if present
-    if "```" in raw:
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-        raw = raw.strip().rstrip("```").strip()
-
+    Si l'API Anthropic tombe (modèle déprécié, rate limit, réseau), on dégrade
+    sur _fallback_briefing au lieu de remonter un 500 au front.
+    """
     try:
+        client  = _client()
+        message = await client.messages.create(
+            model=_MODEL,
+            max_tokens=2000,
+            system=_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": _build_prompt(user, ctx, prefs)}],
+        )
+        await _log_usage(db, _uid(user), "sphere_briefing", message.usage)
+
+        raw = message.content[0].text.strip()  # type: ignore[union-attr]
+        if "```" in raw:
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+            raw = raw.strip().rstrip("```").strip()
+
         return json.loads(raw)
     except Exception:
-        prenom = user.first_name or "vous"
-        return {
-            "salutation": f"Bonjour {prenom}, je suis prêt à vous aider.",
-            "resume": "Votre espace Althy est opérationnel.",
-            "actions": [
-                {
-                    "id": str(_uuid.uuid4()),
-                    "type_action": "info",
-                    "urgence": "info",
-                    "titre": "Explorer mes biens",
-                    "description": "Consultez l'état de votre portefeuille immobilier.",
-                    "texte_suggere": None,
-                    "payload": {"path": "/app/biens"},
-                    "libelle_cta": "Voir mes biens",
-                    "libelle_cta2": None,
-                }
-            ],
-        }
+        return _fallback_briefing(user)
 
 
 # ── Cache helpers ─────────────────────────────────────────────────────────────
