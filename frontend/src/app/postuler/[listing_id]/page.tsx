@@ -2,13 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase";
 import Link from "next/link";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+const supabase = createClient();
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

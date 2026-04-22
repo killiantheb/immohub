@@ -6,15 +6,12 @@
  */
 
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase";
 import Link from "next/link";
 import { C } from "@/lib/design-tokens";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createClient();
 
 interface Bien {
   id: string;
