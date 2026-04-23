@@ -1,4 +1,3 @@
-export { useProperties, useProperty } from "./useProperties";
 export { useContracts, useContract, useCreateContract, useUpdateContract, useSignContract, useDeleteContract } from "./useContracts";
 export { useOwnerDashboard, useAgencyDashboard } from "./useDashboard";
 export {
