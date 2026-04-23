@@ -12,12 +12,12 @@ from app.routers import (
     contracts,
     dashboard,
     missions,
-    properties,
     rfq,
 )
 from app.routers.ai import router as ai_router
 from app.routers.agency_settings import router as agency_settings_router
 from app.routers.biens import router as biens_router
+from app.routers.catalogue import router as catalogue_router
 from app.routers.crm import router as crm_router
 from app.routers.documents import router as documents_router
 from app.routers.documents_althy import router as docs_althy_router
@@ -147,7 +147,6 @@ async def add_security_headers(request: Request, call_next):
 # ── Routers ───────────────────────────────────────────────────────────────────
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
-app.include_router(properties.router, prefix="/api/v1/properties", tags=["properties"])
 app.include_router(
     contracts.router,
     prefix="/api/v1/contracts",
@@ -183,6 +182,7 @@ app.include_router(
 app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
 # ── Althy core routers ────────────────────────────────────────────────────────
 app.include_router(biens_router, prefix="/api/v1/biens", tags=["biens"])
+app.include_router(catalogue_router, prefix="/api/v1/catalogue", tags=["catalogue"])
 app.include_router(locataires_router, prefix="/api/v1/locataires", tags=["locataires"])
 app.include_router(docs_althy_router, prefix="/api/v1/docs-althy", tags=["docs-althy"])
 app.include_router(paiements_router, prefix="/api/v1/paiements", tags=["paiements"])
