@@ -173,7 +173,7 @@ async def generate_listing_description(
         "address": bien.adresse,
         "city": bien.ville,
         "cp": bien.cp,
-        "canton": bien.canton,
+        "canton": bien.canton or "",
         "surface": bien.surface,
         "rooms": float(bien.rooms) if bien.rooms is not None else None,
         "floor": bien.etage,
