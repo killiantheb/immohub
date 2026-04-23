@@ -221,6 +221,7 @@ router + service en étape 13. Scope révisé :
 4. ~~**`marketplace.py` + `marketplace_service.py`**~~ — ✅ fait 2026-04-23 (bundle router+service, 3e bug latent corrigé)
 5. ~~**`admin.py`**~~ — ✅ fait 2026-04-23 (autonome, 6 edits, mapping enum critique `rented/available` → `loue/vacant`, schema `PlatformStats` + `AdminTransaction` renommés)
 6. ~~**`contracts.py` + `contract_service.py` + `partner_hooks.py` + `schemas/contract.py`**~~ — ✅ fait 2026-04-23 (bundle 4 fichiers, 4e bug dormant corrigé, nettoyage UUID `uuid.UUID(uuid.UUID(...))`)
+7. ~~**`favorites.py`**~~ — ✅ fait 2026-04-23 (full rename schemas exposés — CASSE FRONTEND jusqu'à étape 19, cf section rupture détaillée)
 3. **`listings.py` + `marketplace.py`** — à faire ensemble, logique publication/recherche liée. Utilisent `Property.status == "available"`, `Property.city.ilike(...)`.
 4. **`admin.py`** — mapping enum critique (`Property.status.in_(["rented", "available"])` → `Bien.statut.in_(["loue", "vacant"])`) + KPIs plateforme.
 5. **`contracts.py`** — attribut `Contract.property_id` → `bien_id` (modèle déjà fait, router à synchroniser).
@@ -355,6 +356,40 @@ Liste à jour pour briefing étape 19 :
 - `ContractRead.property_id` → `bien_id` (consommé par `GET /contracts` + `GET /contracts/{id}` — `contracts/page.tsx` L204, `contracts/[id]/page.tsx` L270).
 - Query param `GET /contracts?property_id=…` → `?bien_id=…` (pas d'appel frontend détecté — safe).
 - `useContracts.ts` type `PaginatedContracts` / `Contract` à mettre à jour étape 19.
+
+**`favorites.py` (2026-04-23)** — `/api/v1/favorites/*` — **RUPTURE MAXIMALE, TOUS LES CHAMPS RENOMMÉS**
+
+Schemas Pydantic totalement renommés (le frontend va casser instantanément
+sur la page "Mes favoris" / swipe droits jusqu'à la livraison étape 19) :
+
+| Ancien champ (backend)          | Nouveau champ (backend)     | Source modèle    |
+|---------------------------------|-----------------------------|------------------|
+| `FavoriteCreate.property_id`    | `FavoriteCreate.bien_id`    | Favorite.bien_id |
+| `FavoriteRead.property_id`      | `FavoriteRead.bien_id`      | Favorite.bien_id |
+| `FavoriteRead.property_address` | `FavoriteRead.bien_adresse` | Bien.adresse     |
+| `FavoriteRead.property_city`    | `FavoriteRead.bien_ville`   | Bien.ville       |
+| `FavoriteRead.property_type`    | `FavoriteRead.bien_type`    | Bien.type        |
+| `FavoriteRead.monthly_rent`     | `FavoriteRead.loyer`        | Bien.loyer       |
+| `FavoriteRead.property_status`  | `FavoriteRead.bien_statut`  | Bien.statut      |
+| `FavoriteRead.rooms, surface`   | (inchangés)                 | Bien.rooms, Bien.surface |
+
+**Consommateurs frontend identifiés (grep 2026-04-23) :**
+- `frontend/src/app/app/(dashboard)/biens/page.tsx`
+  - L197 : `api.get("/favorites")` → caste la réponse en `Property[]` (mix avec bien)
+  - L246 : `api.delete(`/favorites/${bien.id}`)` → pas de champ renommé, safe
+  - **L255 : `api.post("/favorites", { property_id: bien.id })`** → le payload utilise `property_id`, à renommer `bien_id` étape 19
+  - L153, L155, L273-274 : accès `bien.monthly_rent` qui mélange les biens et les favoris typés `Property[]`. Après migration étape 19, unifier sur `bien.loyer`.
+
+**Pas d'autres consommateurs détectés** (pas de page `/favoris`, pas de hook `useFavorites`, les favoris sont listés et manipulés depuis la page `/app/biens` onglet "Favoris").
+
+**Conséquence opérationnelle** : **dès le merge de cette branche en prod (hors étape 19), la fonctionnalité "Mes favoris" est cassée** :
+- `POST /favorites` avec payload `property_id` → Pydantic ignore le champ, `bien_id` devient None → 422 missing field (Pydantic rejette : `bien_id: str` n'est pas optional).
+- `GET /favorites` retourne les nouvelles clés (`bien_adresse` etc.), le frontend lit les anciennes (`property_address` etc.) → tous les favoris affichent "null" en DOM.
+
+**Action requise étape 19** :
+1. `biens/page.tsx:255` : payload `{ property_id: bien.id }` → `{ bien_id: bien.id }`
+2. `biens/page.tsx` (typage de la réponse `/favorites`) : créer un type `FavoriteItem` avec les nouvelles clés, ne plus caster en `Property[]`.
+3. Adapter l'affichage du bloc favoris pour lire `bien_adresse`, `bien_ville`, `bien_type`, `loyer`, `bien_statut`.
 
 ### 🔍 OBSERVATIONS IMPORTANTES pour la reprise
 

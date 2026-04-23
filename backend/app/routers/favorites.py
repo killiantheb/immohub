@@ -7,8 +7,8 @@ from typing import Annotated
 
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.models.bien import Bien
 from app.models.favorite import Favorite
-from app.models.property import Property
 from app.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -22,23 +22,23 @@ AuthUserDep = Annotated[User, Depends(get_current_user)]
 
 
 class FavoriteCreate(BaseModel):
-    property_id: str
+    bien_id: str
     notes: str | None = None
 
 
 class FavoriteRead(BaseModel):
     id: str
-    property_id: str
+    bien_id: str
     notes: str | None
     created_at: str
     # Données bien dénormalisées pour l'affichage
-    property_address: str | None = None
-    property_city: str | None = None
-    property_type: str | None = None
-    monthly_rent: float | None = None
-    rooms: int | None = None
+    bien_adresse: str | None = None
+    bien_ville: str | None = None
+    bien_type: str | None = None
+    loyer: float | None = None
+    rooms: float | None = None
     surface: float | None = None
-    property_status: str | None = None
+    bien_statut: str | None = None
 
 
 @router.get("", response_model=list[FavoriteRead])
@@ -56,21 +56,21 @@ async def list_favorites(
 
     out = []
     for fav in favorites:
-        prop_result = await db.execute(select(Property).where(Property.id == fav.property_id))
-        prop = prop_result.scalar_one_or_none()
+        bien_result = await db.execute(select(Bien).where(Bien.id == fav.bien_id))
+        bien = bien_result.scalar_one_or_none()
         out.append(
             FavoriteRead(
                 id=str(fav.id),
-                property_id=str(fav.property_id),
+                bien_id=str(fav.bien_id),
                 notes=fav.notes,
                 created_at=fav.created_at.isoformat(),
-                property_address=prop.address if prop else None,
-                property_city=prop.city if prop else None,
-                property_type=prop.type if prop else None,
-                monthly_rent=float(prop.monthly_rent) if prop and prop.monthly_rent else None,
-                rooms=float(prop.rooms) if prop and prop.rooms else None,
-                surface=float(prop.surface) if prop and prop.surface else None,
-                property_status=prop.status if prop else None,
+                bien_adresse=bien.adresse if bien else None,
+                bien_ville=bien.ville if bien else None,
+                bien_type=bien.type if bien else None,
+                loyer=float(bien.loyer) if bien and bien.loyer else None,
+                rooms=float(bien.rooms) if bien and bien.rooms else None,
+                surface=float(bien.surface) if bien and bien.surface else None,
+                bien_statut=bien.statut if bien else None,
             )
         )
     return out
@@ -83,19 +83,19 @@ async def add_favorite(
     current_user: AuthUserDep,
 ) -> FavoriteRead:
     """Ajoute un bien aux favoris."""
-    prop_id = uuid_lib.UUID(payload.property_id)
+    bien_uuid = uuid_lib.UUID(payload.bien_id)
 
     # Vérifie que le bien existe
-    prop_result = await db.execute(select(Property).where(Property.id == prop_id))
-    prop = prop_result.scalar_one_or_none()
-    if not prop:
+    bien_result = await db.execute(select(Bien).where(Bien.id == bien_uuid))
+    bien = bien_result.scalar_one_or_none()
+    if not bien:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Bien introuvable")
 
     # Unicité
     existing = await db.execute(
         select(Favorite).where(
             Favorite.user_id == current_user.id,
-            Favorite.property_id == prop_id,
+            Favorite.bien_id == bien_uuid,
         )
     )
     if existing.scalar_one_or_none():
@@ -104,7 +104,7 @@ async def add_favorite(
     fav = Favorite(
         id=uuid_lib.uuid4(),
         user_id=current_user.id,
-        property_id=prop_id,
+        bien_id=bien_uuid,
         notes=payload.notes,
     )
     db.add(fav)
@@ -113,16 +113,16 @@ async def add_favorite(
 
     return FavoriteRead(
         id=str(fav.id),
-        property_id=str(fav.property_id),
+        bien_id=str(fav.bien_id),
         notes=fav.notes,
         created_at=fav.created_at.isoformat(),
-        property_address=prop.address,
-        property_city=prop.city,
-        property_type=prop.type,
-        monthly_rent=float(prop.monthly_rent) if prop.monthly_rent else None,
-        rooms=float(prop.rooms) if prop.rooms else None,
-        surface=float(prop.surface) if prop.surface else None,
-        property_status=prop.status,
+        bien_adresse=bien.adresse,
+        bien_ville=bien.ville,
+        bien_type=bien.type,
+        loyer=float(bien.loyer) if bien.loyer else None,
+        rooms=float(bien.rooms) if bien.rooms else None,
+        surface=float(bien.surface) if bien.surface else None,
+        bien_statut=bien.statut,
     )
 
 
