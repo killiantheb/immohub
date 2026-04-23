@@ -10,12 +10,12 @@ from typing import Annotated
 
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.models.bien import Bien
 from app.models.company import Company
 from app.models.contract import Contract
 from app.models.crm import CRMContact, CRMNote
 from app.models.listing import Listing
 from app.models.opener import Mission, Opener
-from app.models.property import Property
 from app.models.rfq import RFQ, RFQQuote
 from app.models.transaction import Transaction
 from app.models.user import User
@@ -35,7 +35,7 @@ AuthUserDep = Annotated[User, Depends(get_current_user)]
 class NoteOut(PydanticModel):
     id: str
     content: str
-    property_id: str | None
+    bien_id: str | None
     created_at: str
 
     class Config:
@@ -51,8 +51,8 @@ class ContactOut(PydanticModel):
     phone: str | None
     status: str             # active_tenant | past_tenant | prospect
     source: str | None
-    property_id: str | None
-    property_address: str | None
+    bien_id: str | None
+    bien_adresse: str | None
     contract_id: str | None
     contract_start: str | None
     contract_end: str | None
@@ -67,7 +67,7 @@ class ProspectCreate(PydanticModel):
     last_name: str | None = None
     email: str | None = None
     phone: str | None = None
-    property_id: str | None = None
+    bien_id: str | None = None
     source: str = "manual"
 
 
@@ -76,7 +76,7 @@ class ProspectUpdate(PydanticModel):
     last_name: str | None = None
     email: str | None = None
     phone: str | None = None
-    property_id: str | None = None
+    bien_id: str | None = None
     source: str | None = None
 
 
@@ -84,7 +84,7 @@ class NoteCreate(PydanticModel):
     content: str
     target_type: str        # "tenant" | "prospect"
     target_id: str          # user_id ou crm_contact_id
-    property_id: str | None = None
+    bien_id: str | None = None
 
 
 class CRMStats(PydanticModel):
@@ -92,7 +92,7 @@ class CRMStats(PydanticModel):
     active_tenants: int
     past_tenants: int
     prospects: int
-    properties_count: int
+    biens_count: int
     total_views: int
     total_leads: int
 
@@ -153,20 +153,20 @@ async def crm_stats(current_user: AuthUserDep, db: DbDep) -> CRMStats:
     )
     prospects = prospect_res.scalar_one() or 0
 
-    # Propriétés
-    prop_res = await db.execute(
+    # Biens
+    biens_res = await db.execute(
         select(func.count()).where(
-            and_(Property.owner_id == current_user.id, Property.is_active == True)
+            and_(Bien.owner_id == current_user.id, Bien.is_active == True)
         )
     )
-    properties_count = prop_res.scalar_one() or 0
+    biens_count = biens_res.scalar_one() or 0
 
     # Vues et leads depuis les listings
     views_res = await db.execute(
         select(func.coalesce(func.sum(Listing.views), 0),
                func.coalesce(func.sum(Listing.leads_count), 0))
-        .join(Property, Property.id == Listing.property_id)
-        .where(Property.owner_id == current_user.id)
+        .join(Bien, Bien.id == Listing.bien_id)
+        .where(Bien.owner_id == current_user.id)
     )
     row = views_res.one()
     total_views = int(row[0])
@@ -177,7 +177,7 @@ async def crm_stats(current_user: AuthUserDep, db: DbDep) -> CRMStats:
         active_tenants=active_tenants,
         past_tenants=past_tenants,
         prospects=prospects,
-        properties_count=properties_count,
+        biens_count=biens_count,
         total_views=total_views,
         total_leads=total_leads,
     )
@@ -197,9 +197,9 @@ async def list_contacts(
 
     # ── 1. Locataires depuis les contrats ──────────────────────────────────────
     contracts_res = await db.execute(
-        select(Contract, User, Property)
+        select(Contract, User, Bien)
         .join(User, User.id == Contract.tenant_id)
-        .join(Property, Property.id == Contract.property_id)
+        .join(Bien, Bien.id == Contract.bien_id)
         .where(
             and_(Contract.owner_id == current_user.id, Contract.tenant_id.isnot(None))
         )
@@ -210,7 +210,7 @@ async def list_contacts(
     # Grouper par tenant pour garder le contrat le plus récent et toutes les notes
     seen_tenants: dict[str, ContactOut] = {}
 
-    for contract, tenant, prop in rows:
+    for contract, tenant, bien in rows:
         tenant_key = str(tenant.id)
         tenant_status = "active_tenant" if contract.status == "active" else "past_tenant"
 
@@ -251,7 +251,7 @@ async def list_contacts(
                 NoteOut(
                     id=str(n.id),
                     content=n.content,
-                    property_id=str(n.property_id) if n.property_id else None,
+                    bien_id=str(n.bien_id) if n.bien_id else None,
                     created_at=_fmt(n.created_at) or "",
                 )
                 for n in notes_res.scalars()
@@ -266,8 +266,8 @@ async def list_contacts(
                 phone=tenant.phone,
                 status=tenant_status,
                 source=None,
-                property_id=str(prop.id),
-                property_address=prop.address,
+                bien_id=str(bien.id),
+                bien_adresse=bien.adresse,
                 contract_id=str(contract.id),
                 contract_start=_fmt(contract.start_date),
                 contract_end=_fmt(contract.end_date),
@@ -286,15 +286,15 @@ async def list_contacts(
     # ── 2. Prospects (CRMContact) ──────────────────────────────────────────────
     if not contact_status or contact_status == "prospect":
         prospects_res = await db.execute(
-            select(CRMContact, Property)
-            .outerjoin(Property, Property.id == CRMContact.property_id)
+            select(CRMContact, Bien)
+            .outerjoin(Bien, Bien.id == CRMContact.bien_id)
             .where(
                 and_(CRMContact.owner_id == current_user.id, CRMContact.is_active == True)
             )
             .order_by(CRMContact.created_at.desc())
         )
 
-        for prospect, prop in prospects_res.all():
+        for prospect, bien in prospects_res.all():
             if search:
                 s = search.lower()
                 full = f"{prospect.first_name or ''} {prospect.last_name or ''} {prospect.email or ''} {prospect.phone or ''}".lower()
@@ -314,7 +314,7 @@ async def list_contacts(
                 NoteOut(
                     id=str(n.id),
                     content=n.content,
-                    property_id=str(n.property_id) if n.property_id else None,
+                    bien_id=str(n.bien_id) if n.bien_id else None,
                     created_at=_fmt(n.created_at) or "",
                 )
                 for n in notes_res.scalars()
@@ -329,8 +329,8 @@ async def list_contacts(
                 phone=prospect.phone,
                 status="prospect",
                 source=prospect.source,
-                property_id=str(prop.id) if prop else None,
-                property_address=prop.address if prop else None,
+                bien_id=str(bien.id) if bien else None,
+                bien_adresse=bien.adresse if bien else None,
                 contract_id=None,
                 contract_start=None,
                 contract_end=None,
@@ -352,10 +352,10 @@ async def create_prospect(
     """Ajouter un prospect manuellement."""
     _require_owner(current_user)
 
-    prop_id = uuid.UUID(payload.property_id) if payload.property_id else None
+    bien_uuid = uuid.UUID(payload.bien_id) if payload.bien_id else None
     contact = CRMContact(
         owner_id=current_user.id,
-        property_id=prop_id,
+        bien_id=bien_uuid,
         first_name=payload.first_name,
         last_name=payload.last_name,
         email=payload.email,
@@ -367,11 +367,11 @@ async def create_prospect(
     await db.commit()
     await db.refresh(contact)
 
-    prop_address = None
-    if prop_id:
-        prop_res = await db.execute(select(Property).where(Property.id == prop_id))
-        prop = prop_res.scalar_one_or_none()
-        prop_address = prop.address if prop else None
+    bien_adresse = None
+    if bien_uuid:
+        bien_res = await db.execute(select(Bien).where(Bien.id == bien_uuid))
+        bien = bien_res.scalar_one_or_none()
+        bien_adresse = bien.adresse if bien else None
 
     return ContactOut(
         id=str(contact.id),
@@ -382,8 +382,8 @@ async def create_prospect(
         phone=contact.phone,
         status="prospect",
         source=contact.source,
-        property_id=str(contact.property_id) if contact.property_id else None,
-        property_address=prop_address,
+        bien_id=str(contact.bien_id) if contact.bien_id else None,
+        bien_adresse=bien_adresse,
         contract_id=None,
         contract_start=None,
         contract_end=None,
@@ -416,7 +416,7 @@ async def update_prospect(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Contact introuvable")
 
     for field, val in payload.model_dump(exclude_none=True).items():
-        if field == "property_id":
+        if field == "bien_id":
             setattr(contact, field, uuid.UUID(val) if val else None)
         else:
             setattr(contact, field, val)
@@ -424,11 +424,11 @@ async def update_prospect(
     await db.commit()
     await db.refresh(contact)
 
-    prop_address = None
-    if contact.property_id:
-        prop_res = await db.execute(select(Property).where(Property.id == contact.property_id))
-        prop = prop_res.scalar_one_or_none()
-        prop_address = prop.address if prop else None
+    bien_adresse = None
+    if contact.bien_id:
+        bien_res = await db.execute(select(Bien).where(Bien.id == contact.bien_id))
+        bien = bien_res.scalar_one_or_none()
+        bien_adresse = bien.adresse if bien else None
 
     notes_res = await db.execute(
         select(CRMNote).where(
@@ -439,7 +439,7 @@ async def update_prospect(
     )
     notes = [
         NoteOut(id=str(n.id), content=n.content,
-                property_id=str(n.property_id) if n.property_id else None,
+                bien_id=str(n.bien_id) if n.bien_id else None,
                 created_at=_fmt(n.created_at) or "")
         for n in notes_res.scalars()
     ]
@@ -449,8 +449,8 @@ async def update_prospect(
         first_name=contact.first_name, last_name=contact.last_name,
         email=contact.email, phone=contact.phone,
         status="prospect", source=contact.source,
-        property_id=str(contact.property_id) if contact.property_id else None,
-        property_address=prop_address,
+        bien_id=str(contact.bien_id) if contact.bien_id else None,
+        bien_adresse=bien_adresse,
         contract_id=None, contract_start=None, contract_end=None,
         monthly_rent=None, total_paid=0, notes=notes,
         created_at=_fmt(contact.created_at) or "",
@@ -490,20 +490,20 @@ async def add_note(
     if not payload.content.strip():
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Contenu vide")
 
-    prop_id = uuid.UUID(payload.property_id) if payload.property_id else None
+    bien_uuid = uuid.UUID(payload.bien_id) if payload.bien_id else None
 
     if payload.target_type == "tenant":
         note = CRMNote(
             owner_id=current_user.id,
             target_user_id=uuid.UUID(payload.target_id),
-            property_id=prop_id,
+            bien_id=bien_uuid,
             content=payload.content.strip(),
         )
     elif payload.target_type == "prospect":
         note = CRMNote(
             owner_id=current_user.id,
             target_contact_id=uuid.UUID(payload.target_id),
-            property_id=prop_id,
+            bien_id=bien_uuid,
             content=payload.content.strip(),
         )
     else:
@@ -516,14 +516,14 @@ async def add_note(
     return NoteOut(
         id=str(note.id),
         content=note.content,
-        property_id=str(note.property_id) if note.property_id else None,
+        bien_id=str(note.bien_id) if note.bien_id else None,
         created_at=_fmt(note.created_at) or "",
     )
 
 
-@router.get("/property/{property_id}/overview")
-async def property_overview(
-    property_id: str,
+@router.get("/bien/{bien_id}/overview")
+async def bien_overview(
+    bien_id: str,
     current_user: AuthUserDep,
     db: DbDep,
 ):
@@ -532,13 +532,13 @@ async def property_overview(
     locataires, contrats, travaux, missions, stats listing, CRM.
     """
     _require_owner(current_user)
-    pid = uuid.UUID(property_id)
+    pid = uuid.UUID(bien_id)
 
     # ── Contrats + locataires ──────────────────────────────────────────────────
     contracts_res = await db.execute(
         select(Contract, User)
         .outerjoin(User, User.id == Contract.tenant_id)
-        .where(and_(Contract.property_id == pid,
+        .where(and_(Contract.bien_id == pid,
                     or_(Contract.owner_id == current_user.id,
                         Contract.agency_id == current_user.id)))
         .order_by(Contract.start_date.desc())
@@ -573,7 +573,7 @@ async def property_overview(
 
     # ── RFQs (appels d'offre) ──────────────────────────────────────────────────
     rfqs_res = await db.execute(
-        select(RFQ).where(RFQ.property_id == pid).order_by(RFQ.created_at.desc())
+        select(RFQ).where(RFQ.bien_id == pid).order_by(RFQ.created_at.desc())
     )
     rfqs_data = []
     for rfq in rfqs_res.scalars():
@@ -620,7 +620,7 @@ async def property_overview(
             Opener, Opener.id == Mission.opener_id
         )
         .outerjoin(User, User.id == Opener.user_id)
-        .where(Mission.property_id == pid)
+        .where(Mission.bien_id == pid)
         .order_by(Mission.scheduled_at.desc())
     )
     missions_data = []
@@ -642,7 +642,7 @@ async def property_overview(
 
     # ── Listing stats ──────────────────────────────────────────────────────────
     listing_res = await db.execute(
-        select(Listing).where(Listing.property_id == pid)
+        select(Listing).where(Listing.bien_id == pid)
     )
     listing = listing_res.scalar_one_or_none()
     listing_stats = {
@@ -655,7 +655,7 @@ async def property_overview(
     # ── CRM contacts pour ce bien ──────────────────────────────────────────────
     crm_contacts_res = await db.execute(
         select(CRMContact).where(
-            and_(CRMContact.property_id == pid,
+            and_(CRMContact.bien_id == pid,
                  CRMContact.owner_id == current_user.id,
                  CRMContact.is_active == True)
         ).order_by(CRMContact.created_at.desc())
@@ -677,7 +677,7 @@ async def property_overview(
     # ── Notes sur ce bien (locataires) ─────────────────────────────────────────
     notes_res = await db.execute(
         select(CRMNote).where(
-            and_(CRMNote.property_id == pid,
+            and_(CRMNote.bien_id == pid,
                  CRMNote.owner_id == current_user.id,
                  CRMNote.is_active == True)
         ).order_by(CRMNote.created_at.desc())
@@ -696,7 +696,7 @@ async def property_overview(
     # ── Transactions (revenus) ─────────────────────────────────────────────────
     revenue_res = await db.execute(
         select(func.coalesce(func.sum(Transaction.amount), 0))
-        .where(and_(Transaction.property_id == pid,
+        .where(and_(Transaction.bien_id == pid,
                     Transaction.status == "paid",
                     Transaction.type == "rent"))
     )

@@ -180,20 +180,21 @@ _(aucun bloquant — peer review du fichier 1 a rattrapé 2 tables FK oubliées 
 **Fichier Supabase corrigé** :
 - `supabase/migrations/0026_loyer_transactions.sql` (`property_id` → `bien_id`)
 
-**Étape 13 partielle — 5/12 routers migrés** :
+**Étape 13 partielle — 6/12 routers migrés** :
 - `sphere_agent.py` (bloc création bien, L1472-1498)
 - `ai/scoring.py` (schema `AnomalyResponse.property_id` → `bien_id`)
 - `ai/listings.py` (generate-listing + import-property)
 - `ai/documents.py` (draft-lease, draft-edl, property-recap + 3 schemas)
 - `agency_settings.py` (export comptable)
+- `crm.py` (2026-04-23 reprise) : imports, 9 modèles joints (Contract/Bien/User/Listing/Mission/Opener/RFQ/RFQQuote/Transaction/CRMContact/CRMNote/Company), schemas `ContactOut/NoteOut/ProspectCreate/ProspectUpdate/NoteCreate/CRMStats` (champs `property_*` → `bien_*`, `properties_count` → `biens_count`), URL `/property/{property_id}/overview` → `/bien/{bien_id}/overview`. `Contract.monthly_rent` conservé (champ contrat, pas bien). AST OK.
 
 **Commits** :
 - `27c5acc` — WIP fondations migration 0029 + modèles + schemas + services + router biens
 - `0e42827` — WIP étape 13 : 6/12 routers migrés (comptage 5 pour l'étape 13 stricte, 6e = le router biens.py comptant pour les fondations)
 
-### 🔜 RESTE ÉTAPE 13 (7 fichiers, ordre d'attaque recommandé)
+### 🔜 RESTE ÉTAPE 13 (6 fichiers, ordre d'attaque recommandé)
 
-1. **`crm.py`** — **EN PREMIER**. ~60 occurrences `Property`/`property_id`. Endpoint `/property/{id}/overview` qui cross-JOIN 6 tables (Contract, Transaction, RFQ, Mission, Listing, CRMContact, CRMNote). ~300 lignes Python à transcoder.
+1. ~~**`crm.py`**~~ — ✅ fait 2026-04-23 (full rename URL + schemas + modèles)
 2. **`documents.py`** — 1400 lignes, ~20 usages Property pour génération PDF (bails).
 3. **`listings.py` + `marketplace.py`** — à faire ensemble, logique publication/recherche liée. Utilisent `Property.status == "available"`, `Property.city.ilike(...)`.
 4. **`admin.py`** — mapping enum critique (`Property.status.in_(["rented", "available"])` → `Bien.statut.in_(["loue", "vacant"])`) + KPIs plateforme.
