@@ -74,94 +74,194 @@ export interface UserProfile {
   plan_category?: "proprio" | "agence" | "invited" | "enterprise" | "autonomie" | null;
 }
 
-// ─── Property ────────────────────────────────────────────────────────────────
+// ─── Bien ────────────────────────────────────────────────────────────────────
+// Refonte fusion properties→biens (étape 19.1a). Aligné schemas/bien.py BienRead.
+// Valeurs enum FR, rupture API property_id → bien_id sur Transaction/Contract/etc.
 
-export type PropertyType =
-  | "apartment"
+export type BienType =
+  | "appartement"
   | "villa"
+  | "studio"
+  | "maison"
+  | "commerce"
+  | "bureau"
   | "parking"
   | "garage"
-  | "box"
   | "cave"
-  | "depot"
-  | "office"
-  | "commercial"
-  | "hotel";
+  | "autre";
 
-export type PropertyStatus = "available" | "rented" | "for_sale" | "sold" | "maintenance";
+export type BienStatut = "loue" | "vacant" | "en_travaux";
 
-export type DocumentType =
-  | "lease"
-  | "inventory"
-  | "insurance"
-  | "notice"
-  | "deed"
-  | "diagnosis"
-  | "other";
+export type ParkingType =
+  | "exterieur"
+  | "exterieur_couvert"
+  | "interieur"
+  | "interieur_box";
 
-export interface PropertyImage {
+export type EquipementCategorie =
+  | "cuisine"
+  | "literie"
+  | "salle_bain"
+  | "tech"
+  | "loisirs"
+  | "entretien"
+  | "confort";
+
+export interface BienImage {
   id: string;
+  bien_id: string;
   url: string;
   order: number;
   is_cover: boolean;
   created_at: string;
 }
 
-export interface PropertyDocument {
+export interface BienDocument {
   id: string;
-  type: DocumentType;
+  bien_id: string;
+  /** Libre côté backend (BienDocumentRead.type: str, upload doc_type: Form("autre")). */
+  type: string;
   url: string;
   name: string;
   created_at: string;
 }
 
-export interface Property {
+export interface CatalogueEquipement {
+  id: string;
+  nom: string;
+  categorie: EquipementCategorie;
+  icone: string | null;
+  ordre_affichage: number;
+}
+
+export interface BienEquipement {
+  id: string;
+  bien_id: string;
+  equipement: CatalogueEquipement;
+}
+
+export interface Bien {
+  // Système
   id: string;
   owner_id: string;
   agency_id: string | null;
   created_by_id: string;
-  type: PropertyType;
-  status: PropertyStatus;
-  address: string;
-  city: string;
-  zip_code: string;
-  country: string;
-  surface: number | null;
-  rooms: number | null;
-  floor: number | null;
-  description: string | null;
-  monthly_rent: number | null;
-  charges: number | null;
-  deposit: number | null;
-  price_sale: number | null;
-  is_furnished: boolean;
-  has_parking: boolean;
-  pets_allowed: boolean;
-  is_active: boolean;
   created_at: string;
   updated_at: string;
-  // detail only
-  images?: PropertyImage[];
-  documents?: PropertyDocument[];
+
+  // Localisation
+  adresse: string;                      // max 300 chars
+  ville: string;                        // max 100
+  cp: string;                           // min 4, max 10 — pas de regex (multi-pays futur)
+  canton: string | null;                // 2 lettres ISO CH
+
+  // Identité
+  building_name: string | null;
+  unit_number: string | null;
+  reference_number: string | null;
+
+  // Type et statut
+  type: BienType;
+  statut: BienStatut;
+
+  // Caractéristiques
+  surface: number | null;
+  etage: number | null;                 // négatif possible (sous-sol)
+  rooms: number | null;                 // 3.5 possible (convention CH)
+  bedrooms: number | null;
+  bathrooms: number | null;
+  annee_construction: number | null;
+  annee_renovation: number | null;
+
+  // Équipements booléens
+  is_furnished: boolean;
+  has_balcony: boolean;
+  has_terrace: boolean;
+  has_garden: boolean;
+  has_storage: boolean;
+  has_fireplace: boolean;
+  has_laundry_private: boolean;
+  has_laundry_building: boolean;
+  classe_energetique: string | null;    // A–G regex côté backend
+
+  // Parking
+  parking_type: ParkingType | null;
+
+  // Règles
+  pets_allowed: boolean;
+  smoking_allowed: boolean;
+
+  // Situation et transports
+  distance_gare_minutes: number | null;
+  distance_arret_bus_minutes: number | null;
+  distance_telecabine_minutes: number | null;
+  distance_lac_minutes: number | null;
+  distance_aeroport_minutes: number | null;
+  situation_notes: string | null;
+
+  // Présentation (ex-description scindée 3/3)
+  description_lieu: string | null;
+  description_logement: string | null;
+  remarques: string | null;
+
+  // Finances (Decimal backend → number côté TS)
+  loyer: number | null;
+  charges: number | null;
+  deposit: number | null;
+  keys_count: number | null;
+
+  // Coordonnées Mapbox
+  lat: number | null;
+  lng: number | null;
 }
 
-export interface PropertyFilters {
-  type?: PropertyType;
-  status?: PropertyStatus;
-  city?: string;
+/** Liste paginée lightweight — ajoute l'image de couverture. */
+export interface BienListItem extends Bien {
+  images: BienImage[];
+}
+
+/** Détail complet — images + documents + équipements. */
+export interface BienDetail extends Bien {
+  images: BienImage[];
+  documents: BienDocument[];
+  equipements: CatalogueEquipement[];
+}
+
+export interface BienFilters {
+  type?: BienType;
+  statut?: BienStatut;
+  ville?: string;
+  canton?: string;
   owner_id?: string;
   agency_id?: string;
 }
 
-export interface PaginatedProperties {
-  items: Property[];
+export interface PaginatedBiens {
+  items: BienListItem[];
   total: number;
   page: number;
   size: number;
   pages: number;
 }
 
+export interface AuditLogEntry {
+  id: string;
+  user_id: string | null;
+  action: string;
+  resource_type: string;
+  resource_id: string;
+  old_values: Record<string, unknown> | null;
+  new_values: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface GenerateDescriptionResponse {
+  description: string;
+}
+
 // ─── Contract ────────────────────────────────────────────────────────────────
+// Rupture API : property_id → bien_id (schemas/contract.py).
+// Contract.monthly_rent CONSERVÉ côté backend et frontend.
 
 export type ContractType = "long_term" | "seasonal" | "short_term" | "sale";
 export type ContractStatus = "draft" | "active" | "terminated" | "expired";
@@ -170,7 +270,7 @@ export interface Contract {
   id: string;
   reference: string;
   owner_id: string;
-  property_id: string;
+  bien_id: string;
   tenant_id: string | null;
   agency_id: string | null;
   type: ContractType;
@@ -197,6 +297,7 @@ export interface PaginatedContracts {
 }
 
 // ─── Transaction ─────────────────────────────────────────────────────────────
+// Rupture API : property_id → bien_id (schemas/transaction.py).
 
 export type TransactionType = "rent" | "commission" | "deposit" | "service" | "quote";
 export type TransactionStatus = "pending" | "paid" | "late" | "cancelled";
@@ -206,7 +307,7 @@ export interface Transaction {
   reference: string;
   owner_id: string;
   contract_id: string | null;
-  property_id: string | null;
+  bien_id: string | null;
   tenant_id: string | null;
   type: TransactionType;
   status: TransactionStatus;
@@ -244,6 +345,9 @@ export interface RevenueStats {
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
+// OwnerDashboard.total_properties CONSERVÉ (schemas/transaction.py L77 backend pas migré).
+// recent_transactions cascade via Transaction.bien_id (corrige le bug dormant
+// "clic sur transaction récente → lien cassé" confirmé étape 13).
 
 export interface OwnerDashboard {
   revenue_current_month: number;
@@ -266,7 +370,37 @@ export interface AgencyDashboard {
   recent_transactions: Transaction[];
 }
 
+// ─── Documents Althy (GED FR) ─────────────────────────────────────────────────
+// Enum strict aligné schemas/document_althy.py DocumentTypeLiteral (10 valeurs)
+// + contrainte DB enum doc_althy_type (alembic 0006 L58-60).
+// Distinct de BienDocument.type qui est libre (schema bien_documents backend).
+
+export type DocAlthyType =
+  | "bail"
+  | "edl_entree"
+  | "edl_sortie"
+  | "quittance"
+  | "attestation_assurance"
+  | "contrat_travail"
+  | "fiche_salaire"
+  | "extrait_poursuites"
+  | "attestation_caution"
+  | "autre";
+
+export interface DocumentAlthy {
+  id: string;
+  bien_id: string | null;
+  locataire_id: string | null;
+  type: DocAlthyType;
+  url_storage: string;
+  date_document: string | null;
+  genere_par_ia: boolean;
+  created_at: string;
+}
+
 // ─── Opener marketplace ───────────────────────────────────────────────────────
+// Note : Mission.property_id CONSERVÉ — schemas/opener.py backend non migré
+// dans le sprint fusion. À aligner lors d'un sprint futur opener→bien.
 
 export type MissionType = "visit" | "check_in" | "check_out" | "inspection" | "photography" | "other";
 export type MissionStatus = "pending" | "confirmed" | "in_progress" | "completed" | "cancelled";
@@ -332,20 +466,6 @@ export interface MissionPriceEstimate {
   total: number;
 }
 
-// Legacy camelCase interface kept for backwards-compat with company module
-export interface Opener {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  companyId?: string;
-  commissionRate?: number;
-  totalCommissions?: number;
-  activeContracts?: number;
-  createdAt: string;
-}
-
 // ─── Company ─────────────────────────────────────────────────────────────────
 
 export interface Company {
@@ -365,6 +485,8 @@ export interface Company {
 }
 
 // ─── RFQ marketplace ─────────────────────────────────────────────────────────
+// Note : RFQ.property_id CONSERVÉ — schemas/rfq.py backend non migré
+// dans le sprint fusion. À aligner lors d'un sprint futur rfq→bien.
 
 export type RFQCategory =
   | "plumbing" | "electricity" | "cleaning" | "painting" | "locksmith"

@@ -187,6 +187,63 @@ Grep exhaustif 2026-04-23 session 3 : `TransactionService(db).{list,create,mark_
 - `lib/hooks/index.ts` à mettre à jour
 - 10+ pages à mettre à jour (biens/page.tsx, contracts/new, crm, admin/transactions, publier, etc.)
 
+**Session 5 — 2026-04-23 nuit — étape 19.1a démarrée** :
+- Cartographie Phase A+B+C validée (24 fichiers frontend impactés, vs ~13 estimés au départ — granularité plus fine, pas de scope drift).
+- Commit 1a `lib/types/index.ts` : fondation types Bien (47 champs cross-checké
+  `schemas/bien.py BienRead`) + ruptures API encodées (Transaction.bien_id,
+  Contract.bien_id) + 8 renames + 9 ajouts (ParkingType, EquipementCategorie,
+  BienListItem, BienDetail, AuditLogEntry, GenerateDescriptionResponse,
+  DocAlthyType promu depuis useBiens.ts, DocumentAlthy) + 2 suppressions
+  (interface Opener legacy camelCase 0 consommateur, type DocumentType EN
+  remplacé par DocAlthyType FR).
+- Conservés explicitement (backend non migré dans sprint fusion) :
+  Mission.property_id, RFQ.property_id, RFQCreate.property_id,
+  OwnerDashboard.total_properties.
+
+### 🧾 Dette produit étape 19 — Harmonisation systèmes documents Althy
+
+Deux systèmes de documents coexistent côté backend :
+- **GED Althy** (table `document_althy`, schema `DocumentAlthyRead`, enum
+  strict `DocumentTypeLiteral` 10 valeurs FR : bail, edl_entree, edl_sortie,
+  quittance, attestation_assurance, contrat_travail, fiche_salaire,
+  extrait_poursuites, attestation_caution, autre) consommée via `/docs-althy/*`.
+- **Bien documents** (table `bien_documents`, schema `BienDocumentRead.type: str`
+  libre, upload `doc_type: Form("autre")`) consommée via `/biens/{id}/documents/*`.
+
+Côté frontend étape 19.1a : `DocAlthyType` (enum strict FR) conservé pour la GED
+via `DocumentAlthy`. `BienDocument.type: string` libre pour les docs attachés
+aux biens, aligné backend.
+
+**Mini-sprint dédié à évaluer post-alpha** : unification des 2 systèmes =
+migration backend (contraintes CHECK + Literal strict sur bien_documents) +
+refonte UI upload (sélecteur enum typé) + data migration existante
+(mapping des `type: str` libres en valeurs normalisées). Scope non bloquant
+pour Phase 1 launch.
+
+### 🗑️ Concepts retirés étape 19 — backlog produit
+
+Éléments supprimés du frontend pendant la refonte fusion properties→biens,
+justifiés par le scope Phase 1 (location uniquement) et l'absence d'utilisateurs
+actifs en prod (onboarding progressif nouveaux clients, pas de régression
+fonctionnelle pour la base existante).
+
+| Concept retiré | Fichier frontend | Raison |
+|----------------|------------------|--------|
+| Tab "Archivés" (liste biens) | `app/app/(dashboard)/biens/page.tsx` TABS L174-178 + requête L210-216 + empty state L424-435 | `BienStatut` backend ne contient plus `sold` — la notion "archivé=vendu" sort du scope `Bien` (locatif pur). Pas de soft-delete dans `BienRead`. |
+| Champ `price_sale` (marker carte) | `app/app/(dashboard)/biens/page.tsx` L275-276 | `schemas/bien.py BienRead` n'expose pas `price_sale` — Phase 1 = location uniquement, la vente est hors scope produit. |
+| `PropertyStatus` valeurs `for_sale`, `sold` | `lib/types/index.ts` | Supprimées du `BienStatut` FR (3 valeurs : `loue\|vacant\|en_travaux`). |
+| `has_parking: boolean` | `lib/types/index.ts Bien` | Remplacé par `parking_type: ParkingType \| null` (4 valeurs granulaires). |
+| `description: string` unique | `lib/types/index.ts Bien` | Scindé en 3 champs sémantiques : `description_lieu`, `description_logement`, `remarques`. |
+| `is_active: boolean` sur Bien | `lib/types/index.ts Bien` | Non exposé par `BienRead` backend. Pas de soft-delete apparent sur `biens`. |
+| `country: string` sur Bien | `lib/types/index.ts Bien` | Non exposé par `BienRead` (présent en DB via migration 0037 `DEFAULT 'CH'` mais implicite — non remonté dans le contrat API). |
+| `interface Opener` legacy camelCase | `lib/types/index.ts` | 0 consommateur actif (grep exhaustif post-cartographie). `OpenerProfile` snake_case est la source canonique. |
+| `type DocumentType` EN (7 valeurs) | `lib/types/index.ts` | Remplacé par `DocAlthyType` FR (10 valeurs) promu depuis `useBiens.ts`. |
+
+**Note produit** : la feature "vente de bien" existe dans le code legacy (table
+`sale_mandates` + colonnes `price_sale`, `type: "sale"`, statut `for_sale`/`sold`)
+mais n'est pas intégrée au scope `Bien` de la refonte. Réactivation future =
+sprint dédié (schéma backend vente, routers, UI, flag `FEATURE_VENTE`).
+
 ### Étape 20-21 — Checkpoint + tests 🛑
 
 ---
