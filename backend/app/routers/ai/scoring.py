@@ -63,7 +63,7 @@ class AnomalyResponse(BaseModel):
     type: str
     severity: str
     description: str
-    property_id: str | None
+    bien_id: str | None
     tenant_id: str | None
 
 
@@ -147,7 +147,7 @@ async def anomalies(
     return [
         AnomalyResponse(
             type=a.type, severity=a.severity, description=a.description,
-            property_id=a.property_id, tenant_id=a.tenant_id,
+            bien_id=a.bien_id, tenant_id=a.tenant_id,
         )
         for a in alerts
     ]

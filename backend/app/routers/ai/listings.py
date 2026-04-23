@@ -26,7 +26,7 @@ AuthUserDep = Annotated[User, Depends(get_current_user)]
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
 class GenerateListingRequest(BaseModel):
-    property_id: str
+    bien_id: str
 
 
 class GenerateListingResponse(BaseModel):
@@ -152,15 +152,15 @@ async def generate_listing(
 ) -> GenerateListingResponse:
     """Generate an SEO property description via Claude."""
     import uuid
-    from app.models.property import Property
+    from app.models.bien import Bien
     from sqlalchemy import select
 
     try:
-        pid = uuid.UUID(payload.property_id)
+        pid = uuid.UUID(payload.bien_id)
     except ValueError:
-        raise HTTPException(422, "property_id invalide")
+        raise HTTPException(422, "bien_id invalide")
 
-    result = await db.execute(select(Property).where(Property.id == pid))
+    result = await db.execute(select(Bien).where(Bien.id == pid))
     prop = result.scalar_one_or_none()
     if not prop:
         raise HTTPException(404, "Bien introuvable")
@@ -181,13 +181,22 @@ async def import_property_file(
     _=rate_limit(5, 60),
 ):
     """Upload un fichier (PDF, Excel, CSV, image) → Claude extrait les données → crée les biens."""
-    from app.models.property import Property
+    from app.models.bien import Bien
     from app.services.import_service import (
         extract_from_csv_bytes,
         extract_from_excel_bytes,
         extract_from_image_bytes,
         extract_from_pdf_bytes,
     )
+
+    # Mapping enum legacy EN → FR pour les outputs extraction IA
+    _STATUS_MAP = {"available": "vacant", "rented": "loue", "maintenance": "en_travaux"}
+    _TYPE_MAP = {
+        "apartment": "appartement", "villa": "villa", "office": "bureau",
+        "box": "garage", "depot": "autre", "hotel": "autre",
+        "commercial": "commerce", "parking": "parking", "garage": "garage",
+        "cave": "cave",
+    }
 
     if current_user.role not in ("proprio_solo", "agence", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux propriétaires et agences")
@@ -225,25 +234,22 @@ async def import_property_file(
         if not (p.get("address") or p.get("city")):
             continue
         try:
-            new_prop = Property(
+            new_prop = Bien(
                 id=_uuid.uuid4(),
-                type=p.get("type", "apartment"),
-                address=p.get("address") or "",
-                city=p.get("city") or "",
-                zip_code=p.get("zip_code") or "",
-                country=p.get("country") or "CH",
+                type=_TYPE_MAP.get(p.get("type", "apartment"), "appartement"),
+                adresse=p.get("address") or "",
+                ville=p.get("city") or "",
+                cp=p.get("zip_code") or "",
                 surface=float(p["surface"]) if p.get("surface") else None,
                 rooms=float(p["rooms"]) if p.get("rooms") else None,
-                floor=int(p["floor"]) if p.get("floor") else None,
-                monthly_rent=float(p["monthly_rent"]) if p.get("monthly_rent") else None,
+                etage=int(p["floor"]) if p.get("floor") else None,
+                loyer=float(p["monthly_rent"]) if p.get("monthly_rent") else None,
                 charges=float(p["charges"]) if p.get("charges") else None,
                 deposit=float(p["deposit"]) if p.get("deposit") else None,
-                price_sale=float(p["price_sale"]) if p.get("price_sale") else None,
-                status=p.get("status", "available"),
+                statut=_STATUS_MAP.get(p.get("status", "available"), "vacant"),
                 is_furnished=bool(p.get("is_furnished", False)),
-                has_parking=bool(p.get("has_parking", False)),
                 pets_allowed=bool(p.get("pets_allowed", False)),
-                description=p.get("description"),
+                description_logement=p.get("description"),
                 owner_id=current_user.id,
                 created_by_id=current_user.id,
                 is_active=True,
@@ -252,8 +258,9 @@ async def import_property_file(
             await db.flush()
             created.append({
                 "id": str(new_prop.id), "type": new_prop.type,
-                "address": new_prop.address, "city": new_prop.city,
-                "monthly_rent": new_prop.monthly_rent, "status": new_prop.status,
+                "adresse": new_prop.adresse, "ville": new_prop.ville,
+                "loyer": float(new_prop.loyer) if new_prop.loyer else None,
+                "statut": new_prop.statut,
             })
         except Exception:
             continue

@@ -38,6 +38,7 @@ from app.schemas.bien import (
     BienUpdate,
     CatalogueEquipementRead,
     PaginatedBiens,
+    PotentielIAResponse,
 )
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import func, select, text
@@ -403,14 +404,16 @@ class BienService:
         await self.db.refresh(img)
         return BienImageRead.model_validate(img)
 
-    async def delete_image(self, bien_id: str, image_id: str, current_user: User) -> bool:
+    async def delete_image(
+        self, bien_id: uuid.UUID | str, image_id: uuid.UUID, current_user: User
+    ) -> bool:
         bien = await self._get_or_404(bien_id)
         if not _can_write(bien, current_user):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
 
         result = await self.db.execute(
             select(BienImage).where(
-                BienImage.id == uuid.UUID(image_id),
+                BienImage.id == image_id,
                 BienImage.bien_id == bien.id,
             )
         )
@@ -526,7 +529,7 @@ class BienService:
         return [CatalogueEquipementRead.model_validate(r) for r in rows]
 
     async def remove_equipement(
-        self, bien_id: str, equipement_id: str, current_user: User
+        self, bien_id: uuid.UUID | str, equipement_id: uuid.UUID, current_user: User
     ) -> bool:
         bien = await self._get_or_404(bien_id)
         if not _can_write(bien, current_user):
@@ -537,7 +540,7 @@ class BienService:
                 DELETE FROM bien_equipements
                 WHERE bien_id = :bid AND equipement_id = :eid
             """),
-            {"bid": str(bien.id), "eid": equipement_id},
+            {"bid": str(bien.id), "eid": str(equipement_id)},
         )
         await self.db.flush()
         return (result.rowcount or 0) > 0
@@ -655,9 +658,10 @@ class BienService:
             or bien.agency_id == user.id
         )
 
-    async def _get(self, bien_id: str) -> Bien | None:
+    async def _get(self, bien_id: uuid.UUID | str) -> Bien | None:
+        """Fetch le bien actif par id (accepte UUID ou str)."""
         try:
-            bid = uuid.UUID(bien_id)
+            bid = bien_id if isinstance(bien_id, uuid.UUID) else uuid.UUID(bien_id)
         except (ValueError, TypeError):
             return None
         result = await self.db.execute(
@@ -665,11 +669,141 @@ class BienService:
         )
         return result.scalar_one_or_none()
 
-    async def _get_or_404(self, bien_id: str) -> Bien:
+    async def _get_or_404(self, bien_id: uuid.UUID | str) -> Bien:
         bien = await self._get(bien_id)
         if bien is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Bien introuvable")
         return bien
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Access check (public — utilisé par les routers pour les endpoints qui
+    # n'ont pas besoin de load les relations lourdes comme images / documents)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    async def get_for_access_check(
+        self, bien_id: uuid.UUID | str, current_user: User
+    ) -> Bien:
+        """SELECT minimal + check accès en une seule requête.
+
+        Raise HTTPException 404 si introuvable, 403 si pas d'accès.
+        À utiliser dans les endpoints qui n'ont pas besoin de charger
+        les relations (images/documents/équipements) pour faire leur job.
+        """
+        bien = await self._get(bien_id)
+        if bien is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Bien introuvable")
+        if not self._can_read(bien, current_user):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
+        return bien
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Potentiel IA — analyse financière + recommandations Claude
+    # ─────────────────────────────────────────────────────────────────────────
+
+    async def get_potentiel_ia(
+        self, bien_id: uuid.UUID | str, current_user: User
+    ) -> PotentielIAResponse:
+        """Calcul financier (blocs 1-4) + Claude pour recommandations textuelles (blocs 5-7).
+
+        Fallback si Claude indisponible : recommandations génériques.
+        """
+        from anthropic import AsyncAnthropic
+
+        bien = await self.get_for_access_check(bien_id, current_user)
+
+        loyer = float(bien.loyer or 0)
+        charges = float(bien.charges or 0)
+        surface = float(bien.surface or 0)
+
+        # ── Blocs 1–4 : calculs financiers ────────────────────────────────────
+        # Multiplicateur suisse : 220–250x loyer mensuel brut (marché locatif CH)
+        valeur_min = round(loyer * 200, 0) if loyer > 0 else 0.0
+        valeur_max = round(loyer * 260, 0) if loyer > 0 else 0.0
+        loyer_net_annuel = (loyer - charges) * 12
+        valeur_mid = (valeur_min + valeur_max) / 2 if valeur_max > 0 else 1
+
+        rendement_brut = (
+            round((loyer * 12 / valeur_mid * 100), 2) if valeur_mid > 0 else 0.0
+        )
+        rendement_net = (
+            round((loyer_net_annuel / valeur_mid * 100), 2) if valeur_mid > 0 else 0.0
+        )
+
+        loyer_marche = round(loyer * 1.04, 0) if loyer > 0 else 0.0
+        ecart_marche_pct = (
+            round(((loyer_marche - loyer) / loyer * 100), 1) if loyer > 0 else 0.0
+        )
+
+        # Score investissement (0–10)
+        score = 5.0
+        if rendement_brut >= 4.5:
+            score += 1.5
+        elif rendement_brut >= 3.5:
+            score += 0.5
+        if bien.statut == "loue":
+            score += 1.0
+        if surface >= 60:
+            score += 0.5
+        if loyer_marche > loyer:
+            score += 0.5
+        score = min(10.0, round(score, 1))
+
+        # ── Blocs 5–7 : Claude ────────────────────────────────────────────────
+        context = (
+            f"Bien : {bien.type} à {bien.adresse}, {bien.cp} {bien.ville}\n"
+            f"Surface : {surface} m²   Étage : {bien.etage or 'RDC'}\n"
+            f"Loyer actuel : CHF {loyer}/mois   Charges : CHF {charges}/mois\n"
+            f"Statut : {bien.statut}   Rendement brut estimé : {rendement_brut}%\n"
+            f"Score investissement Althy : {score}/10"
+        )
+
+        try:
+            client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+            response = await client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=600,
+                system=(
+                    "Tu es un expert immobilier suisse. "
+                    "Réponds en JSON valide UNIQUEMENT avec ces 3 clés : "
+                    '"recommandations" (liste de 3 strings, conseils actionnables courts), '
+                    '"conseil_fiscal" (string, 1 conseil déduction fiscale CH concis), '
+                    '"prochaine_action" (string, 1 action prioritaire immédiate). '
+                    "Pas d'autre texte."
+                ),
+                messages=[{"role": "user", "content": context}],
+            )
+            import json as _json
+
+            raw = response.content[0].text.strip()
+            ia_data = _json.loads(raw)
+            recommandations: list[str] = ia_data.get("recommandations", [])[:5]
+            conseil_fiscal: str = ia_data.get("conseil_fiscal", "")
+            prochaine_action: str = ia_data.get("prochaine_action", "")
+        except Exception:
+            recommandations = [
+                "Vérifier les attestations d'assurance RC des locataires",
+                "Comparer le loyer actuel avec le marché local",
+                "Planifier une inspection annuelle du bien",
+            ]
+            conseil_fiscal = (
+                "Déduisez les charges d'entretien, intérêts hypothécaires et frais de "
+                "gérance de votre revenu imposable."
+            )
+            prochaine_action = "Vérifier la date d'échéance du prochain loyer."
+
+        return PotentielIAResponse(
+            valeur_min=valeur_min,
+            valeur_max=valeur_max,
+            rendement_brut=rendement_brut,
+            rendement_net=rendement_net,
+            loyer_actuel=loyer,
+            loyer_marche=loyer_marche,
+            ecart_marche_pct=ecart_marche_pct,
+            score_investissement=score,
+            recommandations=recommandations,
+            conseil_fiscal=conseil_fiscal,
+            prochaine_action=prochaine_action,
+        )
 
     async def _log(
         self,

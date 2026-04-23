@@ -11,8 +11,8 @@ from typing import Annotated
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.agency_settings import AgencySettings
+from app.models.bien import Bien
 from app.models.contract import Contract
-from app.models.property import Property
 from app.models.transaction import Transaction
 from app.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -190,9 +190,9 @@ async def export_accounting(
     total_charges = 0.0
 
     for tx in transactions:
-        prop_result = await db.execute(select(Property).where(Property.id == tx.property_id))
+        prop_result = await db.execute(select(Bien).where(Bien.id == tx.bien_id))
         prop = prop_result.scalar_one_or_none()
-        addr = f"{prop.address}, {prop.city}" if prop else "N/A"
+        addr = f"{prop.adresse}, {prop.ville}" if prop else "N/A"
 
         amount = float(tx.amount)
         if tx.type == "rent":

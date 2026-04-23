@@ -17,7 +17,7 @@ Actions :
     6.  Créer bien_images, bien_documents (mêmes colonnes qu'avant).
     7.  Créer catalogue_equipements + seed de 49 équipements répartis en 7 catégories.
     8.  Créer bien_equipements (jonction N:N).
-    9.  Créer ch_postal_codes + seed d'environ 230 NPAs (GE/VD/VS/FR/NE/JU
+    9.  Créer ch_postal_codes + seed d'environ 256 NPAs (GE/VD/VS/FR/NE/JU
         prioritaires pour Phase 1, plus chefs-lieux ZH/BE/BS/TI).
     10. DROP properties + les trois enums legacy (property_type_enum,
         property_status_enum, property_document_type_enum).
@@ -49,15 +49,18 @@ depends_on = None
 # ── Tables portant une FK property_id à migrer vers bien_id → biens(id) ──────
 # Format : (nom_table, clause ON DELETE, nullable)
 _TABLES_FK = [
-    ("contracts",    "RESTRICT",  False),
-    ("quotes",       "RESTRICT",  False),
-    ("listings",     "CASCADE",   False),  # UNIQUE sur property_id → reste unique
-    ("inspections",  "RESTRICT",  False),
-    ("missions",     "RESTRICT",  False),
-    ("rfqs",         "SET NULL",  True),
-    ("transactions", "SET NULL",  True),
-    ("crm_contacts", "SET NULL",  True),
-    ("crm_notes",    "SET NULL",  True),
+    ("contracts",     "RESTRICT",  False),
+    ("quotes",        "RESTRICT",  False),
+    ("listings",      "CASCADE",   False),  # UNIQUE sur bien_id — renommée plus bas
+    ("inspections",   "RESTRICT",  False),
+    ("missions",      "RESTRICT",  False),
+    ("rfqs",          "SET NULL",  True),
+    ("transactions",  "SET NULL",  True),
+    ("crm_contacts",  "SET NULL",  True),
+    ("crm_notes",     "SET NULL",  True),
+    # Tables sans modèle SQLAlchemy mais avec FK en DB (audit peer review)
+    ("commissions",   "SET NULL",  True),   # alembic 0012, pas de code Python
+    ("sale_mandates", "SET NULL",  True),   # alembic 0018, feature Vente OFF
 ]
 
 
@@ -97,7 +100,7 @@ def upgrade() -> None:
         ALTER TABLE biens
             -- Identité & relations (5)
             ADD COLUMN IF NOT EXISTS agency_id           UUID REFERENCES users(id) ON DELETE SET NULL,
-            ADD COLUMN IF NOT EXISTS created_by_id       UUID REFERENCES users(id) ON DELETE RESTRICT,
+            ADD COLUMN IF NOT EXISTS created_by_id       UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
             ADD COLUMN IF NOT EXISTS building_name       VARCHAR(200),
             ADD COLUMN IF NOT EXISTS unit_number         VARCHAR(20),
             ADD COLUMN IF NOT EXISTS reference_number    VARCHAR(50),
@@ -179,8 +182,13 @@ def upgrade() -> None:
         # Renommer l'index s'il existait avec l'ancien nom
         op.execute(f"ALTER INDEX IF EXISTS ix_{table}_property_id RENAME TO ix_{table}_bien_id")
 
+    # Contrainte UNIQUE de `listings` : le RENAME COLUMN conserve la contrainte
+    # mais son nom reste `listings_property_id_key`. On la renomme proprement.
+    op.execute("ALTER TABLE listings DROP CONSTRAINT IF EXISTS listings_property_id_key")
+    op.execute("ALTER TABLE listings ADD CONSTRAINT listings_bien_id_key UNIQUE (bien_id)")
+
     # Tables avec property_id SANS FK SQLAlchemy (UUID simple) : favorites, generated_documents
-    # Renommer la colonne et la contrainte UNIQUE le cas échéant.
+    # Renommer la colonne, la contrainte UNIQUE et les index le cas échéant.
     op.execute("ALTER TABLE favorites RENAME COLUMN property_id TO bien_id")
     op.execute(
         "ALTER TABLE favorites "
@@ -190,8 +198,15 @@ def upgrade() -> None:
         "ALTER TABLE favorites "
         "ADD CONSTRAINT uq_favorites_user_bien UNIQUE (user_id, bien_id)"
     )
+    op.execute(
+        "ALTER INDEX IF EXISTS ix_favorites_property_id RENAME TO ix_favorites_bien_id"
+    )
 
     op.execute("ALTER TABLE generated_documents RENAME COLUMN property_id TO bien_id")
+    op.execute(
+        "ALTER INDEX IF EXISTS ix_generated_documents_property_id "
+        "RENAME TO ix_generated_documents_bien_id"
+    )
 
     # ═════════════════════════════════════════════════════════════════════════
     # 7. Créer bien_images
@@ -334,13 +349,15 @@ def upgrade() -> None:
             bien_id       UUID        NOT NULL REFERENCES biens(id) ON DELETE CASCADE,
             equipement_id UUID        NOT NULL REFERENCES catalogue_equipements(id) ON DELETE RESTRICT,
             created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+            is_active     BOOLEAN     NOT NULL DEFAULT TRUE,
             UNIQUE(bien_id, equipement_id)
         )
     """)
     op.execute("CREATE INDEX IF NOT EXISTS ix_bien_equipements_bien ON bien_equipements(bien_id)")
 
     # ═════════════════════════════════════════════════════════════════════════
-    # 11. Créer ch_postal_codes + seed NPA → canton (environ 230 NPAs)
+    # 11. Créer ch_postal_codes + seed NPA → canton (environ 256 NPAs)
     # ═════════════════════════════════════════════════════════════════════════
     op.execute("""
         CREATE TABLE IF NOT EXISTS ch_postal_codes (
@@ -404,7 +421,7 @@ def upgrade() -> None:
             ('1293', 'GE', 'Bellevue'),
             ('1294', 'GE', 'Genthod'),
 
-            -- ═══ VD — VAUD (65) ═══
+            -- ═══ VD — VAUD (67) ═══
             ('1000', 'VD', 'Lausanne'),
             ('1003', 'VD', 'Lausanne'),
             ('1004', 'VD', 'Lausanne'),
@@ -473,7 +490,7 @@ def upgrade() -> None:
             ('1884', 'VD', 'Villars-sur-Ollon'),
             ('1885', 'VD', 'Chesières'),
 
-            -- ═══ VS — VALAIS (55) — incluant priorités Sunimmo ═══
+            -- ═══ VS — VALAIS (61) — incluant priorités Sunimmo ═══
             ('1890', 'VS', 'St-Maurice'),
             ('1895', 'VS', 'Vionnaz'),
             ('1896', 'VS', 'Vouvry'),
@@ -504,9 +521,12 @@ def upgrade() -> None:
             ('1967', 'VS', 'Bramois'),
             ('1971', 'VS', 'Grimisuat'),
             ('1972', 'VS', 'Anzère'),
+            ('1977', 'VS', 'Icogne'),
             ('1978', 'VS', 'Lens'),
             ('1983', 'VS', 'Evolène'),
             ('1987', 'VS', 'Hérémence'),
+            ('1994', 'VS', 'Aproz'),
+            ('1996', 'VS', 'Basse-Nendaz'),
             ('1997', 'VS', 'Haute-Nendaz'),
             ('3900', 'VS', 'Brig'),
             ('3904', 'VS', 'Naters'),
@@ -529,6 +549,9 @@ def upgrade() -> None:
             ('3966', 'VS', 'Chalais'),
             ('3967', 'VS', 'Vercorin'),
             ('3970', 'VS', 'Salgesch'),
+            ('3971', 'VS', 'Chermignon'),
+            ('3974', 'VS', 'Mollens VS'),
+            ('3975', 'VS', 'Randogne'),
 
             -- ═══ FR — FRIBOURG (18) ═══
             ('1700', 'FR', 'Fribourg'),
@@ -550,7 +573,7 @@ def upgrade() -> None:
             ('1663', 'FR', 'Moléson-sur-Gruyères'),
             ('1680', 'FR', 'Romont FR'),
 
-            -- ═══ NE — NEUCHÂTEL (14) ═══
+            -- ═══ NE — NEUCHÂTEL (15) ═══
             ('2000', 'NE', 'Neuchâtel'),
             ('2013', 'NE', 'Colombier NE'),
             ('2014', 'NE', 'Bôle'),

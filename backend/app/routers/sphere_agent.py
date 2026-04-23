@@ -1469,30 +1469,36 @@ Règles :
     if result.get("intent") == "create_property" and result.get("property"):
         prop_data = result["property"]
         if prop_data.get("address") or prop_data.get("city"):
-            from app.models.property import Property
-            new_prop = Property(
+            from app.models.bien import Bien
+            # Mapping enum legacy EN → FR pour les outputs Claude
+            _STATUS_MAP = {"available": "vacant", "rented": "loue", "maintenance": "en_travaux"}
+            _TYPE_MAP = {
+                "apartment": "appartement", "villa": "villa", "office": "bureau",
+                "box": "garage", "depot": "autre", "hotel": "autre",
+                "commercial": "commerce", "parking": "parking", "garage": "garage",
+                "cave": "cave",
+            }
+            new_prop = Bien(
                 id=_uuid.uuid4(),
-                type=prop_data.get("type", "apartment"),
-                address=prop_data.get("address") or "",
-                city=prop_data.get("city") or "",
-                zip_code=prop_data.get("zip_code") or "",
-                country=prop_data.get("country") or "CH",
+                type=_TYPE_MAP.get(prop_data.get("type", "apartment"), "appartement"),
+                adresse=prop_data.get("address") or "",
+                ville=prop_data.get("city") or "",
+                cp=prop_data.get("zip_code") or "",
                 surface=prop_data.get("surface"),
                 rooms=prop_data.get("rooms"),
-                monthly_rent=prop_data.get("monthly_rent"),
+                loyer=prop_data.get("monthly_rent"),
                 charges=prop_data.get("charges"),
                 deposit=prop_data.get("deposit"),
-                status=prop_data.get("status", "available"),
+                statut=_STATUS_MAP.get(prop_data.get("status", "available"), "vacant"),
                 is_furnished=bool(prop_data.get("is_furnished", False)),
-                has_parking=bool(prop_data.get("has_parking", False)),
                 owner_id=current_user.id,
                 created_by_id=current_user.id,
                 is_active=True,
             )
             db.add(new_prop)
             await db.commit()
-            result["property_id"] = str(new_prop.id)
-            result["message"] = f"Bien créé : {new_prop.type} à {new_prop.city or new_prop.address}."
+            result["bien_id"] = str(new_prop.id)
+            result["message"] = f"Bien créé : {new_prop.type} à {new_prop.ville or new_prop.adresse}."
         else:
             result["intent"] = "need_more_info"
             result["message"] = "J'ai besoin d'une adresse ou d'une ville pour créer le bien."

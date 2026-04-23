@@ -33,14 +33,14 @@ AuthUserDep = Annotated[User, Depends(get_current_user)]
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
 class DraftLeaseRequest(BaseModel):
-    property_id: str
+    bien_id: str
     tenant_data: dict
     params: dict
     requires_validation: bool = True
 
 
 class DraftEDLRequest(BaseModel):
-    property_id: str
+    bien_id: str
     edl_type: str = "entry"
     inspection_date: str
     previous_edl: dict | None = None
@@ -69,7 +69,7 @@ class NotificationRequest(BaseModel):
 
 
 class PropertyRecapRequest(BaseModel):
-    property_id: str
+    bien_id: str
 
 
 class GenererDocumentRequest(BaseModel):
@@ -96,28 +96,28 @@ async def draft_lease_endpoint(
 ):
     """Generate a complete Swiss-law compliant lease. Owners and agencies only."""
     import uuid as _uuid_mod
-    from app.models.property import Property
+    from app.models.bien import Bien
     from sqlalchemy import select as sa_sel
 
     if current_user.role not in ("proprio_solo", "agence", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux propriétaires et agences")
 
     try:
-        pid = _uuid_mod.UUID(payload.property_id)
+        pid = _uuid_mod.UUID(payload.bien_id)
     except ValueError:
-        raise HTTPException(422, "property_id invalide")
+        raise HTTPException(422, "bien_id invalide")
 
-    result = await db.execute(sa_sel(Property).where(Property.id == pid))
+    result = await db.execute(sa_sel(Bien).where(Bien.id == pid))
     prop = result.scalar_one_or_none()
     if not prop:
         raise HTTPException(404, "Bien introuvable")
 
     property_data = {
-        "type": prop.type, "address": prop.address, "city": prop.city,
-        "zip_code": prop.zip_code,
+        "type": prop.type, "address": prop.adresse, "city": prop.ville,
+        "zip_code": prop.cp,
         "surface": float(prop.surface) if prop.surface else None,
         "rooms": float(prop.rooms) if prop.rooms else None,
-        "floor": prop.floor, "is_furnished": prop.is_furnished,
+        "floor": prop.etage, "is_furnished": prop.is_furnished,
     }
 
     try:
@@ -141,7 +141,7 @@ async def draft_edl_endpoint(
 ):
     """Generate a structured entry/exit inspection form."""
     import uuid as _uuid_mod
-    from app.models.property import Property
+    from app.models.bien import Bien
     from sqlalchemy import select as sa_sel
 
     if current_user.role not in ("proprio_solo", "agence", "opener", "super_admin"):
@@ -151,21 +151,21 @@ async def draft_edl_endpoint(
         raise HTTPException(422, "edl_type doit être 'entry' ou 'exit'")
 
     try:
-        pid = _uuid_mod.UUID(payload.property_id)
+        pid = _uuid_mod.UUID(payload.bien_id)
     except ValueError:
-        raise HTTPException(422, "property_id invalide")
+        raise HTTPException(422, "bien_id invalide")
 
-    result = await db.execute(sa_sel(Property).where(Property.id == pid))
+    result = await db.execute(sa_sel(Bien).where(Bien.id == pid))
     prop = result.scalar_one_or_none()
     if not prop:
         raise HTTPException(404, "Bien introuvable")
 
     property_data = {
-        "type": prop.type, "address": prop.address, "city": prop.city,
+        "type": prop.type, "address": prop.adresse, "city": prop.ville,
         "surface": float(prop.surface) if prop.surface else None,
         "rooms": float(prop.rooms) if prop.rooms else None,
-        "floor": prop.floor, "is_furnished": prop.is_furnished,
-        "description": prop.description,
+        "floor": prop.etage, "is_furnished": prop.is_furnished,
+        "description": prop.description_logement,
     }
 
     try:
@@ -345,7 +345,7 @@ async def property_recap_endpoint(
 ):
     """Generate a complete property history recap (owner/agency only)."""
     import uuid as _uuid_mod
-    from app.models.property import Property
+    from app.models.bien import Bien
     from app.models.contract import Contract
     from app.models.transaction import Transaction as Txn
     from app.models.rfq import RFQ
@@ -355,29 +355,29 @@ async def property_recap_endpoint(
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux propriétaires et agences")
 
     try:
-        pid = _uuid_mod.UUID(payload.property_id)
+        pid = _uuid_mod.UUID(payload.bien_id)
     except ValueError:
-        raise HTTPException(422, "property_id invalide")
+        raise HTTPException(422, "bien_id invalide")
 
-    result = await db.execute(sa_sel(Property).where(Property.id == pid))
+    result = await db.execute(sa_sel(Bien).where(Bien.id == pid))
     prop = result.scalar_one_or_none()
     if not prop:
         raise HTTPException(404, "Bien introuvable")
 
     contracts = (await db.execute(
-        sa_sel(Contract).where(Contract.property_id == pid)
+        sa_sel(Contract).where(Contract.bien_id == pid)
         .order_by(Contract.start_date.desc()).limit(20)
     )).scalars().all()
 
     transactions = (await db.execute(
-        sa_sel(Txn).where(and_(Txn.property_id == pid, Txn.is_active.is_(True))).limit(100)
+        sa_sel(Txn).where(and_(Txn.bien_id == pid, Txn.is_active.is_(True))).limit(100)
     )).scalars().all()
 
     rfqs = (await db.execute(
-        sa_sel(RFQ).where(RFQ.property_id == pid).order_by(RFQ.created_at.desc()).limit(20)
+        sa_sel(RFQ).where(RFQ.bien_id == pid).order_by(RFQ.created_at.desc()).limit(20)
     )).scalars().all()
 
-    property_data     = {"type": prop.type, "address": prop.address, "city": prop.city, "status": prop.status}
+    property_data     = {"type": prop.type, "address": prop.adresse, "city": prop.ville, "status": prop.statut}
     tenants_history   = [
         {"id": str(c.id), "type": c.type, "status": c.status,
          "start_date": c.start_date.isoformat() if c.start_date else None,

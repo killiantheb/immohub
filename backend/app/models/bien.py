@@ -6,8 +6,23 @@ Ce module contient l'ensemble des entités liées aux biens immobiliers Althy :
     BienDocument           — PDFs/docs attachés à un bien (ex-property_documents)
     BienEquipement         — jonction N:N entre un bien et le catalogue
     CatalogueEquipement    — catalogue global (49 items seedés, partagé)
-    ChPostalCode           — référentiel NPA → canton CH (seed Phase 1 ~230 NPAs)
 """
+
+# ─── Note architecturale ──────────────────────────────────────────────────────
+# La table `ch_postal_codes` (référentiel NPA → canton) n'a PAS de modèle ORM
+# SQLAlchemy.
+#
+# C'est une table de référence pure : seedée à la migration 0029, lecture seule,
+# lookup par clé primaire simple. L'accès se fait via SQL brut dans
+# bien_service.py :
+#
+#     await db.execute(text(
+#         "SELECT canton FROM ch_postal_codes WHERE code_postal = :cp"
+#     ), {"cp": cp})
+#
+# Si un besoin CRUD ORM émerge plus tard (import bulk, UI admin, etc.), ajouter
+# une vraie classe mappée héritant de Base.
+# ──────────────────────────────────────────────────────────────────────────────
 
 from __future__ import annotations
 
@@ -86,9 +101,10 @@ class Bien(BaseModel):
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
     )
-    created_by_id: Mapped[uuid.UUID | None] = mapped_column(
+    created_by_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
     )
     building_name: Mapped[str | None] = mapped_column(String(200))
     unit_number: Mapped[str | None] = mapped_column(String(20))
@@ -208,7 +224,9 @@ class BienImage(BaseModel):
         nullable=False,
     )
     url: Mapped[str] = mapped_column(Text, nullable=False)
-    order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    order: Mapped[int] = mapped_column(
+        "order", Integer, nullable=False, default=0, server_default="0"
+    )
     is_cover: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
     )
@@ -287,9 +305,15 @@ class CatalogueEquipement(BaseModel):
 class BienEquipement(BaseModel):
     """Jonction N:N — attache un équipement du catalogue à un bien.
 
-    N.B. : hérite de BaseModel pour la cohérence audit (id UUID + timestamps),
-    mais `is_active` et `updated_at` sont peu utilisés ici. Le couple
-    (bien_id, equipement_id) est UNIQUE.
+    Hérite de BaseModel pour la cohérence du pattern
+    (id UUID + timestamps + is_active).
+
+    Usage is_active : permet un soft-delete saisonnier. Ex :
+    un propriétaire peut mettre is_active=FALSE sur les skis
+    en été au lieu de DELETE, préservant l'historique et la
+    possibilité de les réactiver pour la saison d'hiver.
+
+    Contrainte : le couple (bien_id, equipement_id) est UNIQUE.
     """
 
     __tablename__ = "bien_equipements"
@@ -311,26 +335,3 @@ class BienEquipement(BaseModel):
     )
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-# ChPostalCode — référentiel NPA → canton (seedé dans la migration 0029)
-# ══════════════════════════════════════════════════════════════════════════════
-
-
-class ChPostalCode:
-    """Référentiel NPA suisse. Table simple, pas d'héritage de BaseModel
-    (pas d'audit nécessaire, la clé primaire est le code postal lui-même)."""
-
-    # Note: cette classe n'étend pas BaseModel. Elle est définie via table()
-    # ou mapping direct dans un fichier séparé si besoin. Pour le MVP, le
-    # service bien_service.py interroge la table ch_postal_codes via SQL brut.
-    # Si plus tard on veut un ORM, il suffit d'ajouter :
-    #
-    #   from app.models.base import Base
-    #   class ChPostalCode(Base):
-    #       __tablename__ = "ch_postal_codes"
-    #       code_postal: Mapped[str] = mapped_column(String(4), primary_key=True)
-    #       canton: Mapped[str] = mapped_column(String(2), nullable=False)
-    #       ville_principale: Mapped[str] = mapped_column(String(100), nullable=False)
-    #
-    # Le stub est gardé ici pour documenter l'intention.
-    pass

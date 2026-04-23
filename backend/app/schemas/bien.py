@@ -2,11 +2,15 @@
 
 Exports principaux :
     BienCreate / BienUpdate / BienRead / BienListItem / BienDetail / PaginatedBiens
-    BienImageCreate / BienImageRead
-    BienDocumentCreate / BienDocumentRead
+    BienImageRead
+    BienDocumentRead
     CatalogueEquipementRead
     SetEquipementsRequest
+    BienEquipementRead
     AuditLogResponse
+
+Note : pas de BienImageCreate / BienDocumentCreate — les uploads sont gérés
+en multipart/form-data (file + form), pas en JSON.
 """
 
 from __future__ import annotations
@@ -45,33 +49,41 @@ EquipementCategorie = Literal[
 
 
 class BienBase(BaseModel):
-    """Tous les champs éditables d'un bien."""
+    """Tous les champs éditables d'un bien.
 
-    # Localisation (obligatoire à la création)
-    adresse: str
-    ville: str
-    cp: str
-    canton: Optional[str] = None  # Auto-rempli par bien_service si cp connu
+    Contrat API minimal à la création : `adresse`, `ville`, `cp` suffisent.
+    Les 40+ autres champs ont des defaults ou sont Optional (politique
+    "backend permissif, UX discipline" — le wizard frontend impose les
+    12 champs Niveau 1, pas le schema).
+    """
 
-    # Identité
-    building_name: Optional[str] = None
-    unit_number: Optional[str] = None
-    reference_number: Optional[str] = None
+    # ── Localisation (obligatoire à la création) ──────────────────────────────
+    adresse: str = Field(min_length=1, max_length=300)
+    ville: str = Field(min_length=1, max_length=100)
+    cp: str = Field(min_length=4, max_length=10)  # pas de regex : multi-pays futur
+    canton: Optional[str] = Field(default=None, max_length=2)  # auto-rempli si cp connu
 
-    # Type et statut
+    # ── Identité ──────────────────────────────────────────────────────────────
+    building_name: Optional[str] = Field(default=None, max_length=200)
+    unit_number: Optional[str] = Field(default=None, max_length=20)
+    reference_number: Optional[str] = Field(default=None, max_length=50)
+
+    # ── Type et statut ────────────────────────────────────────────────────────
     type: BienTypeLiteral = "appartement"
     statut: BienStatutLiteral = "vacant"
 
-    # Caractéristiques
-    surface: Optional[float] = None
-    etage: Optional[int] = None
-    rooms: Optional[float] = Field(default=None, description="Peut être 3.5 (pièce 1/2 CH)")
-    bedrooms: Optional[int] = None
-    bathrooms: Optional[int] = None
-    annee_construction: Optional[int] = None
-    annee_renovation: Optional[int] = None
+    # ── Caractéristiques ──────────────────────────────────────────────────────
+    surface: Optional[float] = Field(default=None, ge=0)
+    etage: Optional[int] = None  # peut être négatif (sous-sol)
+    rooms: Optional[float] = Field(
+        default=None, ge=0, description="Peut être 3.5 (pièce 1/2 CH)"
+    )
+    bedrooms: Optional[int] = Field(default=None, ge=0)
+    bathrooms: Optional[int] = Field(default=None, ge=0)
+    annee_construction: Optional[int] = Field(default=None, ge=1000, le=2100)
+    annee_renovation: Optional[int] = Field(default=None, ge=1000, le=2100)
 
-    # Équipements booléens
+    # ── Équipements booléens ──────────────────────────────────────────────────
     is_furnished: bool = False
     has_balcony: bool = False
     has_terrace: bool = False
@@ -82,35 +94,35 @@ class BienBase(BaseModel):
     has_laundry_building: bool = False
     classe_energetique: Optional[str] = Field(default=None, pattern=r"^[A-G]$")
 
-    # Parking
+    # ── Parking ───────────────────────────────────────────────────────────────
     parking_type: Optional[ParkingTypeLiteral] = None
 
-    # Règles
+    # ── Règles ────────────────────────────────────────────────────────────────
     pets_allowed: bool = False
     smoking_allowed: bool = False
 
-    # Situation et transports
-    distance_gare_minutes: Optional[int] = None
-    distance_arret_bus_minutes: Optional[int] = None
-    distance_telecabine_minutes: Optional[int] = None
-    distance_lac_minutes: Optional[int] = None
-    distance_aeroport_minutes: Optional[int] = None
-    situation_notes: Optional[str] = None
+    # ── Situation et transports ───────────────────────────────────────────────
+    distance_gare_minutes: Optional[int] = Field(default=None, ge=0)
+    distance_arret_bus_minutes: Optional[int] = Field(default=None, ge=0)
+    distance_telecabine_minutes: Optional[int] = Field(default=None, ge=0)
+    distance_lac_minutes: Optional[int] = Field(default=None, ge=0)
+    distance_aeroport_minutes: Optional[int] = Field(default=None, ge=0)
+    situation_notes: Optional[str] = Field(default=None, max_length=5000)
 
-    # Présentation
-    description_lieu: Optional[str] = None
-    description_logement: Optional[str] = None
-    remarques: Optional[str] = None
+    # ── Présentation ──────────────────────────────────────────────────────────
+    description_lieu: Optional[str] = Field(default=None, max_length=5000)
+    description_logement: Optional[str] = Field(default=None, max_length=5000)
+    remarques: Optional[str] = Field(default=None, max_length=5000)
 
-    # Finances
-    loyer: Optional[Decimal] = None
-    charges: Optional[Decimal] = None
-    deposit: Optional[Decimal] = None
+    # ── Finances ──────────────────────────────────────────────────────────────
+    loyer: Optional[Decimal] = Field(default=None, ge=0)
+    charges: Optional[Decimal] = Field(default=None, ge=0)
+    deposit: Optional[Decimal] = Field(default=None, ge=0)
 
-    # Opérationnel
-    keys_count: Optional[int] = 3
+    # ── Opérationnel ──────────────────────────────────────────────────────────
+    keys_count: Optional[int] = Field(default=3, ge=0)
 
-    # Coordonnées
+    # ── Coordonnées ───────────────────────────────────────────────────────────
     lat: Optional[float] = None
     lng: Optional[float] = None
 
@@ -122,28 +134,33 @@ class BienCreate(BienBase):
 
 
 class BienUpdate(BaseModel):
-    """PATCH partiel — tous les champs optionnels."""
+    """PATCH partiel — tous les champs optionnels, contraintes héritées de BienBase."""
 
-    adresse: Optional[str] = None
-    ville: Optional[str] = None
-    cp: Optional[str] = None
-    canton: Optional[str] = None
+    # ── Localisation ──────────────────────────────────────────────────────────
+    adresse: Optional[str] = Field(default=None, min_length=1, max_length=300)
+    ville: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    cp: Optional[str] = Field(default=None, min_length=4, max_length=10)
+    canton: Optional[str] = Field(default=None, max_length=2)
 
-    building_name: Optional[str] = None
-    unit_number: Optional[str] = None
-    reference_number: Optional[str] = None
+    # ── Identité ──────────────────────────────────────────────────────────────
+    building_name: Optional[str] = Field(default=None, max_length=200)
+    unit_number: Optional[str] = Field(default=None, max_length=20)
+    reference_number: Optional[str] = Field(default=None, max_length=50)
 
+    # ── Type et statut ────────────────────────────────────────────────────────
     type: Optional[BienTypeLiteral] = None
     statut: Optional[BienStatutLiteral] = None
 
-    surface: Optional[float] = None
+    # ── Caractéristiques ──────────────────────────────────────────────────────
+    surface: Optional[float] = Field(default=None, ge=0)
     etage: Optional[int] = None
-    rooms: Optional[float] = None
-    bedrooms: Optional[int] = None
-    bathrooms: Optional[int] = None
-    annee_construction: Optional[int] = None
-    annee_renovation: Optional[int] = None
+    rooms: Optional[float] = Field(default=None, ge=0)
+    bedrooms: Optional[int] = Field(default=None, ge=0)
+    bathrooms: Optional[int] = Field(default=None, ge=0)
+    annee_construction: Optional[int] = Field(default=None, ge=1000, le=2100)
+    annee_renovation: Optional[int] = Field(default=None, ge=1000, le=2100)
 
+    # ── Équipements ───────────────────────────────────────────────────────────
     is_furnished: Optional[bool] = None
     has_balcony: Optional[bool] = None
     has_terrace: Optional[bool] = None
@@ -154,27 +171,33 @@ class BienUpdate(BaseModel):
     has_laundry_building: Optional[bool] = None
     classe_energetique: Optional[str] = Field(default=None, pattern=r"^[A-G]$")
 
+    # ── Parking ───────────────────────────────────────────────────────────────
     parking_type: Optional[ParkingTypeLiteral] = None
 
+    # ── Règles ────────────────────────────────────────────────────────────────
     pets_allowed: Optional[bool] = None
     smoking_allowed: Optional[bool] = None
 
-    distance_gare_minutes: Optional[int] = None
-    distance_arret_bus_minutes: Optional[int] = None
-    distance_telecabine_minutes: Optional[int] = None
-    distance_lac_minutes: Optional[int] = None
-    distance_aeroport_minutes: Optional[int] = None
-    situation_notes: Optional[str] = None
+    # ── Situation et transports ───────────────────────────────────────────────
+    distance_gare_minutes: Optional[int] = Field(default=None, ge=0)
+    distance_arret_bus_minutes: Optional[int] = Field(default=None, ge=0)
+    distance_telecabine_minutes: Optional[int] = Field(default=None, ge=0)
+    distance_lac_minutes: Optional[int] = Field(default=None, ge=0)
+    distance_aeroport_minutes: Optional[int] = Field(default=None, ge=0)
+    situation_notes: Optional[str] = Field(default=None, max_length=5000)
 
-    description_lieu: Optional[str] = None
-    description_logement: Optional[str] = None
-    remarques: Optional[str] = None
+    # ── Présentation ──────────────────────────────────────────────────────────
+    description_lieu: Optional[str] = Field(default=None, max_length=5000)
+    description_logement: Optional[str] = Field(default=None, max_length=5000)
+    remarques: Optional[str] = Field(default=None, max_length=5000)
 
-    loyer: Optional[Decimal] = None
-    charges: Optional[Decimal] = None
-    deposit: Optional[Decimal] = None
-    keys_count: Optional[int] = None
+    # ── Finances ──────────────────────────────────────────────────────────────
+    loyer: Optional[Decimal] = Field(default=None, ge=0)
+    charges: Optional[Decimal] = Field(default=None, ge=0)
+    deposit: Optional[Decimal] = Field(default=None, ge=0)
+    keys_count: Optional[int] = Field(default=None, ge=0)
 
+    # ── Coordonnées ───────────────────────────────────────────────────────────
     lat: Optional[float] = None
     lng: Optional[float] = None
 
@@ -187,7 +210,7 @@ class BienRead(BienBase):
     id: uuid.UUID
     owner_id: uuid.UUID
     agency_id: Optional[uuid.UUID] = None
-    created_by_id: Optional[uuid.UUID] = None
+    created_by_id: uuid.UUID  # NOT NULL cohérent avec migration 0029 + modèle
     created_at: datetime
     updated_at: datetime
 
@@ -248,6 +271,8 @@ class SetEquipementsRequest(BaseModel):
 class BienEquipementRead(BaseModel):
     """Retourne un équipement attaché à un bien avec le détail catalogue."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     bien_id: uuid.UUID
     equipement: CatalogueEquipementRead
@@ -296,3 +321,39 @@ class AuditLogResponse(BaseModel):
     old_values: Optional[dict] = None
     new_values: Optional[dict] = None
     created_at: datetime
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Generate description IA
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class GenerateDescriptionResponse(BaseModel):
+    """Réponse de l'endpoint IA de génération de description."""
+
+    description: str
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Potentiel IA (analyse 7 blocs pour la fiche bien)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class PotentielIAResponse(BaseModel):
+    """7 blocs d'analyse IA pour un bien.
+
+    Bloc 1–4 : calculs financiers (valeurs, rendements, marché).
+    Bloc 5–7 : sortie Claude (recommandations, fiscal, prochaine action).
+    """
+
+    valeur_min: float
+    valeur_max: float
+    rendement_brut: float
+    rendement_net: float
+    loyer_actuel: float
+    loyer_marche: float
+    ecart_marche_pct: float
+    score_investissement: float
+    recommandations: list[str]
+    conseil_fiscal: str
+    prochaine_action: str
