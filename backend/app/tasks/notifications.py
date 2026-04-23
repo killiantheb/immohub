@@ -51,7 +51,7 @@ async def _send_contract_email(contract_id: str, user_email: str) -> str:
                     b.adresse,
                     u.raw_user_meta_data->>'first_name' AS prenom
                 FROM contracts c
-                JOIN biens b ON b.id = c.property_id
+                JOIN biens b ON b.id = c.bien_id
                 LEFT JOIN auth.users u ON u.email = :email
                 WHERE c.id = :cid
             """),
@@ -123,7 +123,7 @@ async def _send_transaction_email(transaction_id: str, user_email: str) -> str:
                     b.adresse,
                     u.raw_user_meta_data->>'first_name' AS prenom
                 FROM transactions t
-                LEFT JOIN biens b ON b.id = t.property_id
+                LEFT JOIN biens b ON b.id = t.bien_id
                 LEFT JOIN auth.users u ON u.email = :email
                 WHERE t.id = :tid
             """),

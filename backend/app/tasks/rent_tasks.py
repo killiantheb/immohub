@@ -98,7 +98,7 @@ async def _generate_monthly_rents_async() -> dict:
             tx = Transaction(
                 reference=ref,
                 contract_id=contract.id,
-                property_id=contract.property_id,
+                bien_id=contract.bien_id,
                 owner_id=contract.owner_id,
                 tenant_id=contract.tenant_id,
                 type="rent",
@@ -244,7 +244,7 @@ async def _calculate_commissions_async() -> dict:
             commission_tx = Transaction(
                 reference=ref,
                 contract_id=rent.contract_id,
-                property_id=rent.property_id,
+                bien_id=rent.bien_id,
                 owner_id=rent.owner_id,
                 tenant_id=None,
                 type="commission",
@@ -372,7 +372,7 @@ async def _reverse_loyers_async() -> dict:
             text("""
                 SELECT lt.id, lt.owner_id, lt.montant_total, lt.commission_montant,
                        lt.montant_reverse, lt.mois_concerne, lt.qr_reference,
-                       lt.property_id,
+                       lt.bien_id,
                        u.iban as owner_iban, u.email as owner_email,
                        u.first_name as owner_first_name
                 FROM loyer_transactions lt
