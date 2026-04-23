@@ -282,6 +282,161 @@ _(aucun bloquant — peer review du fichier 1 a rattrapé 2 tables FK oubliées 
 
 ---
 
+## Fin de session — 2026-04-23 nuit (session 5)
+
+### ✅ Session 5 clôturée — 3 commits fondation étape 19 (frontend)
+
+| Commit   | Libellé                                                                     |
+|----------|-----------------------------------------------------------------------------|
+| f708e96  | feat(19.1a) lib/types/index.ts — fondation types Bien refonte FR            |
+| 8d3061c  | feat(19.1b) 5 hooks consommateurs + BienUpdate/BienCreate types             |
+| 4be8ac5  | chore(19.1c) suppression useProperties + constants/properties + cleanup barrel |
+
+**Détail commit `f708e96`** (étape 19.1a — fondation types) :
+- **8 renames** : Property/PropertyType/PropertyStatus/PropertyImage/PropertyDocument/PropertyFilters/PaginatedProperties → Bien/BienType/BienStatut/BienImage/BienDocument/BienFilters/PaginatedBiens
+- **Ruptures API encodées** : Transaction.bien_id, Contract.bien_id (Contract.monthly_rent conservé)
+- **2 suppressions** : `interface Opener` legacy camelCase (0 consommateur confirmé post-grep), `type DocumentType` EN (remplacé par DocAlthyType FR promu depuis useBiens.ts)
+- **9 ajouts** : ParkingType, EquipementCategorie, CatalogueEquipement, BienEquipement, BienListItem, BienDetail, AuditLogEntry, GenerateDescriptionResponse, DocAlthyType + DocumentAlthy (GED Althy)
+- **Shape `interface Bien`** : 47 champs cross-checkés `schemas/bien.py BienRead` (nouveaux : canton, building_name, unit_number, reference_number, bedrooms, bathrooms, annee_construction/renovation, 7 booléens équipements, classe_energetique, parking_type, smoking_allowed, 5 distances + situation_notes, description scindée 3/3, keys_count, lat/lng)
+- **Conservés explicitement** (backend non migré dans sprint fusion) : Mission.property_id, RFQ.property_id, RFQCreate.property_id, OwnerDashboard.total_properties
+
+**Détail commit `8d3061c`** (étape 19.1b — 5 hooks + extensions types) :
+- `useBiens.ts` enrichi majeur (~+350 lignes) : **12 nouveaux hooks** (useBiensList paginé, useCreateBien, useDeleteBien, useUploadBienImage, useDeleteBienImage, useUploadBienDocument, useBienEquipements, useSetBienEquipements, useRemoveBienEquipement, useCatalogueEquipements, useBienHistory, useGenerateBienDescription), cross-checkés `routers/biens.py` + `routers/catalogue.py` endpoint par endpoint
+- Promotion `Bien/BienType/BienStatut/DocAlthyType/DocumentAlthy` depuis `@/lib/types` (suppressions locales du hook), re-exports avec TODO commenté pour stabilité des 4 call sites existants (_shared.tsx, layout.tsx, [id]/page.tsx, historique/[locataire_id]/page.tsx)
+- `useDashboardData` : suppression doublons OwnerDashboard/AgencyDashboard (promus depuis lib/types)
+- `useAdmin` : PlatformStats.total_biens + active_biens, AdminTransaction.bien_id (ruptures API admin.py)
+- `useContracts` : ContractFilters.bien_id + ContractCreatePayload.bien_id (rupture API contracts.py, monthly_rent conservé)
+- Ajouts `lib/types/index.ts` (micro-écart acté) : BienUpdate (`Partial<Omit<Bien, "id"|…>>`), BienCreate (`Pick<Bien, "adresse"|"ville"|"cp"> & Partial<Omit>`) — cross-checkés schemas/bien.py BienBase
+
+**Détail commit `4be8ac5`** (étape 19.1c — suppressions + cleanup) :
+- `src/lib/hooks/useProperties.ts` supprimé (-243 lignes : 9 hooks legacy EN + propertyKeys ; `compressImage` helper promu dans useBiens.ts en 1b)
+- `src/lib/constants/properties.ts` supprimé (-31 lignes : PROPERTY_TYPE_LABELS/STATUS_LABELS/STATUS_COLORS en EN — 0 consommateur externe confirmé Phase B)
+- `src/lib/hooks/index.ts` cleanup : retrait export `{ useProperties, useProperty } from "./useProperties"`
+
+### 📐 Discipline appliquée session 5
+
+- **Phase A + B + C cartographie** avant tout patch : 24 fichiers identifiés (vs ~13 estimés initialement — granularité plus fine, pas de scope drift), 16 faux positifs écartés avec justification individuelle
+- **Cross-check backend obligatoire** avant chaque écriture :
+  - `schemas/bien.py` (BienRead 47 champs, BienCreate, BienUpdate, BienImageRead, BienDocumentRead, CatalogueEquipementRead, AuditLogResponse, GenerateDescriptionResponse)
+  - `schemas/transaction.py` (bien_id confirmé + OwnerDashboard.total_properties conservé)
+  - `schemas/contract.py` (bien_id + monthly_rent conservé + canton)
+  - `schemas/opener.py` + `schemas/rfq.py` (property_id **CONSERVÉ** — backend non migré)
+  - `schemas/document_althy.py` (DocumentTypeLiteral 10 valeurs FR aligné DocAlthyType frontend)
+  - `routers/biens.py` + `routers/catalogue.py` + `routers/admin.py` + `routers/contracts.py` (endpoints, payloads, responses)
+- **STOP+remontée** : 2 fois déclenchée à raison
+  - Plan types/index.ts : remontée 4 questions (Opener legacy, DocumentType alignement, price_sale retirement, Bundle 1b splitting) → arbitrages Killian validés
+  - Post-1b non commité : 9 erreurs TS hors `useProperties.ts`/`constants/properties.ts` alors que la règle stricte l'interdisait → remontée, arbitrage Option A + correction de la règle (trajectoire monotone décroissante)
+- **Règle TS post-étape 19 assouplie** : trajectoire monotone décroissante (le décompte doit diminuer ou stagner à chaque commit ; les erreurs nouvelles sont acceptables uniquement dans les fichiers de la cartographie Phase B ; cible finale post-P1 = 0 erreur)
+
+### 📊 Trajectoire TypeScript fondation (règle monotone décroissante respectée)
+
+| Étape | Erreurs | Fichiers impactés | Δ |
+|-------|--------:|------------------:|----|
+| pre-1a | 0 | 0 | baseline |
+| post-1a | 15 | 5 | +15 cascade attendue (5/5 dans cartographie) |
+| post-1b | 19 | 8 | +4 (3 nouvelles dans fichiers cartographiés P0/P1, cascade renames useAdmin/useContracts) |
+| post-1c | **10** | **6** | **-9 suppressions** (retrait useProperties.ts + constants/properties.ts) |
+| prévisionnel post-P0 (admin×2 + biens/page) | ~3 | 3 | -7 attendus |
+| cible post-P1 (contracts + crm + biens/[id] + publier + DocQuickGen) | **0** | **0** | build vert |
+
+**Aucun fichier hors cartographie Phase B n'a généré d'erreur TS.** Cartographie complète et exacte.
+
+### 🧾 Dettes produit documentées session 5 (vivant dans ce SPRINT_LOG)
+
+- **Harmonisation systèmes documents Althy** (section dédiée plus haut) : GED Althy (`document_althy`, enum strict 10 valeurs FR) vs `bien_documents` (schema libre `type: str`). Mini-sprint post-alpha à évaluer.
+- **Concepts retirés étape 19** (section dédiée plus haut) : tab "Archivés", champ `price_sale`, statuts `for_sale`/`sold`, `has_parking: bool`, `description` unique, `is_active` sur Bien, `country` sur Bien, `interface Opener` legacy, `type DocumentType` EN. Justifiés par le scope Phase 1 (location uniquement) + absence d'utilisateurs actifs en prod.
+
+### État branche fin de session 5
+
+- Branche : `refonte/fusion-properties-biens-complete`
+- HEAD : `4be8ac5` post-commit clôture (commit docs: qui contient cette section)
+- 4 commits session 5 en avance sur `ae47093` (clôture session 4)
+- Working tree propre hors `.claude/settings.local.json` (hors scope sprint)
+- Push groupé en fin de session
+
+### 🔜 Reste à faire (sessions 6+)
+
+**Bundle P0** (3 fichiers, 1 commit par fichier) :
+- `admin/page.tsx` (2 erreurs : `stats.total_properties`/`active_properties` → `total_biens`/`active_biens`)
+- `admin/transactions/page.tsx` (1 erreur : `t.property_id` → `t.bien_id` + CSV export)
+- `biens/page.tsx` (4 erreurs, fichier majeur 492 lignes : migration Property→Bien complète, TYPE_LABEL EN→FR, suppression tab "Archivés", suppression `b.price_sale`, fetch `useProperties` → `useBiensList`, BienCard accès `bien.adresse`/`ville`/`loyer`, payload POST `/favorites` `property_id` → `bien_id`)
+
+**Bundle P1** (8 fichiers, 1 commit par fichier/flow) :
+- `contracts/page.tsx`, `contracts/new/page.tsx`, `contracts/[id]/page.tsx`
+- `crm/page.tsx` (interfaces locales Note/Contact/CRMStats renommées + payload POST `/crm/notes`)
+- `biens/[id]/page.tsx`, `biens/[id]/_shared.tsx` (payloads `/loyers/generer-qr` + `/loyers/quittance`)
+- `publier/page.tsx` (form state `property_id`, fetch `/properties`, payload POST `/marketplace/publier`, default `type: "apartment"`)
+- `DocumentQuickGenerator.tsx` (payload POST `/documents/generate`)
+
+**Bundle P2** (3 fichiers, 1 commit groupé + sélecteurs Playwright) :
+- `portail/page.tsx` (`properties_count` → `biens_count`)
+- `bienvenue/page.tsx` (form default `type: 'apartment'` → `'appartement'`, options FR)
+- `estimation/page.tsx` (options FR — vérifier backend `/estimation` accepte encore EN ou FR)
+- `e2e/proprio-onboarding.spec.ts` (sélecteurs `input[name="monthly_rent"]` → `input[name="loyer"]`, `select[name="property_type"]` → `select[name="type"]` pour aligner sur forms FR)
+
+**Bundle P3** (1 commit cosmétique) :
+- `BiensRecoCards.tsx` (map d'alias `apartment:` mort post-migration à nettoyer)
+
+**Étape 20** : backup Supabase complet → exécution migration 0029 prod → smoke tests post-deploy (voir détails dans la section "Étape 20" plus bas).
+
+### 🔑 Entrée pour session 6 (frontend, demain matin)
+
+Prompt à utiliser dans la nouvelle conversation Claude Code :
+
+```
+Session 6 Claude Code — sprint fusion properties→biens, étape 19 frontend,
+bundles P0/P1/P2/P3.
+
+Lis d'abord :
+1. SPRINT_LOG.md section "Fin de session — 2026-04-23 nuit (session 5)"
+   pour te recharger le contexte (3 commits fondation validés,
+   trajectoire TS 19→10, règle monotone décroissante, cartographie
+   Phase B des 24 fichiers)
+2. État git : git log --oneline -10 refonte/fusion-properties-biens-complete
+   (HEAD = commit clôture session 5 post-4be8ac5, branche pushed)
+3. Vérifier synchro GitHub + Railway + Vercel
+
+Scope session 6 : bundles P0 + P1 minimum, P2/P3 si budget permet.
+
+Ordre d'attaque (1 commit par fichier/flow, STOP+remontée
+si > 5 refs imprévues par fichier ou si erreur TS dans fichier
+hors cartographie Phase B) :
+- P0 commit 1 : admin/page.tsx (2 refs stats.total_properties →
+  total_biens + active_properties → active_biens)
+- P0 commit 2 : admin/transactions/page.tsx (1 ref t.property_id
+  → t.bien_id + CSV export)
+- P0 commit 3 : biens/page.tsx (MAJEUR 492 lignes : migration
+  Property→Bien, TYPE_LABEL EN→FR, suppression tab "Archivés",
+  suppression b.price_sale, fetch useProperties → useBiensList,
+  BienCard accès adresse/ville/loyer, payload POST /favorites
+  property_id → bien_id)
+- P1 commits 4-11 : contracts×3, crm, biens/[id]×2, publier,
+  DocumentQuickGenerator
+- P2 commit 12 : portail + bienvenue + estimation (groupé) +
+  sélecteurs Playwright e2e proprio-onboarding.spec.ts
+- P3 commit 13 : BiensRecoCards (cosmétique)
+
+Discipline par fichier (rappel) :
+- Grep exhaustif du fichier avant patch (property_id, monthly_rent,
+  "apartment", "rented", .address, .city, etc.)
+- Commit atomique
+- npx tsc --noEmit après chaque commit (trajectoire monotone
+  décroissante — décompte doit diminuer ou stagner, 0 erreur
+  dans fichier hors cartographie Phase B)
+- Ping post-patch avec diff complet + décompte TS
+
+Cible finale : 0 erreur TS, npm run build vert, prêt pour étape 20
+(backup Supabase + migration 0029 prod + smoke tests).
+
+Commence par P0 commit 1 : admin/page.tsx. Grep exhaustif du fichier
+d'abord, puis propose le patch, puis peer review, puis commit.
+```
+
+Branche active : `refonte/fusion-properties-biens-complete`
+HEAD session 5 : 4 commits post-`ae47093` (1a + 1b + 1c + docs clôture)
+
+---
+
 ## Fin de session — 2026-04-23 nuit (session 4)
 
 ### ✅ Session 4 clôturée — 2 commits techniques
