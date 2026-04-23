@@ -219,6 +219,7 @@ router + service en étape 13. Scope révisé :
 2. ~~**`documents.py`**~~ — ✅ fait 2026-04-23 (stratégie A adaptateur + 2 bugs latents corrigés)
 3. ~~**`listings.py`**~~ — ✅ fait 2026-04-23 (autonome, minimal)
 4. ~~**`marketplace.py` + `marketplace_service.py`**~~ — ✅ fait 2026-04-23 (bundle router+service, 3e bug latent corrigé)
+5. ~~**`admin.py`**~~ — ✅ fait 2026-04-23 (autonome, 6 edits, mapping enum critique `rented/available` → `loue/vacant`, schema `PlatformStats` + `AdminTransaction` renommés)
 3. **`listings.py` + `marketplace.py`** — à faire ensemble, logique publication/recherche liée. Utilisent `Property.status == "available"`, `Property.city.ilike(...)`.
 4. **`admin.py`** — mapping enum critique (`Property.status.in_(["rented", "available"])` → `Bien.statut.in_(["loue", "vacant"])`) + KPIs plateforme.
 5. **`contracts.py`** — attribut `Contract.property_id` → `bien_id` (modèle déjà fait, router à synchroniser).
@@ -295,6 +296,20 @@ Liste à jour pour briefing étape 19 :
 
 **`documents.py` (2026-04-23)** — `POST /api/v1/documents/generate`
 - Payload `GenerateRequest.property_id` → `bien_id`. Si le frontend envoie `property_id`, Pydantic v2 ignorera le champ et `bien_id` sera `None` → rechargement depuis `contract.bien_id` seulement, ou échec silencieux côté chargement bien. **Vérifier les appelants frontend avant de livrer.** Consommateurs probables : pages de génération de bails, fiches bien, quittances.
+
+**`listings.py` (commit 6024a64)** — `POST /api/v1/listings`
+- `ListingCreate.property_id` → `bien_id` (payload).
+- `ListingRead` non touché (pas exposé property_id au frontend directement).
+
+**`marketplace.py` + `marketplace_service.py` (commit d232628)** — plusieurs endpoints marketplace
+- `PublierRequest.property_id` → `bien_id` (payload `POST /marketplace/publier`).
+- `PublierRequest.type` default `"apartment"` → `"appartement"` (les valeurs `apartment`/`office`/`hotel`/`commercial`/`box`/`depot` seront rejetées par l'enum DB `bien_type_enum`).
+- Clés FR de sortie API CONSERVÉES (`ville`, `code_postal`, `pieces`, `caution`, `etage`, `sdb`, `chambres`) — zéro rupture contract sérialisation.
+- Liens in-app `/app/biens/{listing.bien_id}/locataire` (ex-`property_id`) — pas d'impact frontend (URL identique).
+
+**`admin.py` (2026-04-23)** — `/api/v1/admin/*`
+- `PlatformStats.total_properties` → `total_biens`, `active_properties` → `active_biens` (consommé par `/app/admin` KPIs plateforme).
+- `AdminTransaction.property_id` → `bien_id` (consommé par `/app/admin/transactions`).
 
 ### 🔍 OBSERVATIONS IMPORTANTES pour la reprise
 

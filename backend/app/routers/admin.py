@@ -8,8 +8,8 @@ from typing import Annotated
 from app.core.database import get_db
 from app.core.security import require_roles
 from app.models.audit_log import AuditLog
+from app.models.bien import Bien
 from app.models.contract import Contract
-from app.models.property import Property
 from app.models.transaction import Transaction
 from app.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -30,8 +30,8 @@ class PlatformStats(BaseModel):
     total_users: int
     users_by_role: dict[str, int]
     new_users_this_month: int
-    total_properties: int
-    active_properties: int
+    total_biens: int
+    active_biens: int
     active_contracts: int
     revenue_total: float
     revenue_this_month: float
@@ -74,7 +74,7 @@ class AdminTransaction(BaseModel):
     amount: float
     commission_amount: float | None
     owner_id: str
-    property_id: str | None
+    bien_id: str | None
     due_date: str | None
     paid_at: str | None
     created_at: str
@@ -146,20 +146,20 @@ async def get_platform_stats(
         )
     ).scalar_one()
 
-    # Property stats
-    total_properties = (
+    # Biens stats
+    total_biens = (
         await db.execute(
-            select(func.count()).select_from(Property).where(Property.is_active.is_(True))
+            select(func.count()).select_from(Bien).where(Bien.is_active.is_(True))
         )
     ).scalar_one()
 
-    active_properties = (
+    active_biens = (
         await db.execute(
             select(func.count())
-            .select_from(Property)
+            .select_from(Bien)
             .where(
-                Property.is_active.is_(True),
-                Property.status.in_(["rented", "available"]),
+                Bien.is_active.is_(True),
+                Bien.statut.in_(["loue", "vacant"]),
             )
         )
     ).scalar_one()
@@ -246,8 +246,8 @@ async def get_platform_stats(
         total_users=total_users,
         users_by_role=users_by_role,
         new_users_this_month=new_users_this_month,
-        total_properties=total_properties,
-        active_properties=active_properties,
+        total_biens=total_biens,
+        active_biens=active_biens,
         active_contracts=active_contracts,
         revenue_total=float(rev_total_row),
         revenue_this_month=float(rev_month_row),
@@ -421,7 +421,7 @@ async def list_transactions(
                 amount=float(t.amount),
                 commission_amount=float(t.commission_amount) if t.commission_amount else None,
                 owner_id=str(t.owner_id),
-                property_id=str(t.property_id) if t.property_id else None,
+                bien_id=str(t.bien_id) if t.bien_id else None,
                 due_date=t.due_date.isoformat() if t.due_date else None,
                 paid_at=t.paid_at.isoformat() if t.paid_at else None,
                 created_at=t.created_at.isoformat(),
