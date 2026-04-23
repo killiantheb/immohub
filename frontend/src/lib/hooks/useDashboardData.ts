@@ -10,24 +10,10 @@ import type {
 // ── Re-export types needed by dashboards ──────────────────────────────────────
 export type { Bien, Locataire, Paiement, Intervention, MissionOuvreur, ProfileOuvreur, DocumentAlthy };
 
-// ── Existing API types ────────────────────────────────────────────────────────
-export interface OwnerDashboard {
-  revenue_current_month: number;
-  revenue_prev_month: number;
-  occupancy_rate: number;
-  active_contracts: number;
-  pending_rents: number;
-  late_rents: number;
-  total_properties: number;
-}
-export interface AgencyDashboard {
-  portfolio_count: number;
-  active_contracts: number;
-  total_revenue_ytd: number;
-  commissions_ytd: number;
-  pending_rents: number;
-  occupancy_rate: number;
-}
+// ── API types — promus dans @/lib/types (étape 19.1b) ────────────────────────
+// OwnerDashboard / AgencyDashboard vivent désormais dans @/lib/types.
+// useDashboard.ts les importe directement. `total_properties` CONSERVÉ
+// (backend schemas/transaction.py non migré dans le sprint fusion).
 
 // ── Manager dashboard aggregation ─────────────────────────────────────────────
 

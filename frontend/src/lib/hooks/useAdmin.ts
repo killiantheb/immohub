@@ -9,8 +9,8 @@ export interface PlatformStats {
   total_users: number;
   users_by_role: Record<string, number>;
   new_users_this_month: number;
-  total_properties: number;
-  active_properties: number;
+  total_biens: number;
+  active_biens: number;
   active_contracts: number;
   revenue_total: number;
   revenue_this_month: number;
@@ -48,7 +48,7 @@ export interface AdminTransaction {
   amount: number;
   commission_amount: number | null;
   owner_id: string;
-  property_id: string | null;
+  bien_id: string | null;
   due_date: string | null;
   paid_at: string | null;
   created_at: string;

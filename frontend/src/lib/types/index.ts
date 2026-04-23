@@ -227,6 +227,46 @@ export interface BienDetail extends Bien {
   equipements: CatalogueEquipement[];
 }
 
+/**
+ * Payload de création d'un bien.
+ * Reflète le contrat backend `BienCreate` (schemas/bien.py) : seuls
+ * `adresse`, `ville`, `cp` sont requis. Tous les autres champs ont des
+ * defaults ou sont Optional (politique "backend permissif, UX discipline").
+ */
+export type BienCreate =
+  Pick<Bien, "adresse" | "ville" | "cp"> &
+  Partial<
+    Omit<
+      Bien,
+      | "id"
+      | "owner_id"
+      | "agency_id"
+      | "created_by_id"
+      | "created_at"
+      | "updated_at"
+      | "adresse"
+      | "ville"
+      | "cp"
+    >
+  >;
+
+/**
+ * Payload d'update partiel d'un bien.
+ * Reflète le contrat backend `BienUpdate` (schemas/bien.py) : tout Optional,
+ * champs système exclus (id + audit + ownership).
+ */
+export type BienUpdate = Partial<
+  Omit<
+    Bien,
+    | "id"
+    | "owner_id"
+    | "agency_id"
+    | "created_by_id"
+    | "created_at"
+    | "updated_at"
+  >
+>;
+
 export interface BienFilters {
   type?: BienType;
   statut?: BienStatut;

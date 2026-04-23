@@ -12,7 +12,7 @@ export const contractKeys = {
 
 interface ContractFilters {
   status?: string;
-  property_id?: string;
+  bien_id?: string;
   tenant_id?: string;
   page?: number;
   size?: number;
@@ -44,7 +44,7 @@ export function useContract(id: string) {
 }
 
 interface ContractCreatePayload {
-  property_id: string;
+  bien_id: string;
   tenant_id?: string | null;
   agency_id?: string | null;
   type: ContractType;
