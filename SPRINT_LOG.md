@@ -157,6 +157,78 @@ _(aucun bloquant — peer review du fichier 1 a rattrapé 2 tables FK oubliées 
 - **SKIPPED pour ce sprint (note)** :
   - **summary= / description= sur endpoints OpenAPI** : cosmétique, à faire dans un sprint dédié quand on ouvre l'API à des tiers.
 
+---
+
+## Fin de session — 2026-04-23 après-midi
+
+### ✅ FAIT
+
+**Fondations (4 fichiers validés en peer review)** :
+- `backend/alembic/versions/0029_fusion_properties_biens_complete.py`
+- `backend/app/models/bien.py`
+- `backend/app/schemas/bien.py`
+- `backend/app/routers/biens.py`
+
+**Bonus services** :
+- `backend/app/services/bien_service.py` (enrichi : `get_for_access_check` + `get_potentiel_ia`)
+- `backend/app/services/catalogue_service.py` (nouveau)
+- `backend/app/routers/catalogue.py` (nouveau)
+
+**Modèles liés (FK renommées)** :
+- `contract.py`, `company.py`, `crm.py`, `inspection.py`, `listing.py`, `opener.py`, `rfq.py`, `transaction.py`, `favorite.py`, `document.py` (models/__init__.py + schemas/__init__.py)
+
+**Fichier Supabase corrigé** :
+- `supabase/migrations/0026_loyer_transactions.sql` (`property_id` → `bien_id`)
+
+**Étape 13 partielle — 5/12 routers migrés** :
+- `sphere_agent.py` (bloc création bien, L1472-1498)
+- `ai/scoring.py` (schema `AnomalyResponse.property_id` → `bien_id`)
+- `ai/listings.py` (generate-listing + import-property)
+- `ai/documents.py` (draft-lease, draft-edl, property-recap + 3 schemas)
+- `agency_settings.py` (export comptable)
+
+**Commits** :
+- `27c5acc` — WIP fondations migration 0029 + modèles + schemas + services + router biens
+- `0e42827` — WIP étape 13 : 6/12 routers migrés (comptage 5 pour l'étape 13 stricte, 6e = le router biens.py comptant pour les fondations)
+
+### 🔜 RESTE ÉTAPE 13 (7 fichiers, ordre d'attaque recommandé)
+
+1. **`crm.py`** — **EN PREMIER**. ~60 occurrences `Property`/`property_id`. Endpoint `/property/{id}/overview` qui cross-JOIN 6 tables (Contract, Transaction, RFQ, Mission, Listing, CRMContact, CRMNote). ~300 lignes Python à transcoder.
+2. **`documents.py`** — 1400 lignes, ~20 usages Property pour génération PDF (bails).
+3. **`listings.py` + `marketplace.py`** — à faire ensemble, logique publication/recherche liée. Utilisent `Property.status == "available"`, `Property.city.ilike(...)`.
+4. **`admin.py`** — mapping enum critique (`Property.status.in_(["rented", "available"])` → `Bien.statut.in_(["loue", "vacant"])`) + KPIs plateforme.
+5. **`contracts.py`** — attribut `Contract.property_id` → `bien_id` (modèle déjà fait, router à synchroniser).
+6. **`favorites.py`** — **EN DERNIER**. Expose dans ses schemas de réponse : `property_id`, `property_address`, `property_city`, `property_status`, `monthly_rent`. Renommer côté backend CASSE le frontend tant que l'étape 19 n'est pas faite. À traiter en **coordination avec le frontend** (soit en même temps que étape 19, soit juste avant).
+
+### 🔍 OBSERVATIONS IMPORTANTES pour la reprise
+
+- **Mapping enum dupliqué** : `Property.status → Bien.statut` (rented→loue, available→vacant, maintenance→en_travaux) et `PropertyType → BienType` (apartment→appartement, office→bureau, box→garage, depot→autre, hotel→autre, commercial→commerce) sont maintenant **dupliqués dans 3 endroits** : `sphere_agent.py`, `ai/listings.py`, et il faudra refaire dans admin.py + listings.py + marketplace.py. **TODO post-sprint** : centraliser dans `app/core/enums.py` ou `app/utils/legacy_mapping.py` avec `STATUS_EN_TO_FR` et `TYPE_EN_TO_FR`.
+- **`favorites.py` schemas exposés** : les champs `property_id`, `property_address`, `property_city`, `property_status`, `monthly_rent` sont dans les réponses API consommées par le frontend. Le renommage backend doit être synchronisé avec le renommage frontend (étape 19).
+- **`crm.py` endpoint `/property/{id}/overview`** : URL utilise `property_id` comme nom de path param. Décision à prendre : renommer l'URL en `/bien/{id}/overview` (breaking change frontend) ou garder l'URL mais le paramètre devient bien_id en interne.
+- **`contracts.py`** : le modèle Contract a déjà `bien_id` (fait en étape 5-7). Le router doit juste renommer ses références `contract.property_id` → `contract.bien_id`.
+
+### 🧮 Budget restant estimé (session fraîche)
+
+| Bloc | Fichiers | Estimation |
+|---|---|---|
+| Étape 13 fin | 7 routers | 2–3h |
+| Étape 14 (bugs collatéraux) | 4 routers | 30–45 min |
+| Étape 15–18 (services + tasks + main + suppressions) | ~10 | 1–1h30 |
+| Étape 19 (frontend) | 13 fichiers | 1–2h |
+| Étape 20 (tests statiques + checkpoint final) | — | 30 min |
+| **Total restant** | **~37 fichiers** | **~6–8h** |
+
+### 🔑 Entrée pour la prochaine session
+
+Prompt à utiliser dans la nouvelle conversation Claude Code :
+```
+Lis SPRINT_LOG.md pour te remettre en contexte, puis attaque
+l'étape 13 restante en commençant par crm.py.
+```
+
+Branche active : `refonte/fusion-properties-biens-complete`
+Dernier commit : `0e42827`
+
 
 ---
 
