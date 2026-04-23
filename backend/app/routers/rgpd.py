@@ -54,10 +54,10 @@ async def export_my_data(db: DbDep, user: AuthDep) -> JSONResponse:
 
     # Biens
     rows = (await db.execute(
-        text("SELECT id, adresse, ville, type_bien, loyer_mensuel, created_at FROM biens WHERE owner_id = :uid AND is_active = TRUE"),
+        text("SELECT id, adresse, ville, type, loyer, created_at FROM biens WHERE owner_id = :uid AND is_active = TRUE"),
         {"uid": uid},
     )).fetchall()
-    data["biens"] = [{"id": str(r[0]), "adresse": r[1], "ville": r[2], "type_bien": r[3], "loyer_mensuel": float(r[4]) if r[4] else None, "created_at": str(r[5])} for r in rows]
+    data["biens"] = [{"id": str(r[0]), "adresse": r[1], "ville": r[2], "type": r[3], "loyer": float(r[4]) if r[4] else None, "created_at": str(r[5])} for r in rows]
 
     # Locataires
     rows = (await db.execute(
