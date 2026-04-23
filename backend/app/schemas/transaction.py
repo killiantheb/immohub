@@ -12,7 +12,7 @@ TransactionStatus = Literal["pending", "paid", "late", "cancelled"]
 
 class TransactionCreate(BaseModel):
     contract_id: uuid.UUID | None = None
-    property_id: uuid.UUID | None = None
+    bien_id: uuid.UUID | None = None
     tenant_id: uuid.UUID | None = None
     type: TransactionType
     amount: float = Field(..., gt=0)
@@ -27,7 +27,7 @@ class TransactionRead(BaseModel):
     reference: str
     owner_id: uuid.UUID
     contract_id: uuid.UUID | None
-    property_id: uuid.UUID | None
+    bien_id: uuid.UUID | None
     tenant_id: uuid.UUID | None
     type: str
     status: str

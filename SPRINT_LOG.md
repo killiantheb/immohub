@@ -108,13 +108,46 @@ Contient :
 
 ### Étape 15-18 — Services + tasks + main + suppressions 🟡 EN COURS (session 3)
 
-- 5 services : ~~ai_service~~ ✅, contract_service ✅ (étape 13), marketplace_service ✅ (étape 13), transaction_service 🛑 (+ supprimer property_service 🛑)
+- 5 services : ~~ai_service~~ ✅, contract_service ✅ (étape 13), marketplace_service ✅ (étape 13), ~~transaction_service~~ ✅ (+ supprimer property_service 🛑)
 - 2 tasks Celery : rent_tasks.py (3 occurrences), notifications.py (2 occurrences)
 - main.py : supprimer import properties + include_router, ajouter catalogue_router
 - core/security.py:291 : import local Property
 - 4 suppressions : models/property.py, routers/properties.py, services/property_service.py, schemas/property.py
 
-**`ai_service.py`** — ✅ 2026-04-23 session 3. Signature `generate_listing_description(property: Property, db, user_id)` → `(bien: Bien, db, user_id)`. Suppression des 12 `getattr(property, "...", defaults)` remplacés par accès direct aux attributs Bien (adresse/ville/cp/canton/surface/rooms/etage/loyer/charges/deposit/is_furnished/parking_type/pets_allowed). Casts `float()` pour Numeric→Decimal (rooms, loyer, charges, deposit) pour éviter `TypeError` sur `json.dumps`. Clé `has_parking: bool` → `parking_type: str|None` (plus informatif pour le prompt LLM). Ajout `cp` + `canton` au payload (signal SEO). Context_ref `str(property.id)` → `str(bien.id)`. Commentaire stale dans `marketplace_service.py:350` (5e bug dormant) nettoyé. **5e bug dormant corrigé** : les appelants (`routers/ai/listings.py:169` + `services/marketplace_service.py:357`) passaient déjà un `Bien` positionnellement, donc aucune rupture contract. AST OK.
+**`ai_service.py`** — ✅ 2026-04-23 session 3. Signature `generate_listing_description(property: Property, db, user_id)` → `(bien: Bien, db, user_id)`. Suppression des 12 `getattr(property, "...", defaults)` remplacés par accès direct aux attributs Bien (adresse/ville/cp/canton/surface/rooms/etage/loyer/charges/deposit/is_furnished/parking_type/pets_allowed). Casts `float()` explicites `if x is not None else None` pour Numeric→Decimal (rooms, loyer, charges, deposit) pour éviter `TypeError` sur `json.dumps` — safe sur `Decimal("0.00")`. Clé `has_parking: bool` → `parking_type: str|None` (plus informatif pour le prompt LLM). Ajout `cp` + `canton or ""` au payload (signal SEO, fallback sur canton nullable). Context_ref `str(property.id)` → `str(bien.id)`. Commentaire stale dans `marketplace_service.py:350` (5e bug dormant) nettoyé. **5e bug dormant corrigé** : les appelants (`routers/ai/listings.py:169` + `services/marketplace_service.py:357`) passaient déjà un `Bien` positionnellement, donc aucune rupture contract. AST OK.
+
+**`transaction_service.py` + `schemas/transaction.py` bundle** — ✅ 2026-04-23 session 3. Bundle obligatoire (service + schema liés par `TransactionRead.model_validate`). 9 refs Property/property_id dans le service + 2 refs dans le schema. **6e bug dormant confirmé** : `TransactionRead.property_id` vs modèle `Transaction.bien_id` depuis étape 5-7 → Pydantic v2 + `from_attributes=True` + champ Optional absent = remplissage `None` silencieux. Impact prod : tous les `OwnerDashboard.recent_transactions[].property_id` et `AgencyDashboard.recent_transactions[].property_id` retournaient `null` depuis la migration → lien frontend vers bien cassé. Correction : renommage `property_id` → `bien_id` aligné sur le modèle.
+
+*Migration 0029 vérifiée* : `RENAME COLUMN property_id TO bien_id` (L174-183) — pas DROP+ADD. Mais TRUNCATE properties CASCADE L72 wipe `transactions` (accepté Option B fondateur). Pas de backfill nécessaire : table vide post-migration, le code refondu insère `bien_id=UUID` à chaque création. Fenêtre "bien_id null" limitée à l'intervalle entre deploy et 1ère nouvelle transaction.
+
+*Scope détaillé* :
+- `schemas/transaction.py` : `TransactionCreate.property_id` → `bien_id`, `TransactionRead.property_id` → `bien_id`
+- `services/transaction_service.py` : kwarg `list(property_id=...)` → `list(bien_id=...)`, `Transaction.property_id` → `Transaction.bien_id` (filtre + constructor), 2 imports locaux `from app.models.property import Property` → `from app.models.bien import Bien`, 4 accès ORM `Property.{owner_id,agency_id,is_active}` → `Bien.{...}` dans `owner_dashboard`/`agency_dashboard`.
+- `Contract.monthly_rent` : zéro touche. `transaction_service` calcule sur `Transaction.amount` (Numeric autonome, décorrelé de Bien.loyer et Contract.monthly_rent).
+
+AST OK sur les 3 fichiers (ai_service + schemas/transaction + transaction_service). Grep résiduel `Property|property_id` dans les 2 fichiers migrés = 0 match.
+
+### 📋 Dette technique post-lancement — méthodes mortes `TransactionService`
+
+Grep exhaustif 2026-04-23 session 3 : `TransactionService(db).{list,create,mark_paid,get,get_stats}` = **0 call site** dans tout le backend. Ces méthodes ont été migrées par cohérence interne (signature publique + modèle ORM) mais aucun endpoint HTTP ne les appelle.
+
+| Méthode | Statut | Hypothèse |
+|---|---|---|
+| `TransactionService.list()` | 0 call site | Aurait dû être exposée via `routers/transactions.py` (inexistant). L'endpoint admin `/admin/transactions` utilise une `PaginatedTransactions` locale — pas ce service. |
+| `TransactionService.create()` | 0 call site | Transactions créées via `rent_tasks` Celery (à migrer étape 15-18 restant) ou directement SQL. Pas d'endpoint HTTP `POST /transactions`. |
+| `TransactionService.mark_paid()` | 0 call site | Action "marquer payé" probablement gérée côté frontend via un autre endpoint (admin ? manuel ?). À clarifier. |
+| `TransactionService.get()` | 0 call site | Idem. |
+| `TransactionService.get_stats()` | 0 call site | Remplacée en pratique par les dashboards `owner_dashboard`/`agency_dashboard`. |
+
+**Action post-refonte** : à évaluer pour suppression après validation alpha — si effectivement zéro usage confirmé en 3 mois, supprimer. Sinon créer `routers/transactions.py` pour exposer proprement les méthodes mortes utiles. On ne porte pas du code mort sans le documenter.
+
+### 🚨 Rupture API frontend étape 19 — dashboard transactions
+
+**Rupture API + correction bug dégradation silencieuse** : `OwnerDashboard.recent_transactions[].property_id` et `AgencyDashboard.recent_transactions[].property_id` → **`bien_id`**.
+
+- **Avant refonte** : `property_id: null` systématique (6e bug dormant, lien vers bien cassé dans les dashboards `/app` et `/app/agence` — toute carte récapitulative transaction récente sans ID bien).
+- **Après refonte** : `bien_id: UUID` réel, lien fonctionnel.
+- **Action frontend étape 19** : lire `bien_id` à la place de `property_id` dans les réponses `/dashboard/owner` et `/dashboard/agency` → **corrige en plus un affichage cassé en prod actuelle** (cliquer sur une transaction récente ne menait nulle part).
 
 ### Étape 19 — Frontend 🛑
 

@@ -48,7 +48,7 @@ class TransactionService:
         current_user: User,
         page: int = 1,
         size: int = 20,
-        property_id: str | None = None,
+        bien_id: str | None = None,
         contract_id: str | None = None,
         owner_id: str | None = None,
         month: str | None = None,  # "2025-01"
@@ -68,9 +68,9 @@ class TransactionService:
             except ValueError:
                 pass
 
-        if property_id:
+        if bien_id:
             try:
-                q = q.where(Transaction.property_id == uuid.UUID(property_id))
+                q = q.where(Transaction.bien_id == uuid.UUID(bien_id))
             except ValueError:
                 pass
         if contract_id:
@@ -144,7 +144,7 @@ class TransactionService:
             reference=_ref(),
             owner_id=current_user.id,
             contract_id=uuid.UUID(payload.contract_id) if payload.contract_id else None,
-            property_id=uuid.UUID(payload.property_id) if payload.property_id else None,
+            bien_id=uuid.UUID(payload.bien_id) if payload.bien_id else None,
             tenant_id=uuid.UUID(payload.tenant_id) if payload.tenant_id else None,
             type=payload.type,
             amount=payload.amount,
@@ -220,8 +220,8 @@ class TransactionService:
     # ── Dashboard KPIs ────────────────────────────────────────────────────────
 
     async def owner_dashboard(self, current_user: User) -> OwnerDashboard:
+        from app.models.bien import Bien
         from app.models.contract import Contract
-        from app.models.property import Property
 
         now = datetime.now(UTC)
         cur_year, cur_month = now.year, now.month
@@ -240,10 +240,10 @@ class TransactionService:
         )
         active_contracts: int = (await self.db.execute(active_q)).scalar_one()
 
-        # Total properties
+        # Total biens
         prop_q = select(func.count()).where(
-            Property.owner_id == current_user.id,
-            Property.is_active.is_(True),
+            Bien.owner_id == current_user.id,
+            Bien.is_active.is_(True),
         )
         total_props: int = (await self.db.execute(prop_q)).scalar_one()
 
@@ -292,15 +292,15 @@ class TransactionService:
         )
 
     async def agency_dashboard(self, current_user: User) -> AgencyDashboard:
+        from app.models.bien import Bien
         from app.models.contract import Contract
-        from app.models.property import Property
 
         now = datetime.now(UTC)
 
-        # Portfolio = properties managed by this agency
+        # Portfolio = biens managed by this agency
         prop_q = select(func.count()).where(
-            Property.agency_id == current_user.id,
-            Property.is_active.is_(True),
+            Bien.agency_id == current_user.id,
+            Bien.is_active.is_(True),
         )
         portfolio_count: int = (await self.db.execute(prop_q)).scalar_one()
 
