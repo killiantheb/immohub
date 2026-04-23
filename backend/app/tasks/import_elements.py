@@ -1,28 +1,44 @@
 """Importe les éléments confirmés par l'utilisateur dans Althy."""
 from app.tasks.celery_app import celery_app
 
-# Mapping noms français/scanner → property_type_enum
+# Mapping noms français/anglais/scanner → bien_type_enum
 _TYPE_MAP = {
-    "appartement": "apartment",
-    "apartment":   "apartment",
+    "appartement": "appartement",
+    "apartment":   "appartement",
+    "studio":      "studio",
     "villa":       "villa",
-    "maison":      "villa",
-    "house":       "villa",
+    "maison":      "maison",
+    "house":       "maison",
     "parking":     "parking",
     "garage":      "garage",
-    "box":         "box",
+    "box":         "garage",
     "cave":        "cave",
-    "dépôt":       "depot",
-    "depot":       "depot",
-    "bureau":      "office",
-    "office":      "office",
-    "commercial":  "commercial",
-    "hotel":       "hotel",
+    "dépôt":       "autre",
+    "depot":       "autre",
+    "hotel":       "autre",
+    "bureau":      "bureau",
+    "office":      "bureau",
+    "commercial":  "commerce",
+    "commerce":    "commerce",
 }
+
+# 26 codes cantonaux ISO CH — validation stricte anti-corruption silencieuse
+CANTONS_CH = frozenset({
+    "AG", "AI", "AR", "BE", "BL", "BS", "FR", "GE", "GL", "GR",
+    "JU", "LU", "NE", "NW", "OW", "SG", "SH", "SO", "TG", "TI",
+    "UR", "VD", "VS", "ZG", "ZH",
+})
 
 
 def _map_type(raw: str | None) -> str:
-    return _TYPE_MAP.get((raw or "").lower().strip(), "apartment")
+    return _TYPE_MAP.get((raw or "").lower().strip(), "appartement")
+
+
+def _canton(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    code = raw.strip().upper()[:2]
+    return code if code in CANTONS_CH else None
 
 
 def _to_float(val) -> float | None:
@@ -42,11 +58,11 @@ def _to_int(val) -> int | None:
 @celery_app.task
 def importer_elements(user_id: str, user_role: str, elements: list[dict]):
     """
-    Convertit chaque élément trouvé en Property + Listing dans la DB Althy.
+    Convertit chaque élément trouvé en Bien + Listing dans la DB Althy.
     Utilise Claude pour enrichir la description si elle est trop courte.
     """
     from app.core.database import sync_session
-    from app.models.property import Property
+    from app.models.bien import Bien
     from app.models.listing import Listing
     from datetime import datetime, timezone, timedelta
     import uuid
@@ -57,27 +73,28 @@ def importer_elements(user_id: str, user_role: str, elements: list[dict]):
         for el in elements:
             donnees = el.get("donnees") or {}
 
-            # ── Property ──────────────────────────────────────────────────────
-            prop = Property(
-                owner_id       = uid,
-                created_by_id  = uid,
-                agency_id      = uid if user_role in ("agence", "portail_proprio") else None,
-                type           = _map_type(donnees.get("type") or el.get("type_element")),
-                status         = "available",
-                city           = (donnees.get("ville") or donnees.get("city") or "")[:100],
-                address        = (donnees.get("adresse") or donnees.get("address") or "")[:500],
-                zip_code       = str(donnees.get("npa") or donnees.get("zip") or "")[:10],
-                surface        = _to_float(donnees.get("surface")),
-                rooms          = _to_int(donnees.get("pieces") or donnees.get("rooms")),
-                monthly_rent   = _to_float(donnees.get("loyer") or donnees.get("prix")),
-                description    = el.get("description") or "",
+            # ── Bien ──────────────────────────────────────────────────────────
+            bien = Bien(
+                owner_id             = uid,
+                created_by_id        = uid,
+                agency_id            = uid if user_role in ("agence", "portail_proprio") else None,
+                type                 = _map_type(donnees.get("type") or el.get("type_element")),
+                statut               = "vacant",
+                ville                = (donnees.get("ville") or donnees.get("city") or "")[:100],
+                adresse              = (donnees.get("adresse") or donnees.get("address") or "")[:300],
+                cp                   = str(donnees.get("npa") or donnees.get("zip") or "")[:10],
+                canton               = _canton(donnees.get("canton")),
+                surface              = _to_float(donnees.get("surface")),
+                rooms                = _to_float(donnees.get("pieces") or donnees.get("rooms")),
+                loyer                = _to_float(donnees.get("loyer") or donnees.get("prix")),
+                description_logement = el.get("description") or None,
             )
-            db.add(prop)
-            db.flush()  # récupère prop.id
+            db.add(bien)
+            db.flush()  # récupère bien.id
 
             # ── Listing ───────────────────────────────────────────────────────
             listing = Listing(
-                property_id      = prop.id,
+                bien_id          = bien.id,
                 title            = (el.get("titre") or "")[:255],
                 price            = _to_float(donnees.get("prix") or donnees.get("loyer")) or 0,
                 transaction_type = donnees.get("transaction") or "location",
