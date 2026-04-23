@@ -187,19 +187,72 @@ _(aucun bloquant — peer review du fichier 1 a rattrapé 2 tables FK oubliées 
 - `ai/documents.py` (draft-lease, draft-edl, property-recap + 3 schemas)
 - `agency_settings.py` (export comptable)
 - `crm.py` (2026-04-23 reprise) : imports, 9 modèles joints (Contract/Bien/User/Listing/Mission/Opener/RFQ/RFQQuote/Transaction/CRMContact/CRMNote/Company), schemas `ContactOut/NoteOut/ProspectCreate/ProspectUpdate/NoteCreate/CRMStats` (champs `property_*` → `bien_*`, `properties_count` → `biens_count`), URL `/property/{property_id}/overview` → `/bien/{bien_id}/overview`. `Contract.monthly_rent` conservé (champ contrat, pas bien). AST OK.
+- `documents.py` (2026-04-23) : **Stratégie A — pattern adaptateur** validée (clé `ctx["property"]` + noms internes du dict conservés → 300+ f-strings templates HTML intouchés). Import `Property` → `Bien`, `_build_ctx` signature + body (champs adaptés au nouveau schéma Bien), `GenerateRequest.property_id` → `bien_id`, `contract.property_id` → `contract.bien_id`, **2 bugs latents corrigés** : `PropertyImage` → `BienImage` (import orphelin + queries `bien_id`) et `GeneratedDocument(property_id=...)` → `bien_id=...` (colonne inexistante sur le modèle renommé étape 5-7). AST OK.
 
 **Commits** :
 - `27c5acc` — WIP fondations migration 0029 + modèles + schemas + services + router biens
 - `0e42827` — WIP étape 13 : 6/12 routers migrés (comptage 5 pour l'étape 13 stricte, 6e = le router biens.py comptant pour les fondations)
 
-### 🔜 RESTE ÉTAPE 13 (6 fichiers, ordre d'attaque recommandé)
+### 🔜 RESTE ÉTAPE 13 (5 fichiers, ordre d'attaque recommandé)
 
 1. ~~**`crm.py`**~~ — ✅ fait 2026-04-23 (full rename URL + schemas + modèles)
-2. **`documents.py`** — 1400 lignes, ~20 usages Property pour génération PDF (bails).
+2. ~~**`documents.py`**~~ — ✅ fait 2026-04-23 (stratégie A adaptateur + 2 bugs latents corrigés)
 3. **`listings.py` + `marketplace.py`** — à faire ensemble, logique publication/recherche liée. Utilisent `Property.status == "available"`, `Property.city.ilike(...)`.
 4. **`admin.py`** — mapping enum critique (`Property.status.in_(["rented", "available"])` → `Bien.statut.in_(["loue", "vacant"])`) + KPIs plateforme.
 5. **`contracts.py`** — attribut `Contract.property_id` → `bien_id` (modèle déjà fait, router à synchroniser).
 6. **`favorites.py`** — **EN DERNIER**. Expose dans ses schemas de réponse : `property_id`, `property_address`, `property_city`, `property_status`, `monthly_rent`. Renommer côté backend CASSE le frontend tant que l'étape 19 n'est pas faite. À traiter en **coordination avec le frontend** (soit en même temps que étape 19, soit juste avant).
+
+### 🧊 Fonctionnalités retirées du scope Phase 1 (documents.py)
+
+Les champs suivants existaient sur l'ancienne `Property` et sont hardcodés en
+defaults dans le pattern adaptateur de `documents.py` (`_build_ctx`, dict
+`ctx["property"]`). Ils ne sont plus branchés à la DB :
+
+- `linen_provided` (`False`) → feature saisonnier hors scope
+- `price_sale`, `is_for_sale` (`None`/`False`) → feature Vente OFF
+- `tourist_tax_amount` (`None`) → feature saisonnier hors scope
+- `nearby_landmarks` (`""`) → feature retirée
+- `prix_nuit_basse`, `prix_nuit_haute` (`None`) → feature saisonnier hors scope
+
+Le code PDF qui génère bails, quittances, fiches bien, etc. utilise ces champs
+hardcodés. Si une feature doit être réactivée, il faudra :
+1. Ajouter les colonnes correspondantes à la table `biens`
+2. Mettre à jour le modèle + schema + migration
+3. Alimenter les clés du dict dans `_build_ctx` de `documents.py`
+4. Retester les PDFs générés
+
+### 🧟 Observation — code PDF documents.py non utilisé en prod
+
+Les 2 bugs latents détectés dans `documents.py` (prouvés au patch 2026-04-23) :
+- `from app.models.property import PropertyImage as _PropImg` → import orphelin,
+  le modèle a été renommé `BienImage` dans `app.models.bien` à l'étape 5-7.
+- `GeneratedDocument(property_id=prop.id, ...)` → colonne inexistante, le
+  modèle a `bien_id` depuis la migration 0029 / étape 5-7.
+
+Ces 2 bugs auraient crashé la génération PDF à chaque appel. Conséquence
+logique : **la génération PDF est du code dormant pour le MVP**, non appelé par
+des users actifs depuis au moins la migration étape 5-7.
+
+À valider fonctionnellement avant le lancement public : test manuel de
+génération d'un bail annuel, vérifier que le PDF s'affiche correctement avec
+les bonnes valeurs (mapping Bien → dict adaptateur).
+
+### 🚨 Ruptures API frontend à synchroniser étape 19
+
+Les fichiers migrés cassent le frontend jusqu'à ce que les appels soient alignés.
+Liste à jour pour briefing étape 19 :
+
+**`crm.py` (commit 44d8872)** — consommé par `frontend/src/app/app/(dashboard)/crm/page.tsx`
+- URL `GET /api/v1/crm/property/{property_id}/overview` → `GET /api/v1/crm/bien/{bien_id}/overview` *(pas d'appel frontend actuel — safe)*
+- `ContactOut.property_id` → `bien_id` (consommé L12, L150, L285)
+- `ContactOut.property_address` → `bien_adresse` (consommé L26, L136, L285, L340)
+- `NoteOut.property_id` → `bien_id` (consommé L25)
+- `CRMStats.properties_count` → `biens_count` (consommé L41)
+- `ProspectCreate.property_id` / `ProspectUpdate.property_id` / `NoteCreate.property_id` → `bien_id` (consommé L150)
+- `Contract.monthly_rent` conservé sous ce nom côté frontend (pas de rename)
+
+**`documents.py` (2026-04-23)** — `POST /api/v1/documents/generate`
+- Payload `GenerateRequest.property_id` → `bien_id`. Si le frontend envoie `property_id`, Pydantic v2 ignorera le champ et `bien_id` sera `None` → rechargement depuis `contract.bien_id` seulement, ou échec silencieux côté chargement bien. **Vérifier les appelants frontend avant de livrer.** Consommateurs probables : pages de génération de bails, fiches bien, quittances.
 
 ### 🔍 OBSERVATIONS IMPORTANTES pour la reprise
 

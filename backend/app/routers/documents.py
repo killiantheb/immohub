@@ -9,8 +9,8 @@ from typing import Annotated, Any
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.contract import Contract
+from app.models.bien import Bien
 from app.models.document import DocumentTemplate, GeneratedDocument
-from app.models.property import Property
 from app.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from jinja2 import BaseLoader, Environment
@@ -1130,7 +1130,7 @@ L'agence décline toute responsabilité quant à l'exactitude des informations f
 
 def _build_ctx(
     contract: Contract | None,
-    prop: Property | None,
+    bien: Bien | None,
     owner: User,
     tenant: User | None,
     agency_user: User | None,
@@ -1154,7 +1154,7 @@ def _build_ctx(
         "iban": getattr(agency_user, "iban", "") or "",
         "bic": getattr(agency_user, "bic", "") or "",
         "bank_name": getattr(agency_user, "bank_account_holder", "") or "",
-        "legal_city": agency_settings.get("city", prop.city if prop else "") if agency_settings else (prop.city if prop else ""),
+        "legal_city": agency_settings.get("city", bien.ville if bien else "") if agency_settings else (bien.ville if bien else ""),
     }
 
     tenant_info: dict = {}
@@ -1176,48 +1176,69 @@ def _build_ctx(
 
     tenant_info.update(extra.get("tenant_extra", {}))
 
+    # Pattern adaptateur : on conserve les noms de clés historiques (address,
+    # city, zip_code, monthly_rent, …) pour ne pas toucher les 300+ f-strings
+    # des templates HTML. Les valeurs, elles, viennent du nouveau modèle Bien.
+    # Les champs out-of-scope (saisonnier, vente, linen, tourist tax) sont
+    # figés en defaults — voir SPRINT_LOG.md "Fonctionnalités retirées du scope Phase 1".
     prop_info: dict = {}
-    if prop:
+    if bien:
         prop_info = {
-            "address": prop.address,
-            "city": prop.city,
-            "zip_code": prop.zip_code,
-            "surface": prop.surface,
-            "rooms": prop.rooms,
-            "description": prop.description or "",
-            "monthly_rent": float(prop.monthly_rent) if prop.monthly_rent else None,
-            "deposit": float(prop.deposit) if prop.deposit else None,
-            "is_furnished": getattr(prop, "is_furnished", False),
-            "has_parking": getattr(prop, "has_parking", False),
-            "has_balcony": getattr(prop, "has_balcony", False),
-            "has_terrace": getattr(prop, "has_terrace", False),
-            "has_garden": getattr(prop, "has_garden", False),
-            "has_storage": getattr(prop, "has_storage", False),
-            "has_fireplace": getattr(prop, "has_fireplace", False),
-            "has_laundry": getattr(prop, "has_laundry", False),
-            "linen_provided": getattr(prop, "linen_provided", False),
-            "pets_allowed": getattr(prop, "pets_allowed", False),
-            "smoking_allowed": getattr(prop, "smoking_allowed", False),
-            "price_sale": float(prop.price_sale) if getattr(prop, "price_sale", None) else None,
-            "tourist_tax_amount": float(prop.tourist_tax_amount) if getattr(prop, "tourist_tax_amount", None) else None,
-            "charges": float(prop.charges) if getattr(prop, "charges", None) else None,
-            "building_name": getattr(prop, "building_name", "") or "",
-            "unit_number": getattr(prop, "unit_number", "") or "",
-            "bedrooms": getattr(prop, "bedrooms", None),
-            "bathrooms": getattr(prop, "bathrooms", None),
-            "reference_number": getattr(prop, "reference_number", "") or "",
-            "nearby_landmarks": getattr(prop, "nearby_landmarks", "") or "",
-            "canton": getattr(prop, "canton", "VS") or "VS",
-            "is_for_sale": getattr(prop, "is_for_sale", False),
+            # Localisation
+            "address": bien.adresse,
+            "city": bien.ville,
+            "zip_code": bien.cp,
+            "canton": bien.canton or "VS",
+            # Surface et pièces
+            "surface": bien.surface,
+            "rooms": bien.rooms,
+            "bedrooms": bien.bedrooms,
+            "bathrooms": bien.bathrooms,
+            "floor": bien.etage,
+            "year_built": bien.annee_construction,
+            # Présentation
+            "description": bien.description_logement or bien.description_lieu or "",
+            # Identité
+            "building_name": bien.building_name or "",
+            "unit_number": bien.unit_number or "",
+            "reference_number": bien.reference_number or "",
+            # Finances
+            "monthly_rent": float(bien.loyer) if bien.loyer else 0.0,
+            "charges": float(bien.charges) if bien.charges else 0.0,
+            "deposit": float(bien.deposit) if bien.deposit else 0.0,
+            # Équipements — adaptés aux nouvelles colonnes
+            "is_furnished": bien.is_furnished,
+            "has_parking": bool(bien.parking_type),
+            "has_balcony": bien.has_balcony,
+            "has_terrace": bien.has_terrace,
+            "has_garden": bien.has_garden,
+            "has_storage": bien.has_storage,
+            "has_fireplace": bien.has_fireplace,
+            "has_laundry": bien.has_laundry_private or bien.has_laundry_building,
+            # Règles
+            "pets_allowed": bien.pets_allowed,
+            "smoking_allowed": bien.smoking_allowed,
+            # Opérationnel
+            "keys_count": bien.keys_count or 3,
+            # Enums bruts + libellés FR
+            "status": bien.statut,
             "type_label": {
-                "apartment": "Appartement", "villa": "Villa", "parking": "Parking",
-                "office": "Bureau", "commercial": "Local commercial", "hotel": "Hôtel",
-            }.get(prop.type, "Bien"),
+                "appartement": "Appartement", "villa": "Villa", "studio": "Studio",
+                "maison": "Maison", "commerce": "Local commercial", "bureau": "Bureau",
+                "parking": "Parking", "garage": "Garage", "cave": "Cave", "autre": "Bien",
+            }.get(bien.type, "Bien"),
             "status_label": {
-                "available": "À Louer", "rented": "Loué", "for_sale": "À Vendre",
-                "sold": "Vendu",
-            }.get(prop.status, "Disponible"),
+                "vacant": "À Louer", "loue": "Loué", "en_travaux": "En travaux",
+            }.get(bien.statut, "Disponible"),
             "cover_url": extra.get("cover_url"),
+            # Champs out-of-scope Phase 1 (saisonnier, vente, linen) — defaults figés
+            "linen_provided": False,
+            "price_sale": None,
+            "is_for_sale": False,
+            "tourist_tax_amount": None,
+            "nearby_landmarks": "",
+            "prix_nuit_basse": None,
+            "prix_nuit_haute": None,
         }
 
     contract_info: dict = {}
@@ -1252,7 +1273,7 @@ def _build_ctx(
             "animals_allowed": getattr(contract, "animals_allowed", False),
             "smoking_allowed": getattr(contract, "smoking_allowed", False),
             "is_for_sale": getattr(contract, "is_for_sale", False),
-            "signed_at_city": getattr(contract, "signed_at_city", "") or (prop.city if prop else ""),
+            "signed_at_city": getattr(contract, "signed_at_city", "") or (bien.ville if bien else ""),
             "signed_date": extra.get("signed_date", ""),
             "canton": getattr(contract, "canton", "VS") or "VS",
             "bank_name": getattr(contract, "bank_name", "") or "",
@@ -1288,7 +1309,7 @@ def _build_ctx(
 class GenerateRequest(BaseModel):
     template_type: str
     contract_id: str | None = None
-    property_id: str | None = None
+    bien_id: str | None = None
     profile: str = "annee"
     extra: dict = {}
 
@@ -1354,12 +1375,12 @@ async def generate_document(
         if not contract:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Contrat introuvable")
 
-    # Load property
-    prop: Property | None = None
-    prop_id = payload.property_id or (str(contract.property_id) if contract else None)
-    if prop_id:
-        res = await db.execute(select(Property).where(Property.id == uuid_lib.UUID(prop_id)))
-        prop = res.scalar_one_or_none()
+    # Load bien
+    bien: Bien | None = None
+    bien_id = payload.bien_id or (str(contract.bien_id) if contract else None)
+    if bien_id:
+        res = await db.execute(select(Bien).where(Bien.id == uuid_lib.UUID(bien_id)))
+        bien = res.scalar_one_or_none()
 
     # Load tenant
     tenant: User | None = None
@@ -1370,8 +1391,8 @@ async def generate_document(
     # Load agency
     agency_user: User | None = None
     agency_id = contract.agency_id if contract else None
-    if not agency_id and prop:
-        agency_id = prop.agency_id
+    if not agency_id and bien:
+        agency_id = bien.agency_id
     if agency_id:
         res = await db.execute(select(User).where(User.id == agency_id))
         agency_user = res.scalar_one_or_none()
@@ -1406,28 +1427,28 @@ async def generate_document(
     except Exception:
         pass
 
-    # Load cover image URL for the property
+    # Load cover image URL for the bien
     extra_with_cover = dict(payload.extra)
-    if prop:
-        from app.models.property import PropertyImage as _PropImg
+    if bien:
+        from app.models.bien import BienImage as _BienImg
         cover_res = await db.execute(
-            select(_PropImg)
-            .where(_PropImg.property_id == prop.id, _PropImg.is_cover.is_(True))
+            select(_BienImg)
+            .where(_BienImg.bien_id == bien.id, _BienImg.is_cover.is_(True))
             .limit(1)
         )
         cover_img = cover_res.scalar_one_or_none()
         if not cover_img:
             cover_res = await db.execute(
-                select(_PropImg)
-                .where(_PropImg.property_id == prop.id)
-                .order_by(_PropImg.order)
+                select(_BienImg)
+                .where(_BienImg.bien_id == bien.id)
+                .order_by(_BienImg.order)
                 .limit(1)
             )
             cover_img = cover_res.scalar_one_or_none()
         if cover_img:
             extra_with_cover["cover_url"] = cover_img.url
 
-    ctx = _build_ctx(contract, prop, owner, tenant, agency_user, agency_settings, extra_with_cover)
+    ctx = _build_ctx(contract, bien, owner, tenant, agency_user, agency_settings, extra_with_cover)
 
     # Generate body HTML
     ttype = payload.template_type
@@ -1495,7 +1516,7 @@ async def generate_document(
         id=uuid_lib.uuid4(),
         template_type=ttype,
         contract_id=contract.id if contract else None,
-        property_id=prop.id if prop else None,
+        bien_id=bien.id if bien else None,
         owner_id=owner.id,
         agency_id=agency_id,
         generated_by_id=current_user.id,
