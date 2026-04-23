@@ -48,7 +48,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
-    from app.models.property import Property
+    from app.models.bien import Bien
 
 log = logging.getLogger(__name__)
 
@@ -160,7 +160,7 @@ class PaymentAlert:
 
 
 async def generate_listing_description(
-    property: Property,
+    bien: Bien,
     db: AsyncSession,
     user_id: str,
 ) -> str:
@@ -168,25 +168,27 @@ async def generate_listing_description(
     if not _check_rate_limit(user_id):
         raise RuntimeError("Limite de débit IA atteinte — réessayez dans une minute.")
 
-    prop_json = {
-        "type": property.type,
-        "address": getattr(property, "address", ""),
-        "city": getattr(property, "city", ""),
-        "surface": getattr(property, "surface", None),
-        "rooms": getattr(property, "rooms", None),
-        "floor": getattr(property, "floor", None),
-        "monthly_rent": getattr(property, "monthly_rent", None),
-        "charges": getattr(property, "charges", None),
-        "deposit": getattr(property, "deposit", None),
-        "is_furnished": getattr(property, "is_furnished", False),
-        "has_parking": getattr(property, "has_parking", False),
-        "pets_allowed": getattr(property, "pets_allowed", False),
+    bien_json = {
+        "type": bien.type,
+        "address": bien.adresse,
+        "city": bien.ville,
+        "cp": bien.cp,
+        "canton": bien.canton,
+        "surface": bien.surface,
+        "rooms": float(bien.rooms) if bien.rooms is not None else None,
+        "floor": bien.etage,
+        "monthly_rent": float(bien.loyer) if bien.loyer is not None else None,
+        "charges": float(bien.charges) if bien.charges is not None else None,
+        "deposit": float(bien.deposit) if bien.deposit is not None else None,
+        "is_furnished": bien.is_furnished,
+        "parking_type": bien.parking_type,
+        "pets_allowed": bien.pets_allowed,
     }
 
     prompt = f"""Tu es un expert en immobilier et rédaction d'annonces. Rédige une annonce immobilière attrayante et optimisée SEO pour le bien suivant.
 
 Données du bien :
-{json.dumps(prop_json, ensure_ascii=False, indent=2)}
+{json.dumps(bien_json, ensure_ascii=False, indent=2)}
 
 Consignes :
 - Langue : français
@@ -206,7 +208,7 @@ Retourne uniquement l'annonce, sans commentaire."""
         messages=[{"role": "user", "content": prompt}],
     )
 
-    await _log_usage(db, user_id, "generate_listing", message.usage, str(property.id))
+    await _log_usage(db, user_id, "generate_listing", message.usage, str(bien.id))
     return message.content[0].text.strip()  # type: ignore[union-attr]
 
 

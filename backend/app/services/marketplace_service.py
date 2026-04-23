@@ -347,11 +347,6 @@ async def publier_bien_service(body: PublierRequest, user: User, db: AsyncSessio
         await db.refresh(listing)
 
     # ── Description IA (non bloquant) ─────────────────────────────────────────
-    # Note : ai_service.generate_listing_description attend encore un ancien
-    # Property et accède à .address/.city/.monthly_rent via getattr — sur un
-    # Bien ces attributs sont absents donc la description sortira vide. La
-    # migration de ai_service est prévue à l'étape 15-18. Le try/except ci-dessous
-    # couvre ce bug dormant (5e bug documenté — voir SPRINT_LOG).
     if not listing.description_ai:
         try:
             listing.description_ai = await generate_listing_description(bien, db, str(user.id))

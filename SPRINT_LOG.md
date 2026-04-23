@@ -106,13 +106,15 @@ Contient :
 - `rgpd.py` — ✅ commit `8b52439`. Colonnes fantômes `type_bien`/`loyer_mensuel` (n'existent plus sur biens depuis 0029) → `type`/`loyer`. Clés JSON de l'export utilisateur mises à jour en phase.
 - `portail.py` — ✅ commit à venir. 3 SELECTs `type_bien`/`loyer_mensuel` → `type`/`loyer`, 1 ORM `select(Property)` → `select(Bien)`, 1 schema `PortailInvitation.property_ids` → `bien_ids`, dict de réponse `properties_count`/`properties`/`{name, address}` → `biens_count`/`biens`/`{adresse, ville}` (`Property.name` n'existe pas sur Bien, remplacé par `adresse`).
 
-### Étape 15-18 — Services + tasks + main + suppressions 🛑
+### Étape 15-18 — Services + tasks + main + suppressions 🟡 EN COURS (session 3)
 
-- 5 services : ai_service, contract_service, marketplace_service, transaction_service (+ supprimer property_service)
+- 5 services : ~~ai_service~~ ✅, contract_service ✅ (étape 13), marketplace_service ✅ (étape 13), transaction_service 🛑 (+ supprimer property_service 🛑)
 - 2 tasks Celery : rent_tasks.py (3 occurrences), notifications.py (2 occurrences)
 - main.py : supprimer import properties + include_router, ajouter catalogue_router
 - core/security.py:291 : import local Property
 - 4 suppressions : models/property.py, routers/properties.py, services/property_service.py, schemas/property.py
+
+**`ai_service.py`** — ✅ 2026-04-23 session 3. Signature `generate_listing_description(property: Property, db, user_id)` → `(bien: Bien, db, user_id)`. Suppression des 12 `getattr(property, "...", defaults)` remplacés par accès direct aux attributs Bien (adresse/ville/cp/canton/surface/rooms/etage/loyer/charges/deposit/is_furnished/parking_type/pets_allowed). Casts `float()` pour Numeric→Decimal (rooms, loyer, charges, deposit) pour éviter `TypeError` sur `json.dumps`. Clé `has_parking: bool` → `parking_type: str|None` (plus informatif pour le prompt LLM). Ajout `cp` + `canton` au payload (signal SEO). Context_ref `str(property.id)` → `str(bien.id)`. Commentaire stale dans `marketplace_service.py:350` (5e bug dormant) nettoyé. **5e bug dormant corrigé** : les appelants (`routers/ai/listings.py:169` + `services/marketplace_service.py:357`) passaient déjà un `Bien` positionnellement, donc aucune rupture contract. AST OK.
 
 ### Étape 19 — Frontend 🛑
 
