@@ -225,6 +225,76 @@ _(aucun bloquant — peer review du fichier 1 a rattrapé 2 tables FK oubliées 
 
 ---
 
+## Fin de session — 2026-04-23 soir (session 3)
+
+### ✅ Session 3 clôturée — 5 commits validés + 1 fix rattrapage
+
+| Commit   | Libellé                                                                     |
+|----------|-----------------------------------------------------------------------------|
+| a368226  | WIP(étape 15) ai_service.py — generate_listing_description Property→Bien    |
+| edda734  | WIP(étape 15) transaction bundle — service + schema Property→Bien           |
+| 8dabc01  | WIP(étape 15) tasks Celery bundle — rent_tasks + notifications Property→Bien |
+| 8bbe2f7  | WIP(étape 15) core/security.py — require_property_access → require_bien_access |
+| a4b2295  | WIP(étape 16) main.py — retirer properties router + ajouter catalogue       |
+| ca9f7cf  | fix(étape 15) ai_service — fallback canton or "" (oubli commit a368226)     |
+
+**Total fichiers touchés session 3** : 6 (ai_service, transaction_service, schemas/transaction, tasks/rent_tasks, tasks/notifications, core/security, main) + SPRINT_LOG.
+
+**Bugs dormants corrigés session 3 : 6 (6e → 11e)**
+6. `ai_service.generate_listing_description` — getattr fallbacks renvoyaient description vide
+7. `schemas/transaction.TransactionRead.property_id` — absent du modèle, Pydantic remplissait null silencieusement dans `OwnerDashboard`/`AgencyDashboard.recent_transactions[]`
+8. `rent_tasks.generate_monthly_rents` L101 — `Transaction(property_id=contract.property_id)` sur 2 attributs renommés → crash mensuel Celery beat
+9. `rent_tasks.calculate_commissions` L247 — idem → crash quotidien
+10. `rent_tasks.reverse_loyers` L375 — SQL raw `SELECT lt.property_id` sur colonne renommée → crash horaire
+11. `notifications._send_contract_email` + `_send_transaction_email` — JOIN SQL raw `ON b.id = c.property_id` → 0 email envoyé depuis étape 5-7
+
+### 🔜 Reste à faire — session 4 (demain matin, contexte frais)
+
+**Étapes 17-18 : 4 suppressions définitives**
+- `backend/app/models/property.py`
+- `backend/app/routers/properties.py` (maintenant orphelin côté main.py)
+- `backend/app/services/property_service.py`
+- `backend/app/schemas/property.py` (si existe — à vérifier)
+
+**Discipline suppression (règle absolue session 4)** : avant chaque `rm`, grep exhaustif sur TOUT le backend (`app/`, `tests/`, `alembic/`) du symbole à supprimer. Zéro import orphelin toléré, zéro référence croisée oubliée. Si un import résiduel apparaît, le corriger d'abord dans son fichier d'origine, puis seulement supprimer.
+
+**Étape 19 : frontend (reportée)**
+Ruptures API documentées à aligner (~13 fichiers frontend) :
+- Dashboards : `OwnerDashboard.recent_transactions[].property_id` → `bien_id` + idem agency
+- Favorites : 7 champs renommés (cf section rupture max étape 13)
+- Contracts, CRM, Admin, Documents, Loyers, Portail (cf sections SPRINT_LOG étape 13)
+
+**Étape 20 : checkpoint + smoke-tests**
+- `python -c "import app.main"` (bloqué localement par .env cp1252, à faire sur CI ou via Railway)
+- Smoke-test Celery post-deploy : rattrapage loyers Sunimmo (gap 2026-04-23 12:31 → deploy post-refonte). Scope mai 2026 uniquement (étape 5-7 est du 23 avril, pas de mois entier manqué).
+- Smoke-test reverse_loyers : `SELECT COUNT(*) FROM loyer_transactions WHERE statut='recu' AND date_reversement IS NULL AND created_at < '2026-04-23 12:31'`
+
+### 📋 Dette technique à suivre post-validation alpha
+- 5 méthodes `TransactionService` sans call site (list, create, mark_paid, get, get_stats)
+- `core/security.require_bien_access()` sans call site
+- Alias CSS `--althy-orange*` (hors scope refonte)
+
+### 🔑 Entrée pour session 4
+
+Prompt à utiliser dans la nouvelle conversation Claude Code :
+```
+Lis SPRINT_LOG.md pour te remettre en contexte. Session 3 clôturée
+(6 commits, 6 bugs dormants corrigés, backend étapes 15-16 done).
+
+Scope session 4 : étapes 17-18 = 4 suppressions définitives (models/
+property.py, routers/properties.py, services/property_service.py,
+schemas/property.py si existe). Discipline : grep exhaustif backend/
+avant chaque rm.
+
+Après 17-18 : on regarde le budget restant pour décider si on attaque
+étape 19 (frontend) dans la même session ou si on checkpoint.
+```
+
+Branche active : `refonte/fusion-properties-biens-complete`
+Dernier commit session 3 : `ca9f7cf`
+
+---
+
 ## Fin de session — 2026-04-23 soir (session 2)
 
 ### 📊 Bilan session 2
