@@ -189,6 +189,7 @@ _(aucun bloquant — peer review du fichier 1 a rattrapé 2 tables FK oubliées 
 - `crm.py` (2026-04-23 reprise) : imports, 9 modèles joints (Contract/Bien/User/Listing/Mission/Opener/RFQ/RFQQuote/Transaction/CRMContact/CRMNote/Company), schemas `ContactOut/NoteOut/ProspectCreate/ProspectUpdate/NoteCreate/CRMStats` (champs `property_*` → `bien_*`, `properties_count` → `biens_count`), URL `/property/{property_id}/overview` → `/bien/{bien_id}/overview`. `Contract.monthly_rent` conservé (champ contrat, pas bien). AST OK.
 - `documents.py` (2026-04-23) : **Stratégie A — pattern adaptateur** validée (clé `ctx["property"]` + noms internes du dict conservés → 300+ f-strings templates HTML intouchés). Import `Property` → `Bien`, `_build_ctx` signature + body (champs adaptés au nouveau schéma Bien), `GenerateRequest.property_id` → `bien_id`, `contract.property_id` → `contract.bien_id`, **2 bugs latents corrigés** : `PropertyImage` → `BienImage` (import orphelin + queries `bien_id`) et `GeneratedDocument(property_id=...)` → `bien_id=...` (colonne inexistante sur le modèle renommé étape 5-7). AST OK.
 - `listings.py` (2026-04-23) : autonome (aucune dépendance service). Import `Property` → `Bien`, helper `_get_user_property_ids` → `_get_user_bien_ids`, schema `ListingCreate.property_id` → `bien_id`, attributs `Listing.property_id` → `Listing.bien_id`, messages d'erreur EN → FR. AST OK.
+- `marketplace.py` + `marketplace_service.py` (2026-04-23, bundle) : **bundle service obligatoire** (router → service, ~40 refs Property). Router : 14 edits, tous les joins `Listing.property_id == Property.id` → `Bien.id`, filtres FR (`Bien.ville/canton/type`), variables `prop` → `bien`, `listing.property_id` → `listing.bien_id`. Service : schema `PublierRequest.property_id` → `bien_id` + default `type="apartment"` → `"appartement"`, `TYPE_LABEL` régénéré avec nouveau enum FR, `statut_listing/serialize_listing/score_candidature_ia/get_owned_listing/publier_bien_service` adaptés au modèle Bien (clés FR `ville/code_postal/pieces/caution/etage` CONSERVÉES côté sortie API — contrat frontend). **3e bug latent corrigé** : `prop = Property(...)` + `db.add(prop)` dans `publier_bien_service` (INSERT sur table inexistante). Adapter `has_parking` bool → `parking_type = "exterieur" if True else None`. Champs out-of-scope supprimés : `price_sale` (vente = Listing.price), `country` (DEFAULT DB 0037), `is_for_sale`, `tourist_tax_amount`. AST OK sur les 2 fichiers. **5e bug dormant identifié** (non corrigé) : `ai_service.generate_listing_description(property: Property)` appelé avec un Bien renvoie description vide — try/except couvre, migration prévue étape 15-18.
 
 **Commits** :
 - `27c5acc` — WIP fondations migration 0029 + modèles + schemas + services + router biens
@@ -217,6 +218,7 @@ router + service en étape 13. Scope révisé :
 1. ~~**`crm.py`**~~ — ✅ fait 2026-04-23 (full rename URL + schemas + modèles)
 2. ~~**`documents.py`**~~ — ✅ fait 2026-04-23 (stratégie A adaptateur + 2 bugs latents corrigés)
 3. ~~**`listings.py`**~~ — ✅ fait 2026-04-23 (autonome, minimal)
+4. ~~**`marketplace.py` + `marketplace_service.py`**~~ — ✅ fait 2026-04-23 (bundle router+service, 3e bug latent corrigé)
 3. **`listings.py` + `marketplace.py`** — à faire ensemble, logique publication/recherche liée. Utilisent `Property.status == "available"`, `Property.city.ilike(...)`.
 4. **`admin.py`** — mapping enum critique (`Property.status.in_(["rented", "available"])` → `Bien.statut.in_(["loue", "vacant"])`) + KPIs plateforme.
 5. **`contracts.py`** — attribut `Contract.property_id` → `bien_id` (modèle déjà fait, router à synchroniser).
@@ -241,21 +243,41 @@ hardcodés. Si une feature doit être réactivée, il faudra :
 3. Alimenter les clés du dict dans `_build_ctx` de `documents.py`
 4. Retester les PDFs générés
 
-### 🧟 Observation — code PDF documents.py non utilisé en prod
+### 🧟 Bugs dormants cumulés — code non utilisé en prod
 
-Les 2 bugs latents détectés dans `documents.py` (prouvés au patch 2026-04-23) :
+Chaque patch révèle des bugs latents prouvant qu'un chemin de code n'est pas
+invoqué en prod (sinon il aurait crashé à la migration étape 5-7). Journal :
+
+**`documents.py` (commit 66cf18e)** — génération PDF bails/fiches :
 - `from app.models.property import PropertyImage as _PropImg` → import orphelin,
   le modèle a été renommé `BienImage` dans `app.models.bien` à l'étape 5-7.
 - `GeneratedDocument(property_id=prop.id, ...)` → colonne inexistante, le
   modèle a `bien_id` depuis la migration 0029 / étape 5-7.
 
-Ces 2 bugs auraient crashé la génération PDF à chaque appel. Conséquence
-logique : **la génération PDF est du code dormant pour le MVP**, non appelé par
-des users actifs depuis au moins la migration étape 5-7.
+**`marketplace_service.py:301` (commit à venir)** — publication d'un nouveau bien :
+- `prop = Property(...)` + `db.add(prop)` → INSERT sur la table `properties`
+  qui n'existe plus post-migration 0029 (TRUNCATE + DROP).
+- Conséquence : la page "Publier un bien" (frontend) via `POST /marketplace/publier`
+  est cassée tant que le mode création est choisi (mode upsert avec `bien_id`
+  existant peut marcher si le payload est bien formé).
 
-À valider fonctionnellement avant le lancement public : test manuel de
-génération d'un bail annuel, vérifier que le PDF s'affiche correctement avec
-les bonnes valeurs (mapping Bien → dict adaptateur).
+**`contract_service.py:226` (à corriger étape 13 suite)** — PDF bail contrat :
+- `from app.models.property import PropertyImage` → import orphelin (même pattern
+  que documents.py).
+
+**`ai_service.generate_listing_description()` (à corriger étape 15-18)** —
+génération description IA marketplace :
+- Signature `property: Property` + accès `getattr(property, "address", "")`,
+  `getattr(..., "city", "")`, `getattr(..., "monthly_rent", None)`. Sur un Bien,
+  ces attributs n'existent pas → description Claude générée avec données vides.
+- Non-bloquant (wrappé try/except dans `publier_bien_service`), mais dégrade
+  silencieusement la qualité des annonces générées.
+
+**Conséquence consolidée** : les parcours PDF (bails, quittances, fiches),
+publication marketplace (création nouveau bien), et génération description IA
+sont tous du **code dormant** depuis la migration étape 5-7. À valider
+fonctionnellement avant le lancement public — test manuel de chaque parcours
+après étape 19 (frontend synchronisé).
 
 ### 🚨 Ruptures API frontend à synchroniser étape 19
 

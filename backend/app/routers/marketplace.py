@@ -18,10 +18,10 @@ from app.core.config import settings
 from app.core.rate_limit import limiter
 from app.core.database import get_db
 from app.core.security import ROLES_PROPERTY_MANAGERS, get_current_user, get_optional_current_user
+from app.models.bien import Bien
 from app.models.candidature import Candidature
 from app.models.interest import Interest
 from app.models.listing import Listing
-from app.models.property import Property
 from app.models.user import User
 from app.services.marketplace_service import (
     MAX_CANDIDATURE_FILES,
@@ -113,28 +113,28 @@ async def list_biens(
     """Liste publique des biens actifs (SANS authentification)."""
     response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
 
-    conds = [Listing.status == "active", Listing.is_active == True, Property.is_active == True]
+    conds = [Listing.status == "active", Listing.is_active == True, Bien.is_active == True]
     if transaction_type:
         conds.append(Listing.transaction_type == transaction_type)
     if type:
-        conds.append(Property.type == type)
+        conds.append(Bien.type == type)
     if ville:
-        conds.append(Property.city.ilike(f"%{ville}%"))
+        conds.append(Bien.ville.ilike(f"%{ville}%"))
     if canton:
-        conds.append(Property.canton.ilike(f"%{canton}%"))
+        conds.append(Bien.canton.ilike(f"%{canton}%"))
     if prix_min is not None:
         conds.append(Listing.price >= prix_min)
     if prix_max is not None:
         conds.append(Listing.price <= prix_max)
     pieces_filter = pieces_min if pieces_min is not None else pieces
     if pieces_filter is not None:
-        conds.append(Property.rooms >= pieces_filter)
+        conds.append(Bien.rooms >= pieces_filter)
     if surface_min is not None:
-        conds.append(Property.surface >= surface_min)
+        conds.append(Bien.surface >= surface_min)
 
-    join    = select(Listing, Property).join(Property, Listing.property_id == Property.id)
+    join    = select(Listing, Bien).join(Bien, Listing.bien_id == Bien.id)
     total   = (await db.execute(
-        select(func.count(Listing.id)).join(Property, Listing.property_id == Property.id).where(*conds)
+        select(func.count(Listing.id)).join(Bien, Listing.bien_id == Bien.id).where(*conds)
     )).scalar_one()
 
     _limit  = limit  if limit  is not None else size
@@ -153,16 +153,16 @@ async def list_biens(
 async def marketplace_stats(db: DbDep, response: Response):
     """Statistiques publiques de la marketplace."""
     response.headers["Cache-Control"] = "public, max-age=120, stale-while-revalidate=600"
-    base_conds = [Listing.status == "active", Listing.is_active == True, Property.is_active == True]
-    base_join  = select(func.count(Listing.id)).join(Property, Listing.property_id == Property.id)
+    base_conds = [Listing.status == "active", Listing.is_active == True, Bien.is_active == True]
+    base_join  = select(func.count(Listing.id)).join(Bien, Listing.bien_id == Bien.id)
     total_biens = (await db.execute(base_join.where(*base_conds))).scalar_one()
     ville_rows  = (await db.execute(
-        select(Property.city, func.count(Listing.id).label("cnt"))
-        .join(Listing, Listing.property_id == Property.id)
-        .where(*base_conds).group_by(Property.city)
+        select(Bien.ville, func.count(Listing.id).label("cnt"))
+        .join(Listing, Listing.bien_id == Bien.id)
+        .where(*base_conds).group_by(Bien.ville)
         .order_by(func.count(Listing.id).desc())
     )).all()
-    villes = [{"nom": r.city, "count": r.cnt} for r in ville_rows]
+    villes = [{"nom": r.ville, "count": r.cnt} for r in ville_rows]
     return {"total_biens": total_biens, "total_villes": len(villes), "villes": villes}
 
 
@@ -175,13 +175,13 @@ async def carte_geojson(
     """GeoJSON des biens géolocalisés (pour Mapbox)."""
     response.headers["Cache-Control"] = "public, max-age=60, stale-while-revalidate=300"
     conds = [
-        Listing.status == "active", Listing.is_active == True, Property.is_active == True,
+        Listing.status == "active", Listing.is_active == True, Bien.is_active == True,
         Listing.lat.isnot(None), Listing.lng.isnot(None),
     ]
     if transaction_type:
         conds.append(Listing.transaction_type == transaction_type)
     rows = (await db.execute(
-        select(Listing, Property).join(Property, Listing.property_id == Property.id).where(*conds)
+        select(Listing, Bien).join(Bien, Listing.bien_id == Bien.id).where(*conds)
     )).all()
     features = [
         {
@@ -189,17 +189,17 @@ async def carte_geojson(
             "geometry": {"type": "Point", "coordinates": [round(float(l.lng), 3), round(float(l.lat), 3)]},
             "properties": {
                 "id": str(l.id),
-                "titre": l.title or f"{TYPE_LABEL.get(p.type, p.type)} à {p.city}",
+                "titre": l.title or f"{TYPE_LABEL.get(b.type, b.type)} à {b.ville}",
                 "prix": float(l.price) if l.price else None,
                 "transaction_type": l.transaction_type,
                 "is_premium": l.is_premium,
                 "cover": (l.photos[0] if isinstance(l.photos, list) and l.photos else None),
-                "ville": p.city,
-                "surface": p.surface,
-                "pieces": p.rooms,
+                "ville": b.ville,
+                "surface": b.surface,
+                "pieces": float(b.rooms) if b.rooms else None,
             },
         }
-        for l, p in rows
+        for l, b in rows
     ]
     return {"type": "FeatureCollection", "features": features}
 
@@ -209,16 +209,16 @@ async def get_bien(listing_id: uuid.UUID, db: DbDep, response: Response):
     """Détail public d'un bien. Incrémente le compteur de vues."""
     response.headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=120"
     row = (await db.execute(
-        select(Listing, Property).join(Property, Listing.property_id == Property.id)
+        select(Listing, Bien).join(Bien, Listing.bien_id == Bien.id)
         .where(Listing.id == listing_id, Listing.status == "active",
-               Listing.is_active == True, Property.is_active == True)
+               Listing.is_active == True, Bien.is_active == True)
     )).first()
     if not row:
         raise HTTPException(404, "Bien introuvable")
-    listing, prop = row
+    listing, bien = row
     listing.views = (listing.views or 0) + 1
     await db.commit()
-    return serialize_listing(listing, prop)
+    return serialize_listing(listing, bien)
 
 
 # ── Routes authentifiées — gestion des listings ───────────────────────────────
@@ -248,7 +248,7 @@ async def modifier_listing(listing_id: uuid.UUID, body: ModifierRequest, db: DbD
     await db.commit()
     await db.refresh(listing)
     row = (await db.execute(
-        select(Listing, Property).join(Property, Listing.property_id == Property.id)
+        select(Listing, Bien).join(Bien, Listing.bien_id == Bien.id)
         .where(Listing.id == listing.id)
     )).first()
     return serialize_listing(row[0], row[1]) if row else {"id": str(listing.id)}
@@ -273,13 +273,13 @@ async def enregistrer_interet(request: Request, body: InteresseRequest, db: DbDe
         raise HTTPException(400, "session_id requis pour les utilisateurs non connectés")
 
     row = (await db.execute(
-        select(Listing, Property).join(Property, Listing.property_id == Property.id)
+        select(Listing, Bien).join(Bien, Listing.bien_id == Bien.id)
         .where(Listing.id == body.listing_id, Listing.status == "active",
-               Listing.is_active == True, Property.is_active == True)
+               Listing.is_active == True, Bien.is_active == True)
     )).first()
     if not row:
         raise HTTPException(404, "Listing introuvable")
-    listing, prop = row
+    listing, bien = row
 
     existing_filter = [Interest.listing_id == body.listing_id]
     if user:
@@ -300,12 +300,12 @@ async def enregistrer_interet(request: Request, body: InteresseRequest, db: DbDe
     db.add(interest)
     listing.contacts_count = (listing.contacts_count or 0) + 1
 
-    owner_id = prop.owner_id or prop.agency_id
+    owner_id = bien.owner_id or bien.agency_id
     if owner_id:
         candidat_label = (
             f"{user.first_name} {user.last_name}".strip() if user and user.first_name else "Un visiteur"
         )
-        notif_msg = f"{candidat_label} est intéressé par « {listing.title or f'Bien à {prop.city}'} »."
+        notif_msg = f"{candidat_label} est intéressé par « {listing.title or f'Bien à {bien.ville}'} »."
         if body.message:
             notif_msg += f" Message : {body.message[:120]}"
         await db.execute(
@@ -313,7 +313,7 @@ async def enregistrer_interet(request: Request, body: InteresseRequest, db: DbDe
                 INSERT INTO notifications (user_id, type, titre, message, lien, created_at, updated_at)
                 VALUES (:uid, 'nouvel_interet', 'Nouvel intérêt', :msg, :lien, now(), now())
             """),
-            {"uid": str(owner_id), "msg": notif_msg, "lien": f"/app/biens/{listing.property_id}/locataire"},
+            {"uid": str(owner_id), "msg": notif_msg, "lien": f"/app/biens/{listing.bien_id}/locataire"},
         )
 
     await db.commit()
@@ -330,7 +330,7 @@ async def swipe_next(
     size: int = Query(10, le=30),
 ):
     """Prochains biens à swiper (hors déjà vus)."""
-    conds = [Listing.status == "active", Listing.is_active == True, Property.is_active == True]
+    conds = [Listing.status == "active", Listing.is_active == True, Bien.is_active == True]
     if transaction_type:
         conds.append(Listing.transaction_type == transaction_type)
     seen_filter = []
@@ -342,29 +342,29 @@ async def swipe_next(
         from sqlalchemy import or_
         conds.append(Listing.id.not_in(select(Interest.listing_id).where(or_(*seen_filter))))
     rows = (await db.execute(
-        select(Listing, Property).join(Property, Listing.property_id == Property.id)
+        select(Listing, Bien).join(Bien, Listing.bien_id == Bien.id)
         .where(*conds).order_by(Listing.is_premium.desc(), Listing.published_at.desc()).limit(size)
     )).all()
-    return {"items": [serialize_listing(l, p) for l, p in rows], "count": len(rows)}
+    return {"items": [serialize_listing(l, b) for l, b in rows], "count": len(rows)}
 
 
 @router.get("/mes-favoris")
 async def mes_favoris(db: DbDep, user: AuthUserDep):
     """Biens aimés (swipe droit) par l'utilisateur connecté."""
     rows = (await db.execute(
-        select(Listing, Property, Interest)
-        .join(Property, Listing.property_id == Property.id)
+        select(Listing, Bien, Interest)
+        .join(Bien, Listing.bien_id == Bien.id)
         .join(Interest, Interest.listing_id == Listing.id)
-        .where(Interest.user_id == user.id, Listing.is_active == True, Property.is_active == True)
+        .where(Interest.user_id == user.id, Listing.is_active == True, Bien.is_active == True)
         .order_by(Interest.created_at.desc())
     )).all()
     items = []
-    for listing, prop, interest in rows:
-        bien = serialize_listing(listing, prop)
-        bien["interest_status"] = interest.status
-        bien["interest_id"]     = str(interest.id)
-        bien["interest_at"]     = interest.created_at.isoformat()
-        items.append(bien)
+    for listing, bien, interest in rows:
+        bien_dict = serialize_listing(listing, bien)
+        bien_dict["interest_status"] = interest.status
+        bien_dict["interest_id"]     = str(interest.id)
+        bien_dict["interest_at"]     = interest.created_at.isoformat()
+        items.append(bien_dict)
     return {"items": items, "total": len(items)}
 
 
@@ -375,14 +375,14 @@ async def mes_favoris(db: DbDep, user: AuthUserDep):
 async def postuler(request: Request, body: PostulerRequest, db: DbDep, user: AuthUserDep):
     """Soumet une candidature JSON (sans upload). Déclenche le scoring IA."""
     row = (await db.execute(
-        select(Listing, Property).join(Property, Listing.property_id == Property.id)
+        select(Listing, Bien).join(Bien, Listing.bien_id == Bien.id)
         .where(Listing.id == body.listing_id, Listing.status == "active",
-               Listing.is_active == True, Property.is_active == True)
+               Listing.is_active == True, Bien.is_active == True)
     )).first()
     if not row:
         raise HTTPException(404, "Listing introuvable ou inactif")
-    listing, prop = row
-    if prop.owner_id == user.id or prop.agency_id == user.id:
+    listing, bien = row
+    if bien.owner_id == user.id or bien.agency_id == user.id:
         raise HTTPException(403, "Vous ne pouvez pas postuler à votre propre annonce")
     if (await db.execute(select(Candidature).where(
         Candidature.listing_id == body.listing_id,
@@ -392,7 +392,7 @@ async def postuler(request: Request, body: PostulerRequest, db: DbDep, user: Aut
         raise HTTPException(409, "Vous avez déjà postulé pour ce bien")
 
     docs = [d.model_dump() for d in body.documents]
-    score_ia, score_details = await score_candidature_ia(user, listing, prop, docs, db, body.message or "")
+    score_ia, score_details = await score_candidature_ia(user, listing, bien, docs, db, body.message or "")
 
     candidature = Candidature(
         listing_id=body.listing_id, user_id=user.id,
@@ -417,7 +417,7 @@ async def postuler(request: Request, body: PostulerRequest, db: DbDep, user: Aut
             tenant_id=user.id,
             listing_id=body.listing_id,
             monthly_rent=float(listing.prix or 0),
-            canton=getattr(prop, "canton", None),
+            canton=getattr(bien, "canton", None),
         )
 
     return serialize_candidature(candidature)
@@ -435,8 +435,8 @@ async def lister_candidatures(
     if user.role not in ROLES_PROPERTY_MANAGERS:
         raise HTTPException(403, "Réservé aux propriétaires et agences")
     owned = (
-        select(Listing.id).join(Property, Listing.property_id == Property.id)
-        .where((Property.owner_id == user.id) | (Property.agency_id == user.id), Listing.is_active == True)
+        select(Listing.id).join(Bien, Listing.bien_id == Bien.id)
+        .where((Bien.owner_id == user.id) | (Bien.agency_id == user.id), Listing.is_active == True)
     )
     conds = [Candidature.listing_id.in_(owned)]
     if listing_id:
@@ -477,13 +477,13 @@ async def traiter_candidature(
     if not candidature:
         raise HTTPException(404, "Candidature introuvable")
     row = (await db.execute(
-        select(Listing, Property).join(Property, Listing.property_id == Property.id)
+        select(Listing, Bien).join(Bien, Listing.bien_id == Bien.id)
         .where(Listing.id == candidature.listing_id)
     )).first()
     if not row:
         raise HTTPException(404, "Listing introuvable")
-    _, prop = row
-    if prop.owner_id != user.id and prop.agency_id != user.id and user.role != "super_admin":
+    _, bien = row
+    if bien.owner_id != user.id and bien.agency_id != user.id and user.role != "super_admin":
         raise HTTPException(403, "Vous n'êtes pas propriétaire de ce bien")
 
     now = datetime.now(timezone.utc)
@@ -502,7 +502,7 @@ async def traiter_candidature(
     fee_result: dict = {}
     newly_accepted = body.statut == "acceptee" and previous_statut != "acceptee"
     if newly_accepted and candidature.owner_fee_paid_at is None:
-        fee_result = await _charge_owner_dossier_fee(db, candidature, prop.owner_id or user.id)
+        fee_result = await _charge_owner_dossier_fee(db, candidature, bien.owner_id or user.id)
 
     # ── Notifications in-app (tenant + owner) ────────────────────────────────
     if newly_accepted:
@@ -513,7 +513,7 @@ async def traiter_candidature(
         await notify_candidature_accepted(
             db,
             tenant_id=candidature.user_id,
-            owner_id=prop.owner_id or user.id,
+            owner_id=bien.owner_id or user.id,
             listing_title=str(listing_title),
             owner_fee_chf=float(settings.OWNER_DOSSIER_FEE_CHF),
             owner_fee_charged=bool(fee_result.get("charged")),
@@ -628,14 +628,14 @@ async def deposer_candidature(
         raise HTTPException(422, f"Maximum {MAX_CANDIDATURE_FILES} fichiers autorisés")
 
     row = (await db.execute(
-        select(Listing, Property).join(Property, Listing.property_id == Property.id)
+        select(Listing, Bien).join(Bien, Listing.bien_id == Bien.id)
         .where(Listing.id == listing_id, Listing.status == "active",
-               Listing.is_active == True, Property.is_active == True)
+               Listing.is_active == True, Bien.is_active == True)
     )).first()
     if not row:
         raise HTTPException(404, "Listing introuvable ou inactif")
-    listing, prop = row
-    if prop.owner_id == user.id or prop.agency_id == user.id:
+    listing, bien = row
+    if bien.owner_id == user.id or bien.agency_id == user.id:
         raise HTTPException(403, "Vous ne pouvez pas postuler à votre propre annonce")
     if (await db.execute(select(Candidature).where(
         Candidature.listing_id == listing_id,
@@ -645,7 +645,7 @@ async def deposer_candidature(
         raise HTTPException(409, "Vous avez déjà postulé pour ce bien")
 
     uploaded_docs = await upload_candidature_files(documents, user.id, listing_id)
-    score_ia, score_details = await score_candidature_ia(user, listing, prop, uploaded_docs, db)
+    score_ia, score_details = await score_candidature_ia(user, listing, bien, uploaded_docs, db)
 
     now = datetime.now(timezone.utc)
     candidature = Candidature(
@@ -656,14 +656,14 @@ async def deposer_candidature(
     db.add(candidature)
     listing.contacts_count = (listing.contacts_count or 0) + 1
 
-    owner_id = prop.owner_id or prop.agency_id
+    owner_id = bien.owner_id or bien.agency_id
     if owner_id:
         candidat_label = (
             f"{user.first_name} {user.last_name}".strip() if user.first_name else user.email
         )
         await notify_owner_new_candidature(
             owner_id, candidat_label,
-            listing.title or prop.city, listing.property_id, score_ia, db,
+            listing.title or bien.ville, listing.bien_id, score_ia, db,
         )
 
     await db.commit()
@@ -680,20 +680,20 @@ async def deposer_candidature(
 async def mes_candidatures(db: DbDep, user: AuthUserDep):
     """Candidatures envoyées par l'utilisateur connecté."""
     rows = (await db.execute(
-        select(Candidature, Listing, Property)
+        select(Candidature, Listing, Bien)
         .join(Listing, Listing.id == Candidature.listing_id)
-        .join(Property, Property.id == Listing.property_id)
+        .join(Bien, Bien.id == Listing.bien_id)
         .where(Candidature.user_id == user.id)
         .order_by(Candidature.created_at.desc())
     )).all()
     items = []
-    for candidature, listing, prop in rows:
+    for candidature, listing, bien in rows:
         item = serialize_candidature(candidature)
         item["bien"] = {
             "id":     str(listing.id),
-            "titre":  listing.title or f"{TYPE_LABEL.get(prop.type, prop.type)} à {prop.city}",
-            "ville":  prop.city,
-            "prix":   float(listing.price or prop.monthly_rent or 0),
+            "titre":  listing.title or f"{TYPE_LABEL.get(bien.type, bien.type)} à {bien.ville}",
+            "ville":  bien.ville,
+            "prix":   float(listing.price or bien.loyer or 0),
             "cover":  (listing.photos[0] if isinstance(listing.photos, list) and listing.photos else None),
         }
         items.append(item)

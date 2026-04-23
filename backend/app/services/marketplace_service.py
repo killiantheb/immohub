@@ -11,9 +11,9 @@ from typing import TYPE_CHECKING
 
 import httpx
 from app.core.config import settings
+from app.models.bien import Bien
 from app.models.candidature import Candidature
 from app.models.listing import Listing
-from app.models.property import Property
 from app.models.user import User
 from fastapi import HTTPException
 from pydantic import BaseModel
@@ -27,8 +27,8 @@ if TYPE_CHECKING:
 # ── Schéma PublierRequest (défini ici pour éviter les forward references cross-module) ──
 
 class PublierRequest(BaseModel):
-    property_id: uuid.UUID | None = None
-    type: str = "apartment"
+    bien_id: uuid.UUID | None = None
+    type: str = "appartement"
     transaction_type: str = "location"
     adresse: str
     ville: str
@@ -58,16 +58,16 @@ MAX_CANDIDATURE_FILES = 5
 MAX_CANDIDATURE_FILE_BYTES = 10 * 1024 * 1024  # 10 MB
 
 TYPE_LABEL: dict[str, str] = {
-    "apartment": "Appartement",
-    "villa":     "Villa",
-    "parking":   "Parking",
-    "garage":    "Garage",
-    "box":       "Box",
-    "cave":      "Cave",
-    "depot":     "Dépôt",
-    "office":    "Bureau",
-    "commercial":"Commercial",
-    "hotel":     "Hôtel",
+    "appartement": "Appartement",
+    "villa":       "Villa",
+    "studio":      "Studio",
+    "maison":      "Maison",
+    "commerce":    "Local commercial",
+    "bureau":      "Bureau",
+    "parking":     "Parking",
+    "garage":      "Garage",
+    "cave":        "Cave",
+    "autre":       "Bien",
 }
 
 
@@ -90,48 +90,54 @@ async def upload_to_supabase(data: bytes, path: str, content_type: str) -> str:
 
 # ── Sérialisation ─────────────────────────────────────────────────────────────
 
-def statut_listing(listing: Listing, prop: Property) -> str:
+def statut_listing(listing: Listing, bien: Bien) -> str:
     if listing.transaction_type == "vente":
         return "À vendre"
-    if prop.status == "rented":
+    if bien.statut == "loue":
         return "Loué"
     return "À louer"
 
 
-def serialize_listing(listing: Listing, prop: Property) -> dict:
+def serialize_listing(listing: Listing, bien: Bien) -> dict:
+    """Sérialise un listing pour l'API publique marketplace.
+
+    Les clés FR (ville, code_postal, pieces, chambres, sdb, etage, caution)
+    sont conservées (contrat frontend). Seule la source des valeurs change :
+    elle provient désormais du modèle Bien (adresse, ville, cp, loyer, …).
+    """
     photos   = listing.photos if isinstance(listing.photos, list) else []
     tags     = listing.tags_ia if isinstance(listing.tags_ia, list) else []
     prix_val = float(listing.price) if listing.price else (
-        float(prop.monthly_rent) if prop.monthly_rent else None
+        float(bien.loyer) if bien.loyer else None
     )
     return {
         "id":                str(listing.id),
-        "titre":             listing.title or f"{TYPE_LABEL.get(prop.type, prop.type)} à {prop.city}",
+        "titre":             listing.title or f"{TYPE_LABEL.get(bien.type, bien.type)} à {bien.ville}",
         "description":       listing.description_ai,
         "transaction_type":  listing.transaction_type,
         "prix":              prix_val,
-        "charges":           float(prop.charges)  if prop.charges  else None,
-        "caution":           float(prop.deposit)  if prop.deposit  else None,
-        "adresse_affichee":  listing.adresse_affichee or prop.city,
-        "ville":             prop.city,
-        "code_postal":       prop.zip_code,
-        "canton":            prop.canton,
+        "charges":           float(bien.charges)  if bien.charges  else None,
+        "caution":           float(bien.deposit)  if bien.deposit  else None,
+        "adresse_affichee":  listing.adresse_affichee or bien.ville,
+        "ville":             bien.ville,
+        "code_postal":       bien.cp,
+        "canton":            bien.canton,
         # Coordonnées arrondies à 3 décimales (~111 m) — vie privée
         "lat":               round(float(listing.lat), 3) if listing.lat else None,
         "lng":               round(float(listing.lng), 3) if listing.lng else None,
-        "surface":           prop.surface,
-        "pieces":            prop.rooms,
-        "chambres":          prop.bedrooms,
-        "sdb":               prop.bathrooms,
-        "etage":             prop.floor,
-        "type":              prop.type,
-        "type_label":        TYPE_LABEL.get(prop.type, prop.type),
-        "is_furnished":      prop.is_furnished,
-        "has_parking":       prop.has_parking,
-        "has_balcony":       prop.has_balcony,
-        "has_terrace":       prop.has_terrace,
-        "has_garden":        prop.has_garden,
-        "pets_allowed":      prop.pets_allowed,
+        "surface":           bien.surface,
+        "pieces":            float(bien.rooms) if bien.rooms else None,
+        "chambres":          bien.bedrooms,
+        "sdb":               bien.bathrooms,
+        "etage":             bien.etage,
+        "type":              bien.type,
+        "type_label":        TYPE_LABEL.get(bien.type, bien.type),
+        "is_furnished":      bien.is_furnished,
+        "has_parking":       bool(bien.parking_type),
+        "has_balcony":       bien.has_balcony,
+        "has_terrace":       bien.has_terrace,
+        "has_garden":        bien.has_garden,
+        "pets_allowed":      bien.pets_allowed,
         "photos":            photos,
         "cover":             photos[0] if photos else None,
         "tags_ia":           tags,
@@ -140,9 +146,9 @@ def serialize_listing(listing: Listing, prop: Property) -> dict:
         "vues":              listing.views,
         "contacts_count":    listing.contacts_count,
         "published_at":      listing.published_at.isoformat() if listing.published_at else None,
-        "statut":            statut_listing(listing, prop),
+        "statut":            statut_listing(listing, bien),
         "periode":           "/mois" if listing.transaction_type != "vente" else "",
-        "created_at":        prop.created_at.isoformat(),
+        "created_at":        bien.created_at.isoformat(),
     }
 
 
@@ -178,12 +184,12 @@ async def get_owned_listing(listing_id: uuid.UUID, user: User, db: AsyncSession)
     """Retourne le listing si l'utilisateur en est propriétaire, 404 sinon."""
     row = (
         await db.execute(
-            select(Listing, Property)
-            .join(Property, Listing.property_id == Property.id)
+            select(Listing, Bien)
+            .join(Bien, Listing.bien_id == Bien.id)
             .where(
                 Listing.id == listing_id,
                 Listing.is_active == True,
-                Property.owner_id == user.id,
+                Bien.owner_id == user.id,
             )
         )
     ).first()
@@ -197,7 +203,7 @@ async def get_owned_listing(listing_id: uuid.UUID, user: User, db: AsyncSession)
 async def score_candidature_ia(
     user: User,
     listing: Listing,
-    prop: Property,
+    bien: Bien,
     docs: list[dict],
     db: AsyncSession,
     message: str = "",
@@ -210,9 +216,9 @@ async def score_candidature_ia(
     try:
         tenant_data = {
             "prenom":            user.first_name,
-            "listing_titre":     listing.title or f"Bien à {prop.city}",
-            "ville":             prop.city,
-            "loyer_demande":     float(listing.price or prop.monthly_rent or 0),
+            "listing_titre":     listing.title or f"Bien à {bien.ville}",
+            "ville":             bien.ville,
+            "loyer_demande":     float(listing.price or bien.loyer or 0),
             "documents_fournis": [d["type"] for d in docs],
             "nb_fiches_salaire": sum(1 for d in docs if d["type"] == "fiche_salaire"),
             "a_cni":             any(d["type"] == "cni" for d in docs),
@@ -234,8 +240,8 @@ async def score_candidature_ia(
 async def publier_bien_service(body: PublierRequest, user: User, db: AsyncSession) -> Listing:
     """
     Crée ou met à jour un Listing sur la marketplace.
-    - Si body.property_id fourni → upsert sur le bien existant (vérifie l'ownership).
-    - Sinon → crée un nouveau Property + Listing.
+    - Si body.bien_id fourni → upsert sur le bien existant (vérifie l'ownership).
+    - Sinon → crée un nouveau Bien + Listing.
     Génère la description IA si absente.
     """
     from app.services.geocoding import geocode  # import tardif pour éviter les dépendances circulaires
@@ -244,32 +250,32 @@ async def publier_bien_service(body: PublierRequest, user: User, db: AsyncSessio
     now        = datetime.now(timezone.utc)
     expire_at  = now + timedelta(days=30)
 
-    if body.property_id:
+    if body.bien_id:
         # ── Mode upsert : bien existant ───────────────────────────────────────
-        prop = (
+        bien = (
             await db.execute(
-                select(Property).where(
-                    Property.id == body.property_id,
-                    Property.is_active == True,
+                select(Bien).where(
+                    Bien.id == body.bien_id,
+                    Bien.is_active == True,
                 )
             )
         ).scalar_one_or_none()
-        if not prop:
+        if not bien:
             raise HTTPException(404, "Bien introuvable")
-        if prop.owner_id != user.id and prop.agency_id != user.id and user.role != "super_admin":
+        if bien.owner_id != user.id and bien.agency_id != user.id and user.role != "super_admin":
             raise HTTPException(403, "Ce bien ne vous appartient pas")
 
-        titre = body.titre or f"{TYPE_LABEL.get(body.type, prop.type)} à {prop.city}"
+        titre = body.titre or f"{TYPE_LABEL.get(body.type, bien.type)} à {bien.ville}"
 
         existing = (
-            await db.execute(select(Listing).where(Listing.property_id == body.property_id))
+            await db.execute(select(Listing).where(Listing.bien_id == body.bien_id))
         ).scalar_one_or_none()
 
         if existing:
             existing.title            = titre
             existing.price            = body.prix
             existing.transaction_type = body.transaction_type
-            existing.adresse_affichee = body.adresse_affichee or prop.city
+            existing.adresse_affichee = body.adresse_affichee or bien.ville
             if body.photos:
                 existing.photos = body.photos
             if body.tags_ia:
@@ -284,12 +290,12 @@ async def publier_bien_service(body: PublierRequest, user: User, db: AsyncSessio
             listing = existing
         else:
             listing = Listing(
-                property_id=prop.id, title=titre,
+                bien_id=bien.id, title=titre,
                 description_ai=body.description, price=body.prix,
                 status="active", transaction_type=body.transaction_type,
-                lat=prop.lat if hasattr(prop, "lat") else None,
-                lng=prop.lng if hasattr(prop, "lng") else None,
-                adresse_affichee=body.adresse_affichee or prop.city,
+                lat=bien.lat,
+                lng=bien.lng,
+                adresse_affichee=body.adresse_affichee or bien.ville,
                 photos=body.photos, tags_ia=body.tags_ia,
                 is_premium=False, published_at=now, expire_at=expire_at,
             )
@@ -298,21 +304,24 @@ async def publier_bien_service(body: PublierRequest, user: User, db: AsyncSessio
             await db.refresh(listing)
     else:
         # ── Mode création : nouveau bien ──────────────────────────────────────
-        prop = Property(
+        # Les champs out-of-scope Phase 1 (price_sale, country) sont retirés —
+        # le prix de vente est porté par Listing.price, le pays a un DEFAULT 'CH'
+        # côté DB (migration 0037). has_parking bool → parking_type enum mappé.
+        bien = Bien(
             owner_id=user.id, created_by_id=user.id,
-            type=body.type, status="available",
-            address=body.adresse, city=body.ville,
-            zip_code=body.code_postal, country="CH",
+            type=body.type, statut="vacant",
+            adresse=body.adresse, ville=body.ville,
+            cp=body.code_postal,
             surface=body.surface, rooms=body.pieces,
-            monthly_rent=body.prix if body.transaction_type in ("location", "colocation") else None,
+            loyer=body.prix if body.transaction_type in ("location", "colocation") else None,
             charges=body.charges, deposit=body.caution,
-            price_sale=body.prix if body.transaction_type == "vente" else None,
-            is_furnished=body.is_furnished, has_parking=body.has_parking,
+            is_furnished=body.is_furnished,
+            parking_type=("exterieur" if body.has_parking else None),
             has_balcony=body.has_balcony, has_terrace=body.has_terrace,
             has_garden=body.has_garden, pets_allowed=body.pets_allowed,
             canton=body.canton,
         )
-        db.add(prop)
+        db.add(bien)
         await db.flush()
 
         lat, lng = None, None
@@ -325,7 +334,7 @@ async def publier_bien_service(body: PublierRequest, user: User, db: AsyncSessio
 
         titre = body.titre or f"{TYPE_LABEL.get(body.type, body.type)} à {body.ville}"
         listing = Listing(
-            property_id=prop.id, title=titre,
+            bien_id=bien.id, title=titre,
             description_ai=body.description, price=body.prix,
             status="active", transaction_type=body.transaction_type,
             lat=lat, lng=lng,
@@ -338,9 +347,14 @@ async def publier_bien_service(body: PublierRequest, user: User, db: AsyncSessio
         await db.refresh(listing)
 
     # ── Description IA (non bloquant) ─────────────────────────────────────────
+    # Note : ai_service.generate_listing_description attend encore un ancien
+    # Property et accède à .address/.city/.monthly_rent via getattr — sur un
+    # Bien ces attributs sont absents donc la description sortira vide. La
+    # migration de ai_service est prévue à l'étape 15-18. Le try/except ci-dessous
+    # couvre ce bug dormant (5e bug documenté — voir SPRINT_LOG).
     if not listing.description_ai:
         try:
-            listing.description_ai = await generate_listing_description(prop, db, str(user.id))
+            listing.description_ai = await generate_listing_description(bien, db, str(user.id))
             await db.commit()
         except Exception:
             pass
@@ -390,7 +404,7 @@ async def notify_owner_new_candidature(
     owner_id: uuid.UUID,
     candidat_label: str,
     listing_title: str,
-    property_id: uuid.UUID,
+    bien_id: uuid.UUID,
     score_ia: int | None,
     db: AsyncSession,
 ) -> None:
@@ -406,7 +420,7 @@ async def notify_owner_new_candidature(
         {
             "uid":  str(owner_id),
             "msg":  f"{candidat_label} a déposé un dossier pour « {listing_title} »{score_label}.",
-            "lien": f"/app/biens/{property_id}/locataire",
+            "lien": f"/app/biens/{bien_id}/locataire",
         },
     )
 
