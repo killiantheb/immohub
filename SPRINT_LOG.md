@@ -220,6 +220,7 @@ router + service en étape 13. Scope révisé :
 3. ~~**`listings.py`**~~ — ✅ fait 2026-04-23 (autonome, minimal)
 4. ~~**`marketplace.py` + `marketplace_service.py`**~~ — ✅ fait 2026-04-23 (bundle router+service, 3e bug latent corrigé)
 5. ~~**`admin.py`**~~ — ✅ fait 2026-04-23 (autonome, 6 edits, mapping enum critique `rented/available` → `loue/vacant`, schema `PlatformStats` + `AdminTransaction` renommés)
+6. ~~**`contracts.py` + `contract_service.py` + `partner_hooks.py` + `schemas/contract.py`**~~ — ✅ fait 2026-04-23 (bundle 4 fichiers, 4e bug dormant corrigé, nettoyage UUID `uuid.UUID(uuid.UUID(...))`)
 3. **`listings.py` + `marketplace.py`** — à faire ensemble, logique publication/recherche liée. Utilisent `Property.status == "available"`, `Property.city.ilike(...)`.
 4. **`admin.py`** — mapping enum critique (`Property.status.in_(["rented", "available"])` → `Bien.statut.in_(["loue", "vacant"])`) + KPIs plateforme.
 5. **`contracts.py`** — attribut `Contract.property_id` → `bien_id` (modèle déjà fait, router à synchroniser).
@@ -262,9 +263,18 @@ invoqué en prod (sinon il aurait crashé à la migration étape 5-7). Journal :
   est cassée tant que le mode création est choisi (mode upsert avec `bien_id`
   existant peut marcher si le payload est bien formé).
 
-**`contract_service.py:226` (à corriger étape 13 suite)** — PDF bail contrat :
-- `from app.models.property import PropertyImage` → import orphelin (même pattern
-  que documents.py).
+**`contract_service.py:226` (commit bundle contracts)** — PDF bail contrat : ✅ corrigé
+- `from app.models.property import PropertyImage` → `from app.models.bien import BienImage`
+- Queries `PropertyImage.property_id` → `BienImage.bien_id`
+
+**`contract_service.py:125-128` (commit bundle contracts)** — pré-existant, corrigé au passage : ✅
+- Pattern `uuid.UUID(payload.property_id)` sur un champ Pydantic déjà typé
+  `uuid.UUID` → `TypeError` (not `ValueError`), `except ValueError` dead code.
+- Même pattern sur `tenant_id`/`agency_id` dans `create()`. Simplifié en
+  passant directement `payload.bien_id` / `payload.tenant_id` / `payload.agency_id`
+  (Pydantic v2 coerce automatiquement str → UUID à la validation).
+- Le pattern identique reste dans `update()` pour les FK — non corrigé
+  (scope hors refonte, laisser pour un sprint dédié "pydantic hygiene").
 
 **`ai_service.generate_listing_description()` (à corriger étape 15-18)** —
 génération description IA marketplace :
@@ -279,6 +289,35 @@ publication marketplace (création nouveau bien), et génération description IA
 sont tous du **code dormant** depuis la migration étape 5-7. À valider
 fonctionnellement avant le lancement public — test manuel de chaque parcours
 après étape 19 (frontend synchronisé).
+
+### 🤝 Cohérence des payloads partenaires Phase 1
+
+Les adapters partenaires (La Mobilière, SwissCaution, Raiffeisen, déménagement)
+sont des stubs en Phase 1 — aucun appel API live n'est fait.
+
+Le payload envoyé par `partner_hooks.py` à ces adapters utilise désormais la
+convention INTERNE d'Althy : `bien_id`, `monthly_rent`, `canton`, etc. (refonte
+FR où pertinent). Par exemple, `on_contract_signed` émet désormais :
+
+```python
+lead_data = {
+    "contract_id": ...,
+    "contract_reference": ...,
+    "bien_id": str(contract.bien_id),   # ex-property_id
+    "monthly_rent": float(contract.monthly_rent or 0),
+    ...
+}
+```
+
+Quand un partenaire deviendra consommateur réel (contrat d'affiliation ou
+exclusif signé), le contrat d'API sera négocié avec lui à ce moment-là. Si le
+partenaire exige un format spécifique (ex: REST avec clés anglaises historiques
+type `property_id`, `propertyId`, etc.), on ajoutera un adapter de transformation
+dans `backend/app/services/partners/<partner>_adapter.py` — pas d'héritage de
+la convention legacy côté code métier.
+
+Pour l'instant, **cohérence interne > conformité hypothétique au futur contrat
+partenaire**.
 
 ### 🚨 Ruptures API frontend à synchroniser étape 19
 
@@ -310,6 +349,12 @@ Liste à jour pour briefing étape 19 :
 **`admin.py` (2026-04-23)** — `/api/v1/admin/*`
 - `PlatformStats.total_properties` → `total_biens`, `active_properties` → `active_biens` (consommé par `/app/admin` KPIs plateforme).
 - `AdminTransaction.property_id` → `bien_id` (consommé par `/app/admin/transactions`).
+
+**`contracts.py` + `schemas/contract.py` (2026-04-23)** — `/api/v1/contracts/*`
+- `ContractCreate.property_id` → `bien_id` (consommé par `POST /contracts` — `frontend/src/app/app/(dashboard)/contracts/new/page.tsx` L71, L142, L238, L239).
+- `ContractRead.property_id` → `bien_id` (consommé par `GET /contracts` + `GET /contracts/{id}` — `contracts/page.tsx` L204, `contracts/[id]/page.tsx` L270).
+- Query param `GET /contracts?property_id=…` → `?bien_id=…` (pas d'appel frontend détecté — safe).
+- `useContracts.ts` type `PaginatedContracts` / `Contract` à mettre à jour étape 19.
 
 ### 🔍 OBSERVATIONS IMPORTANTES pour la reprise
 

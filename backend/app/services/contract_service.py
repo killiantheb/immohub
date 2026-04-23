@@ -48,7 +48,7 @@ class ContractService:
         page: int = 1,
         size: int = 20,
         contract_status: str | None = None,
-        property_id: str | None = None,
+        bien_id: str | None = None,
         tenant_id: str | None = None,
     ) -> PaginatedContracts:
         q = select(Contract).where(Contract.is_active.is_(True))
@@ -62,9 +62,9 @@ class ContractService:
 
         if contract_status:
             q = q.where(Contract.status == contract_status)
-        if property_id:
+        if bien_id:
             try:
-                q = q.where(Contract.property_id == uuid.UUID(property_id))
+                q = q.where(Contract.bien_id == uuid.UUID(bien_id))
             except ValueError:
                 pass
         if tenant_id:
@@ -122,17 +122,15 @@ class ContractService:
     # ── Create ────────────────────────────────────────────────────────────────
 
     async def create(self, payload: ContractCreate, current_user: User) -> Contract:
-        try:
-            prop_id = uuid.UUID(payload.property_id)
-        except ValueError:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "property_id invalide")
-
+        # payload.bien_id est déjà validé/coercé en uuid.UUID par Pydantic
+        # (ContractCreate.bien_id: uuid.UUID). Même raison pour tenant_id/agency_id :
+        # le schema les types en uuid.UUID | None, donc pas besoin de re-parser.
         contract = Contract(
             reference=_ref(),
             owner_id=current_user.id,
-            property_id=prop_id,
-            tenant_id=uuid.UUID(payload.tenant_id) if payload.tenant_id else None,
-            agency_id=uuid.UUID(payload.agency_id) if payload.agency_id else None,
+            bien_id=payload.bien_id,
+            tenant_id=payload.tenant_id,
+            agency_id=payload.agency_id,
             type=payload.type,
             status=payload.status,
             start_date=payload.start_date,
@@ -223,19 +221,19 @@ class ContractService:
     # ── PDF ───────────────────────────────────────────────────────────────────
 
     async def generate_pdf(self, contract_id: str, current_user: User) -> Response:
-        from app.models.property import PropertyImage
+        from app.models.bien import BienImage
         from sqlalchemy import select as _select, and_ as _and_
 
         contract = await self._get_or_404(contract_id, current_user)
 
-        # Load cover image for this property
+        # Load cover image for this bien
         cover_url: str | None = None
-        if contract.property_id:
+        if contract.bien_id:
             img_res = await self.db.execute(
-                _select(PropertyImage)
+                _select(BienImage)
                 .where(_and_(
-                    PropertyImage.property_id == contract.property_id,
-                    PropertyImage.is_cover.is_(True),
+                    BienImage.bien_id == contract.bien_id,
+                    BienImage.is_cover.is_(True),
                 ))
                 .limit(1)
             )
@@ -243,9 +241,9 @@ class ContractService:
             if not cover_img:
                 # Fallback: first image
                 img_res = await self.db.execute(
-                    _select(PropertyImage)
-                    .where(PropertyImage.property_id == contract.property_id)
-                    .order_by(PropertyImage.order)
+                    _select(BienImage)
+                    .where(BienImage.bien_id == contract.bien_id)
+                    .order_by(BienImage.order)
                     .limit(1)
                 )
                 cover_img = img_res.scalar_one_or_none()

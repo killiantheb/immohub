@@ -11,7 +11,7 @@ ContractStatus = Literal["draft", "active", "terminated", "expired"]
 
 
 class ContractCreate(BaseModel):
-    property_id: uuid.UUID
+    bien_id: uuid.UUID
     tenant_id: uuid.UUID | None = None
     agency_id: uuid.UUID | None = None
     type: ContractType
@@ -81,7 +81,7 @@ class ContractRead(BaseModel):
     id: uuid.UUID
     reference: str
     owner_id: uuid.UUID
-    property_id: uuid.UUID
+    bien_id: uuid.UUID
     tenant_id: uuid.UUID | None
     agency_id: uuid.UUID | None
     type: str

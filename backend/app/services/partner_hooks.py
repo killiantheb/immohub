@@ -76,7 +76,7 @@ async def on_contract_signed(db: AsyncSession, contract: "Contract") -> None:
     lead_data = {
         "contract_id": str(contract.id),
         "contract_reference": contract.reference,
-        "property_id": str(contract.property_id),
+        "bien_id": str(contract.bien_id),
         "monthly_rent": float(contract.monthly_rent or 0),
         "canton": contract.canton,
         "start_date": contract.start_date.isoformat() if contract.start_date else None,

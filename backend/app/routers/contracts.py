@@ -24,7 +24,7 @@ async def list_contracts(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     status: str | None = Query(None),
-    property_id: str | None = Query(None),
+    bien_id: str | None = Query(None),
     tenant_id: str | None = Query(None),
 ) -> PaginatedContracts:
     return await ContractService(db).list(
@@ -32,7 +32,7 @@ async def list_contracts(
         page=page,
         size=size,
         contract_status=status,
-        property_id=property_id,
+        bien_id=bien_id,
         tenant_id=tenant_id,
     )
 
