@@ -225,6 +225,113 @@ _(aucun bloquant — peer review du fichier 1 a rattrapé 2 tables FK oubliées 
 
 ---
 
+## Fin de session — 2026-04-23 nuit (session 4)
+
+### ✅ Session 4 clôturée — 2 commits techniques
+
+| Commit   | Libellé                                                                     |
+|----------|-----------------------------------------------------------------------------|
+| bb1577f  | fix(étape 17.0) import_elements.py — Property→Bien + Listing.bien_id        |
+| 6217041  | chore(étapes 17-18) suppression 4 fichiers legacy Property + override mypy orphelin |
+
+**Détail commit `bb1577f`** (étape 17.0 — patch préalable) :
+Migration de la tâche Celery `tasks/import_elements.py` (flow critique
+onboarding agence : import biens scrapés depuis portails tiers).
+- 3 bugs dormants Celery corrigés (12e du sprint cumul) :
+  1. `Property(...)` + `db.add(prop)` → INSERT sur table inexistante post-0029
+  2. `rooms = _to_int(...)` → perdait la demi-pièce convention CH (Numeric(3,1))
+  3. `Listing(property_id=...)` → colonne renommée `bien_id` à l'étape 5-7
+- **4e bug dormant attrapé au passage** : `address[:500]` vs `Bien.adresse String(300)`
+  → crash potentiel sur adresses longues portails tiers
+- Mapping `bien_type_enum` (FR) reconstruit : `box→garage`, `depot→autre`,
+  `hotel→autre`, `commercial→commerce`, `maison` distinct de `villa`
+- Validation canton stricte : `frozenset` 26 codes ISO CH, anti-corruption silencieuse
+- `description → description_logement` (sémantique portail tiers)
+
+**Détail commit `6217041`** (étapes 17-18 — suppressions) :
+4 fichiers legacy Property supprimés en 1 commit atomique (sous-graphe fermé) :
+- `app/models/property.py` (Property + PropertyImage + PropertyDocument + 3 enums)
+- `app/routers/properties.py` (router + 10 handlers FastAPI)
+- `app/services/property_service.py` (PropertyService + constantes dupliquées dans `bien_service`)
+- `app/schemas/property.py` (schemas Pydantic Property*)
+- `pyproject.toml:37` : retrait override mypy `ignore_errors` orphelin
+- Stats : `+12 / -1067` lignes
+
+**Discipline appliquée session 4** :
+- Phase A (inventaire) puis Phase B (grep exhaustif) avant chaque suppression
+- 5 vérifications post-rm : AST récursif `compileall` / smoke import / grep résiduel
+  CODE / `pyproject.toml` parseable `tomllib` / grep inverse tout le repo
+- 1 STOP+remontée déclenchée à raison (4 refs `\bProperty\b` dans commentaires
+  langue naturelle hors fichiers à supprimer) — tracée comme dette FR
+- Tolérance ZÉRO sur les checks post-rm respectée
+
+### 📊 Bilan sprint fusion properties→biens après session 4
+
+**Étapes 1-18 complètes (backend)** ✅
+- Fondations (sessions 1) : migration 0029 + bien.py + schemas + router + 2 services
+- Étapes 13-14 (session 2) : 12 routers + 4 routers helpers
+- Étapes 15-16 (session 3) : ai_service + transaction bundle + 2 tasks Celery + main.py + security.py
+- Étapes 17-18 (session 4) : patch import_elements.py + 4 suppressions définitives
+
+**12 bugs dormants corrigés au total** sur l'ensemble du sprint :
+- Sessions 2 : 5 (PropertyImage import orphelin × 2 + Property INSERT × 1 + PropertyImage import bis + SQL raw `properties`)
+- Session 3 : 6 (ai_service generate_listing_description + 5 sites SQL raw / ORM dans rent_tasks + notifications)
+- Session 4 : 4 (Property INSERT import_elements + rooms _to_int + Listing.property_id + adresse truncation [:500])
+
+**Dettes techniques documentées (post-validation alpha)** :
+- 5 méthodes `TransactionService` sans call site (list, create, mark_paid, get, get_stats)
+- `core/security.require_bien_access()` sans call site
+- 4 commentaires `Property` EN résiduels (cohérence FR à traiter hors sprint fusion)
+- Alias CSS `--althy-orange*` (hors scope refonte)
+
+**Ruptures API frontend** documentées étape 13 — à aligner étape 19 (prochaine session).
+
+### 🔜 Reste à faire
+
+**Étape 19 — frontend (~13 fichiers)** :
+- `OwnerDashboard.recent_transactions[].property_id` → `bien_id` + idem `AgencyDashboard`
+- `Favorites` : 7 champs renommés
+- Pages : Contracts, CRM, Admin, Documents, Loyers, Portail
+- Cf section "Ruptures API frontend" du SPRINT_LOG pour briefing exact
+
+**Étape 20 — deploy + smoke tests** :
+- Backup Supabase complet avant migration 0029
+- Application migration 0029 prod (DROP table `properties` + recréation `biens`)
+- Smoke tests post-deploy : `python -c "import app.main"` (Railway), endpoints critiques
+- Rattrapage Celery loyers : gap 2026-04-23 12:31 → deploy (mai 2026 uniquement)
+- Vérif reverse_loyers : `SELECT COUNT(*) FROM loyer_transactions WHERE statut='recu' AND date_reversement IS NULL AND created_at < '2026-04-23 12:31'`
+
+### 🔑 Entrée pour session 5 (frontend, demain matin)
+
+Prompt à utiliser dans la nouvelle conversation Claude Code :
+```
+Lis SPRINT_LOG.md sections "Fin de session — 2026-04-23 nuit (session 4)"
++ "Ruptures API frontend" (étape 13). Backend complet (étapes 1-18 closes,
+2 commits session 4 : bb1577f + 6217041, 12 bugs dormants corrigés cumul).
+
+Scope session 5 : étape 19 = aligner frontend Next.js sur les schemas
+backend renommés. ~13 fichiers identifiés dans la section ruptures API.
+Champs critiques : property_id → bien_id partout dans les types TypeScript +
+appels API + composants dashboards (OwnerDashboard, AgencyDashboard,
+Favorites — rupture max), Contracts, CRM, Admin, Documents, Loyers, Portail.
+
+Discipline session 5 :
+- Grep exhaustif `property_id|propertyId|monthly_rent|zip_code|address`
+  sur frontend/src/ avant chaque patch
+- Commit atomique par page/feature (pas un gros commit fourre-tout)
+- Smoke check : npm run build doit passer après chaque commit
+- TypeScript strict : aucun any/cast pour masquer les ruptures de schema
+
+Après étape 19 : on regarde le budget pour décider si on attaque étape 20
+(deploy prod) dans la même session ou checkpoint.
+```
+
+Branche active : `refonte/fusion-properties-biens-complete`
+Dernier commit session 4 : `6217041`
+Working tree propre hors `.claude/settings.local.json` (hors scope sprint).
+
+---
+
 ## Fin de session — 2026-04-23 soir (session 3)
 
 ### ✅ Session 3 clôturée — 5 commits validés + 1 fix rattrapage
