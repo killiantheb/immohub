@@ -7,8 +7,8 @@ from typing import Annotated, Any
 
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.models.bien import Bien
 from app.models.listing import Listing
-from app.models.property import Property
 from app.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
@@ -29,7 +29,7 @@ class ListingCreate(BaseModel):
     description: str | None = None
     monthly_rent: float | None = None
     sale_price: float | None = None
-    property_id: str | None = None
+    bien_id: str | None = None
     on_flatfox: bool = False
     on_homegate: bool = False
     on_immoscout: bool = False
@@ -83,9 +83,9 @@ def _to_read(listing: Listing) -> ListingRead:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-async def _get_user_property_ids(db: AsyncSession, user_id: uuid.UUID) -> list[uuid.UUID]:
+async def _get_user_bien_ids(db: AsyncSession, user_id: uuid.UUID) -> list[uuid.UUID]:
     result = await db.execute(
-        select(Property.id).where(Property.owner_id == user_id, Property.is_active == True)
+        select(Bien.id).where(Bien.owner_id == user_id, Bien.is_active == True)
     )
     return list(result.scalars().all())
 
@@ -99,16 +99,14 @@ async def list_listings(
     status_filter: str | None = Query(None, alias="status"),
     size: int = Query(50, le=200),
 ):
-    prop_ids = await _get_user_property_ids(db, user.id)
+    bien_ids = await _get_user_bien_ids(db, user.id)
 
-    # Also include listings without a property_id that belong to this user
-    # We track ownership via property_id → owner, OR via portals.owner_id stored
-    # For now: filter by user's property_ids, plus listings where portals.owner_id == user.id
-    if not prop_ids:
+    # Filter by the biens owned by the current user.
+    if not bien_ids:
         return {"items": [], "total": 0}
 
     q = select(Listing).where(
-        Listing.property_id.in_(prop_ids),
+        Listing.bien_id.in_(bien_ids),
         Listing.is_active == True,
     )
     if status_filter and status_filter != "all":
@@ -126,21 +124,21 @@ async def create_listing(
     db: DbDep,
     user: AuthUserDep,
 ):
-    prop_ids = await _get_user_property_ids(db, user.id)
+    bien_ids = await _get_user_bien_ids(db, user.id)
 
-    # Determine property_id
+    # Determine bien_id
     pid: uuid.UUID | None = None
-    if body.property_id:
+    if body.bien_id:
         try:
-            pid = uuid.UUID(body.property_id)
+            pid = uuid.UUID(body.bien_id)
         except ValueError:
-            raise HTTPException(400, "Invalid property_id")
-        if pid not in prop_ids:
-            raise HTTPException(403, "Property not found or not owned by you")
-    elif prop_ids:
-        pid = prop_ids[0]  # default to first property if none specified
+            raise HTTPException(400, "bien_id invalide")
+        if pid not in bien_ids:
+            raise HTTPException(403, "Bien introuvable ou non rattaché à votre compte")
+    elif bien_ids:
+        pid = bien_ids[0]  # default au premier bien si non précisé
     else:
-        raise HTTPException(400, "You need at least one property to create a listing")
+        raise HTTPException(400, "Vous devez posséder au moins un bien pour créer un listing")
 
     portals = {
         "listing_type": body.listing_type,
@@ -153,7 +151,7 @@ async def create_listing(
     }
 
     listing = Listing(
-        property_id=pid,
+        bien_id=pid,
         title=body.title,
         description_ai=body.description,
         price=body.sale_price or body.monthly_rent,
@@ -173,12 +171,12 @@ async def update_listing(
     db: DbDep,
     user: AuthUserDep,
 ):
-    prop_ids = await _get_user_property_ids(db, user.id)
+    bien_ids = await _get_user_bien_ids(db, user.id)
     result = await db.execute(
         select(Listing).where(Listing.id == listing_id, Listing.is_active == True)
     )
     listing = result.scalar_one_or_none()
-    if not listing or listing.property_id not in prop_ids:
+    if not listing or listing.bien_id not in bien_ids:
         raise HTTPException(404, "Listing not found")
 
     if body.status is not None:
@@ -227,12 +225,12 @@ async def publish_listing(
     if not flag:
         raise HTTPException(400, f"Canal inconnu : {body.channel}")
 
-    prop_ids = await _get_user_property_ids(db, user.id)
+    bien_ids = await _get_user_bien_ids(db, user.id)
     result = await db.execute(
         select(Listing).where(Listing.id == listing_id, Listing.is_active == True)
     )
     listing = result.scalar_one_or_none()
-    if not listing or listing.property_id not in prop_ids:
+    if not listing or listing.bien_id not in bien_ids:
         raise HTTPException(404, "Listing not found")
 
     portals = dict(listing.portals or {})
@@ -254,12 +252,12 @@ async def delete_listing(
     db: DbDep,
     user: AuthUserDep,
 ):
-    prop_ids = await _get_user_property_ids(db, user.id)
+    bien_ids = await _get_user_bien_ids(db, user.id)
     result = await db.execute(
         select(Listing).where(Listing.id == listing_id, Listing.is_active == True)
     )
     listing = result.scalar_one_or_none()
-    if not listing or listing.property_id not in prop_ids:
+    if not listing or listing.bien_id not in bien_ids:
         raise HTTPException(404, "Listing not found")
 
     listing.is_active = False

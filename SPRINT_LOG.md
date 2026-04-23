@@ -188,15 +188,35 @@ _(aucun bloquant — peer review du fichier 1 a rattrapé 2 tables FK oubliées 
 - `agency_settings.py` (export comptable)
 - `crm.py` (2026-04-23 reprise) : imports, 9 modèles joints (Contract/Bien/User/Listing/Mission/Opener/RFQ/RFQQuote/Transaction/CRMContact/CRMNote/Company), schemas `ContactOut/NoteOut/ProspectCreate/ProspectUpdate/NoteCreate/CRMStats` (champs `property_*` → `bien_*`, `properties_count` → `biens_count`), URL `/property/{property_id}/overview` → `/bien/{bien_id}/overview`. `Contract.monthly_rent` conservé (champ contrat, pas bien). AST OK.
 - `documents.py` (2026-04-23) : **Stratégie A — pattern adaptateur** validée (clé `ctx["property"]` + noms internes du dict conservés → 300+ f-strings templates HTML intouchés). Import `Property` → `Bien`, `_build_ctx` signature + body (champs adaptés au nouveau schéma Bien), `GenerateRequest.property_id` → `bien_id`, `contract.property_id` → `contract.bien_id`, **2 bugs latents corrigés** : `PropertyImage` → `BienImage` (import orphelin + queries `bien_id`) et `GeneratedDocument(property_id=...)` → `bien_id=...` (colonne inexistante sur le modèle renommé étape 5-7). AST OK.
+- `listings.py` (2026-04-23) : autonome (aucune dépendance service). Import `Property` → `Bien`, helper `_get_user_property_ids` → `_get_user_bien_ids`, schema `ListingCreate.property_id` → `bien_id`, attributs `Listing.property_id` → `Listing.bien_id`, messages d'erreur EN → FR. AST OK.
 
 **Commits** :
 - `27c5acc` — WIP fondations migration 0029 + modèles + schemas + services + router biens
 - `0e42827` — WIP étape 13 : 6/12 routers migrés (comptage 5 pour l'étape 13 stricte, 6e = le router biens.py comptant pour les fondations)
 
-### 🔜 RESTE ÉTAPE 13 (5 fichiers, ordre d'attaque recommandé)
+### 🔀 Réorganisation du sprint — services déplacés en étape 13
+
+Greps de dépendances (2026-04-23) ont révélé que 2 routers dépendent de
+services encore non migrés (étape 15-18 initialement) :
+
+- `marketplace.py` → `marketplace_service.py` (~40 refs `Property`, crée des
+  objets `Property(...)` à publier — bug dormant).
+- `contracts.py` → `contract_service.py` (~15 refs) + `partner_hooks.py` (1 ref).
+
+Migrer les routers sans leurs services laisserait du code cassé au runtime
+(signatures incohérentes, imports orphelins). **Décision fondateur** : bundler
+router + service en étape 13. Scope révisé :
+
+- Étape 13 = 7 routers + 2 services + 1 mini-patch service = **10 fichiers**
+- Étape 15-18 = 3 services restants (`ai_service`, `transaction_service`,
+  suppression `property_service`) + 2 tasks + `main.py` + `security.py` + 4
+  suppressions = **11 fichiers** (vs ~10 prévus initialement)
+
+### 🔜 RESTE ÉTAPE 13 (4 fichiers + 1 bundle, ordre d'attaque recommandé)
 
 1. ~~**`crm.py`**~~ — ✅ fait 2026-04-23 (full rename URL + schemas + modèles)
 2. ~~**`documents.py`**~~ — ✅ fait 2026-04-23 (stratégie A adaptateur + 2 bugs latents corrigés)
+3. ~~**`listings.py`**~~ — ✅ fait 2026-04-23 (autonome, minimal)
 3. **`listings.py` + `marketplace.py`** — à faire ensemble, logique publication/recherche liée. Utilisent `Property.status == "available"`, `Property.city.ilike(...)`.
 4. **`admin.py`** — mapping enum critique (`Property.status.in_(["rented", "available"])` → `Bien.statut.in_(["loue", "vacant"])`) + KPIs plateforme.
 5. **`contracts.py`** — attribut `Contract.property_id` → `bien_id` (modèle déjà fait, router à synchroniser).
