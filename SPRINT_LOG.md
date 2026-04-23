@@ -99,12 +99,12 @@ Contient :
 - `app/routers/ai/scoring.py` (1 attribut)
 - `app/routers/contracts.py` (attribut Contract.property_id → bien_id)
 
-### Étape 14 — Bugs collatéraux 🛑
+### Étape 14 — Bugs collatéraux ✅ (2026-04-23)
 
-- `loyers.py:105, 215, 253, 334, 359` — properties → biens, address → adresse, monthly_rent → loyer
-- `interventions_althy.py:102-106` — properties → biens, address → adresse
-- `rgpd.py:57, 60, 129` — type_bien → type, loyer_mensuel → loyer
-- `portail.py:337, 446` — mêmes corrections
+- `loyers.py` + bundle services (`qr_facture` + `quittance` + `storage`) — ✅ commit `ab40e7f`. SQL raw `FROM properties` → `FROM biens`, colonnes `address`/`monthly_rent` → `adresse`/`loyer`, INSERT `loyer_transactions.property_id` → `bien_id` (cohérent migration 0026), params services `property_id`/`property_address` → `bien_id`/`bien_adresse`, schemas `GenererQRRequest`/`GenererQuittanceRequest` renommés.
+- `interventions_althy.py` — ✅ commit `085064a`. 1 SQL raw pour notification email proprio (`SELECT p.address FROM properties` → `b.adresse FROM biens`).
+- `rgpd.py` — ✅ commit `8b52439`. Colonnes fantômes `type_bien`/`loyer_mensuel` (n'existent plus sur biens depuis 0029) → `type`/`loyer`. Clés JSON de l'export utilisateur mises à jour en phase.
+- `portail.py` — ✅ commit à venir. 3 SELECTs `type_bien`/`loyer_mensuel` → `type`/`loyer`, 1 ORM `select(Property)` → `select(Bien)`, 1 schema `PortailInvitation.property_ids` → `bien_ids`, dict de réponse `properties_count`/`properties`/`{name, address}` → `biens_count`/`biens`/`{adresse, ville}` (`Property.name` n'existe pas sur Bien, remplacé par `adresse`).
 
 ### Étape 15-18 — Services + tasks + main + suppressions 🛑
 
@@ -356,6 +356,16 @@ Liste à jour pour briefing étape 19 :
 - `ContractRead.property_id` → `bien_id` (consommé par `GET /contracts` + `GET /contracts/{id}` — `contracts/page.tsx` L204, `contracts/[id]/page.tsx` L270).
 - Query param `GET /contracts?property_id=…` → `?bien_id=…` (pas d'appel frontend détecté — safe).
 - `useContracts.ts` type `PaginatedContracts` / `Contract` à mettre à jour étape 19.
+
+**`loyers.py` (2026-04-23, commit ab40e7f)** — `/api/v1/loyers/*`
+- `POST /loyers/generer-qr` : payload `property_id` → `bien_id`.
+- `POST /loyers/quittance` : payload `property_id` → `bien_id`.
+- Réponses non touchées côté contrat JSON (seule la source des données change).
+
+**`portail.py` (2026-04-23)** — `/api/v1/portail/*`
+- `GET /portail/proprio/me` (ou équivalent) : réponse `{properties_count, properties: [{name, address}]}` → `{biens_count, biens: [{adresse, ville}]}`. Clé `name` supprimée car Bien n'a pas cet attribut.
+- `PortailInvitation` schema : `property_ids: list[str]` → `bien_ids: list[str]`.
+- Grep frontend : aucun consommateur actif identifié pour `portail` (flag `ROLE_PORTAIL_PROPRIO=false` en prod Phase 1) — rupture pure, à aligner lors de l'activation du rôle.
 
 **`favorites.py` (2026-04-23)** — `/api/v1/favorites/*` — **RUPTURE MAXIMALE, TOUS LES CHAMPS RENOMMÉS**
 

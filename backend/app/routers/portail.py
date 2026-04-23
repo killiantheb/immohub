@@ -43,7 +43,7 @@ class PortailCreateRequest(BaseModel):
     email: EmailStr
     first_name: str
     last_name: str
-    property_ids: list[str] = []   # UUIDs des biens à partager
+    bien_ids: list[str] = []   # UUIDs des biens à partager
 
 
 class PortailUserRead(BaseModel):
@@ -178,27 +178,27 @@ async def portail_access_info(
     Retourne les biens auxquels le portail_proprio a accès.
     Accessible uniquement par le portail_proprio lui-même.
     """
-    from app.models.property import Property
+    from app.models.bien import Bien
 
     if user.role not in (ROLE_PORTAIL_PROPRIO, ROLE_SUPER_ADMIN):
         raise HTTPException(403, "Réservé aux utilisateurs portail.")
 
     # Portail proprio voit les biens où il est agency_id ou owner_id
     result = await db.execute(
-        select(Property).where(
-            (Property.owner_id == user.id) | (Property.agency_id == user.id),
-            Property.is_active == True,
+        select(Bien).where(
+            (Bien.owner_id == user.id) | (Bien.agency_id == user.id),
+            Bien.is_active == True,
         )
     )
-    props = result.scalars().all()
+    biens = result.scalars().all()
 
     return {
         "role": user.role,
         "sections": ["dashboard", "biens", "finances", "documents"],
-        "properties_count": len(props),
-        "properties": [
-            {"id": str(p.id), "name": p.name, "address": p.address}
-            for p in props
+        "biens_count": len(biens),
+        "biens": [
+            {"id": str(b.id), "adresse": b.adresse, "ville": b.ville}
+            for b in biens
         ],
     }
 
@@ -334,11 +334,11 @@ async def portail_view(token: uuid.UUID, db: DbDep):
 
     if inv.bien_id:
         r = (await db.execute(
-            _text("SELECT id, adresse, ville, type_bien, loyer_mensuel FROM biens WHERE id = :id"),
+            _text("SELECT id, adresse, ville, type, loyer FROM biens WHERE id = :id"),
             {"id": str(inv.bien_id)},
         )).fetchone()
         if r:
-            bien_info = {"id": str(r[0]), "adresse": r[1], "ville": r[2], "type_bien": r[3], "loyer_mensuel": float(r[4]) if r[4] else None}
+            bien_info = {"id": str(r[0]), "adresse": r[1], "ville": r[2], "type": r[3], "loyer": float(r[4]) if r[4] else None}
 
         for row in (await db.execute(
             _text("SELECT montant, date_paiement, statut, mois_concerne FROM paiements_loyer WHERE bien_id = :id ORDER BY date_paiement DESC LIMIT 6"),
@@ -443,7 +443,7 @@ async def ai_question(body: AIQuestionRequest, db: DbDep):
     bien_ctx = "Bien non précisé"
     if inv.bien_id:
         row = (await db.execute(
-            _text("SELECT adresse, ville, type_bien, loyer_mensuel FROM biens WHERE id = :id"),
+            _text("SELECT adresse, ville, type, loyer FROM biens WHERE id = :id"),
             {"id": str(inv.bien_id)},
         )).fetchone()
         if row:
