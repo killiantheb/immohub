@@ -159,6 +159,80 @@ _(aucun bloquant — peer review du fichier 1 a rattrapé 2 tables FK oubliées 
 
 ---
 
+## Fin de session — 2026-04-23 soir (session 2)
+
+### 📊 Bilan session 2
+
+**Étapes terminées :** 13 (12/12 routers) + 14 (4/4 routers + bugs collatéraux)
+
+**11 commits atomiques session 2 :**
+| Commit   | Fichier(s)                          | Scope                                    |
+|----------|-------------------------------------|------------------------------------------|
+| 44d8872  | crm.py                              | Schemas + URL + 8 modèles joints         |
+| 66cf18e  | documents.py                        | Stratégie A adaptateur + 2 bugs dormants |
+| 6024a64  | listings.py                         | Autonome, minimal                        |
+| d232628  | marketplace bundle (2 fichiers)     | Router + service + 3e bug dormant        |
+| 07b8622  | admin.py                            | Mapping enum critique + 2 schemas        |
+| fcd2e2f  | contracts bundle (4 fichiers)       | Router + service + hook + schema + 4e bug dormant |
+| 46532e6  | favorites.py                        | Full rename schemas exposés (rupture max) |
+| ab40e7f  | loyers bundle (4 fichiers)          | Router + 3 services QR/quittance/storage |
+| 085064a  | interventions_althy.py              | 1 SQL raw notification email             |
+| 8b52439  | rgpd.py                             | Colonnes fantômes `type_bien`/`loyer_mensuel` |
+| 823128f  | portail.py                          | 5 sites (schema + ORM + 2 SQL raw + dict) |
+
+**Fichiers touchés session 2 : ~21 fichiers backend.**
+
+**Bugs dormants corrigés : 5 (+ 1 bonus pré-existant uuid.UUID)**
+1. `documents.py:1412` `PropertyImage` import orphelin → `BienImage`
+2. `documents.py:1498` `GeneratedDocument(property_id=...)` → `bien_id`
+3. `marketplace_service.py:301` `prop = Property(...)` + `db.add(prop)` → `bien = Bien(...)`
+4. `contract_service.py:226` `PropertyImage` import orphelin → `BienImage`
+5. `loyers.py` + SQL raw sur `properties`/`address`/`monthly_rent` → `biens`/`adresse`/`loyer` (runtime crash certain)
+- Bonus : `uuid.UUID(payload.property_id)` dans `contract_service.create()` avec un champ déjà typé `uuid.UUID` — simplifié.
+
+**Bugs dormants identifiés, non corrigés (scope étape 15-18) :**
+- `ai_service.generate_listing_description(property: Property)` — param name + getattr fallbacks renvoient description vide sur un Bien.
+
+**Ruptures API frontend documentées (section dédiée dans SPRINT_LOG) :**
+6 routers avec chaque fois la liste exacte des champs touchés + consommateurs frontend identifiés : crm, documents, admin, contracts, favorites, loyers, portail.
+
+### 📈 Progression du sprint global
+
+| Étape       | Statut      | Fichiers touchés  |
+|-------------|-------------|-------------------|
+| 1–12        | ✅ Session 1 | Fondations + 5 routers étape 13 |
+| **13**      | **✅ Session 2** | **12 fichiers (7 routers + 2 services + 1 hook + 1 schema + 1 router déjà fait)** |
+| **14**      | **✅ Session 2** | **7 fichiers (4 routers + 3 services helpers)** |
+| 15–18       | 🛑 Session 3 | ~10 fichiers (3 services restants + 2 tasks + main + security + 4 suppressions) |
+| 19          | 🛑 Session 3 | ~13 fichiers frontend (ruptures à aligner) |
+| 20          | 🛑 Session 3 | Tests statiques + checkpoint final |
+
+**Estimation progression globale : ~75%** (fondations + 14 étapes sur 20 total, mais étapes 15-19 restent les plus complexes côté cleanup services + frontend).
+
+### 🔑 Entrée pour la prochaine session
+
+```
+Lis SPRINT_LOG.md pour te remettre en contexte.
+
+Scope session 3 :
+1. Étape 15-18 : migrer ai_service (dormant bug identifié), transaction_service,
+   + 2 tasks Celery (rent_tasks, notifications), + main.py (supprimer routers/properties,
+   ajouter catalogue_router), + security.py:291 (1 import local Property),
+   + 4 SUPPRESSIONS définitives : models/property.py, routers/properties.py,
+   services/property_service.py, schemas/property.py.
+2. Étape 19 : aligner frontend (13+ pages) sur tous les schemas renommés.
+   Section "Ruptures API frontend" du SPRINT_LOG = briefing complet.
+3. Étape 20 : test statique `python -c "import app.main"` + checkpoint.
+
+Note : le .env encoding cp1252 bloque le test d'import runtime. À fixer
+séparément (pas dans le scope du sprint).
+```
+
+Branche active : `refonte/fusion-properties-biens-complete`
+Dernier commit : `823128f`
+
+---
+
 ## Fin de session — 2026-04-23 après-midi
 
 ### ✅ FAIT
