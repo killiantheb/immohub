@@ -99,10 +99,10 @@ async def _notify_owner_new_intervention(
         async with AsyncSessionLocal() as db:
             row = (await db.execute(
                 text("""
-                    SELECT u.email, p.address
-                    FROM properties p
-                    JOIN auth.users u ON u.id = p.owner_id
-                    WHERE p.id = :bid
+                    SELECT u.email, b.adresse
+                    FROM biens b
+                    JOIN auth.users u ON u.id = b.owner_id
+                    WHERE b.id = :bid
                 """),
                 {"bid": bien_id},
             )).one_or_none()
@@ -110,7 +110,7 @@ async def _notify_owner_new_intervention(
                 logger.warning("Notify intervention: bien %s not found", bien_id)
                 return
 
-            owner_email, address = row.email, row.address
+            owner_email, address = row.email, row.adresse
 
         if not settings.RESEND_API_KEY:
             logger.info("[intervention] DEV — email ignoré: %s → %s", titre, owner_email)
