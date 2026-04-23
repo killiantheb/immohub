@@ -30,16 +30,16 @@ def _headers() -> dict[str, str]:
 async def upload_pdf(
     *,
     user_id: str,
-    property_id: str,
+    bien_id: str,
     doc_type: str,
     mois: str,
     pdf_bytes: bytes,
 ) -> str:
     """Upload un PDF dans Supabase Storage et retourne le chemin (object key).
 
-    Structure : documents/{user_id}/{property_id}/{doc_type}_{mois}.pdf
+    Structure : documents/{user_id}/{bien_id}/{doc_type}_{mois}.pdf
     """
-    key = f"{user_id}/{property_id}/{doc_type}_{mois}.pdf"
+    key = f"{user_id}/{bien_id}/{doc_type}_{mois}.pdf"
 
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
         resp = await client.post(

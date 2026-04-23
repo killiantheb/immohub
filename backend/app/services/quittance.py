@@ -14,7 +14,7 @@ def generate_quittance_pdf(
     proprio_name: str,
     proprio_address: str = "",
     tenant_name: str,
-    property_address: str,
+    bien_adresse: str,
     mois_label: str,
     montant: float,
     charges: float = 0,
@@ -54,7 +54,7 @@ def generate_quittance_pdf(
     rows = [
         ("Propriétaire / Bailleur", proprio_name),
         ("Locataire", tenant_name),
-        ("Bien concerné", property_address),
+        ("Bien concerné", bien_adresse),
         ("Période", mois_label),
     ]
     for label, val in rows:
@@ -90,7 +90,7 @@ def generate_quittance_pdf(
     body = (
         f"Je soussigné(e) {proprio_name} reconnais avoir reçu de {tenant_name} "
         f"la somme de {total_text} au titre du loyer du mois de {mois_label} "
-        f"pour le bien sis à {property_address}."
+        f"pour le bien sis à {bien_adresse}."
     )
     pdf.set_font("Helvetica", "", 10)
     pdf.multi_cell(0, 6, body)

@@ -41,7 +41,7 @@ _VALID_STATUTS = {"en_attente", "recu", "reverse", "en_retard", "conteste"}
 # ── Schémas ───────────────────────────────────────────────────────────────────
 
 class GenererQRRequest(BaseModel):
-    property_id: _uuid.UUID
+    bien_id: _uuid.UUID
     mois: str  # "YYYY-MM"
 
 
@@ -56,7 +56,7 @@ class GenererQRResponse(BaseModel):
 
 
 class GenererQuittanceRequest(BaseModel):
-    property_id: _uuid.UUID
+    bien_id: _uuid.UUID
     mois: str  # "YYYY-MM"
 
 
@@ -101,51 +101,51 @@ async def generer_qr_facture(
         raise HTTPException(status_code=400, detail="Format mois invalide (attendu: YYYY-MM).")
 
     # ── Bien ──
-    prop = (await db.execute(
-        text("SELECT id, address, monthly_rent, owner_id FROM properties WHERE id = :id AND is_active = true"),
-        {"id": str(payload.property_id)},
+    bien = (await db.execute(
+        text("SELECT id, adresse, loyer, owner_id FROM biens WHERE id = :id AND is_active = true"),
+        {"id": str(payload.bien_id)},
     )).one_or_none()
-    if not prop:
+    if not bien:
         raise HTTPException(status_code=404, detail="Bien introuvable.")
-    if str(prop.owner_id) != str(current_user.id) and current_user.role not in {"super_admin"}:
+    if str(bien.owner_id) != str(current_user.id) and current_user.role not in {"super_admin"}:
         raise HTTPException(status_code=403, detail="Ce bien ne vous appartient pas.")
-    if not prop.monthly_rent or float(prop.monthly_rent) <= 0:
-        raise HTTPException(status_code=400, detail="Le bien n'a pas de loyer mensuel défini.")
+    if not bien.loyer or float(bien.loyer) <= 0:
+        raise HTTPException(status_code=400, detail="Le bien n'a pas de loyer défini.")
 
     # ── Locataire actif ──
     tenant = (await db.execute(
         text("SELECT id FROM locataires WHERE bien_id = :bid AND statut = 'actif' ORDER BY created_at DESC LIMIT 1"),
-        {"bid": str(payload.property_id)},
+        {"bid": str(payload.bien_id)},
     )).one_or_none()
     tenant_id = _uuid.UUID(str(tenant.id)) if tenant else None
 
     # ── Doublon ──
     if (await db.execute(
-        text("SELECT id FROM loyer_transactions WHERE property_id = :pid AND mois_concerne = :mois LIMIT 1"),
-        {"pid": str(payload.property_id), "mois": mois_date},
+        text("SELECT id FROM loyer_transactions WHERE bien_id = :bid AND mois_concerne = :mois LIMIT 1"),
+        {"bid": str(payload.bien_id), "mois": mois_date},
     )).one_or_none():
         raise HTTPException(status_code=409, detail=f"Une transaction existe déjà pour {payload.mois}.")
 
     # ── Calcul montants ──
-    montant_total      = float(prop.monthly_rent)
+    montant_total      = float(bien.loyer)
     commission_pct     = settings.ALTHY_COMMISSION_PCT
     commission_montant = round(montant_total * commission_pct, 2)
     montant_reverse    = round(montant_total - commission_montant, 2)
-    qr_ref             = generate_qr_reference(payload.property_id, tenant_id, payload.mois)
+    qr_ref             = generate_qr_reference(payload.bien_id, tenant_id, payload.mois)
 
     # ── Insertion DB ──
     tx_id = _uuid.uuid4()
     await db.execute(
         text("""
             INSERT INTO loyer_transactions
-                (id, property_id, tenant_id, owner_id,
+                (id, bien_id, tenant_id, owner_id,
                  montant_total, commission_pct, commission_montant, montant_reverse,
                  qr_reference, statut, mois_concerne)
             VALUES
-                (:id, :pid, :tid, :oid, :total, :cpct, :cmt, :rev, :qr_ref, 'en_attente', :mois)
+                (:id, :bid, :tid, :oid, :total, :cpct, :cmt, :rev, :qr_ref, 'en_attente', :mois)
         """),
         {
-            "id": tx_id, "pid": str(payload.property_id),
+            "id": tx_id, "bid": str(payload.bien_id),
             "tid": str(tenant_id) if tenant_id else None,
             "oid": str(current_user.id), "total": montant_total,
             "cpct": commission_pct, "cmt": commission_montant,
@@ -166,7 +166,7 @@ async def generer_qr_facture(
     mois_label = mois_date.strftime("%B %Y").capitalize()
     pdf_bytes  = generate_qr_bill_pdf(
         qr_reference=qr_ref, montant_total=montant_total,
-        property_address=prop.address, tenant_name=tenant_name,
+        bien_adresse=bien.adresse, tenant_name=tenant_name,
         mois_label=mois_label, commission_pct=commission_pct,
         commission_montant=commission_montant, montant_reverse=montant_reverse,
     )
@@ -176,7 +176,7 @@ async def generer_qr_facture(
     try:
         key = await upload_pdf(
             user_id=str(current_user.id),
-            property_id=str(payload.property_id),
+            bien_id=str(payload.bien_id),
             doc_type="qr-facture",
             mois=payload.mois,
             pdf_bytes=pdf_bytes,
@@ -211,19 +211,19 @@ async def generer_quittance(
         raise HTTPException(status_code=400, detail="Format mois invalide (attendu: YYYY-MM).")
 
     # ── Bien ──
-    prop = (await db.execute(
-        text("SELECT id, address, monthly_rent, charges, owner_id FROM properties WHERE id = :id AND is_active = true"),
-        {"id": str(payload.property_id)},
+    bien = (await db.execute(
+        text("SELECT id, adresse, loyer, charges, owner_id FROM biens WHERE id = :id AND is_active = true"),
+        {"id": str(payload.bien_id)},
     )).one_or_none()
-    if not prop:
+    if not bien:
         raise HTTPException(status_code=404, detail="Bien introuvable.")
-    if str(prop.owner_id) != str(current_user.id) and current_user.role not in {"super_admin"}:
+    if str(bien.owner_id) != str(current_user.id) and current_user.role not in {"super_admin"}:
         raise HTTPException(status_code=403, detail="Ce bien ne vous appartient pas.")
 
-    montant = float(prop.monthly_rent or 0)
+    montant = float(bien.loyer or 0)
     if montant <= 0:
-        raise HTTPException(status_code=400, detail="Le bien n'a pas de loyer mensuel défini.")
-    charges = float(getattr(prop, "charges", 0) or 0)
+        raise HTTPException(status_code=400, detail="Le bien n'a pas de loyer défini.")
+    charges = float(getattr(bien, "charges", 0) or 0)
 
     # ── Locataire actif ──
     tenant_row = (await db.execute(
@@ -233,7 +233,7 @@ async def generer_quittance(
             WHERE l.bien_id = :bid AND l.statut = 'actif'
             ORDER BY l.created_at DESC LIMIT 1
         """),
-        {"bid": str(payload.property_id)},
+        {"bid": str(payload.bien_id)},
     )).one_or_none()
     tenant_name = "Locataire"
     if tenant_row and tenant_row.note_interne:
@@ -263,7 +263,7 @@ async def generer_quittance(
         proprio_name=proprio_name,
         proprio_address=proprio_address,
         tenant_name=tenant_name,
-        property_address=prop.address,
+        bien_adresse=bien.adresse,
         mois_label=mois_label,
         montant=montant,
         charges=charges,
@@ -274,7 +274,7 @@ async def generer_quittance(
     try:
         key = await upload_pdf(
             user_id=str(current_user.id),
-            property_id=str(payload.property_id),
+            bien_id=str(payload.bien_id),
             doc_type="quittance",
             mois=payload.mois,
             pdf_bytes=pdf_bytes,
@@ -329,9 +329,9 @@ async def list_loyer_transactions(
     size: int = Query(50, ge=1, le=200),
 ) -> list[dict]:
     q = """
-        SELECT lt.*, p.address AS property_address
+        SELECT lt.*, b.adresse AS bien_adresse
         FROM loyer_transactions lt
-        LEFT JOIN properties p ON p.id = lt.property_id
+        LEFT JOIN biens b ON b.id = lt.bien_id
         WHERE lt.owner_id = :oid
     """
     params: dict = {"oid": str(current_user.id)}
@@ -354,9 +354,9 @@ async def get_loyer_transaction(
 ) -> dict:
     row = (await db.execute(
         text("""
-            SELECT lt.*, p.address AS property_address
+            SELECT lt.*, b.adresse AS bien_adresse
             FROM loyer_transactions lt
-            LEFT JOIN properties p ON p.id = lt.property_id
+            LEFT JOIN biens b ON b.id = lt.bien_id
             WHERE lt.id = :id
         """),
         {"id": str(tx_id)},

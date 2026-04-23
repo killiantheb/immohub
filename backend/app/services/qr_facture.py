@@ -34,7 +34,7 @@ def _uuid_to_digits(uid: _uuid.UUID, length: int) -> str:
 
 
 def generate_qr_reference(
-    property_id: _uuid.UUID,
+    bien_id: _uuid.UUID,
     tenant_id: _uuid.UUID | None,
     mois: str,
 ) -> str:
@@ -44,7 +44,7 @@ def generate_qr_reference(
     Digit 27 = chiffre de contrôle Mod10 récursif.
     """
     yymm        = datetime.strptime(mois + "-01", "%Y-%m-%d").strftime("%y%m")
-    bien_part   = _uuid_to_digits(property_id, 8)
+    bien_part   = _uuid_to_digits(bien_id, 8)
     tenant_part = _uuid_to_digits(tenant_id, 7) if tenant_id else "0000000"
     raw = f"{bien_part}000{tenant_part}{yymm}"  # 8+3+7+4 = 22 chiffres
     raw = raw.ljust(26, "0")[:26]               # complète à 26
@@ -94,7 +94,7 @@ def generate_qr_bill_pdf(
     *,
     qr_reference: str,
     montant_total: float,
-    property_address: str,
+    bien_adresse: str,
     tenant_name: str,
     mois_label: str,
     commission_pct: float,
@@ -112,7 +112,7 @@ def generate_qr_bill_pdf(
         reference=qr_reference,
         amount=montant_total,
         debtor_name=tenant_name,
-        additional_info=f"Loyer {mois_label} — {property_address[:50]}",
+        additional_info=f"Loyer {mois_label} — {bien_adresse[:50]}",
     )
 
     # Image QR (46 mm × 46 mm à 300 dpi → ~543 px)
@@ -142,7 +142,7 @@ def generate_qr_bill_pdf(
     pdf.ln(3)
 
     recap_rows = [
-        ("Bien",                                        property_address),
+        ("Bien",                                        bien_adresse),
         ("Locataire",                                   tenant_name),
         ("Période",                                     mois_label),
         ("Loyer total demandé",                         f"CHF {montant_total:,.2f}"),
