@@ -34,7 +34,6 @@ module = [
     "app.routers.ai",
     "app.schemas.auth",
     "app.services.company_service",
-    "app.services.property_service",
 ]
 ignore_errors = true
 

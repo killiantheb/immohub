@@ -274,6 +274,18 @@ Ruptures API documentées à aligner (~13 fichiers frontend) :
 - `core/security.require_bien_access()` sans call site
 - Alias CSS `--althy-orange*` (hors scope refonte)
 
+### 📋 Dette technique — cohérence FR commentaires (hors sprint fusion)
+
+4 refs résiduelles `\bProperty\b` identifiées en Phase B session 4, classées
+faux positifs (zéro impact runtime, 100% commentaires) :
+- `alembic/versions/0005_document_generation_extended_fields.py:20` — LAISSER (migration figée, convention)
+- `app/services/ai_service.py:1162` — section header EN
+- `app/models/opener.py:100` — commentaire EN
+- `app/schemas/opener.py:68` — commentaire EN
+
+À traiter dans un sprint "cohérence FR codebase" ultérieur, pas dans le
+sprint fusion properties→biens. Scope creep évité.
+
 ### 🔑 Entrée pour session 4
 
 Prompt à utiliser dans la nouvelle conversation Claude Code :
