@@ -6,7 +6,7 @@ Dependency resolution order:
     └─ _decode_token()          → raw JWT payload (dict)
          └─ get_current_user()  → DB User model (auto-upsert on first login)
               ├─ require_roles(*roles)
-              ├─ require_property_access()
+              ├─ require_bien_access()
               └─ require_agency_access()
 """
 
@@ -273,34 +273,34 @@ def require_section(section: str):
     return Depends(_check)
 
 
-def require_property_access():
+def require_bien_access():
     """
     Dependency factory — verifies the authenticated user owns or manages
-    the property referenced by `property_id` in the path.
+    le bien référencé par `bien_id` in the path.
 
     Usage:
-        @router.get("/{property_id}")
-        async def route(property_id: uuid.UUID, user = require_property_access()):
+        @router.get("/{bien_id}")
+        async def route(bien_id: uuid.UUID, user = require_bien_access()):
     """
 
     async def _check(
-        property_id: uuid.UUID,
+        bien_id: uuid.UUID,
         user=Depends(get_current_user),
         db: AsyncSession = Depends(get_db),
     ):
-        from app.models.property import Property  # local import avoids circularity
+        from app.models.bien import Bien  # local import avoids circularity
 
         if user.role == "super_admin":
             return user
 
-        result = await db.execute(select(Property).where(Property.id == property_id))
-        prop = result.scalar_one_or_none()
+        result = await db.execute(select(Bien).where(Bien.id == bien_id))
+        bien = result.scalar_one_or_none()
 
-        if prop is None:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Property not found")
+        if bien is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Bien introuvable")
 
-        if prop.owner_id != user.id and prop.agency_id != user.id and prop.created_by_id != user.id:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "Access denied to this property")
+        if bien.owner_id != user.id and bien.agency_id != user.id and bien.created_by_id != user.id:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé à ce bien")
 
         return user
 

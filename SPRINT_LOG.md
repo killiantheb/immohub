@@ -111,10 +111,12 @@ Contient :
 - 5 services : ~~ai_service~~ ✅, contract_service ✅ (étape 13), marketplace_service ✅ (étape 13), ~~transaction_service~~ ✅ (+ supprimer property_service 🛑)
 - 2 tasks Celery : ~~rent_tasks.py (3 occurrences)~~ ✅, ~~notifications.py (2 occurrences)~~ ✅
 - main.py : supprimer import properties + include_router, ajouter catalogue_router
-- core/security.py:291 : import local Property
+- ~~core/security.py:291 : import local Property~~ ✅
 - 4 suppressions : models/property.py, routers/properties.py, services/property_service.py, schemas/property.py
 
 **`ai_service.py`** — ✅ 2026-04-23 session 3. Signature `generate_listing_description(property: Property, db, user_id)` → `(bien: Bien, db, user_id)`. Suppression des 12 `getattr(property, "...", defaults)` remplacés par accès direct aux attributs Bien (adresse/ville/cp/canton/surface/rooms/etage/loyer/charges/deposit/is_furnished/parking_type/pets_allowed). Casts `float()` explicites `if x is not None else None` pour Numeric→Decimal (rooms, loyer, charges, deposit) pour éviter `TypeError` sur `json.dumps` — safe sur `Decimal("0.00")`. Clé `has_parking: bool` → `parking_type: str|None` (plus informatif pour le prompt LLM). Ajout `cp` + `canton or ""` au payload (signal SEO, fallback sur canton nullable). Context_ref `str(property.id)` → `str(bien.id)`. Commentaire stale dans `marketplace_service.py:350` (5e bug dormant) nettoyé. **5e bug dormant corrigé** : les appelants (`routers/ai/listings.py:169` + `services/marketplace_service.py:357`) passaient déjà un `Bien` positionnellement, donc aucune rupture contract. AST OK.
+
+**`core/security.py`** — ✅ 2026-04-23 session 3. Scope annoncé "1 import local trivial" → réalité **11 edits** dans la fonction `require_property_access()` (L9 diagramme d'export, L276 signature, L279 docstring, L282-283 exemple, L287 param, L291 import, L296 ORM, L297 variable, L300 message EN, L302 attributs bien.*, L303 message EN). Renommage complet cohérent refonte FR : `require_property_access` → `require_bien_access`, param `property_id` → `bien_id`, import `Property` → `Bien`, ORM `select(Bien).where(Bien.id == bien_id)`, variable `prop` → `bien`, messages EN → FR ("Property not found" → "Bien introuvable", "Access denied to this property" → "Accès refusé à ce bien"). Attributs `bien.owner_id / bien.agency_id / bien.created_by_id` tous valides (models/bien.py L94/L100/L104). *Vérifs externes* : 0 call site (grep exhaustif `core/` + `tests/`), pas de `__all__` ni ré-export, 0 match dans `monitoring/` / `.github/workflows/` (inexistant) / Sentry custom sur les messages HTTP renommés → aucune règle externe impactée. Migration FR safe, rien à aligner post-sprint. AST OK + grep résiduel Property|property_id = 0.
 
 **`tasks/rent_tasks.py` + `tasks/notifications.py` bundle Celery** — ✅ 2026-04-23 session 3. 5 refs property_id (3+2) = **7e/8e/9e/10e/11e bugs dormants** tous actifs au runtime dans les workers Celery (crash silencieux loggés). `rent_tasks.py` : `Transaction(property_id=contract.property_id)` L101 → `bien_id=contract.bien_id` (2 attributs morts : Transaction.property_id et Contract.property_id, tous deux renommés bien_id étape 5-7 + bundle contracts étape 13) ; même pattern L247 avec `rent.property_id` (Transaction) ; SQL raw L375 `SELECT lt.property_id` sur `loyer_transactions` → `lt.bien_id` (colonne renommée via supabase/migrations/0026). `notifications.py` : 2 JOIN SQL raw `ON b.id = c.property_id` (L54, contracts) et `ON b.id = t.property_id` (L126, transactions) → `c.bien_id` / `t.bien_id`. `Contract.monthly_rent` conservé (4 usages LEGIT : L69/L95 rent_tasks + L50/L67 notifications) — loyer contractuel signé, distinct de Bien.loyer. Templates email HTML `contract_created.html` / `transaction_receipt.html` : zéro placeholder anglais (`{address}`, `{city}`, `{monthly_rent}`, ...) — seul `{adresse}` utilisé, déjà alimenté par `b.adresse` = `Bien.adresse`. Aucun texte utilisateur final à ajuster (notif_body utilise uniquement montants + IBAN + mois, zéro ref Bien/Property). Call sites externes vérifiés : `loyers.py:402` (kwarg `transaction_id`, pas problématique), `celery_app.py` (scheduling par task name), `reconciliation.py:123` (sans args). AST OK + grep résiduel 0 match sur les 2 fichiers.
 
@@ -129,6 +131,29 @@ Contient :
 
 AST OK sur les 3 fichiers (ai_service + schemas/transaction + transaction_service). Grep résiduel `Property|property_id` dans les 2 fichiers migrés = 0 match.
 
+### 🩹 Smoke-test post-deploy étape 20 — rattrapage Celery (critique)
+
+Les 5 refs Celery du bundle `rent_tasks`/`notifications` crashaient depuis l'étape 5-7 (~1 semaine). La table `transactions` est vide post-migration 0029, mais la table `contracts` reste peuplée (~130 biens Sunimmo Riviera actifs). **Conséquence** : plusieurs mois de loyers, commissions, reversements et notifications potentiellement manqués.
+
+Checklist à exécuter juste après le deploy de la branche `refonte/fusion-properties-biens-complete` :
+
+**1. `generate_monthly_rents`** — logique vérifiée : mois courant uniquement (idempotent `extract(year,month, due_date) = now`), **pas de rattrapage multi-mois automatique**.
+- Consulter les logs worker Railway pour dater la dernière exécution réussie (pas de flag DB).
+- Lister manuellement tous les `contracts WHERE status='active' AND is_active=TRUE AND type='long_term' AND monthly_rent IS NOT NULL` avec `start_date` antérieure au gap.
+- Pour chaque mois manquant entre dernière exécution réussie et maintenant, générer manuellement les `Transaction(type='rent', status='pending')` correspondantes (SQL ou déclencher `generate_monthly_rents` en boucle après avoir faked `now()` — plus sûr : SQL direct avec script).
+
+**2. `calculate_commissions`** — tourne sur `status='paid'` + `commission_amount IS NULL`.
+- Post-rattrapage `generate_monthly_rents` : si les rattrapages sont créés en `status='pending'`, la commission sera calculée au moment du paiement (normal).
+- Si des rents ont été marqués paid manuellement pendant le gap : re-trigger `calculate_commissions` (idempotent).
+
+**3. `reverse_loyers`** — horaire, traite les `loyer_transactions WHERE statut='recu' AND date_reversement IS NULL`.
+- Requête de diagnostic : `SELECT COUNT(*) FROM loyer_transactions WHERE statut='recu' AND date_reversement IS NULL AND created_at < '<date étape 5-7>'` → nombre de reversements bloqués.
+- Si > 0 : déclencher manuellement `reverse_loyers.delay()` une fois — la task itère sur TOUS les en-attente, pas de limite temporelle.
+
+**4. `send_contract_notification` + `send_transaction_receipt`** — **PAS de rattrapage d'emails rétroactifs**. Accepter la perte : ça spammerait les users plusieurs semaines après l'événement réel, confusion + risque désabonnement. Décision fondateur : perte historique acceptée, on repart propre au prochain contrat/paiement.
+
+**Responsable smoke-test** : fondateur + associé tech, avant annonce du relancement aux 130 biens Sunimmo.
+
 ### 📋 Dette technique post-lancement — méthodes mortes `TransactionService`
 
 Grep exhaustif 2026-04-23 session 3 : `TransactionService(db).{list,create,mark_paid,get,get_stats}` = **0 call site** dans tout le backend. Ces méthodes ont été migrées par cohérence interne (signature publique + modèle ORM) mais aucun endpoint HTTP ne les appelle.
@@ -142,6 +167,8 @@ Grep exhaustif 2026-04-23 session 3 : `TransactionService(db).{list,create,mark_
 | `TransactionService.get_stats()` | 0 call site | Remplacée en pratique par les dashboards `owner_dashboard`/`agency_dashboard`. |
 
 **Action post-refonte** : à évaluer pour suppression après validation alpha — si effectivement zéro usage confirmé en 3 mois, supprimer. Sinon créer `routers/transactions.py` pour exposer proprement les méthodes mortes utiles. On ne porte pas du code mort sans le documenter.
+
+**Addendum** : `core/security.py::require_bien_access()` partage exactement le même statut (0 call site, fonction dependency FastAPI jamais utilisée en prod). Même traitement : renommée + migrée par cohérence, à évaluer pour suppression après validation alpha — si zéro usage confirmé en 3 mois, supprimer. Sinon l'utiliser pour protéger `/biens/{bien_id}/*` (actuellement chaque endpoint re-code l'access check à la main, duplication).
 
 ### 🚨 Rupture API frontend étape 19 — dashboard transactions
 
