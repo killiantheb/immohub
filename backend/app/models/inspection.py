@@ -23,8 +23,8 @@ InspectionCondition = Enum(
 class Inspection(BaseModel):
     __tablename__ = "inspections"
 
-    property_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("properties.id", ondelete="RESTRICT"), nullable=False
+    bien_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("biens.id", ondelete="RESTRICT"), nullable=False
     )
     contract_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("contracts.id", ondelete="SET NULL")
@@ -47,7 +47,7 @@ class Inspection(BaseModel):
     signature_owner: Mapped[str | None] = mapped_column(Text)
 
     __table_args__ = (
-        Index("ix_inspections_property_id", "property_id"),
+        Index("ix_inspections_bien_id", "bien_id"),
         Index("ix_inspections_contract_id", "contract_id"),
         Index("ix_inspections_inspector_id", "inspector_id"),
         Index("ix_inspections_type", "type"),

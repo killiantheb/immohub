@@ -35,7 +35,7 @@ class GeneratedDocument(BaseModel):
 
     template_type: Mapped[str] = mapped_column(String(60), nullable=False)
     contract_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
-    property_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    bien_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     owner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     agency_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     generated_by_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)

@@ -84,8 +84,8 @@ class Mission(BaseModel):
     opener_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("openers.id", ondelete="RESTRICT")
     )
-    property_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("properties.id", ondelete="RESTRICT"), nullable=False
+    bien_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("biens.id", ondelete="RESTRICT"), nullable=False
     )
 
     type: Mapped[str] = mapped_column(MissionType, nullable=False)
@@ -119,7 +119,7 @@ class Mission(BaseModel):
     __table_args__ = (
         Index("ix_missions_requester_id", "requester_id"),
         Index("ix_missions_opener_id", "opener_id"),
-        Index("ix_missions_property_id", "property_id"),
+        Index("ix_missions_bien_id", "bien_id"),
         Index("ix_missions_status", "status"),
         Index("ix_missions_scheduled_at", "scheduled_at"),
         Index("ix_missions_type", "type"),

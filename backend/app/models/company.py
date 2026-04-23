@@ -54,8 +54,8 @@ class Quote(BaseModel):
     company_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("companies.id", ondelete="RESTRICT"), nullable=False
     )
-    property_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("properties.id", ondelete="RESTRICT"), nullable=False
+    bien_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("biens.id", ondelete="RESTRICT"), nullable=False
     )
     owner_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
@@ -68,7 +68,7 @@ class Quote(BaseModel):
 
     __table_args__ = (
         Index("ix_quotes_company_id", "company_id"),
-        Index("ix_quotes_property_id", "property_id"),
+        Index("ix_quotes_bien_id", "bien_id"),
         Index("ix_quotes_owner_id", "owner_id"),
         Index("ix_quotes_status", "status"),
     )

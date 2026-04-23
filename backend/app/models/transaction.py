@@ -33,8 +33,8 @@ class Transaction(BaseModel):
     contract_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("contracts.id", ondelete="SET NULL")
     )
-    property_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("properties.id", ondelete="SET NULL")
+    bien_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("biens.id", ondelete="SET NULL")
     )
     owner_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
@@ -59,7 +59,7 @@ class Transaction(BaseModel):
     __table_args__ = (
         Index("ix_transactions_reference", "reference"),
         Index("ix_transactions_contract_id", "contract_id"),
-        Index("ix_transactions_property_id", "property_id"),
+        Index("ix_transactions_bien_id", "bien_id"),
         Index("ix_transactions_owner_id", "owner_id"),
         Index("ix_transactions_tenant_id", "tenant_id"),
         Index("ix_transactions_status", "status"),

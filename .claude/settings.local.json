@@ -120,7 +120,17 @@
       "Bash(npx playwright:*)",
       "Bash(echo \"EXIT=$?\")",
       "Bash(echo \"---exit $?---\")",
-      "Bash(echo \"TSC_EXIT=$?\")"
+      "Bash(echo \"TSC_EXIT=$?\")",
+      "Bash(.venv/Scripts/python.exe *)",
+      "Bash(git *)",
+      "Bash(awk '{print $NF, $5}')",
+      "Bash(/c/Users/Killan/immohub/backend/.venv/Scripts/python.exe -m pip install psycopg2-binary)",
+      "Bash(SECRET_KEY=\"test-secret-key-32-chars-minimum-ok!\" DATABASE_URL=\"postgresql+asyncpg://postgres:postgres@localhost:5432/immohub_test\" SUPABASE_URL=\"https://placeholder.supabase.co\" SUPABASE_SERVICE_KEY=\"placeholder-service-key\" SUPABASE_JWT_SECRET=\"placeholder-jwt-secret-32-chars-min!\" .venv/Scripts/python.exe *)",
+      "Bash(SECRET_KEY=\"test-secret-key-32-chars-minimum-ok!\" DATABASE_URL=\"postgresql+asyncpg://postgres:postgres@localhost:5432/immohub_test\" SUPABASE_URL=\"https://placeholder.supabase.co\" SUPABASE_SERVICE_KEY=\"placeholder-service-key\" SUPABASE_JWT_SECRET=\"placeholder-jwt-secret-32-chars-min!\" PYTHONIOENCODING=utf-8 .venv/Scripts/python.exe -c \"import app.main; print\\('IMPORT OK — routes:', len\\(app.main.app.routes\\)\\)\")",
+      "Bash(PYTHONUTF8=1 SECRET_KEY=\"test-secret-key-32-chars-minimum-ok!\" DATABASE_URL=\"postgresql+asyncpg://postgres:postgres@localhost:5432/immohub_test\" SUPABASE_URL=\"https://placeholder.supabase.co\" SUPABASE_SERVICE_KEY=\"placeholder-service-key\" SUPABASE_JWT_SECRET=\"placeholder-jwt-secret-32-chars-min!\" .venv/Scripts/python.exe -c \"import app.main; print\\('IMPORT OK — routes:', len\\(app.main.app.routes\\)\\)\")",
+      "Bash(PYTHONUTF8=1 SECRET_KEY=\"test-secret-key-32-chars-minimum-ok!\" DATABASE_URL=\"postgresql+asyncpg://postgres:postgres@localhost:5432/immohub_test\" SUPABASE_URL=\"https://placeholder.supabase.co\" SUPABASE_SERVICE_KEY=\"placeholder-service-key\" SUPABASE_JWT_SECRET=\"placeholder-jwt-secret-32-chars-min!\" .venv/Scripts/python.exe -m pytest tests/test_flag_gating.py -v)",
+      "Bash(PYTHONUTF8=1 SECRET_KEY=\"test-secret-key-32-chars-minimum-ok!\" DATABASE_URL=\"postgresql+asyncpg://postgres:postgres@localhost:5432/immohub_test\" SUPABASE_URL=\"https://placeholder.supabase.co\" SUPABASE_SERVICE_KEY=\"placeholder-service-key\" SUPABASE_JWT_SECRET=\"placeholder-jwt-secret-32-chars-min!\" .venv/Scripts/python.exe *)",
+      "Bash(supabase --version)"
     ]
   }
 }

@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS loyer_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    property_id UUID NOT NULL REFERENCES properties(id),
+    bien_id UUID NOT NULL REFERENCES biens(id),
     tenant_id UUID REFERENCES auth.users(id),
     owner_id UUID NOT NULL REFERENCES auth.users(id),
     montant_total NUMERIC(10,2) NOT NULL,           -- Ce que le locataire paie (ex: 1500)
@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS loyer_transactions (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX ix_loyer_tx_owner    ON loyer_transactions(owner_id);
-CREATE INDEX ix_loyer_tx_property ON loyer_transactions(property_id);
+CREATE INDEX ix_loyer_tx_owner ON loyer_transactions(owner_id);
+CREATE INDEX ix_loyer_tx_bien  ON loyer_transactions(bien_id);
 CREATE INDEX ix_loyer_tx_qr_ref   ON loyer_transactions(qr_reference);
 CREATE INDEX ix_loyer_tx_statut   ON loyer_transactions(statut);
 CREATE UNIQUE INDEX ix_loyer_tx_qr_ref_unique ON loyer_transactions(qr_reference)

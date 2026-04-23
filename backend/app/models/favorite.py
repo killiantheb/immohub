@@ -13,10 +13,10 @@ class Favorite(BaseModel):
     __tablename__ = "favorites"
 
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    property_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    bien_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     __table_args__ = (
-        UniqueConstraint("user_id", "property_id", name="uq_favorites_user_property"),
+        UniqueConstraint("user_id", "bien_id", name="uq_favorites_user_bien"),
         Index("ix_favorites_user", "user_id"),
     )

@@ -18,8 +18,8 @@ class CRMContact(BaseModel):
     user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )
-    property_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("properties.id", ondelete="SET NULL")
+    bien_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("biens.id", ondelete="SET NULL")
     )
 
     first_name: Mapped[str | None] = mapped_column(String(100))
@@ -34,7 +34,7 @@ class CRMContact(BaseModel):
     __table_args__ = (
         Index("ix_crm_contacts_owner_id", "owner_id"),
         Index("ix_crm_contacts_user_id", "user_id"),
-        Index("ix_crm_contacts_property_id", "property_id"),
+        Index("ix_crm_contacts_bien_id", "bien_id"),
     )
 
 
@@ -53,8 +53,8 @@ class CRMNote(BaseModel):
     target_contact_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("crm_contacts.id", ondelete="CASCADE")
     )
-    property_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("properties.id", ondelete="SET NULL")
+    bien_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("biens.id", ondelete="SET NULL")
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
 

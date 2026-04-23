@@ -59,8 +59,8 @@ class RFQ(BaseModel):
     owner_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
-    property_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("properties.id", ondelete="SET NULL")
+    bien_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("biens.id", ondelete="SET NULL")
     )
 
     title: Mapped[str] = mapped_column(String(255), nullable=False)

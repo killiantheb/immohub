@@ -19,11 +19,11 @@ ListingStatus = Enum(
 class Listing(BaseModel):
     __tablename__ = "listings"
 
-    property_id: Mapped[uuid.UUID] = mapped_column(
+    bien_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("properties.id", ondelete="CASCADE"),
+        ForeignKey("biens.id", ondelete="CASCADE"),
         nullable=False,
-        unique=True,  # one listing per property
+        unique=True,  # one listing per bien
     )
 
     title: Mapped[str | None] = mapped_column(Text)
@@ -61,7 +61,7 @@ class Listing(BaseModel):
     source_url:  Mapped[str | None] = mapped_column(String(500))
 
     __table_args__ = (
-        Index("ix_listings_property_id", "property_id"),
+        Index("ix_listings_bien_id", "bien_id"),
         Index("ix_listings_status", "status"),
         Index("ix_listings_published_at", "published_at"),
         Index("ix_listings_portals", "portals", postgresql_using="gin"),

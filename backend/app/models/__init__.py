@@ -4,7 +4,13 @@ from app.models.ai_log import AIUsageLog
 from app.models.audit_log import AuditLog
 from app.models.autonomy import AutonomySubscription
 from app.models.base import Base, BaseModel
-from app.models.bien import Bien
+from app.models.bien import (
+    Bien,
+    BienDocument,
+    BienEquipement,
+    BienImage,
+    CatalogueEquipement,
+)
 from app.models.company import Company, Quote
 from app.models.contract import Contract
 from app.models.conversation_message import ConversationMessage
@@ -22,7 +28,6 @@ from app.models.notification import Notification
 from app.models.opener import Mission, Opener
 from app.models.paiement import Paiement
 from app.models.profile_artisan import ProfileArtisan
-from app.models.property import Property, PropertyDocument, PropertyImage
 from app.models.document import DocumentTemplate, GeneratedDocument
 from app.models.rating import Rating
 from app.models.scoring import ScoringLocataire
@@ -35,6 +40,10 @@ __all__ = [
     "User",
     # Althy core
     "Bien",
+    "BienImage",
+    "BienDocument",
+    "BienEquipement",
+    "CatalogueEquipement",
     "Locataire",
     "DossierLocataire",
     "DocumentAlthy",
@@ -46,10 +55,6 @@ __all__ = [
     "ProfileArtisan",
     "ScoringLocataire",
     "Notification",
-    # Legacy
-    "Property",
-    "PropertyImage",
-    "PropertyDocument",
     "Contract",
     "Transaction",
     "Opener",
