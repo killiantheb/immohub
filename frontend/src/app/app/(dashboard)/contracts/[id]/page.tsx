@@ -267,7 +267,7 @@ function ContractDetailPageInner() {
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between">
               <dt style={{ color: C.text3 }}>Bien</dt>
-              <dd style={{ fontFamily: "monospace", fontSize: 11, color: C.orange }}>{contract.property_id.slice(0, 8)}…</dd>
+              <dd style={{ fontFamily: "monospace", fontSize: 11, color: C.orange }}>{contract.bien_id.slice(0, 8)}…</dd>
             </div>
             <div className="flex justify-between">
               <dt style={{ color: C.text3 }}>Propriétaire</dt>
