@@ -201,7 +201,7 @@ function ContractsPageInner() {
                         {TYPE_LABELS[contract.type as ContractType] ?? contract.type}
                       </td>
                       <td style={{ padding: "12px 16px", color: C.text3, fontFamily: "monospace", fontSize: 11 }}>
-                        {contract.property_id.slice(0, 8)}…
+                        {contract.bien_id.slice(0, 8)}…
                       </td>
                       <td style={{ padding: "12px 16px", color: C.text2 }}>
                         {new Date(contract.start_date).toLocaleDateString("fr-FR")}
