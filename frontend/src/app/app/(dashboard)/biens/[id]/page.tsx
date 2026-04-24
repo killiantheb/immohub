@@ -495,7 +495,7 @@ function SectionStatutLoyer({ bienId }: { bienId: string }) {
     setGenError(null);
     try {
       const { data } = await api.post("/loyers/generer-qr", {
-        property_id: bienId,
+        bien_id: bienId,
         mois: moisCourant,
       });
       if (data.download_url) {
@@ -516,7 +516,7 @@ function SectionStatutLoyer({ bienId }: { bienId: string }) {
     setGenError(null);
     try {
       const { data } = await api.post("/loyers/quittance", {
-        property_id: bienId,
+        bien_id: bienId,
         mois: moisCourant,
       });
       if (data.download_url) {
