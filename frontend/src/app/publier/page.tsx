@@ -20,6 +20,8 @@ import {
   GripVertical,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase";
+import { useBiensList } from "@/lib/hooks/useBiens";
+import type { BienListItem } from "@/lib/types";
 import { C } from "@/lib/design-tokens";
 
 const API    = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
@@ -30,7 +32,7 @@ const BUCKET = "listings-photos";
 interface FormData {
   // étape 1
   mode:         "existing" | "new";
-  property_id:  string;
+  bien_id:  string;
   // nouveau bien
   type:         string;
   adresse:      string;
@@ -59,17 +61,9 @@ interface FormData {
   is_premium:   boolean;
 }
 
-interface ExistingProperty {
-  id:    string;
-  titre?: string;
-  adresse_affichee?: string;
-  ville?: string;
-  type_label?: string;
-}
-
 const INITIAL: FormData = {
-  mode: "new", property_id: "",
-  type: "apartment", adresse: "", ville: "", code_postal: "", canton: "VD",
+  mode: "new", bien_id: "",
+  type: "appartement", adresse: "", ville: "", code_postal: "", canton: "VD",
   surface: "", pieces: "",
   photos: [],
   transaction_type: "location", prix: "", charges: "", caution: "",
@@ -81,13 +75,23 @@ const INITIAL: FormData = {
 
 const STEPS = ["Votre bien", "Photos", "Annonce IA", "Publication"];
 
+// value strict BienTypeLiteral backend (10 clés FR alignées bien_type_enum)
 const TYPES = [
-  { value: "apartment", label: "Appartement" },
-  { value: "villa",     label: "Villa / Maison" },
-  { value: "studio",    label: "Studio" },
-  { value: "parking",   label: "Parking / Box" },
-  { value: "office",    label: "Bureau / Commerce" },
+  { value: "appartement", label: "Appartement" },
+  { value: "villa",       label: "Villa" },
+  { value: "studio",      label: "Studio" },
+  { value: "maison",      label: "Maison" },
+  { value: "commerce",    label: "Local commercial" },
+  { value: "bureau",      label: "Bureau" },
+  { value: "parking",     label: "Parking" },
+  { value: "garage",      label: "Garage / Box" },
+  { value: "cave",        label: "Cave" },
+  { value: "autre",       label: "Autre" },
 ];
+
+const TYPE_LABEL: Record<string, string> = Object.fromEntries(
+  TYPES.map(t => [t.value, t.label]),
+);
 
 const CANTONS = ["VD","GE","VS","FR","NE","JU","BE","ZH","BS","AG","SG","LU","TI"];
 
@@ -192,26 +196,11 @@ function Step1({
   set: (k: keyof FormData, v: unknown) => void;
   token: string;
 }) {
-  const [properties, setProperties] = useState<ExistingProperty[]>([]);
-  const [loadingProps, setLoadingProps] = useState(false);
+  // Biens existants via hook partagé (remplace fetch manuel /properties post-0029)
+  const { data: biensData, isLoading: loadingProps } = useBiensList({ size: 50 });
+  const properties: BienListItem[] = biensData?.items ?? [];
   const [geocoding, setGeocoding] = useState(false);
   const [geocodeResult, setGeocodeResult] = useState<string | null>(null);
-
-  // Charger les biens existants
-  useEffect(() => {
-    if (!token) return;
-    setLoadingProps(true);
-    fetch(`${API}/properties?page=1&size=50`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        const items: ExistingProperty[] = data?.items ?? data ?? [];
-        setProperties(items);
-      })
-      .catch(() => null)
-      .finally(() => setLoadingProps(false));
-  }, [token]);
 
   async function geocode() {
     if (!form.adresse || !form.ville) return;
@@ -288,13 +277,13 @@ function Step1({
           ) : (
             <select
               style={inputStyle}
-              value={form.property_id}
-              onChange={e => set("property_id", e.target.value)}
+              value={form.bien_id}
+              onChange={e => set("bien_id", e.target.value)}
             >
               <option value="">— Choisir un bien —</option>
               {properties.map(p => (
                 <option key={p.id} value={p.id}>
-                  {p.titre ?? p.adresse_affichee ?? p.id} {p.ville ? `· ${p.ville}` : ""}
+                  {p.adresse} · {p.ville} · {TYPE_LABEL[p.type] ?? p.type}
                 </option>
               ))}
             </select>
@@ -832,7 +821,7 @@ function Step4({
     { ok: form.photos.length > 0, label: `Photos (${form.photos.length})`, step: 2 },
     { ok: !!form.prix, label: form.prix ? `Prix : ${fmtCHF(form.prix)}${form.transaction_type !== "vente" ? "/mois" : ""}` : "Prix manquant", step: 3 },
     { ok: form.description.length > 50, label: form.description.length > 50 ? "Description générée ✓" : "Description manquante ou trop courte", step: 3 },
-    { ok: !!(form.mode === "existing" ? form.property_id : form.adresse && form.ville), label: "Adresse confirmée", step: 1 },
+    { ok: !!(form.mode === "existing" ? form.bien_id : form.adresse && form.ville), label: "Adresse confirmée", step: 1 },
   ];
 
   const allOk = checks.every(c => c.ok);
@@ -1019,7 +1008,7 @@ export default function PublierPage() {
   // Validations par étape
   function validateStep(): string {
     if (step === 1) {
-      if (form.mode === "existing" && !form.property_id) return "Sélectionnez un bien ou créez-en un nouveau.";
+      if (form.mode === "existing" && !form.bien_id) return "Sélectionnez un bien ou créez-en un nouveau.";
       if (form.mode === "new") {
         if (!form.adresse) return "L'adresse est requise.";
         if (!form.ville)   return "La ville est requise.";
@@ -1047,7 +1036,7 @@ export default function PublierPage() {
       form.photos.length > 0,
       !!form.prix,
       form.description.length > 50,
-      form.mode === "existing" ? !!form.property_id : !!(form.adresse && form.ville),
+      form.mode === "existing" ? !!form.bien_id : !!(form.adresse && form.ville),
     ];
     if (!checklist.every(Boolean)) {
       setError("Complétez tous les éléments de la checklist avant de publier.");
@@ -1073,7 +1062,7 @@ export default function PublierPage() {
       };
 
       if (form.mode === "existing") {
-        body.property_id = form.property_id;
+        body.bien_id = form.bien_id;
       } else {
         body.type        = form.type;
         body.adresse     = form.adresse;
