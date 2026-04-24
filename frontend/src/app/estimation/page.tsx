@@ -4,13 +4,25 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Building2, MapPin, Ruler, Sparkles, TrendingUp, Shield, AlertTriangle, RefreshCw, Loader2, Mail, CheckCircle2 } from "lucide-react";
 
+// Façade FR (5 entrées) — alignées 1:1 sur les 5 valeurs backend EN
+// acceptées par routers/estimation.py L47 (regex "^(apartment|house|studio|villa|commercial)$").
+// Le mapping FR_TO_BACKEND ci-dessous traduit au moment du payload.
+// Dette backend tracée SPRINT_LOG "Dette backend post-fusion" (migrer backend FR + supprimer ce mapping).
 const PROPERTY_TYPES = [
-  { value: "apartment", label: "Appartement" },
-  { value: "villa",     label: "Villa / Maison" },
-  { value: "studio",    label: "Studio" },
-  { value: "office",    label: "Bureau / Commerce" },
-  { value: "parking",   label: "Parking / Box" },
+  { value: "appartement", label: "Appartement" },
+  { value: "maison",      label: "Maison" },
+  { value: "studio",      label: "Studio" },
+  { value: "villa",       label: "Villa" },
+  { value: "commerce",    label: "Local commercial" },
 ];
+
+const FR_TO_BACKEND: Record<string, string> = {
+  appartement: "apartment",
+  maison:      "house",
+  studio:      "studio",
+  villa:       "villa",
+  commerce:    "commercial",
+};
 
 interface EstimationResult {
   sale_price_min:   number;
@@ -35,7 +47,7 @@ export default function EstimationPage() {
   const [deferredSent, setDeferredSent]       = useState(false);
   const [address, setAddress]       = useState("");
   const [city, setCity]             = useState("");
-  const [propType, setPropType]     = useState("apartment");
+  const [propType, setPropType]     = useState("appartement");
   const [surface, setSurface]       = useState("");
   const [rooms, setRooms]           = useState("");
   const [email, setEmail]           = useState("");
@@ -54,7 +66,7 @@ export default function EstimationPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "https://immohub-production.up.railway.app/api/v1"}/ai/estimate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address, city, type: propType, surface: parseFloat(surface), rooms: rooms ? parseInt(rooms) : null }),
+        body: JSON.stringify({ address, city, type: FR_TO_BACKEND[propType] ?? propType, surface: parseFloat(surface), rooms: rooms ? parseInt(rooms) : null }),
       });
 
       clearInterval(iv);
@@ -81,7 +93,7 @@ export default function EstimationPage() {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "https://immohub-production.up.railway.app/api/v1"}/estimation/deferred`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address, city, type: propType, surface: parseFloat(surface), rooms: rooms ? parseInt(rooms) : null, email }),
+        body: JSON.stringify({ address, city, type: FR_TO_BACKEND[propType] ?? propType, surface: parseFloat(surface), rooms: rooms ? parseInt(rooms) : null, email }),
       });
       setDeferredSent(true);
     } catch {

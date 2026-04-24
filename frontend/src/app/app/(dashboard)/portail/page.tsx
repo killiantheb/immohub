@@ -11,7 +11,7 @@ interface PortailUser {
   email: string;
   first_name: string;
   last_name: string;
-  properties_count: number;
+  biens_count: number;
   created_at: string;
   sections: string[];
 }
@@ -414,7 +414,7 @@ export default function PortailPage() {
                   fontSize: 11, padding: "2px 8px", borderRadius: 20,
                   background: "var(--althy-surface-2)", color: C.text3,
                 }}>
-                  {u.properties_count} bien{u.properties_count !== 1 ? "s" : ""}
+                  {u.biens_count} bien{u.biens_count !== 1 ? "s" : ""}
                 </span>
                 <button
                   onClick={() => revoke.mutate(u.id)}

@@ -63,11 +63,18 @@ const ROLE_QUESTIONS: Record<Role, Question[]> = {
   ],
 }
 
+// value strict BienTypeLiteral (10 clés FR alignées bien_type_enum)
 const PROPERTY_TYPES = [
-  { value: 'apartment', label: 'Appartement' },
-  { value: 'villa',     label: 'Villa / Maison' },
-  { value: 'studio',    label: 'Studio' },
-  { value: 'office',    label: 'Bureau / Commerce' },
+  { value: 'appartement', label: 'Appartement' },
+  { value: 'villa',       label: 'Villa' },
+  { value: 'studio',      label: 'Studio' },
+  { value: 'maison',      label: 'Maison' },
+  { value: 'commerce',    label: 'Local commercial' },
+  { value: 'bureau',      label: 'Bureau' },
+  { value: 'parking',     label: 'Parking' },
+  { value: 'garage',      label: 'Garage / Box' },
+  { value: 'cave',        label: 'Cave' },
+  { value: 'autre',       label: 'Autre' },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -416,7 +423,7 @@ function BienvenueContent() {
   const [step, setStep]       = useState<StepId>(1)
   const [role, setRole]       = useState<Role | null>(null)
   const [answers, setAnswers] = useState<Record<string, string>>({})
-  const [bien, setBien]       = useState({ adresse: '', ville: '', type: 'apartment' })
+  const [bien, setBien]       = useState({ adresse: '', ville: '', type: 'appartement' })
   const [sphereState, setSphereState] = useState<SphereState>('idle')
   const [autoData, setAutoData]       = useState<AutoData | null>(null)
   const [agentChecks, setAgentChecks] = useState<Record<string, boolean>>({})

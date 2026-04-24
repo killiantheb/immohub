@@ -379,6 +379,21 @@ _(aucun bloquant — peer review du fichier 1 a rattrapé 2 tables FK oubliées 
 
 **Étape 20** : backup Supabase complet → exécution migration 0029 prod → smoke tests post-deploy (voir détails dans la section "Étape 20" plus bas).
 
+### 🔧 Dette backend post-fusion
+
+À traiter dans un mini-sprint « Backend cleanup » entre fin session 6 et étape 20 prod
+(ou au début Phase 1 roadmap). La fondation frontend ne doit rien casser en prod.
+
+1. **`routers/estimation.py` L47** : regex stricte EN `apartment|house|studio|villa|commercial`
+   → migrer vers FR `appartement|maison|studio|villa|commerce`. Supprimer mapping `_TYPE_FR`
+   interne (L34) devenu obsolète. Frontend `estimation/page.tsx` fait actuellement un mapping
+   FR→EN en façade pour compatibilité (commit P2 session 6 — `FR_TO_BACKEND`). Patch
+   backend ≈ 3 lignes, suppression mapping façade frontend ≈ ~10 lignes.
+
+*[Section ouverte — ajouter d'autres bugs backend détectés plus tard]*
+
+---
+
 ### 📝 Notes session 6 en cours — 2026-04-24
 
 #### ✅ Notes positives (form en avance sur cartographie)

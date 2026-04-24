@@ -140,7 +140,7 @@ test.describe("Proprio solo — onboarding complet", () => {
 
     // Monthly rent
     const rentInput = page.locator(
-      'input[name="monthly_rent"], input[placeholder*="loyer" i], input[placeholder*="CHF" i]',
+      'input[name="loyer"], input[placeholder*="loyer" i], input[placeholder*="CHF" i]',
     );
     if ((await rentInput.count()) > 0) {
       await rentInput.first().fill("1800");
@@ -148,7 +148,7 @@ test.describe("Proprio solo — onboarding complet", () => {
 
     // Type (select if exists)
     const typeSelect = page.locator(
-      'select[name="property_type"], select:has(option:has-text("Appartement"))',
+      'select[name="type"], select:has(option:has-text("Appartement"))',
     );
     if ((await typeSelect.count()) > 0) {
       await typeSelect.first().selectOption({ index: 1 });
