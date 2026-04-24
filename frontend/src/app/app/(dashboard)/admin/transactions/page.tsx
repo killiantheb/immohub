@@ -69,7 +69,7 @@ function exportCsv(rows: AdminTransaction[]) {
     t.amount.toFixed(2),
     t.commission_amount?.toFixed(2) ?? "",
     t.owner_id,
-    t.property_id ?? "",
+    t.bien_id ?? "",
     t.due_date ? new Date(t.due_date).toLocaleDateString("fr-FR") : "",
     t.paid_at ? new Date(t.paid_at).toLocaleDateString("fr-FR") : "",
     new Date(t.created_at).toLocaleDateString("fr-FR"),
