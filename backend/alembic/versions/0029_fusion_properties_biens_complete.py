@@ -278,10 +278,10 @@ def upgrade() -> None:
             -- CUISINE (16)
             ('Machine à café Nespresso',      'cuisine',    'coffee',           10),
             ('Machine à café à grains',       'cuisine',    'coffee',           11),
-            ('Bouilloire',                    'cuisine',    'kettle',           12),
+            ('Bouilloire',                    'cuisine',    'cup-soda',         12),
             ('Grille-pain',                   'cuisine',    'sandwich',         13),
             ('Micro-ondes',                   'cuisine',    'microwave',        14),
-            ('Four',                          'cuisine',    'oven',             15),
+            ('Four',                          'cuisine',    'soup',             15),
             ('Plaques induction',             'cuisine',    'flame',            16),
             ('Lave-vaisselle',                'cuisine',    'washing-machine',  17),
             ('Réfrigérateur',                 'cuisine',    'refrigerator',     18),
@@ -296,8 +296,8 @@ def upgrade() -> None:
             -- LITERIE (7)
             ('Draps',                         'literie',    'bed',              30),
             ('Housses de couette',            'literie',    'bed-double',       31),
-            ('Oreillers',                     'literie',    'pillow',           32),
-            ('Couvertures',                   'literie',    'blanket',          33),
+            ('Oreillers',                     'literie',    'bed-single',       32),
+            ('Couvertures',                   'literie',    'layers-2',         33),
             ('Linge de lit complet',          'literie',    'bed-double',       34),
             ('Lit bébé',                      'literie',    'baby',             35),
             ('Chaise haute',                  'literie',    'baby',             36),
@@ -326,7 +326,7 @@ def upgrade() -> None:
 
             -- ENTRETIEN (4)
             ('Aspirateur',                    'entretien',  'wind',             70),
-            ('Fer à repasser',                'entretien',  'iron',             71),
+            ('Fer à repasser',                'entretien',  'sparkles',         71),
             ('Planche à repasser',            'entretien',  'table',            72),
             ('Produits ménagers de base',     'entretien',  'spray-can',        73),
 
