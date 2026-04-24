@@ -30,21 +30,13 @@ _logger = logging.getLogger("althy.estimation")
 MODEL      = "claude-sonnet-4-20250514"
 MAX_TOKENS = 300
 
-_TYPE_FR: dict[str, str] = {
-    "apartment": "appartement",
-    "house":     "maison",
-    "studio":    "studio",
-    "villa":     "villa",
-    "commercial": "local commercial",
-}
-
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
 class EstimationRequest(BaseModel):
-    adresse:    str   = Field(...,          min_length=3, max_length=200)
-    pieces:     int   = Field(...,          ge=1, le=20)
-    surface_m2: float = Field(...,          ge=5, le=2000)
-    type:       str   = Field("apartment", pattern="^(apartment|house|studio|villa|commercial)$")
+    adresse:    str   = Field(...,             min_length=3, max_length=200)
+    pieces:     int   = Field(...,             ge=1, le=20)
+    surface_m2: float = Field(...,             ge=5, le=2000)
+    type:       str   = Field("appartement",   pattern="^(appartement|maison|studio|villa|commerce)$")
 
 
 class EstimationResponse(BaseModel):
@@ -76,13 +68,11 @@ async def estimation_rapide(
     Estimation IA du loyer mensuel — SANS authentification.
     Lead magnet landing page : retourne min/max/confiance/quartier/comparable.
     """
-    type_fr = _TYPE_FR.get(body.type, body.type)
-
     prompt = (
         "Tu es un expert immobilier suisse spécialisé en Suisse romande. "
         "Estime le loyer mensuel en CHF pour le bien suivant :\n\n"
         f"  Adresse/ville : {body.adresse}\n"
-        f"  Type          : {type_fr}\n"
+        f"  Type          : {body.type}\n"
         f"  Pièces        : {body.pieces}\n"
         f"  Surface       : {body.surface_m2} m²\n\n"
         "Réponds UNIQUEMENT en JSON strict, sans markdown, sans commentaire :\n"
@@ -150,7 +140,7 @@ async def estimation_rapide(
 class DeferredEstimationRequest(BaseModel):
     address: str = Field(..., min_length=1, max_length=200)
     city:    str = Field(..., min_length=1, max_length=100)
-    type:    str = Field("apartment")
+    type:    str = Field("appartement")
     surface: float = Field(..., ge=5, le=5000)
     rooms:   int | None = None
     email:   str = Field(..., min_length=3, max_length=200)
