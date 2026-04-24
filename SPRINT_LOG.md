@@ -379,6 +379,22 @@ _(aucun bloquant — peer review du fichier 1 a rattrapé 2 tables FK oubliées 
 
 **Étape 20** : backup Supabase complet → exécution migration 0029 prod → smoke tests post-deploy (voir détails dans la section "Étape 20" plus bas).
 
+### 📝 Notes session 6 en cours — 2026-04-24
+
+#### ✅ Notes positives (form en avance sur cartographie)
+
+- **`contracts/new/page.tsx` — canton déjà collecté** (P1.5) : le form collecte déjà `canton` (state L85 `canton: "VS"`, select L383-387 avec 17 cantons CH), l'envoie dans le payload `create.mutateAsync` (L156 `canton: form.canton || "VS"`), aligné sur `ContractCreate` backend (schemas/contract.py L37 `canton: str = "VS"`). Form en avance sur la cartographie Phase B. Aucune action requise.
+
+#### 🪶 Dettes cosmétiques hors scope (à traquer plus tard)
+
+- **`contracts/new/page.tsx` L200** — expression `onKeyDown` avec `&&`/`||` tordue :
+  ```tsx
+  onKeyDown={(e) => e.key === "Enter" && e.preventDefault() || (e.key === "Enter" && handleNlpParse())}
+  ```
+  Fonctionne (priorité opérateurs + `void` falsy) mais peu lisible. Réécrire en if/else simple dans un mini-sprint cleanup post-fusion. Hors scope refonte.
+
+---
+
 ### 🔑 Entrée pour session 6 (frontend, demain matin)
 
 Prompt à utiliser dans la nouvelle conversation Claude Code :

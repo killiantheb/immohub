@@ -68,7 +68,7 @@ function NewContractPageInner() {
   const create = useCreateContract();
 
   const [form, setForm] = useState({
-    property_id: "",
+    bien_id: "",
     tenant_id: "",
     agency_id: "",
     type: "long_term" as ContractType,
@@ -139,7 +139,7 @@ function NewContractPageInner() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     await create.mutateAsync({
-      property_id: form.property_id,
+      bien_id: form.bien_id,
       tenant_id: form.tenant_id || undefined,
       agency_id: form.agency_id || undefined,
       type: form.type,
@@ -235,8 +235,8 @@ function NewContractPageInner() {
             <input
               required
               type="text"
-              value={form.property_id}
-              onChange={(e) => set("property_id", e.target.value)}
+              value={form.bien_id}
+              onChange={(e) => set("bien_id", e.target.value)}
               style={inputStyle}
               placeholder="UUID du bien"
             />
