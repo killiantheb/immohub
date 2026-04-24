@@ -446,11 +446,18 @@ Contenu organisé en 5 niveaux de priorité. Règle : zéro échec, gate dur ent
 
 #### 🔥 Avant migration 0029 prod (mini-sprint « pre-prod checklist »)
 
-- [ ] Vérifier que `ai_service.generate_listing_description` a bien été patché session 3 (grep du call site)
+- [x] **Vérifier que `ai_service.generate_listing_description` a bien été patché session 3** — ✅ Point 1 session 7 : signature FR conforme, 14 champs Bien FR lus, 0 ref `property/getattr/.address/.city/.monthly_rent`
 - [ ] DMARC Infomaniak (`_dmarc.althy.ch` record TXT)
-- [ ] `.env` encoding cp1252 → UTF-8
-- [ ] Fix 8 icônes `lucide-react` invalides dans seed `catalogue_equipements`
-- [ ] Mini-sprint backend cleanup : regex `estimation.py` FR + `summary=` OpenAPI + mapping enum `common/enums.py`
+- [x] **`.env` encoding cp1252 → UTF-8** — ✅ Point 3 session 7 Phase A : `file backend/.env` = UTF-8 valide, faux positif. Vraie cause = codec Python Windows par défaut, fix via `PYTHONUTF8=1` (voir entrée 🔵)
+- [x] **Fix 5 icônes `lucide-react` invalides dans seed `catalogue_equipements`** — ✅ Point 3 session 7 commit `3325a70` : kettle→cup-soda, oven→soup, pillow→bed-single, blanket→layers-2, iron→sparkles. 3 icônes initialement signalées invalides (microwave/cooking-pot/speaker) sont en fait présentes dans lucide-react@0.454.0, conservées.
+- [x] **Mini-sprint backend cleanup : regex `estimation.py` FR + mapping enum `common/enums.py`** — ✅ Point 2 session 7 commit `0324bc6` (centralisation enums) + Point 5 commit `6fdcfcd` (regex FR + façade frontend supprimée). Reste `summary=` OpenAPI endpoints → reporté section 🟠 Phase 2.
+- [ ] **🚨 BUG DORMANT CRITIQUE — `app/routers/__init__.py` importe `properties` supprimé** (découvert session 7 Point 5 Phase D)
+
+  `backend/app/routers/__init__.py` L1-17 importe et ré-exporte `properties` alors que `app/routers/properties.py` a été supprimé au commit `6217041` (session 17-18, 2026-04-23) sans mettre à jour l'`__init__.py`. Conséquence : toute tentative d'importer `app.routers` en tant que package lève `ImportError: cannot import name 'properties' from partially initialized module 'app.routers'` (circular import + ImportError sur module supprimé).
+
+  Impact actuel : `app.main` charge ses routers un par un via `app.routers.xxx` directement, pas via `app.routers` en tant que package, donc ça ne plante **probablement pas en runtime prod**. À vérifier. MAIS tout smoke test style `python -c "from app.routers import ...` plante, et tout code futur qui importe le package aussi.
+
+  **Fix (trivial)** : retirer `properties` des 2 listes de `backend/app/routers/__init__.py`. 2 lignes à enlever. À faire **avant étape 20 Phase 0 demain matin** pour éviter une surprise au smoke test.
 
 #### 🟡 Pendant smoke test post-migration (étape 20 Phase 0)
 
