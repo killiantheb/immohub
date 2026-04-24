@@ -20,11 +20,13 @@ type Bien = {
   type_label: string;
 };
 
+// Normalisation types chat → valeurs enum FR backend (biens.type strict FR post-0029).
+// Alias EN→FR conservés comme filet de sécurité parse LLM (Claude varie parfois EN).
 const TYPE_MAP: Record<string, string> = {
-  appartement: "apartment",
-  apartment:   "apartment",
-  maison:      "house",
-  house:       "house",
+  appartement: "appartement",
+  apartment:   "appartement",   // alias EN (LLM variations)
+  maison:      "maison",
+  house:       "maison",        // alias EN
   studio:      "studio",
   villa:       "villa",
 };
