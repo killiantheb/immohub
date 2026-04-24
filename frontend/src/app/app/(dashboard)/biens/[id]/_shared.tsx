@@ -541,7 +541,7 @@ export function TabFinances({ bienId }: { bienId: string }) {
     setQError(null);
     try {
       const mois = new Date().toISOString().slice(0, 7);
-      const { data } = await api.post("/loyers/quittance", { property_id: bienId, mois });
+      const { data } = await api.post("/loyers/quittance", { bien_id: bienId, mois });
       if (data.download_url) {
         window.open(data.download_url, "_blank");
       } else {
