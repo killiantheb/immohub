@@ -9,7 +9,7 @@ import { FLAGS } from "@/lib/flags";
 interface Note {
   id: string
   content: string
-  property_id: string | null
+  bien_id: string | null
   created_at: string
 }
 
@@ -22,8 +22,8 @@ interface Contact {
   phone: string | null
   status: 'active_tenant' | 'past_tenant' | 'prospect'
   source: string | null
-  property_id: string | null
-  property_address: string | null
+  bien_id: string | null
+  bien_adresse: string | null
   contract_id: string | null
   contract_start: string | null
   contract_end: string | null
@@ -38,7 +38,7 @@ interface CRMStats {
   active_tenants: number
   past_tenants: number
   prospects: number
-  properties_count: number
+  biens_count: number
   total_views: number
   total_leads: number
 }
@@ -133,7 +133,7 @@ function CRMPageInner() {
     if (tab !== 'all' && c.status !== tab) return false
     if (search) {
       const s = search.toLowerCase()
-      const full = `${c.first_name ?? ''} ${c.last_name ?? ''} ${c.email ?? ''} ${c.property_address ?? ''}`.toLowerCase()
+      const full = `${c.first_name ?? ''} ${c.last_name ?? ''} ${c.email ?? ''} ${c.bien_adresse ?? ''}`.toLowerCase()
       if (!full.includes(s)) return false
     }
     return true
@@ -147,7 +147,7 @@ function CRMPageInner() {
         content: noteInput.trim(),
         target_type: selected.type === 'tenant' ? 'tenant' : 'prospect',
         target_id: selected.id,
-        property_id: selected.property_id,
+        bien_id: selected.bien_id,
       })
       setNoteInput('')
       const res = await api.get<Contact[]>('/crm/contacts')
@@ -282,7 +282,7 @@ function CRMPageInner() {
                     </span>
                   </div>
                   <div style={{ fontSize: 12, color: C.text3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {c.property_address ?? c.email ?? '—'}
+                    {c.bien_adresse ?? c.email ?? '—'}
                   </div>
                 </div>
                 {c.notes.length > 0 && (
@@ -337,7 +337,7 @@ function CRMPageInner() {
               {[
                 { label: 'Email', value: selected.email },
                 { label: 'Téléphone', value: selected.phone },
-                { label: 'Bien', value: selected.property_address },
+                { label: 'Bien', value: selected.bien_adresse },
                 { label: 'Source', value: selected.source ? { manual: 'Manuel', inquiry: 'Demande', portal: 'Portail', referral: 'Recommandation' }[selected.source] ?? selected.source : null },
               ].map(({ label, value }) => value ? (
                 <div key={label} style={{ background: C.bg, borderRadius: 10, padding: '10px 14px' }}>
