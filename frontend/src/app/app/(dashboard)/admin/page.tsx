@@ -227,8 +227,8 @@ export default function AdminPage() {
         },
         {
           label: "Biens gérés",
-          value: stats.active_properties.toLocaleString("fr-FR"),
-          sub: `${stats.total_properties} au total`,
+          value: stats.active_biens.toLocaleString("fr-FR"),
+          sub: `${stats.total_biens} au total`,
           icon: Building2,
           iconBg: C.blueBg,
           iconColor: C.blue,
