@@ -20,6 +20,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Annotated, Any
 
 import anthropic
+from app.common.enums import normalize_bien_statut, normalize_bien_type
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.limiter import rate_limit
@@ -1470,17 +1471,9 @@ Règles :
         prop_data = result["property"]
         if prop_data.get("address") or prop_data.get("city"):
             from app.models.bien import Bien
-            # Mapping enum legacy EN → FR pour les outputs Claude
-            _STATUS_MAP = {"available": "vacant", "rented": "loue", "maintenance": "en_travaux"}
-            _TYPE_MAP = {
-                "apartment": "appartement", "villa": "villa", "office": "bureau",
-                "box": "garage", "depot": "autre", "hotel": "autre",
-                "commercial": "commerce", "parking": "parking", "garage": "garage",
-                "cave": "cave",
-            }
             new_prop = Bien(
                 id=_uuid.uuid4(),
-                type=_TYPE_MAP.get(prop_data.get("type", "apartment"), "appartement"),
+                type=normalize_bien_type(prop_data.get("type")),
                 adresse=prop_data.get("address") or "",
                 ville=prop_data.get("city") or "",
                 cp=prop_data.get("zip_code") or "",
@@ -1489,7 +1482,7 @@ Règles :
                 loyer=prop_data.get("monthly_rent"),
                 charges=prop_data.get("charges"),
                 deposit=prop_data.get("deposit"),
-                statut=_STATUS_MAP.get(prop_data.get("status", "available"), "vacant"),
+                statut=normalize_bien_statut(prop_data.get("status")),
                 is_furnished=bool(prop_data.get("is_furnished", False)),
                 owner_id=current_user.id,
                 created_by_id=current_user.id,

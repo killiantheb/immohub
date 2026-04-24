@@ -7,6 +7,7 @@ import re as _re
 import uuid as _uuid
 from typing import Annotated
 
+from app.common.enums import normalize_bien_statut, normalize_bien_type
 from app.core.database import get_db
 from app.core.limiter import rate_limit
 from app.core.security import get_current_user
@@ -189,15 +190,6 @@ async def import_property_file(
         extract_from_pdf_bytes,
     )
 
-    # Mapping enum legacy EN → FR pour les outputs extraction IA
-    _STATUS_MAP = {"available": "vacant", "rented": "loue", "maintenance": "en_travaux"}
-    _TYPE_MAP = {
-        "apartment": "appartement", "villa": "villa", "office": "bureau",
-        "box": "garage", "depot": "autre", "hotel": "autre",
-        "commercial": "commerce", "parking": "parking", "garage": "garage",
-        "cave": "cave",
-    }
-
     if current_user.role not in ("proprio_solo", "agence", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux propriétaires et agences")
 
@@ -236,7 +228,7 @@ async def import_property_file(
         try:
             new_prop = Bien(
                 id=_uuid.uuid4(),
-                type=_TYPE_MAP.get(p.get("type", "apartment"), "appartement"),
+                type=normalize_bien_type(p.get("type")),
                 adresse=p.get("address") or "",
                 ville=p.get("city") or "",
                 cp=p.get("zip_code") or "",
@@ -246,7 +238,7 @@ async def import_property_file(
                 loyer=float(p["monthly_rent"]) if p.get("monthly_rent") else None,
                 charges=float(p["charges"]) if p.get("charges") else None,
                 deposit=float(p["deposit"]) if p.get("deposit") else None,
-                statut=_STATUS_MAP.get(p.get("status", "available"), "vacant"),
+                statut=normalize_bien_statut(p.get("status")),
                 is_furnished=bool(p.get("is_furnished", False)),
                 pets_allowed=bool(p.get("pets_allowed", False)),
                 description_logement=p.get("description"),

@@ -23,6 +23,7 @@ from typing import Annotated, Any
 
 import anthropic
 import httpx
+from app.common.enums import normalize_bien_statut, normalize_bien_type
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.limiter import rate_limit
@@ -861,31 +862,6 @@ _COL_ALIASES: dict[str, str] = {
     "occupation": "statut",
 }
 
-_TYPE_MAP: dict[str, str] = {
-    "appt": "appartement", "apt": "appartement", "app": "appartement",
-    "appartement": "appartement", "appartement": "appartement",
-    "flat": "appartement", "appart": "appartement",
-    "villa": "villa",
-    "maison": "maison", "house": "maison",
-    "studio": "studio",
-    "commerce": "commerce", "commercial": "commerce",
-    "bureau": "bureau", "office": "bureau",
-    "parking": "parking", "place": "parking",
-    "garage": "garage",
-    "cave": "cave",
-    "autre": "autre", "other": "autre",
-}
-
-_STATUT_MAP: dict[str, str] = {
-    "loue": "loue", "loue": "loue", "loué": "loue", "rented": "loue",
-    "occupe": "loue", "occupé": "loue", "occupied": "loue",
-    "vacant": "vacant", "vide": "vacant", "libre": "vacant", "free": "vacant",
-    "disponible": "vacant", "available": "vacant",
-    "travaux": "en_travaux", "renovation": "en_travaux",
-    "en_travaux": "en_travaux", "maintenance": "en_travaux",
-}
-
-
 def _normalize_col(col: str) -> str | None:
     key = col.strip().lower()
     key = re.sub(r"[\s\-]+", "_", key)
@@ -1036,10 +1012,10 @@ def _map_raw_rows(raw_rows: list[dict[str, str]]) -> tuple[list[CsvRow], dict[st
         if not ville:   errs.append("Ville manquante")
         if not cp:      errs.append("NPA manquant")
 
-        type_raw   = get(raw, "type").lower()
-        type_val   = _TYPE_MAP.get(type_raw) or (type_raw if type_raw in _TYPE_MAP.values() else "appartement")
-        statut_raw = get(raw, "statut").lower()
-        statut_val = _STATUT_MAP.get(statut_raw, "vacant")
+        type_raw   = get(raw, "type")
+        type_val   = normalize_bien_type(type_raw)
+        statut_raw = get(raw, "statut")
+        statut_val = normalize_bien_statut(statut_raw)
 
         rows.append(CsvRow(
             adresse=adresse,

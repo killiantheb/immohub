@@ -22,17 +22,15 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.common.enums import BienStatutLiteral, BienTypeLiteral
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Literals
 # ══════════════════════════════════════════════════════════════════════════════
 
-BienTypeLiteral = Literal[
-    "appartement", "villa", "studio", "maison",
-    "commerce", "bureau", "parking", "garage", "cave", "autre",
-]
-
-BienStatutLiteral = Literal["loue", "vacant", "en_travaux"]
+# BienTypeLiteral + BienStatutLiteral : source unique dans app.common.enums
+# (ré-importés ci-dessus pour rester utilisables via app.schemas.bien).
 
 ParkingTypeLiteral = Literal[
     "exterieur", "exterieur_couvert", "interieur", "interieur_box",

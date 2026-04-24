@@ -487,6 +487,13 @@ Contenu organisé en 5 niveaux de priorité. Règle : zéro échec, gate dur ent
 - [ ] Migration `float` → `Decimal` si besoin précision financière
 - [ ] Feature Vente (tables existent) → Phase 4 roadmap
 - [ ] Feature Commissions partenaires (table existe) → Phase 3 roadmap
+- [ ] **Dette cosmétique — mapping Catégorie B labels UI FR→humain** (identifiée session 7 Point 2)
+  - 4 call-sites avec dicts inline FR canonique → libellé d'affichage (`"appartement"→"Appartement"`, `"vacant"→"À Louer"`) :
+    - `routers/documents.py` L1226-1232 (`type_label` + `status_label` PDFs)
+    - `services/marketplace_service.py` L60-71 (`TYPE_LABEL` marketplace)
+    - `routers/ai/listings.py` L128-131 (`_TYPE_FR` hybride prompt Claude — EN→libellé FR long)
+  - Refactor possible : ajouter `BIEN_TYPE_LABEL` + `BIEN_STATUT_LABEL` dans `common/enums.py` + les 4 call-sites importent. Coût ~1 h. Risque régression PDFs rendus. À planifier en sprint qualité code dédié, pas avant.
+- [ ] **Encoding `.env` cp1252** (identifié session 7 Point 2 Phase D) : `python -c "import app.main"` échoue sur `UnicodeDecodeError cp1252` byte 0x8f dans un fichier `.env` chargé par starlette.Config. Préexistant, non lié au refactor enums. À diagnostiquer hors session (probable caractère accentué dans un commentaire `.env` local).
 
 #### 🚫 Concepts retirés étape 19 à rétablir si demande Phase 2+
 

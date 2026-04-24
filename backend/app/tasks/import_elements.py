@@ -1,26 +1,6 @@
 """Importe les éléments confirmés par l'utilisateur dans Althy."""
+from app.common.enums import normalize_bien_type
 from app.tasks.celery_app import celery_app
-
-# Mapping noms français/anglais/scanner → bien_type_enum
-_TYPE_MAP = {
-    "appartement": "appartement",
-    "apartment":   "appartement",
-    "studio":      "studio",
-    "villa":       "villa",
-    "maison":      "maison",
-    "house":       "maison",
-    "parking":     "parking",
-    "garage":      "garage",
-    "box":         "garage",
-    "cave":        "cave",
-    "dépôt":       "autre",
-    "depot":       "autre",
-    "hotel":       "autre",
-    "bureau":      "bureau",
-    "office":      "bureau",
-    "commercial":  "commerce",
-    "commerce":    "commerce",
-}
 
 # 26 codes cantonaux ISO CH — validation stricte anti-corruption silencieuse
 CANTONS_CH = frozenset({
@@ -28,10 +8,6 @@ CANTONS_CH = frozenset({
     "JU", "LU", "NE", "NW", "OW", "SG", "SH", "SO", "TG", "TI",
     "UR", "VD", "VS", "ZG", "ZH",
 })
-
-
-def _map_type(raw: str | None) -> str:
-    return _TYPE_MAP.get((raw or "").lower().strip(), "appartement")
 
 
 def _canton(raw: str | None) -> str | None:
@@ -78,7 +54,7 @@ def importer_elements(user_id: str, user_role: str, elements: list[dict]):
                 owner_id             = uid,
                 created_by_id        = uid,
                 agency_id            = uid if user_role in ("agence", "portail_proprio") else None,
-                type                 = _map_type(donnees.get("type") or el.get("type_element")),
+                type                 = normalize_bien_type(donnees.get("type") or el.get("type_element")),
                 statut               = "vacant",
                 ville                = (donnees.get("ville") or donnees.get("city") or "")[:100],
                 adresse              = (donnees.get("adresse") or donnees.get("address") or "")[:300],
