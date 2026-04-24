@@ -394,19 +394,122 @@ _(aucun bloquant — peer review du fichier 1 a rattrapé 2 tables FK oubliées 
 
 ---
 
-### 📝 Notes session 6 en cours — 2026-04-24
+## Fin de session — 2026-04-24 (session 6)
 
-#### ✅ Notes positives (form en avance sur cartographie)
+### ✅ Session 6 clôturée — 13 commits, TS 19 → 0
+
+Sprint fusion frontend étape 19 **100 % complet**. Trajectoire TS parfaite, 7 bugs dormants corrigés, 0 régression.
+
+| #  | Hash       | Fichier / Scope                                                   | Type          | Δ TS     |
+|----|------------|-------------------------------------------------------------------|---------------|----------|
+| 1  | `898af24`  | P0.1 · admin/page.tsx — PlatformStats renames                     | TS            | 10 → 8   |
+| 2  | `0a3c351`  | P0.2 · admin/transactions/page.tsx — CSV export bien_id          | TS            | 8 → 7    |
+| 3  | `0cd065e`  | P0.3 · biens/page.tsx — migration complète + 2 bugs favoris       | TS + runtime  | 7 → 3    |
+| 4  | `6c9043a`  | P1.4 · contracts/page.tsx — Contract.bien_id cascade              | TS            | 3 → 2    |
+| 5  | `29d0f7a`  | P1.5 · contracts/new/page.tsx — form.bien_id full rename          | TS            | 2 → 1    |
+| 6  | `ac662d8`  | P1.6 · contracts/[id]/page.tsx — bien_id cascade                  | TS            | 1 → **0** |
+| 7  | `d5785c1`  | P1.7 · biens/[id]/_shared.tsx — /loyers/quittance bien_id         | Runtime       | 0 → 0    |
+| 8  | `1b1d802`  | P1.8 · biens/[id]/page.tsx — /loyers/* bien_id (QR + quittance)   | Runtime       | 0 → 0    |
+| 9  | `6dcf1d7`  | P1.9 · publier/page.tsx — 7 chantiers PublierRequest              | TS + runtime  | 0 → 0    |
+| 10 | `ee96b35`  | P1.10 · DocumentQuickGenerator.tsx — bienId + /documents/generate | Runtime       | 0 → 0    |
+| 11 | `9469eab`  | P1.11 · crm/page.tsx — Note/Contact/CRMStats + /crm/notes         | Runtime       | 0 → 0    |
+| 12 | `0237be2`  | docs · ROADMAP.md (v3 phases 0-5+ i18n)                           | Docs          | —        |
+| 13 | `dc0524f`  | P2 · portail + bienvenue + estimation + spec e2e (5 fichiers)     | Façade FR     | 0 → 0    |
+| 14 | `1359d67`  | P3 · BiensRecoCards.tsx — fix 7e bug dormant landing chat         | Runtime       | 0 → 0    |
+
+**Trajectoire TS session 6** : `10 → 8 → 7 → 3 → 2 → 1 → 0` puis maintenue à `0` sur les 8 commits runtime suivants. Zéro erreur surprise hors cartographie.
+
+### 🐛 7 bugs dormants corrigés session 6
+
+Sans cette session, la migration 0029 en prod aurait silencieusement cassé **5 flows cœur-métier** + **2 bugs pré-existants** (favoris + landing chat).
+
+1. **P0.3 — Favoris mal typés** : code typait `favorites: Property[]` mais backend renvoie `FavoriteRead` shape dénormalisée (`bien_adresse/bien_ville/bien_statut/loyer`). BienCard lisait `bien.address/city/monthly_rent` → cartes favoris vides en prod (fallback silencieux). Fix : type `FavoriteItem` local + `DisplayBien` subset + adaptFavorite.
+2. **P0.3 — DELETE /favorites URL cassée** : le front envoyait `DELETE /favorites/{bien.id}` alors que le backend attend `/favorites/{favorite_id}` (L148 favorites.py). Double incohérence avec `favoriteIds: Set<string>` qui indexait par `f.id` (favorite_id) mais était testé contre `bien.id`. Fix : `Map<bien_id, favorite_id>` + `favoriteBienIds` Set.
+3. **P1.7 — `/loyers/quittance` payload** : `{property_id: bienId}` → 422 Pydantic (backend `GenererQuittanceRequest.bien_id`). Impact : aucune quittance émise, flow commission transit 3 % cassé.
+4. **P1.8 — `/loyers/generer-qr` + `/loyers/quittance` payloads** (biens/[id]/page.tsx) : idem double endpoint. Impact : QR-factures + quittances inopérantes sur la fiche bien (3 boutons utilisateurs).
+5. **P1.9 — flux marketplace publier** : endpoint `GET /properties` supprimé post-0029 + `default type: "apartment"` + payload `body.property_id` + shape `ExistingProperty` legacy inexistante. Impact : wizard publier cassé de bout en bout.
+6. **P1.10 — `/documents/generate` payload** : `property_id` → `bien_id`. Impact : génération bail + quittance + demande pièces + fiche bien + relances toutes cassées (backend 422 silencieux).
+7. **P1.11 — `/crm/notes` payload + affichages** : `property_id/property_address/properties_count` → `bien_id/bien_adresse/biens_count`. Impact : ajout notes CRM cassé + liste contacts sans adresse de bien affichée.
+
+**Bonus P3 — 7e bug dormant surprise** : `BiensRecoCards.tsx` TYPE_MAP landing chat renvoyait `"apartment"/"house"` (EN) au backend qui matche sur `bien_type_enum` FR strict → zéro match DB → widget « Aucun bien ne correspond encore » systématique post-0029. Cartographie session 5 avait classé en "map morte", en réalité map active + buguée. Impact acquisition : le chat landing ne remontait plus de biens.
+
+### 🏗️ État branche fin de session 6
+
+- Branche : `refonte/fusion-properties-biens-complete`
+- HEAD post-P3 + clôture : avant push groupé
+- Working tree propre hors `.claude/settings.local.json` (hors scope sprint)
+- Push groupé + tag `v0.1.0-fusion-complete` prévus immédiatement après ce commit docs
+
+### 📋 Backlog post-fusion consolidé
+
+Contenu organisé en 5 niveaux de priorité. Règle : zéro échec, gate dur entre chaque phase.
+
+#### 🔥 Avant migration 0029 prod (mini-sprint « pre-prod checklist »)
+
+- [ ] Vérifier que `ai_service.generate_listing_description` a bien été patché session 3 (grep du call site)
+- [ ] DMARC Infomaniak (`_dmarc.althy.ch` record TXT)
+- [ ] `.env` encoding cp1252 → UTF-8
+- [ ] Fix 8 icônes `lucide-react` invalides dans seed `catalogue_equipements`
+- [ ] Mini-sprint backend cleanup : regex `estimation.py` FR + `summary=` OpenAPI + mapping enum `common/enums.py`
+
+#### 🟡 Pendant smoke test post-migration (étape 20 Phase 0)
+
+- [ ] Tester les 7 générations PDF manuellement : bail · quittance · fiche bien · demande pièces · réquisition poursuite · relance · état des lieux
+- [ ] Tester publication marketplace end-to-end (`publier/page.tsx` P1.9 cascade)
+- [ ] Tester Sphere IA (réponse + description + potentiel IA)
+- [ ] Tester endpoint import bulk sur 2-3 biens Sunimmo
+- [ ] Tester landing chat avec « un appartement à Genève » → vérifier que des biens remontent (fix P3)
+- [ ] Tester `recent_transactions.bien_id` dans dashboards admin
+
+#### 🟢 Dans Phase 1 alpha (1-2 semaines)
+
+- [ ] Ajouter `contact@althy.ch` admin facturation Google Cloud
+- [ ] Seed complet NPAs CH (~4100 via CSV Swisstopo)
+- [ ] `BienListItem` lightweight (perf liste)
+- [ ] Content HTML emails transactionnels (SpamAssassin)
+- [ ] Nettoyer 4 rôles IAM redondants Google Cloud
+- [ ] Validation tests e2e Playwright en condition réelle
+
+#### 🟠 Dans Phase 2 public payant (3-6 semaines)
+
+- [ ] **EUIPO dépôt marque Althy (1100 CHF) — AVANT public**
+- [ ] `summary=` / `description=` OpenAPI endpoints
+- [ ] Nettoyage `contact.althy@gmail.com` (Google Takeout + suppression)
+- [ ] Harmonisation systèmes documents (`document_althy` + `bien_documents`)
+
+#### 🔵 Phase 3+ ou sprint qualité dédié
+
+- [ ] 5 méthodes `TransactionService` sans call site (suppression ou router)
+- [ ] `require_bien_access()` refacto access check endpoints `biens/*`
+- [ ] 4 commentaires Property EN résiduels (`ai_service`/`opener`/`schemas`)
+- [ ] `contracts/new` L200 `onKeyDown` expression tordue
+- [ ] `biens/page` regex `normalize` accents (Unicode cosmétique)
+- [ ] Migration `float` → `Decimal` si besoin précision financière
+- [ ] Feature Vente (tables existent) → Phase 4 roadmap
+- [ ] Feature Commissions partenaires (table existe) → Phase 3 roadmap
+
+#### 🚫 Concepts retirés étape 19 à rétablir si demande Phase 2+
+
+- Tab « Archivés » (mappé à `sold` supprimé)
+- Champ `price_sale` (vente Phase 4)
+- Champ `is_active` (pas de soft-delete actuellement)
+- Champ `country` (CH implicite)
+
+### ✅ Notes positives session 6 (form en avance sur cartographie)
 
 - **`contracts/new/page.tsx` — canton déjà collecté** (P1.5) : le form collecte déjà `canton` (state L85 `canton: "VS"`, select L383-387 avec 17 cantons CH), l'envoie dans le payload `create.mutateAsync` (L156 `canton: form.canton || "VS"`), aligné sur `ContractCreate` backend (schemas/contract.py L37 `canton: str = "VS"`). Form en avance sur la cartographie Phase B. Aucune action requise.
 
-#### 🪶 Dettes cosmétiques hors scope (à traquer plus tard)
+### 🪶 Dettes cosmétiques hors scope (à traquer plus tard)
 
 - **`contracts/new/page.tsx` L200** — expression `onKeyDown` avec `&&`/`||` tordue :
   ```tsx
   onKeyDown={(e) => e.key === "Enter" && e.preventDefault() || (e.key === "Enter" && handleNlpParse())}
   ```
   Fonctionne (priorité opérateurs + `void` falsy) mais peu lisible. Réécrire en if/else simple dans un mini-sprint cleanup post-fusion. Hors scope refonte.
+
+### 🎯 Prochaine étape
+
+Mini-sprint backend cleanup post-fusion (section « 🔧 Dette backend post-fusion » plus haut) + **étape 20** (backup Supabase + migration 0029 prod + smoke tests + test « créer 1 bien de A à Z »).
 
 ---
 
