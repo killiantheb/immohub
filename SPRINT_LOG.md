@@ -493,7 +493,21 @@ Contenu organisé en 5 niveaux de priorité. Règle : zéro échec, gate dur ent
     - `services/marketplace_service.py` L60-71 (`TYPE_LABEL` marketplace)
     - `routers/ai/listings.py` L128-131 (`_TYPE_FR` hybride prompt Claude — EN→libellé FR long)
   - Refactor possible : ajouter `BIEN_TYPE_LABEL` + `BIEN_STATUT_LABEL` dans `common/enums.py` + les 4 call-sites importent. Coût ~1 h. Risque régression PDFs rendus. À planifier en sprint qualité code dédié, pas avant.
-- [ ] **Encoding `.env` cp1252** (identifié session 7 Point 2 Phase D) : `python -c "import app.main"` échoue sur `UnicodeDecodeError cp1252` byte 0x8f dans un fichier `.env` chargé par starlette.Config. Préexistant, non lié au refactor enums. À diagnostiquer hors session (probable caractère accentué dans un commentaire `.env` local).
+- [ ] **Env local Windows — `PYTHONUTF8=1`** (diagnostiqué session 7 Point 3 Phase A)
+
+  Documenté Point 3 session 7 : `backend/.env` est déjà en UTF-8 valide,
+  mais Python sur Windows utilise cp1252 par défaut comme codec de
+  lecture (via `starlette.Config._read_file()` sans `encoding=` explicite).
+  Conséquence : `python -c "import app.main"` plante en local Windows
+  avec `UnicodeDecodeError cp1252 byte 0x8f` sur commentaire L17 contenant
+  `é`/`è`/`→`.
+
+  **Fix** : ajouter variable d'environnement système Windows `PYTHONUTF8=1`
+  dans « Variables utilisateur » du panneau de configuration système.
+
+  Zéro impact prod Linux (UTF-8 par défaut). Zéro impact CI (Linux/macOS).
+
+  Fix appliqué par Killian 24 avril 2026 (à confirmer).
 
 #### 🚫 Concepts retirés étape 19 à rétablir si demande Phase 2+
 
