@@ -639,6 +639,191 @@ onboarding agence : import biens scrapés depuis portails tiers).
   langue naturelle hors fichiers à supprimer) — tracée comme dette FR
 - Tolérance ZÉRO sur les checks post-rm respectée
 
+---
+
+## Fin de session — 2026-04-24 soir (session 7)
+
+### ✅ Session 7 clôturée — 5 commits atomiques mini-sprint pre-prod checklist
+
+Scope strict : 5 points 🔥 de la catégorie « Avant migration 0029 prod ». Règle zéro échec maintenue sur tous les points.
+
+| # | Point | Commit | Résultat |
+|---|-------|--------|----------|
+| 1 | Vérifier `ai_service.generate_listing_description` | — (cross-check sans patch) | ✅ Signature FR conforme, 14 champs Bien FR lus, 0 ref legacy Property |
+| 2 | Centraliser mappings enum bien → `common/enums.py` | `0324bc6` | ✅ 8 call-sites A1–A7 nettoyés, source unique 10 types FR + 3 statuts FR |
+| 3 | Fix icônes `lucide-react` invalides seed `catalogue_equipements` | `3325a70` | ✅ 5 remplacements (kettle→cup-soda, oven→soup, pillow→bed-single, blanket→layers-2, iron→sparkles). 3 faux positifs confirmés (microwave/cooking-pot/speaker existent en 0.454.0) |
+| 4 | Confirmer retrait `property_service` dans `pyproject.toml` | — (déjà effectif depuis `6217041`) | ✅ L32-38 override mypy sans `property_service` |
+| 5 | Regex backend FR + suppression façade frontend estimation | `6fdcfcd` | ✅ Regex `^(appartement\|maison\|studio\|villa\|commerce)$`, défauts FR, `_TYPE_FR` supprimé backend, `FR_TO_BACKEND` supprimé frontend, dette session 6 résolue |
+
+Commits connexes docs :
+- `2e4a522` docs(sprint-log) — dette env local Windows `PYTHONUTF8=1`
+- `f95ff96` docs(sprint-log) — MAJ pre-prod checklist + bug dormant routers/__init__
+
+**Vérifs globales** :
+- `npx tsc --noEmit` frontend → exit 0
+- `python -m compileall backend/app/` → OK
+- Grep résiduels `_TYPE_MAP|_STATUT_MAP|_STATUS_MAP|FR_TO_BACKEND|_TYPE_FR` dans fichiers patchés → 0 match
+- Smoke Pydantic estimation : 5 FR acceptés, 3 EN legacy rejetés
+
+### 🤝 Bonus côté humain (Killian, 24 avril 2026)
+
+- **DMARC Multiple Records corrigé** sur `_dmarc.althy.ch` (ancien `p=reject` supprimé, `p=none rua=...` conservé) — résout la dette 🔥 « DMARC Infomaniak »
+- **`PYTHONUTF8=1` ajouté** aux variables d'environnement utilisateur Windows — résout localement le `UnicodeDecodeError cp1252 byte 0x8f` diagnostiqué Point 3 Phase A
+
+### 🐛 Bug dormant critique détecté — PRIORITÉ ABSOLUE session 8
+
+`backend/app/routers/__init__.py` L1-17 référence encore le router `properties` supprimé session 4 commit `6217041` (oubli de nettoyage de l'`__init__.py` à l'époque). Conséquence : tout `from app.routers import ...` plante avec `ImportError: cannot import name 'properties' from partially initialized module 'app.routers' (most likely due to a circular import)`.
+
+Impact runtime prod : probablement neutre (chargement un-par-un via `app.routers.xxx`), mais bloquerait tout smoke test étape 20. Fix trivial : retirer les 2 références à `properties`. Documenté en catégorie 🔥 pre-prod et en tête de Phase 1 du prompt session 8 (priorité absolue avant Phase 0 sanity check).
+
+### 🏗️ État branche fin de session 7
+
+```
+Branche  : refonte/fusion-properties-biens-complete
+HEAD     : <commit clôture session 7>
+Tags     : v0.1.0-fusion-complete (session 6) + v0.1.1-pre-prod-ready (session 7)
+Reste    : étape 20 Phase 0 Roadmap
+           — fix routers/__init__.py (priorité absolue)
+           — backup Supabase prod
+           — migration 0029 staging → prod
+           — smoke tests 6 points
+           — test manuel « créer 1 bien de A à Z »
+           — bascule Sunimmo Riviera (10 → 30 → 130 biens)
+```
+
+### 🚀 Prompt d'entrée session 8 — étape 20 Phase 0 Roadmap
+
+> **À copier-coller dans une nouvelle fenêtre Claude Code fraîche demain matin.**
+
+---
+
+Session 8 Claude Code — étape 20 Phase 0 Roadmap : backup Supabase + migration 0029 staging puis prod + smoke tests + test manuel "créer 1 bien de A à Z".
+
+**Contexte préalable — lis d'abord :**
+
+1. `ROADMAP.md` racine du repo (v3 figée) — section Phase 0, étapes 5-13.
+2. `SPRINT_LOG.md` en entier pour te recharger le contexte complet (sessions 3-7, backlog post-fusion consolidé, dette catégorie 🔥 pre-prod).
+3. `git log --oneline -20` → HEAD doit être le commit de clôture session 7 mini-sprint pre-prod, avec tags `v0.1.0-fusion-complete` et `v0.1.1-pre-prod-ready` visibles.
+
+**État attendu branche :**
+- `refonte/fusion-properties-biens-complete` synchro avec GitHub + Railway + Vercel.
+- Working tree propre hors `.claude/settings.local.json`.
+- TSC vert sur tout le frontend.
+- `python -m compileall backend/app/` OK.
+
+---
+
+#### 🚨 PRIORITÉ ABSOLUE — Avant toute autre chose
+
+Bug dormant critique détecté fin session 7 (documenté SPRINT_LOG catégorie 🔥) : `backend/app/routers/__init__.py` référence encore le router `properties` supprimé session 4 commit `6217041`.
+
+Impact : tout `from app.routers import ...` plante avec `ImportError` circular import. Bloquerait tous les smoke tests étape 20.
+
+Fix trivial, 2 lignes à retirer :
+- Tuple import L1-10 environ
+- `__all__` L11-17 environ
+
+Protocole :
+1. Lis `backend/app/routers/__init__.py` intégralement
+2. Retire les 2 références à `properties` (import + `__all__`)
+3. `python -m compileall backend/app/routers/` → OK
+4. `python -c "from app.routers import *"` → OK (plus d'ImportError)
+5. Commit atomique : `fix(routers): nettoyer __init__.py du properties legacy supprimé session 4`
+6. Puis enchaîne Phase 0 sanity check ci-dessous.
+
+---
+
+#### 🛡️ Phase 0 — Vérification garde-fous environnement local (obligatoire avant étape 20)
+
+Cette phase est **critique** avant d'attaquer l'étape 20. On doit valider que l'environnement Windows local est sain, parce qu'on va exécuter des commandes en local (Alembic migration staging) qui nécessitent un Python fonctionnel.
+
+##### Check A — `PYTHONUTF8=1` effectif
+
+```bash
+python -c "import sys; print('PYTHONUTF8 mode:', sys.flags.utf8_mode)"
+```
+
+**Attendu : `PYTHONUTF8 mode: 1`**
+
+- **Si = 1** : variable d'env Killian `PYTHONUTF8=1` ajoutée session 7 prise en compte par le nouveau terminal. Go check B.
+- **Si = 0** : variable non prise en compte. Deux causes possibles :
+  1. Terminal ouvert avant modification system env → Killian doit **fermer tous ses terminaux et les rouvrir**
+  2. Variable pas correctement ajoutée → Killian doit retourner dans Paramètres Windows → Variables d'environnement → vérifier que `PYTHONUTF8` existe bien en variable utilisateur avec valeur `1`
+- **STOP+remontée à Killian** si `= 0` après tentative rouverture terminal.
+
+##### Check B — Smoke import `app.main` fonctionnel
+
+```bash
+cd /c/Users/Killan/immohub/backend
+python -c "from app.main import app; print('app.main import OK')"
+```
+
+**Attendu : `app.main import OK`**
+
+- **Si OK** : env local 100% sain, bug `UnicodeDecodeError cp1252 byte 0x8f` résolu par le Fix A session 7. **Go Phase 1.**
+- **Si UnicodeDecodeError cp1252** : `PYTHONUTF8=1` pas effectif malgré Check A vert — cas improbable mais possible. STOP+remontée.
+- **Si autre ImportError** (genre `pydantic_settings` manquant) : env local incomplet (packages non installés localement). Acceptable tant que tu peux tester via `python -m compileall` + imports ciblés. Documenter et continuer.
+- **STOP+remontée** sinon.
+
+##### Check C — `backend/.env` n'a pas bougé
+
+```bash
+cd /c/Users/Killan/immohub/backend
+file .env
+ls -la .env.backup* 2>/dev/null
+```
+
+**Attendu :**
+- `.env` toujours en `Unicode text, UTF-8 text` (comme session 7 Phase A)
+- Pas de fichier `.env.backup.*` résiduel (session 7 Phase A a skippé la conversion, donc aucun backup créé — mais vérifier quand même)
+
+**Si `.env.backup.*` trouvé** : surprise → investigation avec Killian avant de toucher quoi que ce soit. Un ancien backup d'une session antérieure peut-être — ne pas supprimer sans validation.
+
+##### Check D — Git propre
+
+```bash
+cd /c/Users/Killan/immohub
+git status
+git log --oneline -5
+```
+
+Attendu : working tree propre hors `.claude/settings.local.json`, HEAD cohérent avec clôture session 7, tags `v0.1.0-fusion-complete` et `v0.1.1-pre-prod-ready` visibles dans `git tag`.
+
+---
+
+**Remonte-moi le résultat des 4 checks en tableau avant de continuer.**
+
+Si les 4 sont verts → go Phase 1 étape 20.
+
+Si un seul est rouge → STOP+remontée à Killian avant de toucher à l'étape 20 (migration prod est une opération destructive, pas de tolérance sur l'env).
+
+---
+
+#### 🚀 Phase 1 — Étape 20 Phase 0 Roadmap (après validation Phase 0 sanity check)
+
+Scope exact :
+1. Backup manuel Supabase prod
+2. Création env staging via "Restore to new project" Supabase
+3. Migration 0029 exécutée en staging → validation
+4. Migration 0029 exécutée en prod
+5. Smoke tests backend (checklist 6 points SPRINT_LOG)
+6. Test manuel "créer 1 bien de A à Z" avec fiches A/B/C
+7. Correction ciblée des bugs découverts
+8. Re-test → zéro régression
+9. Bascule Sunimmo Riviera progressive (10 → 30 → 130 biens)
+
+**Je détaillerai Phase 1 en sous-étapes après validation Phase 0 sanity check.** Chaque sous-étape = même discipline (STOP+remontée, peer review Killian, commit atomique si code touché, jamais de migration prod sans validation explicite).
+
+**Règle d'or étape 20 :** **aucune action destructive sans mon feu vert explicite (Killian).** Claude Code peut préparer, documenter, vérifier en lecture seule. Mais backup, restore, migration, bascule Sunimmo = Killian clique lui-même dans l'UI Supabase ou donne le feu vert explicite commande par commande.
+
+---
+
+**Pas de push avant clôture session 8 (groupé fin). Pas de tag avant succès étape 20.**
+
+**Go PRIORITÉ ABSOLUE (fix routers/__init__.py) → Phase 0 sanity check → Phase 1 étape 20.**
+
+---
+
 ### 📊 Bilan sprint fusion properties→biens après session 4
 
 **Étapes 1-18 complètes (backend)** ✅
