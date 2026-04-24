@@ -20,7 +20,7 @@ interface Props {
   /** ID du contrat lié */
   contractId?: string;
   /** ID du bien lié */
-  propertyId?: string;
+  bienId?: string;
   /** Extra params (charges_label, signed_date, etc.) */
   extra?: Record<string, string>;
   /** Si vrai, affiche un mini-wizard (demande de pièces smart) */
@@ -82,7 +82,7 @@ export function DocumentQuickGenerator({
   icon = "",
   templateType,
   contractId,
-  propertyId,
+  bienId,
   extra = {},
   smartPieces = false,
   quittanceMode = false,
@@ -140,7 +140,7 @@ export function DocumentQuickGenerator({
       const { data } = await api.post<{ content_html: string }>("/documents/generate", {
         template_type: ttype,
         contract_id: contractId || null,
-        property_id: propertyId || null,
+        bien_id: bienId || null,
         extra: { signed_date: new Date().toLocaleDateString("fr-CH"), ...extra, ...(extraOverride || {}) },
       });
       setHtml(data.content_html);
