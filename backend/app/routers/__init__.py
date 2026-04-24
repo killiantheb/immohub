@@ -4,12 +4,10 @@ from app.routers import (
     contracts,
     dashboard,
     missions,
-    properties,
 )
 
 __all__ = [
     "auth",
-    "properties",
     "contracts",
     "missions",
     "companies",
