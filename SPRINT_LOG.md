@@ -476,6 +476,8 @@ Contenu organisé en 5 niveaux de priorité. Règle : zéro échec, gate dur ent
 - [ ] Content HTML emails transactionnels (SpamAssassin)
 - [ ] Nettoyer 4 rôles IAM redondants Google Cloud
 - [ ] Validation tests e2e Playwright en condition réelle
+- [ ] **Collision numérotation Supabase CLI vs Alembic** — clarifier stratégie long terme (préfixage type `sb_0029_*` / `al_0029_*`, ou migration unifiée vers un seul outil). Découvert session 8 : `supabase/migrations/0029_pricing_v2_starter_agence.sql` et `backend/alembic/versions/0029_fusion_properties_biens_complete.py` portent le même numéro, 2 outils distincts, 2 histoires d'ordre différentes. À trancher avant d'ouvrir aux users alpha (risque : confusion lors d'un audit, risque de rejouer une mauvaise 0029 dans un mauvais contexte).
+- [ ] **Standardiser CWD d'exécution des commandes Supabase CLI** — toujours depuis repo root pour n'avoir qu'un seul dossier `supabase/` (évite le split actuel `backend/supabase/` vs `/supabase/` racine). Découvert session 8 Phase A : `supabase link --project-ref` lancé depuis `backend/` a créé `backend/supabase/.temp/` parallèle au `supabase/` tracké du repo root. Fragile car les commandes futures suivront le CWD. Décision : documenter qu'on lance systématiquement les CLI ops Supabase depuis `/c/Users/Killan/immohub/`, puis supprimer `backend/supabase/` après re-link depuis repo root.
 
 #### 🟠 Dans Phase 2 public payant (3-6 semaines)
 
