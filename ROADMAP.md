@@ -47,15 +47,17 @@ Althy sera disponible en **4 langues** :
 
 ---
 
-## État actuel (24 avril 2026)
+## État actuel (25 avril 2026)
 
-- Backend fusion `properties → biens` complet (sessions 1-4).
-- Frontend fusion bundles P0 + P1 partiel terminé (TSC vert sur les fichiers déjà patchés).
-- Migration 0029 prod : non lancée.
-- Test manuel "créer 1 bien A à Z" : non fait.
-- Bascule Sunimmo Riviera : non commencée.
-- Coming Soon landing : non fait.
-- 0 utilisateur en production.
+- **Migration 0029 prod** : appliquée 25 avril 2026 14:34 GMT (TRUNCATE biens, schéma fusion Property→Bien, parité staging session 8 validée 5/5).
+- **Merge `refonte/fusion-properties-biens-complete` → `main`** : déployé prod 25 avril 2026 18:41 GMT+2 (61 commits, +7652/−2579 lignes, refonte backend + frontend).
+- **Backend Railway** : 200 sur tous endpoints critiques (`/api/health`, `marketplace/biens`, `marketplace/stats`).
+- **Frontend Vercel** : déployé sur la même branche, login UI fonctionnel (pattern auth H3 validé en conditions réelles).
+- **Coming Soon landing** : non fait.
+- **Utilisateurs en production** : 0 utilisateur réel (4 comptes de test du fondateur).
+- **Marketplace prod** : vide (`total: 0`) — TRUNCATE migration 0029, peuplement à arbitrer (130 biens Sunimmo).
+- **Test E2E "créer un bien A à Z" via UI** : ⚠️ JAMAIS effectué. Bloquant pour Phase 1.
+- **Audit visuel post-refonte** : ⚠️ non fait. Refonte touche dashboard (biens, contracts, crm, admin, portail) + landing (publier, bienvenue, estimation, BiensRecoCards) — cohérence design + régressions visuelles non validées.
 
 ---
 
@@ -73,19 +75,20 @@ Althy sera disponible en **4 langues** :
 - 0 bug bloquant connu.
 
 **Étapes** :
-1. Finir bundle P1 runtime (`crm`, `biens/[id]`, `biens/[id]/_shared`, `publier`, `DocumentQuickGenerator`).
-2. Bundle P2 (`portail`, `bienvenue`, `estimation` + sélecteurs Playwright).
-3. Bundle P3 (`BiensRecoCards` cosmétique).
-4. Clôture sprint fusion : SPRINT_LOG final, push global, tag git.
-5. Création env staging Supabase (Restore to new project).
-6. Backup manuel Supabase prod juste avant migration.
-7. Migration 0029 en staging → validation.
-8. Migration 0029 en prod.
-9. Smoke test post-migration (5 tâches Celery + endpoints critiques).
-10. Test manuel "créer 1 bien A à Z" avec fiches A + B + C.
-11. Correction ciblée des bugs découverts.
+1. ✅ Finir bundle P1 runtime (`crm`, `biens/[id]`, `biens/[id]/_shared`, `publier`, `DocumentQuickGenerator`).
+2. ✅ Bundle P2 (`portail`, `bienvenue`, `estimation` + sélecteurs Playwright).
+3. ✅ Bundle P3 (`BiensRecoCards` cosmétique).
+4. ✅ Clôture sprint fusion : merge `refonte/fusion-properties-biens-complete` → `main` le 25/04/2026 18:41 GMT+2 (61 commits, +7652/−2579).
+5. ✅ Création env staging Supabase (Restore to new project).
+6. ✅ Backup manuel Supabase prod juste avant migration.
+7. ✅ Migration 0029 en staging → validation (parité 5/5 session 8).
+8. ✅ Migration 0029 en prod (T0 = 25/04/2026 14:34 GMT, durée 4 sec, exit 0).
+9. ✅ Smoke test post-migration : endpoints critiques 200, login UI fonctionnel, pattern auth H3 validé.
+10. ⚠️ **Test manuel "créer 1 bien A à Z" via UI** : non effectué. **Bloquant pour Phase 1.** À faire prioritairement avant tout autre chantier.
+10bis. ⚠️ **Audit visuel post-refonte** : parcours manuel dashboard (biens, contracts, crm, admin, portail) + landing (publier, bienvenue, estimation) pour vérifier cohérence design + régressions. À faire conjointement avec étape 10.
+11. Correction ciblée des bugs découverts en étapes 10 / 10bis.
 12. Re-test → zéro régression.
-13. Bascule Sunimmo Riviera progressive : 10 biens → check, 30 → check, 130 → check.
+13. Bascule Sunimmo Riviera progressive : 10 biens → check, 30 → check, 130 → check. **Reportée après étape 10 validée.**
 
 ---
 
@@ -259,5 +262,6 @@ Althy sera disponible en **4 langues** :
 - **v1** (24 avril 2026, matinée) : draft initial après brainstorm vision.
 - **v2** (24 avril 2026, après-midi) : correction Hunters (rôle ouvert à tous, pas phase à part, slogan "finance ton réseau").
 - **v3** (24 avril 2026, après-midi) : ajout i18n complet (FR → DE → IT + EN) + Règle 7. **Version figée.**
+- **v3.1** (25 avril 2026) — MAJ État actuel post-merge fusion Property→Bien (61 commits déployés prod) + post-migration 0029 prod. Phase 0 étapes 1-9 ✅. Étape 10 (test E2E créer un bien) marquée bloquante pour Phase 1. Étape 10bis (audit visuel post-refonte) ajoutée. Étape 13 reportée après étape 10.
 
 **Prochaine révision** : uniquement quand un événement concret l'impose (fin Phase 0 ou feedback alpha contradictoire).
