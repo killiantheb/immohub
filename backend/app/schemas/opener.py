@@ -61,7 +61,7 @@ class OpenerWithDistance(OpenerRead):
 
 
 class MissionCreate(BaseModel):
-    property_id: uuid.UUID
+    bien_id: uuid.UUID
     type: MissionType
     scheduled_at: datetime
     notes: str | None = None
@@ -89,7 +89,7 @@ class MissionRead(BaseModel):
     id: uuid.UUID
     requester_id: uuid.UUID
     opener_id: uuid.UUID | None
-    property_id: uuid.UUID
+    bien_id: uuid.UUID
     type: str
     status: str
     scheduled_at: datetime

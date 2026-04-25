@@ -45,7 +45,7 @@ class RFQCreate(BaseModel):
     budget_min: float | None = Field(None, ge=0)
     budget_max: float | None = Field(None, ge=0)
     scheduled_date: datetime | None = None
-    property_id: uuid.UUID | None = None
+    bien_id: uuid.UUID | None = None
 
 
 class RFQRead(BaseModel):
@@ -53,7 +53,7 @@ class RFQRead(BaseModel):
 
     id: uuid.UUID
     owner_id: uuid.UUID
-    property_id: uuid.UUID | None
+    bien_id: uuid.UUID | None
     title: str
     description: str
     category: str

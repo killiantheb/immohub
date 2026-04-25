@@ -274,9 +274,9 @@ class OpenerService:
 
     async def create_mission(self, payload: MissionCreate, current_user: User) -> Mission:
         try:
-            prop_id = uuid.UUID(payload.property_id)
+            bien_id = uuid.UUID(payload.bien_id)
         except ValueError:
-            raise HTTPException(422, "property_id invalide")
+            raise HTTPException(422, "bien_id invalide")
 
         opener_id = None
         price = None
@@ -331,7 +331,7 @@ class OpenerService:
         mission = Mission(
             requester_id=current_user.id,
             opener_id=opener_id,
-            property_id=prop_id,
+            bien_id=bien_id,
             type=payload.type,
             scheduled_at=payload.scheduled_at,
             notes=payload.notes,

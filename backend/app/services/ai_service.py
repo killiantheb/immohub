@@ -152,7 +152,7 @@ class PaymentAlert:
     type: str  # "recurring_late" | "missed_payment" | "increasing_delay"
     severity: str  # "low" | "medium" | "high"
     description: str
-    property_id: str | None = None
+    bien_id: str | None = None
     tenant_id: str | None = None
 
 
@@ -360,7 +360,7 @@ Tes compétences pour ce propriétaire :
 - Coordination des interventions techniques
 
 Actions disponibles :
-<action>{"type": "navigate", "path": "/app/properties", "label": "Mes biens"}</action>
+<action>{"type": "navigate", "path": "/app/biens", "label": "Mes biens"}</action>
 <action>{"type": "navigate", "path": "/app/contracts/new", "label": "Nouveau bail", "requires_validation": true}</action>
 <action>{"type": "navigate", "path": "/app/rfqs/new", "label": "Demander intervention"}</action>
 
@@ -378,7 +378,7 @@ Tes compétences pour cette agence :
 - Récupération des infos de l'agence (DA, RC, coordonnées légales)
 
 Actions disponibles :
-<action>{"type": "navigate", "path": "/app/properties", "label": "Portefeuille"}</action>
+<action>{"type": "navigate", "path": "/app/biens", "label": "Portefeuille"}</action>
 <action>{"type": "navigate", "path": "/app/contracts", "label": "Contrats"}</action>
 <action>{"type": "navigate", "path": "/app/transactions", "label": "Comptabilité"}</action>
 
@@ -625,8 +625,8 @@ async def chat_stream(
     ctx_parts = []
     if context.get("page"):
         ctx_parts.append(f"Page active : {context['page']}")
-    if context.get("property_id"):
-        ctx_parts.append(f"Bien sélectionné : {context['property_id']}")
+    if context.get("bien_id"):
+        ctx_parts.append(f"Bien sélectionné : {context['bien_id']}")
     if context.get("contract_id"):
         ctx_parts.append(f"Contrat en cours : {context['contract_id']}")
     if context.get("mission_id"):
@@ -677,7 +677,7 @@ async def chat_stream(
             input_tokens = total_input
             output_tokens = total_output
 
-        await _log_usage(db, user_id, "chat", _FakeUsage(), context.get("property_id"))  # type: ignore[arg-type]
+        await _log_usage(db, user_id, "chat", _FakeUsage(), context.get("bien_id"))  # type: ignore[arg-type]
 
 
 # ── 5. Payment anomaly detection ──────────────────────────────────────────────
@@ -726,7 +726,7 @@ async def detect_payment_anomalies(
             "amount": float(r.amount),
             "due_date": r.due_date.isoformat() if r.due_date else None,
             "paid_at": r.paid_at.isoformat() if r.paid_at else None,
-            "property_id": str(r.property_id) if r.property_id else None,
+            "bien_id": str(r.bien_id) if r.bien_id else None,
             "tenant_id": str(r.tenant_id) if r.tenant_id else None,
         }
         for r in rows
@@ -743,7 +743,7 @@ Retourne UNIQUEMENT un tableau JSON d'alertes (peut être vide []) :
     "type": "<recurring_late|missed_payment|increasing_delay>",
     "severity": "<low|medium|high>",
     "description": "<description claire en français>",
-    "property_id": "<uuid ou null>",
+    "bien_id": "<uuid ou null>",
     "tenant_id": "<uuid ou null>"
   }}
 ]
@@ -770,7 +770,7 @@ Détecte uniquement des patterns réels : impayés répétés, retards croissant
                 type=item.get("type", "missed_payment"),
                 severity=item.get("severity", "medium"),
                 description=item.get("description", ""),
-                property_id=item.get("property_id"),
+                bien_id=item.get("bien_id"),
                 tenant_id=item.get("tenant_id"),
             )
             for item in items
@@ -1299,7 +1299,7 @@ Règles:
 - Si données vides: suggère 1-2 actions utiles selon le rôle
 - type "urgent" = rouge, "success" = vert, "info" = bleu, "mission" = amber
 - Actions: navigate (chemin de la page), mark_paid (id transaction), accept_mission (id mission)
-- Chemins disponibles: /properties, /contracts, /transactions, /rfqs, /openers, /companies, /overview
+- Chemins disponibles: /biens, /contracts, /transactions, /rfqs, /openers, /companies, /overview
 - Réponds en français, sois concis et proactif"""
 
     client = _client()

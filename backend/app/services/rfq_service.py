@@ -200,16 +200,16 @@ class RFQService:
     # ── RFQ CRUD ──────────────────────────────────────────────────────────────
 
     async def create_rfq(self, payload: RFQCreate, current_user: User) -> RFQ:
-        prop_id = None
-        if payload.property_id:
+        bien_id = None
+        if payload.bien_id:
             try:
-                prop_id = uuid.UUID(payload.property_id)
+                bien_id = uuid.UUID(payload.bien_id)
             except ValueError:
-                raise HTTPException(422, "property_id invalide")
+                raise HTTPException(422, "bien_id invalide")
 
         rfq = RFQ(
             owner_id=current_user.id,
-            property_id=prop_id,
+            bien_id=bien_id,
             title=payload.title,
             description=payload.description,
             category=payload.category,
