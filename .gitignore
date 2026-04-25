@@ -27,6 +27,10 @@ dist/
 .env.test.local
 .env.production.local
 
+# Backend env variants (secrets — never commit)
+backend/.env.*
+!backend/.env.example
+
 # IDEs
 .idea/
 .vscode/
@@ -53,3 +57,11 @@ alembic/versions/*.pyc
 
 .vercel
 .env*.local
+
+# Backups & dumps
+backups/
+*.sql.gz
+prod-dump-*
+
+# Supabase CLI local cache (link state, versions)
+**/supabase/.temp/
