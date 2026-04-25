@@ -130,7 +130,27 @@
       "Bash(PYTHONUTF8=1 SECRET_KEY=\"test-secret-key-32-chars-minimum-ok!\" DATABASE_URL=\"postgresql+asyncpg://postgres:postgres@localhost:5432/immohub_test\" SUPABASE_URL=\"https://placeholder.supabase.co\" SUPABASE_SERVICE_KEY=\"placeholder-service-key\" SUPABASE_JWT_SECRET=\"placeholder-jwt-secret-32-chars-min!\" .venv/Scripts/python.exe -c \"import app.main; print\\('IMPORT OK — routes:', len\\(app.main.app.routes\\)\\)\")",
       "Bash(PYTHONUTF8=1 SECRET_KEY=\"test-secret-key-32-chars-minimum-ok!\" DATABASE_URL=\"postgresql+asyncpg://postgres:postgres@localhost:5432/immohub_test\" SUPABASE_URL=\"https://placeholder.supabase.co\" SUPABASE_SERVICE_KEY=\"placeholder-service-key\" SUPABASE_JWT_SECRET=\"placeholder-jwt-secret-32-chars-min!\" .venv/Scripts/python.exe -m pytest tests/test_flag_gating.py -v)",
       "Bash(PYTHONUTF8=1 SECRET_KEY=\"test-secret-key-32-chars-minimum-ok!\" DATABASE_URL=\"postgresql+asyncpg://postgres:postgres@localhost:5432/immohub_test\" SUPABASE_URL=\"https://placeholder.supabase.co\" SUPABASE_SERVICE_KEY=\"placeholder-service-key\" SUPABASE_JWT_SECRET=\"placeholder-jwt-secret-32-chars-min!\" .venv/Scripts/python.exe *)",
-      "Bash(supabase --version)"
+      "Bash(supabase --version)",
+      "Bash(/c/Users/Killan/immohub/backend/.venv/Scripts/python.exe -c \"import app.main; print\\('app.main import OK — stage 13 router lot complet'\\)\")",
+      "Bash(/c/Users/Killan/immohub/backend/.venv/Scripts/python.exe -c ' *)",
+      "Bash(tee /tmp/tsc-1a.log)",
+      "Read(//tmp/**)",
+      "Bash(tee /tmp/tsc-1b.log)",
+      "Bash(echo \"---EXIT_CODE: $?\")",
+      "Bash(tee /tmp/tsc-1c.log)",
+      "Bash(echo \"---EXIT:$?\")",
+      "Bash(echo \"---exit=$?---\")",
+      "Read(//c/c/Users/Killan/immohub/backend/**)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(awk -F= '/^[A-Z_]+=/{print $1}' .env)",
+      "WebFetch(domain:supabase.com)",
+      "Bash(./venv/Scripts/python.exe -c ' *)",
+      "Bash(./venv/Scripts/python.exe -m alembic current)",
+      "Bash(./venv/Scripts/python.exe *)",
+      "Bash(sort -u echo \"Unique tables in dump: $\\(wc -l < /tmp/dump_tables.txt\\)\")",
+      "Bash(sort -u echo \"Unique tables in dump: $\\(wc -l < /tmp/dump_tables.txt\\)\" head -10 /tmp/dump_tables.txt)",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(echo \"Exit: $?\")"
     ]
   }
 }
