@@ -13,6 +13,12 @@ engine = create_async_engine(
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,
+    # Required for Supabase Transaction Pooler 6543 (pgbouncer transaction mode).
+    # Prevents DuplicatePreparedStatementError when connections are recycled.
+    connect_args={
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
+    },
 )
 
 AsyncSessionLocal = async_sessionmaker(
