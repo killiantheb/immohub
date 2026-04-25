@@ -397,7 +397,7 @@ async def get_classement(
                 u.first_name,
                 u.last_name,
                 u.role,
-                u.photo_url,
+                u.avatar_url AS photo_url,
                 ns.note_moyenne,
                 ns.nombre_notes,
                 pa.specialites,
