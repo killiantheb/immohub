@@ -56,8 +56,9 @@ Althy sera disponible en **4 langues** :
 - **Coming Soon landing** : non fait.
 - **Utilisateurs en production** : 0 utilisateur réel (4 comptes de test du fondateur).
 - **Marketplace prod** : vide (`total: 0`) — TRUNCATE migration 0029, peuplement à arbitrer (130 biens Sunimmo).
-- **Test E2E "créer un bien A à Z" via UI** : ⚠️ JAMAIS effectué. Bloquant pour Phase 1.
+- **Test E2E "créer un bien A à Z" via UI** : ✅ Effectué le 26 avril 2026 (session 11). Bug P0 dashboard `E.filter is not a function` éliminé (PR #2 `49d2c58`), bug audit log Decimal serializer éliminé (PR #1 `a2c8efd`). Premier `POST /api/v1/biens` 201 confirmé en prod, bien `e074ae1d-3ded-...` créé via UI.
 - **Audit visuel post-refonte** : ⚠️ non fait. Refonte touche dashboard (biens, contracts, crm, admin, portail) + landing (publier, bienvenue, estimation, BiensRecoCards) — cohérence design + régressions visuelles non validées.
+- **Session 11 clôturée VERT le 26 avril 2026.** Sprint 12 « Bien complet » ouvert : transformer « 1 bien créable » en « 1 bien complet pilotable ». Voir `docs/session12/SPRINT-bien-complet.md`.
 
 ---
 
@@ -84,7 +85,7 @@ Althy sera disponible en **4 langues** :
 7. ✅ Migration 0029 en staging → validation (parité 5/5 session 8).
 8. ✅ Migration 0029 en prod (T0 = 25/04/2026 14:34 GMT, durée 4 sec, exit 0).
 9. ✅ Smoke test post-migration : endpoints critiques 200, login UI fonctionnel, pattern auth H3 validé.
-10. ⚠️ **Test manuel "créer 1 bien A à Z" via UI** : non effectué. **Bloquant pour Phase 1.** À faire prioritairement avant tout autre chantier.
+10. ✅ **Test manuel "créer 1 bien A à Z" via UI** : effectué le 26 avril 2026 (session 11). Deux bugs bloquants découverts et fixés en prod : crash dashboard `E.filter is not a function` (PR #2, commit `49d2c58`) + audit log Decimal serializer (PR #1, commit `a2c8efd`). Premier bien créé via UI : `e074ae1d-3ded-...`. Voir `docs/session11/HANDOFF-cloture-bug-P0-pagination.md`.
 10bis. ⚠️ **Audit visuel post-refonte** : parcours manuel dashboard (biens, contracts, crm, admin, portail) + landing (publier, bienvenue, estimation) pour vérifier cohérence design + régressions. À faire conjointement avec étape 10.
 11. Correction ciblée des bugs découverts en étapes 10 / 10bis.
 12. Re-test → zéro régression.
@@ -263,5 +264,6 @@ Althy sera disponible en **4 langues** :
 - **v2** (24 avril 2026, après-midi) : correction Hunters (rôle ouvert à tous, pas phase à part, slogan "finance ton réseau").
 - **v3** (24 avril 2026, après-midi) : ajout i18n complet (FR → DE → IT + EN) + Règle 7. **Version figée.**
 - **v3.1** (25 avril 2026) — MAJ État actuel post-merge fusion Property→Bien (61 commits déployés prod) + post-migration 0029 prod. Phase 0 étapes 1-9 ✅. Étape 10 (test E2E créer un bien) marquée bloquante pour Phase 1. Étape 10bis (audit visuel post-refonte) ajoutée. Étape 13 reportée après étape 10.
+- **v3.2** (26 avril 2026) — Session 11 clôturée VERT : fix pagination frontend (PR #2 `49d2c58`) + fix audit log Decimal serializer backend (PR #1 `a2c8efd`). Étape 10 atteinte (premier bien créé via UI). Sprint 12 « Bien complet » ouvert (`docs/session12/SPRINT-bien-complet.md`).
 
 **Prochaine révision** : uniquement quand un événement concret l'impose (fin Phase 0 ou feedback alpha contradictoire).
