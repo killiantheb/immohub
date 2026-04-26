@@ -17,6 +17,19 @@ Pas d'enchaînement automatique d'étape à étape. Pas de bundling de scopes : 
 
 ---
 
+## État du sprint
+
+| Étape | Statut | Date |
+|-------|--------|------|
+| 1.A — Audit cohérence front ↔ back | ✅ Terminé | 2026-04-26 soir |
+| 1.B — Priorisation par bloc sémantique | ✅ Terminé | 2026-04-26 soir |
+| 2 — Fix /changement/actif (bug 500 P1) | ⏭️ À faire | session 12 / soir 2 |
+| 3 — Refonte formulaire création bien | ⏭️ À faire | sessions suivantes |
+| 4 — Refonte fiche bien (1 clic) | ⏭️ À faire | sessions suivantes |
+| 5 — Modification / suppression bien | ⏭️ À faire | sessions suivantes |
+
+---
+
 ## Principe directeur permanent — « 1 clic »
 
 **Définition** : vulgariser l'immobilier sans amputer la profondeur pro. Surcouche tech au-dessus, architecture clean en dessous, même invisible à l'utilisateur.
@@ -117,6 +130,50 @@ Couverture 100% des champs `BienCreate` (Pydantic) côté UI.
 
 ---
 
+## Décisions priorisation 1.B (2026-04-26)
+
+Audit 1.A a révélé 50 champs sur le modèle Bien backend, dont 30 manquants côté frontend. Décisions cadrage du soir :
+
+### Champs P1 — sprint 12 essentiel (visibles formulaire + fiche)
+
+- Identité bien (déjà OK) : adresse, ville, cp, type, surface, etage
+- Pilotage opérationnel : statut (vacant/loué/en_travaux), keys_count
+- Identité locative CH : rooms (Numeric 3.5), bedrooms, bathrooms
+- Argent : loyer (déjà OK), charges, deposit auto-calculé
+
+### Champs P2 — sprint 12 collapsible (sections pliables)
+
+- Identité étendue : building_name, unit_number, reference_number
+- Caractéristiques étendues : annee_construction, annee_renovation, classe_energetique
+- Équipements & confort (9 booléens) : is_furnished, has_balcony, has_terrace, has_garden, has_storage, has_fireplace, has_laundry_private, has_laundry_building
+- Règles de location : pets_allowed, smoking_allowed, parking_type
+- Localisation & environnement : description_lieu, situation_notes, distance_gare, distance_arret_bus, distance_telecabine, distance_lac, distance_aeroport
+- Description du logement : description_logement (avec bouton IA via hook orphelin existant `useGenerateBienDescription`)
+- Remarques internes : remarques
+
+### Auto-fill backend (pas saisi user)
+
+- canton ← table mapping cp → canton CH
+- lat, lng ← géocodage automatique
+
+### Bugs structurels identifiés (à fixer dans sprint 12)
+
+1. **Bug `pieces` orphelin** : champ saisi par user mais non envoyé au POST. À renommer `rooms` et inclure dans payload.
+2. **Statut invisible UI** : NOT NULL backend, default `vacant`, aucun bouton de bascule front. À corriger dans étape 4 (fiche bien) — bouton 1 clic vacant → loué → en_travaux.
+3. **Confusion deposit** : `bien.deposit` (montant attendu) vs `locataire.depot_garantie` (montant versé). Source de vérité = (c) les deux co-existent. Section Finances doit afficher attendu ET versé, alerter si écart.
+4. **Hooks IA orphelins** : `useGenerateBienDescription` existe mais non câblé. À brancher dans section « Description du logement » en étape 3.
+
+### Règle métier caution Suisse romande (référence)
+
+Caution attendue calculée automatiquement :
+
+- Location à l'année : caution = 3 × loyer
+- Location à la saison : caution = 2 × loyer
+
+Pour le sprint 12, `deposit` reste un simple montant. La modalité de versement (3 modalités CH possibles) est reportée — voir backlog post-sprint ci-dessous.
+
+---
+
 ## Validation par étape
 
 Chaque étape se termine par :
@@ -176,6 +233,11 @@ Fondation. Le bien existe propre, modifiable, archivable, cohérent front ↔ ba
 - OCR pour pré-remplissage depuis scans
 - Signature électronique distancielle (e-signature CH conforme)
 - Archivage par bien, accès propriétaire et locataire
+- **Module Caution complet** (intégré au lease/contract, pas au bien)
+  * 3 modalités Suisse : cash/virement direct, compte bancaire bloqué (CO art. 257e), organisme de caution (GoCaution, Swisscaution, Firstcaution)
+  * Workflow versement / restitution / signatures multipartites EDL
+  * Référencement organisme + IBAN compte bloqué selon modalité
+  * Partenariat GoCaution identifié (10% commission prime — voir BP)
 
 ### Sprint 14 — Comptabilité location
 
