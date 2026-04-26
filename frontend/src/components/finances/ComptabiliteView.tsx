@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { Download, FileText, Loader2, ScanLine, Upload, Check, AlertCircle } from "lucide-react";
 import { api } from "@/lib/api";
 import { C } from "@/lib/design-tokens";
+import type { PaginatedBiens } from "@/lib/types";
 
 interface OcrResult {
   montant: number | null;
@@ -43,9 +44,9 @@ function ScanSection() {
   const loadBiens = useCallback(async () => {
     if (biens.length > 0) return;
     try {
-      const r = await api.get<Bien[]>("/biens/");
-      setBiens(r.data);
-      if (r.data[0]) setBienId(r.data[0].id);
+      const r = await api.get<PaginatedBiens>("/biens");
+      setBiens(r.data.items);
+      if (r.data.items[0]) setBienId(r.data.items[0].id);
     } catch { /* ignore */ }
   }, [biens.length]);
 
