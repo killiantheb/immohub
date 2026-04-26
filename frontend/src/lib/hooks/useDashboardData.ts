@@ -6,6 +6,7 @@ import type {
   Bien, Locataire, Paiement, Intervention,
   MissionOuvreur, ProfileOuvreur,
 } from "./useBiens";
+import type { PaginatedBiens } from "@/lib/types";
 
 // ── Re-export types needed by dashboards ──────────────────────────────────────
 export type { Bien, Locataire, Paiement, Intervention, MissionOuvreur, ProfileOuvreur, DocumentAlthy };
@@ -28,8 +29,8 @@ export function useManagerDashboard() {
   const biens = useQuery({
     queryKey: ["dashboard", "biens"],
     queryFn: async () => {
-      const { data } = await api.get<Bien[]>("/biens/", { params: { size: 100 } });
-      return data;
+      const { data } = await api.get<PaginatedBiens>("/biens", { params: { size: 100 } });
+      return data.items;
     },
     staleTime: 60_000,
   });

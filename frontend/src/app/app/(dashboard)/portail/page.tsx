@@ -199,7 +199,7 @@ export default function PortailPage() {
 
   const { data: users = [], isLoading } = useQuery<PortailUser[]>({
     queryKey: ["portail-users"],
-    queryFn: () => api.get<PortailUser[]>("/portail").then(r => r.data),
+    queryFn: () => api.get<{ items: PortailUser[] }>("/portail").then(r => r.data.items),
   });
 
   const create = useMutation({

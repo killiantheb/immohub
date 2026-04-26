@@ -20,6 +20,7 @@ import type {
   Bien, Locataire, Paiement, Intervention,
   DocumentAlthy,
 } from "@/lib/hooks/useDashboardData";
+import type { PaginatedBiens } from "@/lib/types";
 import { DashboardPortail } from "./DashboardPortail";
 import {
   DC, DCard,
@@ -334,7 +335,7 @@ function useUnifiedData(role: UserRole | null): UnifiedData {
   // ── Manager queries ──────────────────────────────────────────────────────────
   const biensQ = useQuery({
     queryKey: ["ud", "biens"],
-    queryFn: async () => { const { data } = await api.get<Bien[]>("/biens/", { params: { size: 100 } }); return data; },
+    queryFn: async () => { const { data } = await api.get<PaginatedBiens>("/biens", { params: { size: 100 } }); return data.items; },
     enabled: isManager, staleTime: 60_000,
   });
 
