@@ -10,6 +10,7 @@ Gestion du cycle complet de changement de locataire :
 from __future__ import annotations
 
 import uuid
+from datetime import date
 from typing import Annotated, Any
 
 from app.core.database import get_db
@@ -65,7 +66,7 @@ async def _get_changement(changement_id: str, bien_id: str, db: AsyncSession) ->
 # ── Schémas ───────────────────────────────────────────────────────────────────
 
 class ChangementCreer(BaseModel):
-    date_depart_prevu: str | None = None   # ISO date YYYY-MM-DD
+    date_depart_prevu: date | None = None   # ISO date YYYY-MM-DD
 
 
 class EdlUpdate(BaseModel):
@@ -77,11 +78,11 @@ class EdlUpdate(BaseModel):
 
 
 class FinaliserDepart(BaseModel):
-    date_checkout: str | None = None        # ISO date
+    date_checkout: date | None = None       # ISO date
 
 
 class FinaliserEntree(BaseModel):
-    date_checkin: str | None = None         # ISO date
+    date_checkin: date | None = None        # ISO date
     nouveau_locataire_id: str | None = None
     bail_signe: bool = False
     premier_loyer_envoye: bool = False
@@ -152,7 +153,7 @@ async def creer_changement(
             INSERT INTO changements_locataire
                 (id, bien_id, phase, statut, date_depart_prevu, checklist_depart)
             VALUES
-                (:id, :bien_id, 'depart_annonce', 'en_cours', :date_depart, :checklist::jsonb)
+                (:id, :bien_id, 'depart_annonce', 'en_cours', :date_depart, CAST(:checklist AS jsonb))
         """),
         {
             "id": new_id,
@@ -183,7 +184,7 @@ async def update_checklist(
 
     import json
     await db.execute(
-        text("UPDATE changements_locataire SET checklist_depart = :cl::jsonb WHERE id = :id"),
+        text("UPDATE changements_locataire SET checklist_depart = CAST(:cl AS jsonb) WHERE id = :id"),
         {"cl": json.dumps(payload.checklist), "id": changement_id},
     )
     await db.commit()
@@ -236,7 +237,7 @@ async def update_edl(
         await db.execute(
             text("""
                 UPDATE changements_locataire
-                SET edl_sortie = :edl::jsonb,
+                SET edl_sortie = CAST(:edl AS jsonb),
                     caution_retenue = :caution,
                     caution_motif = :motif,
                     phase = CASE WHEN phase = 'recherche' THEN 'checkout' ELSE phase END
@@ -253,7 +254,7 @@ async def update_edl(
         await db.execute(
             text("""
                 UPDATE changements_locataire
-                SET edl_entree = :edl::jsonb,
+                SET edl_entree = CAST(:edl AS jsonb),
                     phase = CASE WHEN phase = 'checkout' THEN 'checkin' ELSE phase END
                 WHERE id = :id
             """),
