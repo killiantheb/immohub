@@ -1,4 +1,4 @@
-# CATHY — Makefile
+# Althy — Makefile
 # Requires: make, docker, docker-compose, python 3.12+, node 20+
 # On Windows: run from Git Bash or WSL
 

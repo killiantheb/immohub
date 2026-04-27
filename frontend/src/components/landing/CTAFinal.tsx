@@ -169,7 +169,7 @@ export function CTAFinal() {
             marginTop: "2rem",
           }}
         >
-          Déjà 130 biens gérés en Suisse romande
+          Plateforme suisse romande — 100% sécurisée
         </motion.p>
       </div>
     </section>

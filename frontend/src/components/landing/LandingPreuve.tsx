@@ -3,8 +3,7 @@ import { C } from "@/lib/design-tokens";
 const serif = "var(--font-serif)";
 
 const CHIFFRES = [
-  { n: "130", label: "biens gérés" },
-  { n: "5",   label: "villes actives" },
+  { n: "5",    label: "villes actives" },
   { n: "100%", label: "Suisse" },
 ];
 
@@ -18,32 +17,10 @@ export function LandingPreuve() {
     }}>
       <div style={{ maxWidth: 780, margin: "0 auto" }}>
 
-        {/* Témoignage */}
-        <div style={{ textAlign: "center", marginBottom: 52 }}>
-          <div style={{ fontSize: 22, color: C.prussian, letterSpacing: "0.06em", marginBottom: 20 }}>
-            ★★★★★
-          </div>
-          <blockquote style={{
-            fontFamily: serif,
-            fontSize: "clamp(18px,2.5vw,24px)",
-            fontWeight: 300, fontStyle: "italic",
-            color: C.text, lineHeight: 1.55,
-            margin: "0 0 24px",
-          }}>
-            « Althy gère tous mes rappels de loyer et génère mes quittances en quelques secondes.
-            Je ne pourrais plus m&apos;en passer — c&apos;est comme avoir un gestionnaire disponible 24h/24. »
-          </blockquote>
-          <p style={{ fontSize: 13, color: C.textMuted, margin: 0, fontWeight: 500 }}>
-            Patrick M. — Propriétaire à Lausanne · 130 biens gérés
-          </p>
-        </div>
-
         {/* Chiffres clés */}
         <div style={{
           display: "flex", justifyContent: "center",
           gap: 48, flexWrap: "wrap" as const,
-          padding: "28px 0 0",
-          borderTop: `1px solid ${C.border}`,
           textAlign: "center",
         }}>
           {CHIFFRES.map(item => (

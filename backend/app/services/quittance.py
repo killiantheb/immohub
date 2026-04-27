@@ -115,6 +115,6 @@ def generate_quittance_pdf(
     pdf.set_y(-20)
     pdf.set_font("Helvetica", "I", 7)
     pdf.set_text_color(120, 120, 120)
-    pdf.cell(0, 4, "Document généré automatiquement par Killian Thébaud — Althy · Genève · althy.ch", ln=True, align="C")
+    pdf.cell(0, 4, "Document généré automatiquement par HBM Swiss Sàrl · Genève · althy.ch", ln=True, align="C")
 
     return pdf.output()

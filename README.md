@@ -33,7 +33,7 @@ cp backend/.env.example backend/.env
 
 ```env
 # backend/.env
-APP_NAME=CATHY
+APP_NAME=Althy
 APP_ENV=development
 DEBUG=true
 SECRET_KEY=<génère avec: python -c "import secrets; print(secrets.token_hex(32))">
@@ -60,7 +60,7 @@ SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_USER=
 SMTP_PASSWORD=
-EMAILS_FROM=noreply@cathy.fr
+EMAILS_FROM=noreply@althy.ch
 ```
 
 **Frontend** — copier et remplir :

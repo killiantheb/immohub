@@ -62,7 +62,7 @@ class ElementTrouve:
     On ne distingue pas par statut — tout est dans le même sac.
     L'utilisateur décidera quoi garder.
     """
-    source_site:    str           # "Homegate", "ImmoScout24", "mysunimmo.ch"...
+    source_site:    str           # "Homegate", "ImmoScout24", "example.ch"...
     source_url:     str           # URL complète de la page
     source_id:      str           # ID trouvé dans l'URL ou généré
     type_element:   str           # "bien", "profil", "realisation", "article"
@@ -210,12 +210,12 @@ async def scanner_tout(contexte: dict) -> list[ElementTrouve]:
     contexte = {
         "prenom": "Jean",
         "nom": "Dupont",
-        "agence_nom": "Sunimmo Riviera",   # optionnel
-        "ville": "Crans-Montana",
-        "site_web": "https://mysunimmo.ch", # optionnel — site propre
-        "email": "jean@sunimmo.ch",         # optionnel
-        "telephone": "+41 78 649 66 20",    # optionnel
-        "role": "agence",                   # agence|proprio_solo|opener|artisan|locataire
+        "agence_nom": "Agence Demo",       # optionnel
+        "ville": "Genève",
+        "site_web": "https://example.ch",  # optionnel — site propre
+        "email": "jean@example.ch",        # optionnel
+        "telephone": "+41 22 000 00 00",   # optionnel
+        "role": "agence",                  # agence|proprio_solo|opener|artisan|locataire
     }
     """
     role       = contexte.get("role", "")

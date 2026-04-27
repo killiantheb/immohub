@@ -67,7 +67,7 @@ const JSON_LD = {
       "@type": "Organization",
       "@id": "https://althy.ch/#org",
       name: "Althy",
-      legalName: "Killian Thébaud — Althy",
+      legalName: "HBM Swiss Sàrl",
       url: "https://althy.ch",
       logo: "https://althy.ch/icon.svg",
       description: "L'assistant immobilier suisse — gestion sans agence pour propriétaires indépendants.",

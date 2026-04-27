@@ -29,7 +29,7 @@ export default function DisclaimerIaPage() {
       <div style={{ padding: "1.25rem 1.5rem", background: "var(--althy-orange-light)", borderRadius: 12, border: "2px solid var(--althy-orange)", marginBottom: "2rem" }}>
         <p style={{ fontFamily: "var(--font-serif)", fontSize: 13, fontWeight: 400, color: "var(--althy-orange)", marginBottom: "0.5rem", letterSpacing: "0.5px" }}>DISCLAIMER — apparaissant sur chaque document généré</p>
         <p style={{ fontSize: 13, color: "#5C2E0E", lineHeight: 1.7, fontStyle: "italic" }}>
-          "Document généré automatiquement par Althy IA le [DATE]. Ce document est fourni à titre indicatif et de facilitation uniquement. Il ne constitue pas un conseil juridique, fiscal ou professionnel. L'utilisateur est seul responsable de sa validation et de son utilisation. En cas de doute, consultez un professionnel qualifié. Killian Thébaud — Althy, Genève — althy.ch"
+          "Document généré automatiquement par Althy IA le [DATE]. Ce document est fourni à titre indicatif et de facilitation uniquement. Il ne constitue pas un conseil juridique, fiscal ou professionnel. L'utilisateur est seul responsable de sa validation et de son utilisation. En cas de doute, consultez un professionnel qualifié. HBM Swiss Sàrl, Genève — althy.ch"
         </p>
       </div>
 
