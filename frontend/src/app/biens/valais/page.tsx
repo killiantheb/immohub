@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
-import { VillePageShared, makeVilleMetadata } from "../_components/VillePageShared";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = makeVilleMetadata("valais");
+// Phase 1 : pages SEO cantons masquées (marketplace publique reportée).
+// Code original conservé dans l'historique git.
 
-export default function ValaisPage() {
-  return <VillePageShared slug="valais" />;
+export default function BiensValaisPage() {
+  redirect("/");
 }

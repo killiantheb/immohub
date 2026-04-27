@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Send, Sparkles, X, ArrowRight } from "lucide-react";
 import { C } from "@/lib/design-tokens";
-import { BiensRecoCards } from "./BiensRecoCards";
+// Phase 1 : marketplace publique masquée — BiensRecoCards retiré du chat.
+// import { BiensRecoCards } from "./BiensRecoCards";
 import { EstimationRange } from "./EstimationRange";
 import { AutonomieCalc } from "./AutonomieCalc";
 
@@ -33,9 +34,11 @@ export type LandingEntities = {
 
 type Msg = { role: "user" | "assistant"; content: string };
 
+// Phase 1 : CTA "biens" retiré (marketplace publique masquée).
+// "biens" remappé vers /register pour collecter le lead à la place.
 const CTA_CONFIG: Record<string, { label: string; href: string }> = {
   estimation: { label: "Obtenir l'estimation complète gratuite",       href: "/estimation" },
-  biens:      { label: "Voir tous les biens correspondants",            href: "/biens" },
+  biens:      { label: "Créer un compte pour être alerté",              href: "/register" },
   autonomie:  { label: "Découvrir Althy Autonomie (CHF 39/mois)",       href: "/autonomie" },
   register:   { label: "Créer un compte gratuit",                       href: "/register" },
 };
@@ -269,9 +272,10 @@ export function InlineChat({
               >
                 {m.content || (streaming && i === messages.length - 1 ? <TypingDots /> : null)}
               </div>
-              {isLastAssistant && lastIntent === "recherche_bien" && (
+              {/* Phase 1 : <BiensRecoCards> retiré (marketplace publique masquée). */}
+              {/* {isLastAssistant && lastIntent === "recherche_bien" && (
                 <BiensRecoCards entities={lastEntities} />
-              )}
+              )} */}
               {isLastAssistant && lastIntent === "estimation" && (
                 <EstimationRange entities={lastEntities} />
               )}

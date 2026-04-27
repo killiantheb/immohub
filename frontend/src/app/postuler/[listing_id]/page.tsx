@@ -269,10 +269,10 @@ export default function PostulerPage() {
       <div style={{ maxWidth: 680, margin: "0 auto", paddingTop: 32 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 32 }}>
           <Link
-            href={`/biens/${listingId}`}
+            href="/"
             style={{ color: "var(--althy-text-2)", fontSize: 14, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}
           >
-            ← Retour à l'annonce
+            ← Retour à l'accueil
           </Link>
         </div>
 
@@ -601,27 +601,17 @@ export default function PostulerPage() {
               ))}
             </div>
 
-            {/* CTAs */}
+            {/* CTA — Phase 1 : marketplace publique masquée, retour landing uniquement */}
             <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
               <Link
-                href={`/biens/${listingId}`}
+                href="/"
                 style={{
-                  background: "none", border: "1px solid var(--althy-border)",
-                  borderRadius: 8, padding: "12px 24px", fontSize: 15, cursor: "pointer",
-                  color: "var(--althy-text)", textDecoration: "none",
-                }}
-              >
-                ← Voir l'annonce
-              </Link>
-              <Link
-                href="/biens/swipe"
-                style={{
-                  background: "var(--althy-orange)", color: "#fff", border: "none",
+                  background: "var(--althy-prussian)", color: "#fff", border: "none",
                   borderRadius: 8, padding: "12px 24px", fontSize: 15, fontWeight: 600,
                   textDecoration: "none",
                 }}
               >
-                Découvrir d'autres biens →
+                ← Retour à l'accueil
               </Link>
             </div>
           </div>

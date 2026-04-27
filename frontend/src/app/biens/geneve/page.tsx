@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
-import { VillePageShared, makeVilleMetadata } from "../_components/VillePageShared";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = makeVilleMetadata("geneve");
+// Phase 1 : pages SEO villes masquées (marketplace publique reportée).
+// Code original conservé dans l'historique git.
 
-export default function GenevePage() {
-  return <VillePageShared slug="geneve" />;
+export default function BiensGenevePage() {
+  redirect("/");
 }
