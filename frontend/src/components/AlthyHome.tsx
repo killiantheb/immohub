@@ -160,12 +160,12 @@ export default function AlthyHome() {
 
   if (isLoading) {
     return (
-      <div style={{ background: "#F5EDE0", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: "#F8FAFC", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #F5A050 0%, var(--althy-orange) 45%, #8A3008 100%)", margin: "0 auto 1rem", animation: "breathe 2s ease-in-out infinite", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #C9A961 0%, #1A4975 45%, #051A30 100%)", margin: "0 auto 1rem", animation: "breathe 2s ease-in-out infinite", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
             <span style={{ fontFamily: "serif", fontSize: 18, color: "#fff", letterSpacing: 4 }}>Althy</span>
           </div>
-          <p style={{ fontSize: 11, letterSpacing: 2, color: "#A05C28", textTransform: "uppercase" }}>analyse en cours…</p>
+          <p style={{ fontSize: 11, letterSpacing: 2, color: "#0F2E4C", textTransform: "uppercase" }}>analyse en cours…</p>
         </div>
         <style>{`@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}`}</style>
       </div>
@@ -185,21 +185,21 @@ export default function AlthyHome() {
   const homePath = homeByRole[profile?.role ?? ""] ?? "/app";
 
   return (
-    <div style={{ background: "#F5EDE0", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", padding: "2.5rem 1.2rem 2rem", position: "relative", fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ background: "#F8FAFC", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", padding: "2.5rem 1.2rem 2rem", position: "relative", fontFamily: "'DM Sans', sans-serif" }}>
 
       {/* Profile tag */}
-      <div style={{ position: "absolute", top: 16, left: 16, padding: "5px 12px", borderRadius: 20, background: "rgba(255,255,255,0.7)", fontSize: 10, letterSpacing: 1, textTransform: "uppercase", color: "#A05C28", backdropFilter: "blur(4px)", border: "0.5px solid rgba(160,92,40,0.2)" }}>
+      <div style={{ position: "absolute", top: 16, left: 16, padding: "5px 12px", borderRadius: 20, background: "rgba(255,255,255,0.7)", fontSize: 10, letterSpacing: 1, textTransform: "uppercase", color: "#0F2E4C", backdropFilter: "blur(4px)", border: "0.5px solid rgba(15,46,76,0.2)" }}>
         {roleName[profile?.role ?? ""] ?? profile?.role}
       </div>
 
       {/* Dashboard button */}
-      <button onClick={() => router.push(homePath)} style={{ position: "absolute", top: 16, right: 16, padding: "6px 14px", borderRadius: 20, border: "0.5px solid rgba(160,92,40,0.2)", background: "rgba(255,255,255,0.7)", fontSize: 11, color: "#A05C28", cursor: "pointer", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", gap: 5 }}>
+      <button onClick={() => router.push(homePath)} style={{ position: "absolute", top: 16, right: 16, padding: "6px 14px", borderRadius: 20, border: "0.5px solid rgba(15,46,76,0.2)", background: "rgba(255,255,255,0.7)", fontSize: 11, color: "#0F2E4C", cursor: "pointer", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", gap: 5 }}>
         <svg viewBox="0 0 16 16" width={12} height={12} fill="none" stroke="currentColor" strokeWidth={1.5}><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
         Mon espace
       </button>
 
       {/* Refresh button */}
-      <button onClick={fetchBriefing} style={{ position: "absolute", top: 16, right: 118, padding: "6px 12px", borderRadius: 20, border: "0.5px solid rgba(160,92,40,0.2)", background: "rgba(255,255,255,0.7)", fontSize: 11, color: "#A05C28", cursor: "pointer", backdropFilter: "blur(4px)" }}>
+      <button onClick={fetchBriefing} style={{ position: "absolute", top: 16, right: 118, padding: "6px 12px", borderRadius: 20, border: "0.5px solid rgba(15,46,76,0.2)", background: "rgba(255,255,255,0.7)", fontSize: 11, color: "#0F2E4C", cursor: "pointer", backdropFilter: "blur(4px)" }}>
         ↻
       </button>
 
@@ -207,28 +207,28 @@ export default function AlthyHome() {
       <div style={{ position: "relative", width: 160, height: 160, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1.8rem" }}>
         <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid var(--althy-orange)", animation: "ripple 3s ease-out infinite" }} />
         <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px solid var(--althy-orange)", animation: "ripple2 3s ease-out infinite 1.5s" }} />
-        <div onClick={toggleTalk} style={{ width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #F5A050 0%, var(--althy-orange) 45%, #8A3008 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", animation: isTalking ? "speaking 0.4s ease-in-out infinite" : "breathe 3.5s ease-in-out infinite", cursor: "pointer", zIndex: 2, boxShadow: "0 8px 40px rgba(15,46,76,0.3)" }}>
+        <div onClick={toggleTalk} style={{ width: 120, height: 120, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, #C9A961 0%, #1A4975 45%, #051A30 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", animation: isTalking ? "speaking 0.4s ease-in-out infinite" : "breathe 3.5s ease-in-out infinite", cursor: "pointer", zIndex: 2, boxShadow: "0 8px 40px rgba(15,46,76,0.3)" }}>
           <span style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 300, color: "#fff", letterSpacing: 4, textTransform: "uppercase" }}>Althy</span>
           <span style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", letterSpacing: 1.5, textTransform: "uppercase", marginTop: 2 }}>parler</span>
         </div>
       </div>
 
       {/* Status */}
-      <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#A05C28", marginBottom: "1.6rem", minHeight: 16, fontWeight: 300, opacity: 0.8, textAlign: "center", maxWidth: 360 }}>
+      <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#0F2E4C", marginBottom: "1.6rem", minHeight: 16, fontWeight: 300, opacity: 0.8, textAlign: "center", maxWidth: 360 }}>
         {statusText}
       </div>
 
       {/* Cards */}
       <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 10, marginBottom: "1.2rem" }}>
         {briefing?.cards.length === 0 && (
-          <div style={{ textAlign: "center", padding: "2rem 0", color: "#A05C28", fontSize: 13, opacity: 0.6 }}>
+          <div style={{ textAlign: "center", padding: "2rem 0", color: "#0F2E4C", fontSize: 13, opacity: 0.6 }}>
             Tout est en ordre — posez une question à Althy ci-dessous
           </div>
         )}
         {briefing?.cards.map((card, idx) => (
-          <div key={card.id ?? idx} style={{ background: "#fff", borderRadius: 16, padding: "14px 16px", border: "0.5px solid rgba(160,92,40,0.12)", borderLeft: `3px solid ${CARD_BORDER[card.type]}`, paddingLeft: 14, animation: `fadeUp 0.4s ease ${idx * 0.1}s both` }}>
+          <div key={card.id ?? idx} style={{ background: "#fff", borderRadius: 16, padding: "14px 16px", border: "0.5px solid rgba(15,46,76,0.12)", borderLeft: `3px solid ${CARD_BORDER[card.type]}`, paddingLeft: 14, animation: `fadeUp 0.4s ease ${idx * 0.1}s both` }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-              <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 1, color: "#A05C28", fontWeight: 500 }}>{card.label}</span>
+              <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 1, color: "#0F2E4C", fontWeight: 500 }}>{card.label}</span>
               <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 500, background: BADGE_STYLES[card.badgeColor].bg, color: BADGE_STYLES[card.badgeColor].color }}>{card.badge}</span>
             </div>
             {card.details && (
@@ -249,7 +249,7 @@ export default function AlthyHome() {
                   <button
                     onClick={() => handleAction(card.primaryAction!)}
                     disabled={actionLoading === card.primaryAction.id}
-                    style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", background: "var(--althy-orange)", color: "#fff", fontFamily: "inherit", fontSize: 12, fontWeight: 500, cursor: "pointer", opacity: actionLoading === card.primaryAction.id ? 0.6 : 1 }}
+                    style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", background: "var(--althy-prussian)", color: "#fff", fontFamily: "inherit", fontSize: 12, fontWeight: 500, cursor: "pointer", opacity: actionLoading === card.primaryAction.id ? 0.6 : 1 }}
                   >
                     {actionLoading === card.primaryAction.id ? "…" : card.primaryAction.label}
                   </button>
@@ -257,7 +257,7 @@ export default function AlthyHome() {
                 {card.secondaryAction && (
                   <button
                     onClick={() => handleAction(card.secondaryAction!)}
-                    style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "1px solid rgba(160,92,40,0.25)", background: "transparent", color: "#A05C28", fontFamily: "inherit", fontSize: 12, cursor: "pointer" }}
+                    style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "1px solid rgba(15,46,76,0.25)", background: "transparent", color: "#0F2E4C", fontFamily: "inherit", fontSize: 12, cursor: "pointer" }}
                   >
                     {card.secondaryAction.label}
                   </button>
@@ -269,7 +269,7 @@ export default function AlthyHome() {
       </div>
 
       {/* Chat input */}
-      <div style={{ width: "100%", maxWidth: 420, display: "flex", gap: 8, alignItems: "center", background: "#fff", borderRadius: 24, padding: "8px 8px 8px 16px", border: "0.5px solid rgba(160,92,40,0.2)" }}>
+      <div style={{ width: "100%", maxWidth: 420, display: "flex", gap: 8, alignItems: "center", background: "#fff", borderRadius: 24, padding: "8px 8px 8px 16px", border: "0.5px solid rgba(15,46,76,0.2)" }}>
         <input
           value={chatInput}
           onChange={e => setChatInput(e.target.value)}
@@ -278,7 +278,7 @@ export default function AlthyHome() {
           disabled={isThinking}
           style={{ flex: 1, border: "none", outline: "none", fontFamily: "inherit", fontSize: 13, color: "#1a1a1a", background: "transparent" }}
         />
-        <button onClick={sendMessage} disabled={isThinking} style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--althy-orange)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: isThinking ? 0.6 : 1 }}>
+        <button onClick={sendMessage} disabled={isThinking} style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--althy-prussian)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: isThinking ? 0.6 : 1 }}>
           <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>

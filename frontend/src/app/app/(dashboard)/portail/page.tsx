@@ -438,7 +438,7 @@ export default function PortailPage() {
       {/* Pricing note */}
       <div style={{
         marginTop: 20, padding: "12px 16px", borderRadius: 10,
-        background: C.orangeBg, border: `1px solid rgba(181,90,48,0.2)`,
+        background: C.orangeBg, border: `1px solid rgba(15,46,76,0.2)`,
         fontSize: 12.5, color: C.text2,
       }}>
         <Eye size={13} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }} />

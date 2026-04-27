@@ -53,9 +53,9 @@ export const MARQUEE_ITEMS = [
 ]
 
 export const POUR_QUI = [
-  { label: "Propriétaire indépendant", desc: "Gérez vos biens en solo, sans agence.", gradient: "from-amber-900/40 to-amber-950" },
+  { label: "Propriétaire indépendant", desc: "Gérez vos biens en solo, sans agence.", gradient: "from-yellow-700/40 to-yellow-900" },
   { label: "Agence immobilière", desc: "Multi-agents, multi-biens, un seul outil.", gradient: "from-slate-800/60 to-slate-900" },
-  { label: "Ouvreur", desc: "Missions géolocalisées, paiement automatique.", gradient: "from-orange-900/40 to-orange-950" },
+  { label: "Ouvreur", desc: "Missions géolocalisées, paiement automatique.", gradient: "from-blue-900/40 to-blue-950" },
   { label: "Artisan", desc: "Devis IA, suivi chantier, facturation.", gradient: "from-stone-800/60 to-stone-900" },
   { label: "Locataire", desc: "Portail personnel, documents, signalements.", gradient: "from-zinc-800/60 to-zinc-900" },
 ]

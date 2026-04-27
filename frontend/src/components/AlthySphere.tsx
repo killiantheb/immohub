@@ -24,10 +24,10 @@ export function AlthySphere({ size = 240, speaking = false, className }: Props) 
           width: size,
           height: size,
           borderRadius: '50%',
-          background: 'radial-gradient(circle at 36% 30%, #FFAA6A 0%, var(--althy-orange) 30%, #C03C10 60%, #6A1A06 100%)',
+          background: 'radial-gradient(circle at 36% 30%, #C9A961 0%, #1A4975 30%, #0F2E4C 60%, #051A30 100%)',
           boxShadow: speaking
-            ? `0 0 0 ${r}px rgba(212,96,26,0.14), 0 0 0 ${r2}px rgba(212,96,26,0.07), 0 ${r}px ${blur}px rgba(212,96,26,0.40)`
-            : `0 0 0 ${r * 0.7}px rgba(212,96,26,0.07), 0 ${r}px ${blur * 0.85}px rgba(212,96,26,0.20)`,
+            ? `0 0 0 ${r}px rgba(201,169,97,0.18), 0 0 0 ${r2}px rgba(201,169,97,0.09), 0 ${r}px ${blur}px rgba(15,46,76,0.40)`
+            : `0 0 0 ${r * 0.7}px rgba(201,169,97,0.10), 0 ${r}px ${blur * 0.85}px rgba(15,46,76,0.25)`,
           animation: speaking
             ? 'althySpeak 0.45s ease-in-out infinite alternate'
             : 'althyBreathe 4s ease-in-out infinite',

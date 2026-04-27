@@ -37,7 +37,7 @@ export function AlthySphereCore({ state, size = 200 }: Props) {
           position: "absolute",
           inset: -size * 0.18,
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(181,90,48,0.18) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(15,46,76,0.18) 0%, transparent 70%)",
           animation: `althyPulse ${speed * 1.4}s ease-in-out infinite`,
           pointerEvents: "none",
         }}
@@ -51,31 +51,31 @@ export function AlthySphereCore({ state, size = 200 }: Props) {
         style={{ display: "block", overflow: "visible" }}
       >
         <defs>
-          {/* Main gradient — terre cuite */}
+          {/* Main gradient — bleu de Prusse + or */}
           <radialGradient id="sg-main" cx="38%" cy="35%" r="65%">
-            <stop offset="0%"   stopColor="#E8835A" />
-            <stop offset="45%"  stopColor="var(--althy-orange)" />
-            <stop offset="100%" stopColor="#6E3018" />
+            <stop offset="0%"   stopColor="#C9A961" />
+            <stop offset="45%"  stopColor="#1A4975" />
+            <stop offset="100%" stopColor="#051A30" />
           </radialGradient>
 
-          {/* Thinking state — slightly darker */}
+          {/* Thinking state — slightly darker, prussian dominant */}
           <radialGradient id="sg-think" cx="38%" cy="35%" r="65%">
-            <stop offset="0%"   stopColor="#C87050" />
-            <stop offset="45%"  stopColor="#923E1E" />
-            <stop offset="100%" stopColor="#4A1E0A" />
+            <stop offset="0%"   stopColor="#1A4975" />
+            <stop offset="45%"  stopColor="#0F2E4C" />
+            <stop offset="100%" stopColor="#051A30" />
           </radialGradient>
 
-          {/* Listening — brighter */}
+          {/* Listening — brighter, gold dominant */}
           <radialGradient id="sg-listen" cx="38%" cy="35%" r="65%">
-            <stop offset="0%"   stopColor="#F5A070" />
-            <stop offset="45%"  stopColor="#D06830" />
-            <stop offset="100%" stopColor="#8A3C18" />
+            <stop offset="0%"   stopColor="#FEF9E7" />
+            <stop offset="45%"  stopColor="#C9A961" />
+            <stop offset="100%" stopColor="#0F2E4C" />
           </radialGradient>
 
           {/* Drop shadow */}
           <filter id="sf-shadow" x="-20%" y="-20%" width="140%" height="150%">
             <feDropShadow dx="0" dy={size * 0.08} stdDeviation={size * 0.06}
-              floodColor="#7A3018" floodOpacity="0.35" />
+              floodColor="#0F2E4C" floodOpacity="0.35" />
           </filter>
         </defs>
 
@@ -83,7 +83,7 @@ export function AlthySphereCore({ state, size = 200 }: Props) {
         <ellipse
           cx={r} cy={size * 0.94}
           rx={r * 0.7} ry={r * 0.1}
-          fill="rgba(90,30,10,0.18)"
+          fill="rgba(15,46,76,0.18)"
           style={{ filter: "blur(6px)" }}
         />
 
@@ -129,11 +129,11 @@ export function AlthySphereCore({ state, size = 200 }: Props) {
         {state === "listening" && (
           <>
             <circle cx={r} cy={r} r={r * 0.96} fill="none"
-              stroke="rgba(181,90,48,0.4)" strokeWidth="2"
+              stroke="rgba(201,169,97,0.5)" strokeWidth="2"
               style={{ animation: "althyPulse 1s ease-in-out infinite" }}
             />
             <circle cx={r} cy={r} r={r * 1.06} fill="none"
-              stroke="rgba(181,90,48,0.2)" strokeWidth="1.5"
+              stroke="rgba(201,169,97,0.25)" strokeWidth="1.5"
               style={{ animation: "althyPulse 1s ease-in-out infinite 0.2s" }}
             />
           </>
