@@ -6,10 +6,10 @@
  */
 export const LEGAL = {
   /** Raison sociale affichée partout */
-  name: "Killian Thébaud — Althy",
+  name: "HBM Swiss Sàrl",
 
   /** Forme juridique actuelle */
-  form: "Raison individuelle (Sàrl en cours de constitution)",
+  form: "Société à responsabilité limitée (Sàrl)",
 
   /** Numéro IDE — à compléter après attribution */
   ide: "CHE-XXX.XXX.XXX" as const,   // TODO: remplacer par le vrai numéro
@@ -21,7 +21,7 @@ export const LEGAL = {
   adresse: "Genève, Suisse",         // TODO: adresse complète
 
   /** Représentant légal */
-  representant: "Killian Thébaud",
+  representant: "HBM Swiss Sàrl",
 
   /** Contact général */
   email: "contact@althy.ch",
@@ -33,9 +33,9 @@ export const LEGAL = {
   url: "https://althy.ch",
 
   /** Ligne courte pour pieds de page PDF / emails */
-  footer: "Killian Thébaud — Althy · Genève · althy.ch",
+  footer: "HBM Swiss Sàrl · Genève · althy.ch",
 
   /** Ligne copyright */
   copyright: (year = new Date().getFullYear()) =>
-    `© ${year} Althy — Killian Thébaud · Tous droits réservés`,
+    `© ${year} Althy — HBM Swiss Sàrl · Tous droits réservés`,
 } as const

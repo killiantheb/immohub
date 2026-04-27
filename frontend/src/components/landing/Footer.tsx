@@ -104,7 +104,7 @@ export function Footer() {
           }}
         >
           <p style={{ color: C.textMuted, fontSize: "0.75rem", margin: 0 }}>
-            © {new Date().getFullYear()} Althy — Killian Thébaud · Tous droits réservés
+            © {new Date().getFullYear()} Althy — HBM Swiss Sàrl · Tous droits réservés
           </p>
           <p style={{ color: C.textMuted, fontSize: "0.75rem", margin: 0 }}>
             Fabriqué en Suisse Romande ·{" "}

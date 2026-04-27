@@ -1,5 +1,5 @@
 """
-Security layer for CATHY.
+Security layer for Althy.
 
 Dependency resolution order:
   bearer_scheme

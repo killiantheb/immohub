@@ -147,7 +147,7 @@ async def extract_agency_identity(file_bytes: bytes, content_type: str, filename
 Retourne UNIQUEMENT ce JSON :
 {
   "agency_name": "nom exact de l'agence ou null",
-  "website": "domaine sans https (ex: sunimmo.ch) ou null",
+  "website": "domaine sans https (ex: example.ch) ou null",
   "email": "email de contact ou null",
   "phone": "téléphone ou null",
   "address": "adresse physique ou null",

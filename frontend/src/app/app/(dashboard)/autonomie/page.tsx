@@ -217,7 +217,7 @@ function ActionsPanel() {
           href="/app/contracts/new"
           icon="📄"
           title="Générer un contrat"
-          hint="Bail Sunimmo suisse conforme"
+          hint="Bail suisse conforme"
         />
         <ActionLink
           href="/app/comptabilite"

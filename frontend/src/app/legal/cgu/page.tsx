@@ -41,7 +41,7 @@ export default function CguPage() {
         <p style={{ fontSize: 12, color: "var(--althy-text-3)" }}>Version {CGU_VERSION} · Dernière mise à jour : {LAST_UPDATE}</p>
       </div>
 
-      <P>Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme Althy, accessible à l'adresse <strong>althy.ch</strong>, exploitée par Killian Thébaud — Althy (ci-après « Althy »).</P>
+      <P>Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme Althy, accessible à l'adresse <strong>althy.ch</strong>, exploitée par HBM Swiss Sàrl (ci-après « Althy »).</P>
       <P><strong>En créant un compte ou en utilisant les services d'Althy, vous acceptez intégralement les présentes CGU.</strong></P>
 
       <H2 num={1}>Objet et acceptation</H2>

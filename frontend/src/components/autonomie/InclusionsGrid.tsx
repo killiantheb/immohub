@@ -40,7 +40,7 @@ const INCLUSIONS: Inclusion[] = [
     icon: "📄",
     title: "Contrats & quittances automatiques",
     description:
-      "Contrat Sunimmo suisse, quittances de loyer, QR-factures SPC 2.0 générés en 2 clics.",
+      "Contrat de bail suisse conforme, quittances de loyer, QR-factures SPC 2.0 générés en 2 clics.",
   },
   {
     icon: "💬",

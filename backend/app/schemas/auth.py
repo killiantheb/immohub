@@ -17,9 +17,9 @@ class RegisterRequest(BaseModel):
     phone:      str = ""
     role: Literal["proprio_solo", "locataire", "agence", "opener", "artisan", "portail_proprio", "expert", "hunter", "acheteur_premium"] = "proprio_solo"
     # Contexte onboarding — optionnels, transmis au scanner
-    ville:      str = ""   # "Crans-Montana"
-    agence_nom: str = ""   # "Sunimmo Riviera"
-    site_web:   str = ""   # "https://mysunimmo.ch"
+    ville:      str = ""   # "Genève"
+    agence_nom: str = ""   # "Agence Demo"
+    site_web:   str = ""   # "https://example.ch"
 
 
 class LoginRequest(BaseModel):

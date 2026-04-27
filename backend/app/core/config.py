@@ -115,7 +115,7 @@ class Settings(BaseSettings):
     ALTHY_QR_IBAN: str = ""                    # QR-IBAN du compte Althy (CH…)
     ALTHY_COMMISSION_PCT: float = 0.03         # 3% sur loyers en transit
     ALTHY_BANK_NAME: str = "PostFinance"       # Pour en-tête QR-factures
-    ALTHY_CREDITOR_NAME: str = "Killian Thébaud — Althy"
+    ALTHY_CREDITOR_NAME: str = "HBM Swiss Sàrl"
     ALTHY_CREDITOR_STREET: str = "Rue de Rive 1"
     ALTHY_CREDITOR_CITY: str = "1204 Genève"
     ALTHY_CREDITOR_COUNTRY: str = "CH"

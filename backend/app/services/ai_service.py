@@ -1247,7 +1247,7 @@ Retourne UNIQUEMENT ce JSON :
         return {"raw": raw}
 
 
-# ── 6. Cathy home briefing ────────────────────────────────────────────────────
+# ── 6. Althy home briefing ────────────────────────────────────────────────────
 
 
 async def generate_briefing(
@@ -1257,7 +1257,7 @@ async def generate_briefing(
     db: AsyncSession,
     user_id: str,
 ) -> dict:
-    """Generate a personalised Cathy home screen briefing (status + priority cards)."""
+    """Generate a personalised Althy home screen briefing (status + priority cards)."""
     if not _check_rate_limit(user_id):
         return {"status": f"bonjour {first_name}", "cards": []}
 
@@ -1270,7 +1270,7 @@ async def generate_briefing(
         "company": "artisan/société qui répond à des appels d'offres",
     }
 
-    prompt = f"""Tu es Cathy, l'assistante IA d'une plateforme immobilière.
+    prompt = f"""Tu es Althy, l'assistant IA d'une plateforme immobilière.
 Génère un briefing personnalisé pour {first_name}, {role_hints.get(role, role)}.
 
 Données temps réel:

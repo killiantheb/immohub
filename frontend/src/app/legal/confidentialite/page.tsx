@@ -58,7 +58,7 @@ export default function ConfidentialitePage() {
       </div>
 
       <H2>1. Responsable du traitement</H2>
-      <P><strong>Killian Thébaud — Althy</strong> (raison individuelle, Sàrl en cours de constitution), Genève, Suisse</P>
+      <P><strong>HBM Swiss Sàrl</strong>, Genève, Suisse</P>
       <P><strong>DPO (Délégué à la Protection des Données) :</strong> <a href="mailto:privacy@althy.ch" style={{ color: "var(--althy-orange)" }}>privacy@althy.ch</a></P>
       <P>Base légale principale : LPD suisse (RS 235.1, en vigueur depuis le 1er septembre 2023) et RGPD européen (Règlement 2016/679) pour les utilisateurs résidant dans l'UE.</P>
 

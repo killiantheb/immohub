@@ -116,7 +116,7 @@ export function LandingEstimation() {
               </button>
 
               <p style={{ textAlign: "center", fontSize: 12, color: C.textMuted, marginTop: 12, marginBottom: 0 }}>
-                📊 2 847 estimations réalisées
+                📊 Estimation IA confidentielle, en quelques secondes
               </p>
             </form>
           ) : (
