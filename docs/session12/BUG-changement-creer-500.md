@@ -1,7 +1,7 @@
 # 🔴 BUG — POST /biens/{id}/changement/creer → 500
 
 > Date découverte : 2026-04-27 (session 12 / soir 2)
-> Statut : ouvert, à investiguer en priorité demain
+> Statut : ✅ RÉSOLU le 2026-04-27 (commit ca13842, PR #4)
 > Sévérité : P1 (bloque création changement de locataire)
 
 ## Contexte
@@ -98,3 +98,71 @@ Storage althy.ch). Expire 1h après login.
 - Le bug est donc spécifiquement dans la logique INSERT du POST /creer
 - Pas un bug de migration, pas un bug de schéma, pas un bug d'auth
 - Bug applicatif Python pur
+
+## ✅ Résolution
+
+**Date** : 2026-04-27 (session 12 / soir 2)
+**Commit fix** : `ca13842`
+**PR** : #4 (mergée sur main → `6e275a0`)
+
+### Cause racine confirmée
+
+Diagnostic 2bis-A confirmé via traceback Railway :
+
+```
+sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.ProgrammingError:
+<class 'asyncpg.exceptions.PostgresSyntaxError'>: syntax error at or near ":"
+```
+
+Conflit syntaxe `:param` SQLAlchemy avec `::type` Postgres dans l'INSERT :
+
+```python
+INSERT INTO changements_locataire (..., checklist_depart)
+VALUES (..., :checklist::jsonb)  # ❌ syntaxe ambiguë pour asyncpg
+```
+
+Le SQL ne se compile **même pas**, donc l'INSERT n'atteint jamais
+asyncpg ni la DB. Aucune des 6 hypothèses initiales n'était la cause
+directe (toutes éliminables a posteriori, sauf #1 qui était un bug
+latent réel mais masqué par le syntax error).
+
+### Fix appliqué (combiné, 2 bugs en 1)
+
+**Bug visible — SQL syntax** :
+- 4 occurrences `:param::jsonb` → `CAST(:param AS jsonb)`
+- Affecte les 4 INSERT/UPDATE de changements.py
+
+**Bug latent — date type mismatch** (jamais déclenché car bloqué avant) :
+- 3 schémas Pydantic `str | None` → `date | None`
+- Pydantic v2 fait la coercition auto str ISO → datetime.date
+- Validation 422 propre si format invalide (vs 500 cryptique)
+
+### Validation prod
+
+Smoke test cycle complet sur althy.ch (bien e074ae1d-... Crans-Montana) :
+- ✅ POST /creer (création changement)
+- ✅ PUT /checklist (checklist départ)
+- ✅ POST /passer-recherche (transition phase 2)
+- ✅ PUT /edl (EDL sortie + entrée)
+- ✅ POST /finaliser-depart (transition checkout)
+- ✅ POST /finaliser-entree (clôture cycle terminé)
+
+État final : "Cycle terminé · Bail signé · 1er QR-loyer envoyé".
+
+0 erreur console, 0 warning. Fix validé en conditions réelles.
+
+### Leçons retenues
+
+- **Hypothèses n'étaient pas exhaustives** : aucune des 6 hypothèses du
+  diagnostic n'avait identifié le conflit syntaxique `:param` vs `::type`.
+  La cause réelle a été révélée par le traceback Railway directement.
+  Pour les bugs avec error masqué en prod (`{"detail": "Internal server
+  error"}`), **toujours commencer par lire les logs Railway** plutôt que
+  de raisonner par déduction.
+- **Pattern `::type` Postgres dans SQLAlchemy `text()`** : à éviter
+  systématiquement. Préférer `CAST(... AS type)` qui ne génère aucun
+  conflit avec le parser de bind parameters.
+- **Bug latent jamais déclenché** : le bug DATE str→date était présent
+  depuis l'écriture du module mais bloqué en amont par le syntax error.
+  Audit recommandé : vérifier les autres routers du repo qui utilisent
+  `text()` avec des params DATE en str.
