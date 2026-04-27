@@ -278,7 +278,7 @@ function Step5Go({ firstName, sphereState, role }: { firstName: string; sphereSt
   const name = firstName ? `, ${firstName}` : ''
   return (
     <div style={{ textAlign: 'center', padding: '20px 0' }}>
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28, filter: 'drop-shadow(0 12px 36px rgba(181,90,48,0.22))' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28, filter: 'drop-shadow(0 12px 36px rgba(201,169,97,0.22))' }}>
         <AlthySphereCore state={sphereState} size={140} />
       </div>
       <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 300, color: 'var(--althy-text)', margin: '0 0 16px', lineHeight: 1.3 }}>

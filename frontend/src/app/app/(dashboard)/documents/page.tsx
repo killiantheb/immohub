@@ -181,7 +181,7 @@ function ScanFacturePanel() {
           {/* Affectation proposition */}
           <div style={{
             padding: "10px 14px", borderRadius: 8,
-            background: C.orangeBg, border: `1px solid rgba(181,90,48,0.25)`,
+            background: C.orangeBg, border: `1px solid rgba(15,46,76,0.25)`,
             fontSize: 13, color: C.text, marginBottom: 12,
           }}>
             <strong>Althy propose :</strong> Facture CHF {result.montant?.toFixed(2) ?? "?"} →{" "}

@@ -1169,8 +1169,8 @@ function HBarChart({ paiements }: { paiements: Paiement[] }) {
                 width: "100%", maxWidth: 32, height: h,
                 borderRadius: "12px 12px 4px 4px",
                 background: isLast
-                  ? "linear-gradient(to top, var(--terracotta-primary), var(--terracotta-light, #F0997B))"
-                  : "var(--terracotta-ghost)",
+                  ? "linear-gradient(to top, var(--althy-prussian), var(--althy-gold))"
+                  : "var(--althy-prussian-bg)",
                 transition: "height 0.4s ease",
               }} />
               <span style={{ fontSize: 10, color: isCur || isLast ? "var(--terracotta-primary)" : "var(--text-tertiary)", fontWeight: isCur || isLast ? 600 : 400, whiteSpace: "nowrap" }}>
@@ -1305,7 +1305,7 @@ export function UnifiedDashboard() {
           }}>
             <div style={{
               width: 36, height: 36, borderRadius: "50%",
-              background: "linear-gradient(135deg, var(--terracotta-light, #F0997B), var(--terracotta-primary))",
+              background: "linear-gradient(135deg, var(--althy-gold), var(--althy-prussian))",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>

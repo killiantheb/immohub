@@ -82,7 +82,7 @@ function CompareModal({ rfqId, onClose }: { rfqId: string; onClose: () => void }
           <>
             <div style={{
               padding: "12px 16px", borderRadius: 10, marginBottom: 20,
-              background: C.orangeBg, border: `1px solid rgba(181,90,48,0.25)`,
+              background: C.orangeBg, border: `1px solid rgba(15,46,76,0.25)`,
             }}>
               <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: C.orange }}>
                 {data.recommandation}

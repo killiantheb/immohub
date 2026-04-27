@@ -154,7 +154,7 @@ export function SphereWidget() {
               <button
                 onClick={handleSend}
                 disabled={sending || !input.trim()}
-                style={{ padding: '8px 10px', borderRadius: 8, background: 'var(--althy-orange)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: sending || !input.trim() ? 0.5 : 1 }}
+                style={{ padding: '8px 10px', borderRadius: 8, background: 'var(--althy-prussian)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: sending || !input.trim() ? 0.5 : 1 }}
               >
                 <Send size={14} color='#fff' />
               </button>
@@ -162,7 +162,7 @@ export function SphereWidget() {
             <Link
               href='/app/sphere'
               onClick={() => setOpen(false)}
-              style={{ display: 'block', marginTop: 10, textAlign: 'center', fontSize: 12, color: 'var(--althy-orange)', textDecoration: 'none', fontWeight: 600 }}
+              style={{ display: 'block', marginTop: 10, textAlign: 'center', fontSize: 12, color: 'var(--althy-prussian)', textDecoration: 'none', fontWeight: 600 }}
             >
               Ouvrir Althy IA →
             </Link>
@@ -177,7 +177,7 @@ export function SphereWidget() {
         style={{
           position: 'fixed', bottom: 24, right: 24, zIndex: 1000,
           width: 52, height: 52, borderRadius: '50%',
-          background: 'var(--althy-orange)',
+          background: 'var(--althy-prussian)',
           border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 4px 20px rgba(15,46,76,0.4)',
