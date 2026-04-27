@@ -12,7 +12,8 @@ import { InlineChat }             from "@/components/landing/InlineChat";
 import { FloatingChatBubble }     from "@/components/landing/FloatingChatBubble";
 import { Footer }                 from "@/components/landing/Footer";
 import { LandingEstimation }      from "@/components/landing/LandingEstimation";
-import { LandingBiens }           from "@/components/landing/LandingBiens";
+// Phase 1 : marketplace publique masquée — LandingBiens retiré de la landing.
+// import { LandingBiens }           from "@/components/landing/LandingBiens";
 import { LandingPreuve }          from "@/components/landing/LandingPreuve";
 import { SocialProof }            from "@/components/landing/SocialProof";
 import { FeatureIA }              from "@/components/landing/FeatureIA";
@@ -219,7 +220,7 @@ export default function LandingPage() {
 
         <AutonomieHighlight />
         <ProprioSolo />
-        <LandingBiens />
+        {/* Phase 1 : <LandingBiens /> masqué — marketplace publique reportée. */}
         <LandingEstimation />
         <FeatureIA />
         <FeatureBiens />

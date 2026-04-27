@@ -3,16 +3,18 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mail, MessageCircle, CalendarDays } from "lucide-react";
+import { Mail } from "lucide-react";
 import { api } from "@/lib/api";
 import { DTopNav } from "@/components/dashboards/DashBoardShared";
 import { MessagerieContent } from "@/components/communication/MessagerieContent";
-import { WhatsAppContent }   from "@/components/communication/WhatsAppContent";
-import { AgendaContent }     from "@/components/communication/AgendaContent";
+// Phase 1 : WhatsApp + Agenda masqués (WhatsApp Business API + OAuth Google/Microsoft non opérationnels).
+// Code conservé pour réactivation future.
+// import { WhatsAppContent } from "@/components/communication/WhatsAppContent";
+// import { AgendaContent }   from "@/components/communication/AgendaContent";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type TabKey = "messages" | "whatsapp" | "agenda";
+type TabKey = "messages";
 
 interface TabDef {
   key:   TabKey;
@@ -22,8 +24,6 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { key: "messages", label: "Messages",  icon: Mail },
-  { key: "whatsapp", label: "WhatsApp",  icon: MessageCircle },
-  { key: "agenda",   label: "Agenda",    icon: CalendarDays },
 ];
 
 // ── Inner component (uses useSearchParams — must be inside Suspense) ───────────
@@ -33,22 +33,19 @@ function CommunicationInner() {
   const searchParams = useSearchParams();
 
   const rawTab   = searchParams.get("tab") ?? "messages";
-  const activeTab: TabKey = (["messages", "whatsapp", "agenda"] as TabKey[]).includes(rawTab as TabKey)
-    ? (rawTab as TabKey)
-    : "messages";
+  // Phase 1 : seul l'onglet "messages" est actif. Toute autre valeur retombe dessus.
+  const activeTab: TabKey = "messages";
+  void rawTab;
 
   // Badge counts
   const [msgCount, setMsgCount] = useState(0);
-  const [waCount,  setWaCount]  = useState(0);
 
   useEffect(() => {
     const load = async () => {
-      const [msg, wa] = await Promise.all([
-        api.get<{ count: number }>("/messagerie/non-lus").catch(() => ({ data: { count: 0 } })),
-        api.get<{ count: number }>("/whatsapp/non-lus").catch(() =>   ({ data: { count: 0 } })),
-      ]);
+      const msg = await api
+        .get<{ count: number }>("/messagerie/non-lus")
+        .catch(() => ({ data: { count: 0 } }));
       setMsgCount(msg.data.count ?? 0);
-      setWaCount(wa.data.count  ?? 0);
     };
     load();
     const t = setInterval(load, 60_000);
@@ -61,8 +58,6 @@ function CommunicationInner() {
 
   const badgeCounts: Record<TabKey, number> = {
     messages: msgCount,
-    whatsapp: waCount,
-    agenda:   0,
   };
 
   return (
@@ -75,7 +70,7 @@ function CommunicationInner() {
           Communication
         </h1>
         <p style={{ fontSize: 13, color: "var(--text-tertiary)", margin: 0 }}>
-          Messages, WhatsApp et agenda réunis en un seul espace
+          Vos échanges avec locataires et candidats, en un seul espace
         </p>
       </div>
 
@@ -130,8 +125,6 @@ function CommunicationInner() {
 
       {/* Tab content */}
       {activeTab === "messages" && <MessagerieContent />}
-      {activeTab === "whatsapp" && <WhatsAppContent />}
-      {activeTab === "agenda"   && <AgendaContent />}
     </div>
   );
 }

@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
-import { VillePageShared, makeVilleMetadata } from "../_components/VillePageShared";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = makeVilleMetadata("sion");
+// Phase 1 : pages SEO villes masquées (marketplace publique reportée).
+// Code original conservé dans l'historique git.
 
-export default function SionPage() {
-  return <VillePageShared slug="sion" />;
+export default function BiensSionPage() {
+  redirect("/");
 }

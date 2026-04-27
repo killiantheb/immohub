@@ -112,18 +112,8 @@ export default function MesCandidaturesPage() {
           <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
           <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Aucune candidature</div>
           <div style={{ fontSize: 14, marginBottom: 24 }}>
-            Vous n'avez encore postulé à aucun bien.
+            Vos candidatures apparaîtront ici dès que vous postulerez à un bien.
           </div>
-          <Link
-            href="/biens"
-            style={{
-              display: "inline-block", background: C.orange, color: "#fff",
-              padding: "12px 24px", borderRadius: 8, textDecoration: "none",
-              fontSize: 14, fontWeight: 600,
-            }}
-          >
-            Voir les biens disponibles →
-          </Link>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
