@@ -566,12 +566,17 @@ class BienService:
     # ─────────────────────────────────────────────────────────────────────────
 
     async def get_history(self, bien_id: str, limit: int = 50) -> list[AuditLogResponse]:
+        # `audit_logs.resource_id` is `String(36)` (varchar) — see app.models.audit_log.
+        # The router passes `bien_id` as `uuid.UUID`, which PostgreSQL refuses to
+        # compare to a varchar column ("operator does not exist: character varying = uuid").
+        # Cast to str unconditionally to keep both call sites (UUID + str) working.
+        bien_id_str = str(bien_id)
         rows = (
             await self.db.execute(
                 select(AuditLog)
                 .where(
                     AuditLog.resource_type == "bien",
-                    AuditLog.resource_id == bien_id,
+                    AuditLog.resource_id == bien_id_str,
                 )
                 .order_by(AuditLog.created_at.desc())
                 .limit(limit)

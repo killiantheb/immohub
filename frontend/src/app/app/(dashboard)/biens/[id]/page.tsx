@@ -7,8 +7,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   AlertTriangle, CheckCircle2, Clock, Download,
-  ExternalLink, FileText, Loader2, Mail, Sparkles,
-  Wrench, XCircle,
+  ExternalLink, FileText, Image as ImageIcon, Loader2, Mail,
+  Pencil, Sparkles, Wrench, XCircle,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import {
@@ -20,7 +20,7 @@ import {
 import {
   Badge, Skel,
   fmtDate, fmtCHF, initials,
-  INTER_STATUT, PAI_STATUT, DOC_LABELS, BIEN_TYPE_LABELS,
+  INTER_STATUT, PAI_STATUT, DOC_LABELS, BIEN_TYPE_LABELS, BIEN_STATUT,
   daysUntil,
 } from "./_shared";
 import { NotificationDraft } from "@/components/NotificationDraft";
@@ -1009,34 +1009,227 @@ function TimelineItem({ event, isLast }: { event: AuditLogEntry; isLast: boolean
   );
 }
 
+// ── CardHeaderBien — Hero Pattern B (200px photo + infos) ────────────────────
+
+function CardHeaderBien({
+  bienId,
+  editing,
+  onToggleEdit,
+}: {
+  bienId: string;
+  editing: boolean;
+  onToggleEdit: () => void;
+}) {
+  const { data: bien, isLoading } = useBien(bienId);
+  const { data: locataire } = useLocataireActuel(bienId);
+
+  if (isLoading || !bien) {
+    return (
+      <div style={{ ...CARD, padding: 0, overflow: "hidden", minHeight: 180 }}>
+        <Skel h={180} />
+      </div>
+    );
+  }
+
+  // Photo principale : couverture si présente, sinon première image, sinon null
+  const cover =
+    bien.images?.find((img) => img.is_cover) ?? bien.images?.[0] ?? null;
+
+  // Statut : si un locataire actif est lié, on prime sur bien.statut
+  const statutKey = locataire ? "loue" : bien.statut;
+  const s =
+    BIEN_STATUT[statutKey] ??
+    { label: statutKey, color: C.text2, bg: C.border };
+
+  const typeLabel = BIEN_TYPE_LABELS[bien.type] ?? bien.type;
+
+  return (
+    <div
+      style={{
+        ...CARD,
+        padding: 0,
+        overflow: "hidden",
+        display: "grid",
+        gridTemplateColumns: "240px 1fr",
+        minHeight: 200,
+      }}
+    >
+      {/* Colonne 1 — Photo ou placeholder */}
+      <div
+        style={{
+          background: C.prussianBg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRight: `1px solid var(--border-subtle)`,
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {cover ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={cover.url}
+            alt={bien.adresse}
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        ) : (
+          <div style={{ textAlign: "center", padding: 16 }}>
+            <ImageIcon size={32} style={{ color: C.prussian, opacity: 0.4, marginBottom: 8 }} />
+            <p
+              style={{
+                fontSize: 11,
+                color: C.text3,
+                margin: 0,
+                fontStyle: "italic",
+              }}
+              title="Upload disponible Phase 2"
+            >
+              Aucune photo
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Colonne 2 — Infos hero */}
+      <div
+        style={{
+          padding: "20px 24px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        {/* Titre + statut */}
+        <div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: 16,
+              marginBottom: 6,
+            }}
+          >
+            <h1
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontWeight: 400,
+                fontSize: 26,
+                color: C.text,
+                margin: 0,
+                lineHeight: 1.15,
+              }}
+            >
+              {bien.adresse}
+            </h1>
+            <Badge label={s.label} color={s.color} bg={s.bg} />
+          </div>
+          <p style={{ fontSize: 14, color: C.text2, margin: 0 }}>
+            {bien.cp ? `${bien.cp} ` : ""}
+            {bien.ville}
+          </p>
+        </div>
+
+        {/* Métadonnées */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            columnGap: 14,
+            rowGap: 4,
+            fontSize: 13,
+            color: C.text2,
+          }}
+        >
+          <span>{typeLabel}</span>
+          {bien.surface != null && <span>· {bien.surface} m²</span>}
+          {bien.rooms != null && <span>· {bien.rooms} pièces</span>}
+          {bien.etage != null && <span>· Étage {bien.etage}</span>}
+          {bien.loyer != null && bien.loyer > 0 && (
+            <span style={{ color: C.gold, fontWeight: 600 }}>
+              · {fmtCHF(bien.loyer)}/mois
+            </span>
+          )}
+        </div>
+
+        {/* Action */}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            onClick={onToggleEdit}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 14px",
+              borderRadius: 9,
+              border: `1px solid ${editing ? C.prussian : "var(--border-subtle)"}`,
+              background: editing ? C.prussian : "transparent",
+              color: editing ? "#fff" : C.text2,
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+            aria-pressed={editing}
+          >
+            <Pencil size={13} />
+            {editing ? "Fermer" : "Modifier"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Vue d'ensemble ────────────────────────────────────────────────────────────
 
 function BienOverview() {
   const { id } = useParams<{ id: string }>();
+  const [editing, setEditing] = useState(false);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Header bien — full width (édition adresse, type, surface) */}
-      <SectionInfos bienId={id} />
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+        padding: "16px 20px 24px",
+      }}
+    >
+      {/* Header bien — full width hero (Pattern B) */}
+      <CardHeaderBien
+        bienId={id}
+        editing={editing}
+        onToggleEdit={() => setEditing((e) => !e)}
+      />
+
+      {/* Édition complète conditionnelle (toggle via bouton "Modifier" du header) */}
+      {editing && <SectionInfos bienId={id} />}
 
       {/*
         Grille 6 cards responsive :
-          - Mobile (< 1024px) : 1 colonne
-            ordre vertical : Locataire → Finances → Estim IA → Interventions
-            → Documents → Historique
-          - Desktop (>= 1024px) : 2 colonnes
-            row 1 : Locataire / Finances
-            row 2 : Estim IA / Interventions
-            row 3 : Documents / Historique
+          - Mobile  (< ~640px)    : 1 colonne (ordre vertical)
+          - Tablette(< ~1000px)  : 2 colonnes
+          - Desktop (>= ~1000px) : 3 colonnes (3×2 — tient en 1 viewport ~900px)
+        Layout via auto-fit + minmax(320px, 1fr) — pas de media query nécessaire.
         Liens vers sous-pages via @/lib/bien-links (transition Phase 2-3
         modules globaux filtrés = modifier uniquement bien-links.ts).
       */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
-          gap: 20,
-          alignItems: "start",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: 16,
+          alignItems: "stretch",
         }}
       >
         <SectionLocataire bienId={id} />

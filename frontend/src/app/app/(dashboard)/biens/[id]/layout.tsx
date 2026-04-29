@@ -31,7 +31,7 @@ export default function BienDetailLayout({ children }: { children: React.ReactNo
 
       {!isOverview && <BienHeader bienId={id} />}
 
-      <div style={{ maxWidth: 1100 }}>
+      <div style={{ maxWidth: 1400, marginLeft: "auto", marginRight: "auto" }}>
         {children}
       </div>
     </div>
