@@ -355,3 +355,44 @@ class PotentielIAResponse(BaseModel):
     recommandations: list[str]
     conseil_fiscal: str
     prochaine_action: str
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Rendement net (PR-B sprint 12)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+RendementDeductionType = Literal[
+    "interventions",
+    "commission_althy",   # Phase 2
+    "commission_agence",  # Phase 2
+    "charges_proprio",    # Phase 2
+]
+
+
+class RendementDeduction(BaseModel):
+    """Une ligne de déduction du rendement net.
+
+    Phase 1 : seul `type='interventions'` est utilisé.
+    Phase 2-3 : ajout commission Althy 3 %, commission agence,
+    charges proprio. Le type Literal sert d'enum extensible —
+    aucune rupture API quand on ajoute une valeur.
+    """
+
+    type: RendementDeductionType
+    montant: Decimal = Field(..., ge=0, description="Montant en CHF")
+    label: str = Field(..., max_length=200)
+
+
+class RendementNetResponse(BaseModel):
+    """Réponse de GET /biens/{id}/rendement-net.
+
+    Schéma extensible : Phase 2-3 ajoutera des entrées dans `deductions`
+    sans changer la structure (ni casser les clients Phase 1).
+    """
+
+    annee: int = Field(..., ge=2020, le=2100)
+    loyer_brut_annuel: Decimal = Field(..., ge=0)
+    deductions: list[RendementDeduction] = Field(default_factory=list)
+    rendement_net_chf: Decimal = Field(..., ge=0)
+    rendement_net_pct: Decimal = Field(..., ge=0, le=100)

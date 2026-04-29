@@ -17,6 +17,7 @@ d'identifiant (owner_id, agency_id) suivent la même règle.
 from __future__ import annotations
 
 import uuid
+from datetime import date
 from typing import Annotated
 
 from app.core.database import get_db
@@ -34,6 +35,7 @@ from app.schemas.bien import (
     GenerateDescriptionResponse,
     PaginatedBiens,
     PotentielIAResponse,
+    RendementNetResponse,
     SetEquipementsRequest,
 )
 from app.services.bien_service import BienService
@@ -284,3 +286,28 @@ async def get_potentiel_ia(
 ) -> PotentielIAResponse:
     """Calcul financier + recommandations Claude pour la fiche bien."""
     return await BienService(db).get_potentiel_ia(bien_id, current_user)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Rendement net — passe-plat vers BienService (Phase 1 basique)
+# ═════════════════════════════════════════════════════════════════════════════
+
+
+@router.get(
+    "/{bien_id}/rendement-net",
+    response_model=RendementNetResponse,
+    summary="Rendement net basique du bien (Phase 1)",
+)
+async def get_bien_rendement_net(
+    bien_id: uuid.UUID,
+    current_user: AuthDep,
+    db: DbDep,
+    annee: int = Query(default_factory=lambda: date.today().year, ge=2020, le=2100),
+) -> RendementNetResponse:
+    """Calcul du rendement net pour une année donnée.
+
+    Phase 1 : `loyer_brut_annuel - sum(interventions.cout)` sur l'année civile.
+    Phase 2-3 : extension via `deductions[]` (commission Althy 3 %,
+    commission agence, charges proprio) — schéma déjà extensible.
+    """
+    return await BienService(db).get_rendement_net(bien_id, annee, current_user)
