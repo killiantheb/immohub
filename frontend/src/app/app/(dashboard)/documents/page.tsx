@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { DocumentQuickGenerator } from "@/components/DocumentQuickGenerator";
+import { BienContextBanner } from "@/components/biens/BienContextBanner";
 import { Camera, Upload, Check, AlertTriangle, Loader2, X } from "lucide-react";
 import { C } from "@/lib/design-tokens";
 
@@ -311,6 +312,8 @@ function DocumentsContent() {
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", fontFamily: "var(--font-sans)", padding: "28px 0" }}>
+      {/* Banner contextuel — déjà dans Suspense parent (ligne 268) */}
+      <BienContextBanner />
 
       {/* Header */}
       <h1 style={{ fontFamily: "var(--font-serif)", fontSize: 26, fontWeight: 400, color: C.text, margin: "0 0 4px" }}>Documents</h1>

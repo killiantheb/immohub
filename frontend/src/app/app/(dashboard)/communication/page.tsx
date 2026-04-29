@@ -7,6 +7,7 @@ import { Mail } from "lucide-react";
 import { api } from "@/lib/api";
 import { DTopNav } from "@/components/dashboards/DashBoardShared";
 import { MessagerieContent } from "@/components/communication/MessagerieContent";
+import { BienContextBanner } from "@/components/biens/BienContextBanner";
 // Phase 1 : WhatsApp + Agenda masqués (WhatsApp Business API + OAuth Google/Microsoft non opérationnels).
 // Code conservé pour réactivation future.
 // import { WhatsAppContent } from "@/components/communication/WhatsAppContent";
@@ -63,6 +64,9 @@ function CommunicationInner() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--cream)" }}>
       <DTopNav />
+
+      {/* Banner contextuel — déjà dans Suspense parent (CommunicationPage). */}
+      <BienContextBanner />
 
       {/* Page title */}
       <div style={{ marginBottom: 24 }}>

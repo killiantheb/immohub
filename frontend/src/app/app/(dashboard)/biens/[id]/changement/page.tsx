@@ -10,6 +10,7 @@ import {
 import { api } from "@/lib/api";
 import { fmtDate, fmtCHF, Card, Badge } from "../_shared";
 import { C } from "@/lib/design-tokens";
+import { BienBackButton } from "@/components/biens/BienBackButton";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -529,6 +530,7 @@ export default function ChangementPage() {
 
   return (
     <div style={{ padding: "1.5rem 1rem", maxWidth: 640 }}>
+      <BienBackButton bienId={bienId} />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
         <h2 style={{ fontSize: 18, fontWeight: 600, color: C.text, margin: 0 }}>
           Cycle de changement
