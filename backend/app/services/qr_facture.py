@@ -11,6 +11,7 @@ from datetime import datetime
 
 import qrcode
 from app.core.config import settings
+from app.services._pdf_utils import sanitize_for_pdf as _s
 from fpdf import FPDF
 
 
@@ -112,7 +113,9 @@ def generate_qr_bill_pdf(
         reference=qr_reference,
         amount=montant_total,
         debtor_name=tenant_name,
-        additional_info=f"Loyer {mois_label} — {bien_adresse[:50]}",
+        # Em dash retiré ici car le payload SPC est consommé par la banque
+        # (limite 140 chars, encoding spécifique). On garde un séparateur ASCII.
+        additional_info=f"Loyer {mois_label} - {bien_adresse[:50]}",
     )
 
     # Image QR (46 mm × 46 mm à 300 dpi → ~543 px)
@@ -128,14 +131,14 @@ def generate_qr_bill_pdf(
 
     # ── En-tête ──────────────────────────────────────────────────────────────
     pdf.set_font("Helvetica", "B", 16)
-    pdf.cell(0, 8, "Althy — QR-Facture Loyer", ln=True)
+    pdf.cell(0, 8, _s("Althy — QR-Facture Loyer"), ln=True)
     pdf.set_font("Helvetica", "", 9)
-    pdf.cell(0, 5, f"{settings.ALTHY_BANK_NAME} · {qr_iban}", ln=True)
+    pdf.cell(0, 5, _s(f"{settings.ALTHY_BANK_NAME} · {qr_iban}"), ln=True)
     pdf.ln(4)
 
     # ── Récapitulatif propriétaire ────────────────────────────────────────────
     pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 7, "Récapitulatif pour le propriétaire", ln=True)
+    pdf.cell(0, 7, _s("Récapitulatif pour le propriétaire"), ln=True)
     pdf.set_draw_color(232, 96, 44)
     pdf.set_line_width(0.5)
     pdf.line(20, pdf.get_y(), 190, pdf.get_y())
@@ -151,9 +154,9 @@ def generate_qr_bill_pdf(
     ]
     for label, val in recap_rows:
         pdf.set_font("Helvetica", "", 10)
-        pdf.cell(90, 6, label, ln=False)
+        pdf.cell(90, 6, _s(label), ln=False)
         pdf.set_font("Helvetica", "B", 10)
-        pdf.cell(0, 6, val, ln=True)
+        pdf.cell(0, 6, _s(val), ln=True)
 
     # ── Ligne de perforation ──────────────────────────────────────────────────
     pdf.ln(6)
@@ -167,7 +170,7 @@ def generate_qr_bill_pdf(
     y_qr = 170
     pdf.set_y(y_qr)
     pdf.set_font("Helvetica", "B", 8)
-    pdf.cell(0, 5, "Section de paiement", ln=True)
+    pdf.cell(0, 5, _s("Section de paiement"), ln=True)
     pdf.set_font("Helvetica", "", 7)
     pdf.ln(1)
 
@@ -177,33 +180,37 @@ def generate_qr_bill_pdf(
     # Informations à droite du QR code
     pdf.set_xy(72, y_qr + 8)
     pdf.set_font("Helvetica", "B", 7)
-    pdf.cell(0, 4, "Compte / Payable à", ln=True)
+    pdf.cell(0, 4, _s("Compte / Payable à"), ln=True)
     for line in [qr_iban, settings.ALTHY_CREDITOR_NAME, settings.ALTHY_CREDITOR_STREET, settings.ALTHY_CREDITOR_CITY]:
         pdf.set_x(72)
         pdf.set_font("Helvetica", "", 7)
-        pdf.cell(0, 4, line, ln=True)
+        pdf.cell(0, 4, _s(line), ln=True)
 
     pdf.set_x(72)
     pdf.ln(4)
     pdf.set_x(72)
     pdf.set_font("Helvetica", "B", 7)
-    pdf.cell(0, 4, "Référence", ln=True)
+    pdf.cell(0, 4, _s("Référence"), ln=True)
     pdf.set_x(72)
     pdf.set_font("Courier", "", 8)
     ref_fmt = " ".join(qr_reference[i:i + 5] for i in range(0, 27, 5))
-    pdf.cell(0, 4, ref_fmt, ln=True)
+    pdf.cell(0, 4, _s(ref_fmt), ln=True)
 
     pdf.set_x(72)
     pdf.set_font("Helvetica", "B", 7)
-    pdf.cell(0, 4, "Montant", ln=True)
+    pdf.cell(0, 4, _s("Montant"), ln=True)
     pdf.set_x(72)
     pdf.set_font("Helvetica", "B", 10)
-    pdf.cell(0, 5, f"CHF  {montant_total:,.2f}", ln=True)
+    pdf.cell(0, 5, _s(f"CHF  {montant_total:,.2f}"), ln=True)
 
     # Note bas de page
     pdf.set_y(-20)
     pdf.set_font("Helvetica", "I", 7)
     pdf.set_text_color(120, 120, 120)
-    pdf.cell(0, 4, "Document généré automatiquement par Killian Thébaud — Althy · Genève · althy.ch", ln=True, align="C")
+    pdf.cell(
+        0, 4,
+        _s("Document généré automatiquement par Killian Thébaud — Althy · Genève · althy.ch"),
+        ln=True, align="C",
+    )
 
     return pdf.output()

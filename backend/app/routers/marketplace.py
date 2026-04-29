@@ -204,21 +204,13 @@ async def carte_geojson(
     return {"type": "FeatureCollection", "features": features}
 
 
-@router.get("/{listing_id}")
-async def get_bien(listing_id: uuid.UUID, db: DbDep, response: Response):
-    """Détail public d'un bien. Incrémente le compteur de vues."""
-    response.headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=120"
-    row = (await db.execute(
-        select(Listing, Bien).join(Bien, Listing.bien_id == Bien.id)
-        .where(Listing.id == listing_id, Listing.status == "active",
-               Listing.is_active == True, Bien.is_active == True)
-    )).first()
-    if not row:
-        raise HTTPException(404, "Bien introuvable")
-    listing, bien = row
-    listing.views = (listing.views or 0) + 1
-    await db.commit()
-    return serialize_listing(listing, bien)
+# Note : `@router.get("/{listing_id}")` a été déplacé en fin de fichier.
+# FastAPI/Starlette matche les routes dans l'ordre de déclaration : un
+# pattern dynamique placé tôt capture toutes les routes statiques qui le
+# suivent (ex. `/candidatures`, `/swipe-next`, `/mes-favoris`,
+# `/mes-candidatures`). String non-UUID → 422 sur validation path param.
+# Cf. PR-A5 : bug détecté en prod après PR-A4 quand les CTAs ont commencé
+# à appeler `/marketplace/candidatures`.
 
 
 # ── Routes authentifiées — gestion des listings ───────────────────────────────
@@ -698,3 +690,26 @@ async def mes_candidatures(db: DbDep, user: AuthUserDep):
         }
         items.append(item)
     return {"items": items, "total": len(items)}
+
+
+# ── Détail public d'un bien (route dynamique catch-all GET) ───────────────────
+# ⚠️ DOIT RESTER À LA FIN du fichier : FastAPI matche dans l'ordre de
+# déclaration. Placée plus haut, cette route capturait toutes les routes
+# statiques GET suivantes (`/candidatures`, `/swipe-next`, `/mes-favoris`,
+# `/mes-candidatures`) et levait 422 sur la validation `uuid.UUID` du path.
+
+@router.get("/{listing_id}")
+async def get_bien(listing_id: uuid.UUID, db: DbDep, response: Response):
+    """Détail public d'un bien. Incrémente le compteur de vues."""
+    response.headers["Cache-Control"] = "public, max-age=30, stale-while-revalidate=120"
+    row = (await db.execute(
+        select(Listing, Bien).join(Bien, Listing.bien_id == Bien.id)
+        .where(Listing.id == listing_id, Listing.status == "active",
+               Listing.is_active == True, Bien.is_active == True)
+    )).first()
+    if not row:
+        raise HTTPException(404, "Bien introuvable")
+    listing, bien = row
+    listing.views = (listing.views or 0) + 1
+    await db.commit()
+    return serialize_listing(listing, bien)
