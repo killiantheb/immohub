@@ -98,7 +98,7 @@ export function InfoRow({ label, value }: { label: string; value: React.ReactNod
 export const btnP: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 6,
   padding: "8px 16px", borderRadius: 9, border: "none",
-  background: C.orange, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer",
+  background: C.prussian, color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer",
 };
 export const btnS: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 6,
@@ -121,12 +121,12 @@ export const BIEN_STATUT: Record<string, { label: string; color: string; bg: str
 };
 export const INTER_STATUT: Record<string, { label: string; color: string; bg: string }> = {
   nouveau:  { label: "Nouveau",  color: C.blue,   bg: C.blueBg },
-  en_cours: { label: "En cours", color: C.orange, bg: C.orangeBg },
+  en_cours: { label: "En cours", color: C.prussian, bg: C.prussianBg },
   planifie: { label: "Planifié", color: C.amber,  bg: C.amberBg },
   resolu:   { label: "Résolu",   color: C.green,  bg: C.greenBg },
 };
 export const INTER_URGENCE: Record<string, string> = {
-  faible: C.green, moderee: C.amber, urgente: C.orange, tres_urgente: C.red,
+  faible: C.green, moderee: C.amber, urgente: C.prussian, tres_urgente: C.red,
 };
 export const PAI_STATUT: Record<string, { label: string; color: string; bg: string }> = {
   recu:       { label: "Reçu",       color: C.green, bg: C.greenBg },
@@ -167,7 +167,7 @@ export function BienHeader({ bienId }: { bienId: string }) {
       <div style={{ display: "flex", flexWrap: "wrap", gap: "1.25rem", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-            <Badge label={BIEN_TYPE_LABELS[bien.type] ?? bien.type} color={C.orange} bg={C.orangeBg} />
+            <Badge label={BIEN_TYPE_LABELS[bien.type] ?? bien.type} color={C.prussian} bg={C.prussianBg} />
             <Badge label={s.label} color={s.color} bg={s.bg} />
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: C.text, marginBottom: 3 }}>{bien.adresse}</h1>
@@ -231,7 +231,7 @@ export function TabLocataire({ bienId }: { bienId: string }) {
       <Card>
         <p style={{ fontSize: 11, fontWeight: 700, color: C.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "1rem" }}>Contact & bail</p>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "1rem" }}>
-          <div style={{ width: 44, height: 44, borderRadius: "50%", background: C.orangeBg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: C.orange }}>
+          <div style={{ width: 44, height: 44, borderRadius: "50%", background: C.prussianBg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: C.prussian }}>
             {initials(locataire.id)}
           </div>
           <div>
@@ -403,12 +403,12 @@ export function TabDocuments({ bienId }: { bienId: string }) {
               {items.map(doc => (
                 <div key={doc.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.7rem 1rem", borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <FileText size={15} style={{ color: doc.genere_par_ia ? C.orange : C.text3, flexShrink: 0 }} />
+                    <FileText size={15} style={{ color: doc.genere_par_ia ? C.prussian : C.text3, flexShrink: 0 }} />
                     <div>
                       <p style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{DOC_LABELS[doc.type] ?? doc.type}</p>
                       <p style={{ fontSize: 11, color: C.text3 }}>
                         {fmtDate(doc.date_document ?? doc.created_at)}
-                        {doc.genere_par_ia && <span style={{ marginLeft: 6, color: C.orange, fontWeight: 600 }}>· IA</span>}
+                        {doc.genere_par_ia && <span style={{ marginLeft: 6, color: C.prussian, fontWeight: 600 }}>· IA</span>}
                       </p>
                     </div>
                   </div>
@@ -513,7 +513,7 @@ export function TabInterventions({ bienId }: { bienId: string }) {
                     <div style={{ textAlign: "right", minWidth: 100 }}>
                       <p style={{ fontSize: 11, color: C.text3, marginBottom: 4 }}>{inter.avancement}%</p>
                       <div style={{ width: 100, height: 4, borderRadius: 99, background: C.border }}>
-                        <div style={{ height: "100%", width: `${inter.avancement}%`, borderRadius: 99, background: inter.avancement === 100 ? C.green : C.orange }} />
+                        <div style={{ height: "100%", width: `${inter.avancement}%`, borderRadius: 99, background: inter.avancement === 100 ? C.green : C.prussian }} />
                       </div>
                     </div>
                   </div>
@@ -719,7 +719,7 @@ export function TabPotentielIA({ bienId }: { bienId: string }) {
           <div style={{ fontSize: 20, color: C.text3 }}>→</div>
           <div>
             <p style={{ fontSize: 11, color: C.text3 }}>Marché estimé</p>
-            <p style={{ fontSize: 18, fontWeight: 700, color: C.orange }}>{fCHF(data.loyer_marche)}/m</p>
+            <p style={{ fontSize: 18, fontWeight: 700, color: C.prussian }}>{fCHF(data.loyer_marche)}/m</p>
           </div>
         </div>
         {data.ecart_marche_pct > 0 && (
@@ -751,7 +751,7 @@ export function TabPotentielIA({ bienId }: { bienId: string }) {
               <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                 <div style={{
                   width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
-                  background: C.orangeBg, color: C.orange,
+                  background: C.prussianBg, color: C.prussian,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 10, fontWeight: 800,
                 }}>{i + 1}</div>
@@ -777,7 +777,7 @@ export function TabPotentielIA({ bienId }: { bienId: string }) {
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
           <div style={{
             width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-            background: C.orangeBg, color: C.orange,
+            background: C.prussianBg, color: C.prussian,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             <TrendingUp size={14} />

@@ -7,22 +7,26 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   AlertTriangle, CheckCircle2, Clock, Download,
-  ExternalLink, FileText, Loader2, Mail, Wrench, XCircle,
+  ExternalLink, FileText, Loader2, Mail, Sparkles,
+  Wrench, XCircle,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import {
   useBien, useUpdateBien, useLocataireActuel,
   usePaiements, useInterventions, useDocuments,
+  useBienHistory,
   type Bien,
 } from "@/lib/hooks/useBiens";
 import {
-  Card, Badge, Skel,
+  Badge, Skel,
   fmtDate, fmtCHF, initials,
   INTER_STATUT, PAI_STATUT, DOC_LABELS, BIEN_TYPE_LABELS,
   daysUntil,
 } from "./_shared";
 import { NotificationDraft } from "@/components/NotificationDraft";
 import { C } from "@/lib/design-tokens";
+import { bienLinks } from "@/lib/bien-links";
+import type { AuditLogEntry } from "@/lib/types";
 
 // ── Design constants ──────────────────────────────────────────────────────────
 
@@ -60,7 +64,7 @@ const BTN_PRIMARY: React.CSSProperties = {
   padding: "9px 20px",
   borderRadius: 10,
   border: "none",
-  background: C.orange,
+  background: C.prussian,
   color: "#fff",
   fontSize: 13,
   fontWeight: 600,
@@ -327,7 +331,7 @@ function SectionFinances({ bienId }: { bienId: string }) {
         <div style={{
           padding: "14px 16px",
           borderRadius: 12,
-          background: "var(--althy-orange-bg)",
+          background: "var(--althy-prussian-bg)",
           marginBottom: dirty ? 16 : 0,
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
@@ -445,7 +449,7 @@ function SectionBail({ bienId }: { bienId: string }) {
         >
           Générer un avenant
         </button>
-        <Link href={`/app/biens/${bienId}/locataire`} style={BTN_GHOST}>
+        <Link href={bienLinks.locataire(bienId)} style={BTN_GHOST}>
           Détails du bail
         </Link>
       </div>
@@ -675,7 +679,7 @@ function SectionLocataire({ bienId }: { bienId: string }) {
           style={{
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "9px 16px", borderRadius: 10,
-            background: C.orange, color: "#fff",
+            background: C.prussian, color: "#fff",
             fontSize: 13, fontWeight: 600, textDecoration: "none",
           }}
         >
@@ -697,9 +701,9 @@ function SectionLocataire({ bienId }: { bienId: string }) {
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
         <div style={{
           width: 48, height: 48, borderRadius: "50%",
-          background: C.orangeBg,
+          background: C.prussianBg,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 16, fontWeight: 700, color: C.orange,
+          fontSize: 16, fontWeight: 700, color: C.prussian,
           flexShrink: 0,
         }}>
           {inis}
@@ -724,14 +728,14 @@ function SectionLocataire({ bienId }: { bienId: string }) {
           style={{
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "8px 14px", borderRadius: 9,
-            background: C.orangeBg, color: C.orange,
+            background: C.prussianBg, color: C.prussian,
             fontSize: 13, fontWeight: 600, textDecoration: "none",
           }}
         >
           <Mail size={13} /> Contacter
         </Link>
         <Link
-          href={`/app/biens/${bienId}/locataire`}
+          href={bienLinks.locataire(bienId)}
           style={{
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "8px 14px", borderRadius: 9,
@@ -767,7 +771,7 @@ function SectionInterventions({ bienId }: { bienId: string }) {
     <div style={CARD}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <p style={{ ...SEC_TITLE, marginBottom: 0 }}>Interventions</p>
-        <Link href={`/app/biens/${bienId}/interventions`} style={{ fontSize: 12, color: C.orange, textDecoration: "none", fontWeight: 500 }}>
+        <Link href={bienLinks.interventions(bienId)} style={{ fontSize: 12, color: C.prussian, textDecoration: "none", fontWeight: 500 }}>
           Voir tout →
         </Link>
       </div>
@@ -834,7 +838,7 @@ function SectionDocuments({ bienId }: { bienId: string }) {
     <div style={CARD}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <p style={{ ...SEC_TITLE, marginBottom: 0 }}>Documents récents</p>
-        <Link href={`/app/biens/${bienId}/documents`} style={{ fontSize: 12, color: C.orange, textDecoration: "none", fontWeight: 500 }}>
+        <Link href={bienLinks.documents(bienId)} style={{ fontSize: 12, color: C.prussian, textDecoration: "none", fontWeight: 500 }}>
           Voir tout →
         </Link>
       </div>
@@ -883,33 +887,164 @@ function SectionDocuments({ bienId }: { bienId: string }) {
   );
 }
 
+// ── SectionEstimationIA — card de redirection vers l'estim détaillée ─────────
+
+function SectionEstimationIA({ bienId }: { bienId: string }) {
+  return (
+    <Link
+      href={bienLinks.potentiel(bienId)}
+      style={{
+        ...CARD,
+        display: "block",
+        textDecoration: "none",
+        color: "inherit",
+        transition: "border-color 0.15s",
+        borderLeft: `4px solid ${C.gold}`,
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <p style={{ ...SEC_TITLE, marginBottom: 0 }}>Estimation IA</p>
+        <Sparkles size={18} style={{ color: C.gold }} />
+      </div>
+      <p style={{ fontSize: 13, color: C.text2, margin: "0 0 14px", lineHeight: 1.5 }}>
+        Découvrez la valeur estimée de votre bien et son potentiel locatif grâce à l&apos;analyse IA.
+      </p>
+      <span
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          fontSize: 12, fontWeight: 600,
+          color: C.prussian,
+        }}
+      >
+        Lancer l&apos;estimation →
+      </span>
+    </Link>
+  );
+}
+
+// ── SectionHistorique — timeline des événements audit du bien ────────────────
+
+function SectionHistorique({ bienId }: { bienId: string }) {
+  const { data: events, isLoading } = useBienHistory(bienId, 5);
+
+  if (isLoading) {
+    return (
+      <div style={CARD}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <Skel h={14} w="40%" />
+          <Skel h={36} /><Skel h={36} /><Skel h={36} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={CARD}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <p style={{ ...SEC_TITLE, marginBottom: 0 }}>Historique</p>
+        <Link
+          href={bienLinks.historique(bienId)}
+          style={{ fontSize: 12, color: C.prussian, textDecoration: "none", fontWeight: 500 }}
+        >
+          Voir tout →
+        </Link>
+      </div>
+
+      {!events || events.length === 0 ? (
+        <p style={{ fontSize: 13, color: C.text3, margin: 0 }}>Aucun événement enregistré</p>
+      ) : (
+        <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 0 }}>
+          {events.map((event, idx) => (
+            <TimelineItem key={event.id} event={event} isLast={idx === events.length - 1} />
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
+const ACTION_LABELS: Record<string, string> = {
+  "create:bien": "Bien créé",
+  "update:bien": "Bien modifié",
+  "delete:bien": "Bien archivé",
+  "create:locataire": "Locataire ajouté",
+  "update:locataire": "Locataire modifié",
+  "delete:locataire": "Locataire retiré",
+  "create:intervention": "Intervention signalée",
+  "update:intervention": "Intervention modifiée",
+  "create:document": "Document ajouté",
+  "delete:document": "Document supprimé",
+  "create:changement_locataire": "Changement de locataire lancé",
+  "update:changement_locataire": "Changement de locataire mis à jour",
+  "create:paiement": "Paiement enregistré",
+  "update:paiement": "Paiement modifié",
+};
+
+function TimelineItem({ event, isLast }: { event: AuditLogEntry; isLast: boolean }) {
+  const key = `${event.action}:${event.resource_type}`;
+  const label = ACTION_LABELS[key] ?? `${event.action} ${event.resource_type}`;
+
+  return (
+    <li style={{ display: "flex", gap: 12, paddingBottom: isLast ? 0 : 12 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+        <div style={{
+          width: 8, height: 8, borderRadius: "50%",
+          background: C.gold,
+          marginTop: 6,
+          flexShrink: 0,
+        }} />
+        {!isLast && (
+          <div style={{ width: 1, flex: 1, background: C.border, marginTop: 4 }} />
+        )}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: C.text, margin: "0 0 2px" }}>
+          {label}
+        </p>
+        <p style={{ fontSize: 11, color: C.text3, margin: 0 }}>
+          {fmtDate(event.created_at)}
+        </p>
+      </div>
+    </li>
+  );
+}
+
 // ── Vue d'ensemble ────────────────────────────────────────────────────────────
 
 function BienOverview() {
   const { id } = useParams<{ id: string }>();
 
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "1.2fr 1fr",
-        gap: 20,
-        alignItems: "start",
-      }}
-    >
-      {/* Colonne gauche */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        <SectionInfos bienId={id} />
-        <SectionFinances bienId={id} />
-        <SectionBail bienId={id} />
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Header bien — full width (édition adresse, type, surface) */}
+      <SectionInfos bienId={id} />
 
-      {/* Colonne droite */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        <SectionStatutLoyer bienId={id} />
+      {/*
+        Grille 6 cards responsive :
+          - Mobile (< 1024px) : 1 colonne
+            ordre vertical : Locataire → Finances → Estim IA → Interventions
+            → Documents → Historique
+          - Desktop (>= 1024px) : 2 colonnes
+            row 1 : Locataire / Finances
+            row 2 : Estim IA / Interventions
+            row 3 : Documents / Historique
+        Liens vers sous-pages via @/lib/bien-links (transition Phase 2-3
+        modules globaux filtrés = modifier uniquement bien-links.ts).
+      */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
+          gap: 20,
+          alignItems: "start",
+        }}
+      >
         <SectionLocataire bienId={id} />
+        <SectionFinances bienId={id} />
+        <SectionEstimationIA bienId={id} />
         <SectionInterventions bienId={id} />
         <SectionDocuments bienId={id} />
+        <SectionHistorique bienId={id} />
       </div>
     </div>
   );
