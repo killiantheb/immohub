@@ -4,11 +4,17 @@
  * /app/candidatures — Tableau de bord "Candidatures reçues" (proprio / agence).
  * Affiche toutes les candidatures sur les biens du proprio connecté,
  * triées par score IA décroissant.
+ *
+ * Quand `?bien_id=X` est présent (lien depuis la fiche bien — PR-A4),
+ * le banner contextuel (BienContextBanner) signale la vue ciblée. Le
+ * filtrage des items par bien_id est appliqué côté frontend Phase 1
+ * (backend acceptera le filtre nativement Phase 2).
  */
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import Link from "next/link";
+import { BienContextBanner } from "@/components/biens/BienContextBanner";
 import { C } from "@/lib/design-tokens";
 import { Analytics } from "@/lib/analytics";
 
@@ -166,6 +172,13 @@ export default function CandidaturesPage() {
   
   return (
     <div style={{ padding: "24px 20px 60px", maxWidth: 1100, margin: "0 auto" }}>
+      {/* Banner contextuel — affiché uniquement si ?bien_id=X (lien fiche bien
+          PR-A4). Filtrage des items côté backend = Phase 2 ; le banner suffit
+          pour signaler le contexte au user en attendant. */}
+      <Suspense fallback={null}>
+        <BienContextBanner />
+      </Suspense>
+
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ font: "300 26px/1.2 var(--font-serif)", color: C.text, margin: 0 }}>

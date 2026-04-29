@@ -843,13 +843,14 @@ function SectionLocataire({ bienId }: { bienId: string }) {
 
       <div style={{ display: "flex", gap: 8 }}>
         {/*
-          P1.3 fix : pointe directement vers /app/communication?tab=messages
-          au lieu du redirect 301 via /app/messagerie. Le pré-ciblage du
-          locataire (?contact=X) sera Phase 2 quand le module global lira
-          ce param.
+          P1.3 fix (PR-A4) : pointe directement vers /app/communication
+          (au lieu du redirect 301 via /app/messagerie).
+          PR-A6 : ajout ?bien_id=X pour activer le banner contextuel sur la
+          page communication. Le pré-ciblage d'un locataire spécifique
+          (?contact=X) reste Phase 2.
         */}
         <Link
-          href="/app/communication?tab=messages"
+          href={`/app/communication?tab=messages&bien_id=${bienId}`}
           style={{
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "8px 14px", borderRadius: 9,

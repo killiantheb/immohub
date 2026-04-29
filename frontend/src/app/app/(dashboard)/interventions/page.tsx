@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import {
   MapPin, Loader2, Wrench, Plus, ChevronRight, AlertTriangle, Sparkles, FileText,
 } from "lucide-react";
@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import type { RFQStatus } from "@/lib/types";
 import { useRFQs } from "@/lib/hooks/useRFQ";
 import Link from "next/link";
+import { BienContextBanner } from "@/components/biens/BienContextBanner";
 import { C } from "@/lib/design-tokens";
 
 // ── Devis Comparison Modal ────────────────────────────────────────────────────
@@ -300,6 +301,11 @@ function ArtisanTab() {
 export default function InterventionsPage() {
   return (
     <div style={{ padding: "32px 24px", maxWidth: 900, margin: "0 auto" }}>
+      {/* Banner contextuel — affiché uniquement si ?bien_id=X (lien fiche bien). */}
+      <Suspense fallback={null}>
+        <BienContextBanner />
+      </Suspense>
+
       <div style={{ marginBottom: 28 }}>
         <h1 style={{
           fontSize: 28, fontWeight: 700, color: C.text,
