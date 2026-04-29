@@ -12,6 +12,7 @@ Storage Supabase :
 
 from __future__ import annotations
 
+import logging
 import math
 import mimetypes
 import uuid
@@ -19,6 +20,8 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 import httpx
+
+logger = logging.getLogger(__name__)
 from app.core.config import settings
 from app.models.audit_log import AuditLog
 from app.models.bien import (
@@ -896,14 +899,37 @@ class BienService:
         bien_id: uuid.UUID | str,
         current_user: User,
     ) -> EstimationIAEnrichie:
-        """Estimation IA enrichie. Phase 1 : Claude Sonnet 4.6 + knowledge."""
+        """Estimation IA enrichie. Phase 1 : Claude Sonnet 4.6 + knowledge.
+
+        Logging détaillé (PR-A9.3) pour diagnostiquer pourquoi le fallback
+        se déclenche en prod : check API key, longueur réponse, JSON parse,
+        validation Pydantic.
+        """
         from datetime import datetime, timezone
 
         bien = await self.get_for_access_check(bien_id, current_user)
         contexte = self._build_contexte_enrichi(bien)
 
+        logger.info("Estim IA v2 — calling Claude for bien %s", bien.id)
+
         try:
             data = await self._call_claude_estimation_v2(contexte)
+        except Exception as exc:
+            # Échec amont : API key, network, timeout, JSON decode, code-fences mal strippées.
+            logger.error(
+                "Estim IA v2 — Claude call failed for bien %s: %s: %s",
+                bien.id,
+                type(exc).__name__,
+                exc,
+            )
+            return self._fallback_estimation_v2(bien)
+
+        try:
+            logger.info(
+                "Estim IA v2 — Claude returned %d top-level keys for bien %s",
+                len(data),
+                bien.id,
+            )
             data["bien_id"] = str(bien.id)
             data["generated_at"] = datetime.now(timezone.utc)
             data["model_used"] = "claude-sonnet-4-6"
@@ -911,9 +937,16 @@ class BienService:
             data.setdefault("residence_type", bien.residence_type or "secondaire")
             data.setdefault("location_type_actuel", bien.location_type_actuel)
             return EstimationIAEnrichie(**data)
-        except Exception:
-            # Fallback déterministe — retourne TOUJOURS un EstimationIAEnrichie
-            # complet pour éviter une erreur de validation Pydantic au runtime.
+        except Exception as exc:
+            # Validation Pydantic échoue (champs manquants, types invalides, etc.).
+            logger.error(
+                "Estim IA v2 — Pydantic validation failed for bien %s: %s: %s "
+                "| keys received: %s",
+                bien.id,
+                type(exc).__name__,
+                exc,
+                sorted(data.keys()) if isinstance(data, dict) else type(data).__name__,
+            )
             return self._fallback_estimation_v2(bien)
 
     def _build_contexte_enrichi(self, bien: Bien) -> dict:
@@ -1032,19 +1065,48 @@ class BienService:
             f"{_json.dumps(contexte, indent=2, ensure_ascii=False, default=str)}"
         )
 
+        # Garde-fou explicite — log clair si la clé n'est pas configurée Railway.
+        if not settings.ANTHROPIC_API_KEY:
+            logger.error("Estim IA v2 — ANTHROPIC_API_KEY missing in settings")
+            raise RuntimeError("ANTHROPIC_API_KEY not configured")
+
         client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
         response = await client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=4000,
             system=prompt_systeme,
             messages=[{"role": "user", "content": prompt_user}],
+            timeout=60.0,
         )
 
-        raw = response.content[0].text.strip()
+        raw = response.content[0].text or ""
+        logger.info(
+            "Estim IA v2 — Claude raw response length: %d chars (model=%s)",
+            len(raw),
+            getattr(response, "model", "unknown"),
+        )
+
         # Robustesse : strip d'éventuels code fences ```json ... ```
-        if raw.startswith("```"):
-            raw = raw.strip("`").lstrip("json").strip()
-        return _json.loads(raw)
+        # (ancien code échouait sur ```json ... ``` car .strip("`") retire
+        # aussi les ` du milieu si présents — pattern fragile).
+        cleaned = raw.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[len("```json"):].lstrip()
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[len("```"):].lstrip()
+        if cleaned.endswith("```"):
+            cleaned = cleaned[: -len("```")].rstrip()
+        cleaned = cleaned.strip()
+
+        try:
+            return _json.loads(cleaned)
+        except _json.JSONDecodeError as exc:
+            logger.error(
+                "Estim IA v2 — JSON decode failed: %s | first 500 chars: %r",
+                exc,
+                cleaned[:500],
+            )
+            raise
 
     def _fallback_estimation_v2(self, bien: Bien) -> EstimationIAEnrichie:
         """Fallback déterministe — retourne un EstimationIAEnrichie complet.
@@ -1060,8 +1122,11 @@ class BienService:
         surface = float(bien.surface or 0)
 
         loyer_an = loyer * 12
-        valeur_min = loyer * 12 * 200 if loyer > 0 else 0
-        valeur_max = loyer * 12 * 260 if loyer > 0 else 0
+        # FIX PR-A9.3 — multiplicateur suisse standard appliqué sur le loyer
+        # MENSUEL (pas annuel). 200-260× = fourchette marché CH médian.
+        # Exemple : 1500 CHF/mois → 300k-390k CHF (vs 3.6M-4.7M avant fix).
+        valeur_min = loyer * 200 if loyer > 0 else 0
+        valeur_max = loyer * 260 if loyer > 0 else 0
         valeur_mid = (valeur_min + valeur_max) / 2 if valeur_max > 0 else 0
         valeur_m2 = (valeur_mid / surface) if surface > 0 else 0
         rendement_brut = round(loyer_an / valeur_mid * 100, 2) if valeur_mid > 0 else 0
@@ -1114,7 +1179,7 @@ class BienService:
                 notes_locales=(
                     "Données indisponibles — analyse IA Claude n'a pas pu être "
                     "complétée. Estimations génériques basées sur le multiplicateur "
-                    "230× loyer mensuel (marché CH médian)."
+                    "200-260× loyer mensuel (marché CH médian)."
                 ),
             ),
             location_annuelle=location_neutre("annuelle"),
