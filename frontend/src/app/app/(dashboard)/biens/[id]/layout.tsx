@@ -3,7 +3,6 @@
 
 import { useParams, usePathname } from "next/navigation";
 import { FilAriane } from "@/components/FilAriane";
-import { BienTabs } from "@/components/BienTabs";
 import { BienHeader } from "./_shared";
 import { useBien } from "@/lib/hooks/useBiens";
 import { C } from "@/lib/design-tokens";
@@ -13,7 +12,9 @@ export default function BienDetailLayout({ children }: { children: React.ReactNo
   const pathname = usePathname();
   const { data: bien } = useBien(id);
 
-  // Sur la vue d'ensemble, BienHeader est remplacé par les cards éditables
+  // Sur la vue d'ensemble, BienHeader est remplacé par les cards éditables (CardHeaderBien).
+  // Sur les sous-pages (locataire, finances, documents, etc.), BienHeader fournit le contexte
+  // du bien en haut de page puisque la barre BienTabs a été retirée (étape 4 sprint 12).
   const isOverview = pathname === `/app/biens/${id}`;
 
   const adresseLabel = bien
@@ -29,8 +30,6 @@ export default function BienDetailLayout({ children }: { children: React.ReactNo
       ]} />
 
       {!isOverview && <BienHeader bienId={id} />}
-
-      <BienTabs bienId={id} />
 
       <div style={{ maxWidth: 1100 }}>
         {children}
