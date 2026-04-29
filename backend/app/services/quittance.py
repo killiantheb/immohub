@@ -1,12 +1,19 @@
 """Génération de quittance de loyer PDF (art. 88 CO suisse).
 
 Utilise fpdf2 (déjà installé pour les QR-factures).
+
+⚠️ Toutes les chaînes injectées dans `pdf.cell()` / `pdf.multi_cell()` doivent
+passer par `sanitize_for_pdf()` (cf. `_pdf_utils.py`) — la police core
+Helvetica est latin-1 et lève `UnicodeEncodeError` sur em dash, smart quotes,
+ellipsis, etc.
 """
 from __future__ import annotations
 
 from datetime import date
 
 from fpdf import FPDF
+
+from app.services._pdf_utils import sanitize_for_pdf as _s
 
 
 def generate_quittance_pdf(
@@ -29,12 +36,12 @@ def generate_quittance_pdf(
     # ── En-tête Althy ────────────────────────────────────────────────────────
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(120, 120, 120)
-    pdf.cell(0, 5, "Althy — althy.ch", ln=True, align="R")
+    pdf.cell(0, 5, _s("Althy — althy.ch"), ln=True, align="R")
     pdf.set_text_color(0, 0, 0)
     pdf.ln(4)
 
     pdf.set_font("Helvetica", "B", 18)
-    pdf.cell(0, 10, "Quittance de loyer", ln=True, align="C")
+    pdf.cell(0, 10, _s("Quittance de loyer"), ln=True, align="C")
     pdf.set_draw_color(232, 96, 44)
     pdf.set_line_width(0.6)
     pdf.line(25, pdf.get_y() + 2, 185, pdf.get_y() + 2)
@@ -43,9 +50,9 @@ def generate_quittance_pdf(
     # ── Gérance (propriétaire) ───────────────────────────────────────────────
     if proprio_address:
         pdf.set_font("Helvetica", "B", 9)
-        pdf.cell(0, 5, "Gérance", ln=True)
+        pdf.cell(0, 5, _s("Gérance"), ln=True)
         pdf.set_font("Helvetica", "", 9)
-        pdf.cell(0, 5, f"{proprio_name} — {proprio_address}", ln=True)
+        pdf.cell(0, 5, _s(f"{proprio_name} — {proprio_address}"), ln=True)
         pdf.ln(6)
 
     # ── Infos ────────────────────────────────────────────────────────────────
@@ -59,29 +66,29 @@ def generate_quittance_pdf(
     ]
     for label, val in rows:
         pdf.set_font("Helvetica", "B", 10)
-        pdf.cell(55, 7, label, ln=False)
+        pdf.cell(55, 7, _s(label), ln=False)
         pdf.set_font("Helvetica", "", 10)
-        pdf.cell(0, 7, val, ln=True)
+        pdf.cell(0, 7, _s(val), ln=True)
 
     pdf.ln(6)
 
     # ── Montants ─────────────────────────────────────────────────────────────
     pdf.set_font("Helvetica", "B", 10)
-    pdf.cell(55, 7, "Loyer mensuel", ln=False)
+    pdf.cell(55, 7, _s("Loyer mensuel"), ln=False)
     pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(0, 7, f"CHF {montant:,.2f}", ln=True)
+    pdf.cell(0, 7, _s(f"CHF {montant:,.2f}"), ln=True)
 
     if charges > 0:
         pdf.set_font("Helvetica", "B", 10)
-        pdf.cell(55, 7, "Charges", ln=False)
+        pdf.cell(55, 7, _s("Charges"), ln=False)
         pdf.set_font("Helvetica", "", 10)
-        pdf.cell(0, 7, f"CHF {charges:,.2f}", ln=True)
+        pdf.cell(0, 7, _s(f"CHF {charges:,.2f}"), ln=True)
 
         total = montant + charges
         pdf.set_font("Helvetica", "B", 10)
-        pdf.cell(55, 7, "Total", ln=False)
+        pdf.cell(55, 7, _s("Total"), ln=False)
         pdf.set_font("Helvetica", "B", 12)
-        pdf.cell(0, 7, f"CHF {total:,.2f}", ln=True)
+        pdf.cell(0, 7, _s(f"CHF {total:,.2f}"), ln=True)
 
     pdf.ln(10)
 
@@ -93,18 +100,21 @@ def generate_quittance_pdf(
         f"pour le bien sis à {bien_adresse}."
     )
     pdf.set_font("Helvetica", "", 10)
-    pdf.multi_cell(0, 6, body)
+    pdf.multi_cell(0, 6, _s(body))
     pdf.ln(6)
-    pdf.multi_cell(0, 6, "Cette quittance est délivrée conformément à l'article 88 du Code des obligations suisse.")
+    pdf.multi_cell(
+        0, 6,
+        _s("Cette quittance est délivrée conformément à l'article 88 du Code des obligations suisse."),
+    )
 
     pdf.ln(20)
 
     # ── Date et signature ────────────────────────────────────────────────────
     today = date.today().strftime("%d.%m.%Y")
     pdf.set_font("Helvetica", "", 10)
-    pdf.cell(0, 6, f"Fait le {today}", ln=True)
+    pdf.cell(0, 6, _s(f"Fait le {today}"), ln=True)
     pdf.ln(16)
-    pdf.cell(80, 6, "Signature du bailleur :", ln=False)
+    pdf.cell(80, 6, _s("Signature du bailleur :"), ln=False)
     pdf.cell(0, 6, "", ln=True)
     pdf.ln(2)
     pdf.set_draw_color(180, 180, 180)
@@ -115,6 +125,10 @@ def generate_quittance_pdf(
     pdf.set_y(-20)
     pdf.set_font("Helvetica", "I", 7)
     pdf.set_text_color(120, 120, 120)
-    pdf.cell(0, 4, "Document généré automatiquement par HBM Swiss Sàrl · Genève · althy.ch", ln=True, align="C")
+    pdf.cell(
+        0, 4,
+        _s("Document généré automatiquement par HBM Swiss Sàrl · Genève · althy.ch"),
+        ln=True, align="C",
+    )
 
     return pdf.output()
