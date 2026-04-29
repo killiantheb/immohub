@@ -8,7 +8,7 @@ import { useParams } from "next/navigation";
 import {
   AlertTriangle, CheckCircle2, Clock, Download,
   ExternalLink, FileText, Loader2, Mail,
-  Pencil, Plus, Sparkles, User, Wrench, XCircle,
+  Pencil, Plus, Settings2, Sparkles, Trash2, User, Wrench, XCircle,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import {
@@ -27,6 +27,8 @@ import { NotificationDraft } from "@/components/NotificationDraft";
 import { C } from "@/lib/design-tokens";
 import { bienLinks } from "@/lib/bien-links";
 import { MiniMapBien } from "@/components/biens/MiniMapBien";
+import { DeleteBienModal } from "@/components/biens/DeleteBienModal";
+import { CaracteristiquesModal } from "@/components/biens/CaracteristiquesModal";
 import type { AuditLogEntry } from "@/lib/types";
 
 // ── Design constants ──────────────────────────────────────────────────────────
@@ -1317,10 +1319,12 @@ function CardHeaderBien({
   bienId,
   editing,
   onToggleEdit,
+  onRequestDelete,
 }: {
   bienId: string;
   editing: boolean;
   onToggleEdit: () => void;
+  onRequestDelete: () => void;
 }) {
   const { data: bien, isLoading } = useBien(bienId);
   const { data: locataire } = useLocataireActuel(bienId);
@@ -1456,8 +1460,8 @@ function CardHeaderBien({
           )}
         </div>
 
-        {/* Action */}
-        <div style={{ display: "flex", gap: 8 }}>
+        {/* Actions — Modifier + Supprimer (PR-A10) */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button
             type="button"
             onClick={onToggleEdit}
@@ -1480,9 +1484,206 @@ function CardHeaderBien({
             <Pencil size={13} />
             {editing ? "Fermer" : "Modifier"}
           </button>
+          <button
+            type="button"
+            onClick={onRequestDelete}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 14px",
+              borderRadius: 9,
+              border: `1px solid ${C.red}33`,
+              background: "transparent",
+              color: C.red,
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            <Trash2 size={13} />
+            Supprimer
+          </button>
         </div>
       </div>
     </div>
+  );
+}
+
+// ── SectionCaracteristiques — 7e card de la grille (PR-A10) ──────────────────
+//
+// Aperçu compact + bouton "Voir toutes les caractéristiques" qui ouvre
+// CaracteristiquesModal (modale détaillée 7 sections).
+
+function getDpeColor(classe: string | null | undefined): string {
+  if (!classe) return C.text3;
+  const map: Record<string, string> = {
+    A: C.green,
+    B: C.green,
+    C: C.amber,
+    D: C.amber,
+    E: C.warning,
+    F: C.red,
+    G: C.red,
+  };
+  return map[classe.toUpperCase()] || C.text;
+}
+
+function SectionCaracteristiques({ bienId }: { bienId: string }) {
+  const { data: bien, isLoading } = useBien(bienId);
+  const [showModal, setShowModal] = useState(false);
+
+  if (isLoading || !bien) {
+    return (
+      <div style={CARD}>
+        <Skel h={14} w="50%" />
+        <div style={{ marginTop: 12 }}>
+          <Skel h={36} />
+          <Skel h={36} />
+        </div>
+      </div>
+    );
+  }
+
+  // Aperçu : 4 équipements principaux présents (max)
+  const apercu: { icon: string; label: string }[] = [];
+  if (bien.has_balcony) apercu.push({ icon: "🌅", label: "Balcon" });
+  if (bien.has_terrace) apercu.push({ icon: "🌿", label: "Terrasse" });
+  if (bien.has_garden) apercu.push({ icon: "🌳", label: "Jardin" });
+  if (bien.parking_type) apercu.push({ icon: "🚗", label: "Parking" });
+  if (bien.has_fireplace) apercu.push({ icon: "🔥", label: "Cheminée" });
+  if (bien.has_storage) apercu.push({ icon: "📦", label: "Cave" });
+  const apercuLimite = apercu.slice(0, 4);
+
+  return (
+    <>
+      <div style={{ ...CARD, display: "flex", flexDirection: "column" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 16,
+          }}
+        >
+          <p style={{ ...SEC_TITLE, marginBottom: 0 }}>Caractéristiques</p>
+          <button
+            type="button"
+            onClick={() => setShowModal(true)}
+            style={{
+              fontSize: 12,
+              color: C.prussian,
+              textDecoration: "none",
+              fontWeight: 500,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              padding: 0,
+            }}
+          >
+            Voir détails →
+          </button>
+        </div>
+
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+          {apercuLimite.length > 0 ? (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 6,
+              }}
+            >
+              {apercuLimite.map((item, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    fontSize: 13,
+                    color: C.text2,
+                    background: C.prussianBg,
+                    padding: "6px 10px",
+                    borderRadius: 8,
+                  }}
+                >
+                  <span aria-hidden="true">{item.icon}</span>
+                  <span>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ fontSize: 12, color: C.text3, fontStyle: "italic", margin: 0 }}>
+              Aucun équipement renseigné
+            </p>
+          )}
+
+          {/* Stats clés */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+              paddingTop: 8,
+              borderTop: `1px solid ${C.border}`,
+              fontSize: 13,
+            }}
+          >
+            {bien.classe_energetique && (
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: C.text3 }}>DPE</span>
+                <span style={{ color: getDpeColor(bien.classe_energetique), fontWeight: 700 }}>
+                  {bien.classe_energetique}
+                </span>
+              </div>
+            )}
+            {bien.annee_construction && (
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: C.text3 }}>Construction</span>
+                <span style={{ color: C.text }}>{bien.annee_construction}</span>
+              </div>
+            )}
+            {bien.is_furnished != null && (
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: C.text3 }}>Meublé</span>
+                <span style={{ color: C.text }}>{bien.is_furnished ? "Oui" : "Non"}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowModal(true)}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            padding: "9px 14px",
+            borderRadius: 10,
+            border: `1px solid ${C.border}`,
+            background: C.surface,
+            color: C.text2,
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            marginTop: 12,
+          }}
+        >
+          <Settings2 size={13} />
+          Voir toutes les caractéristiques
+        </button>
+      </div>
+
+      {showModal && (
+        <CaracteristiquesModal bien={bien} onClose={() => setShowModal(false)} />
+      )}
+    </>
   );
 }
 
@@ -1490,7 +1691,9 @@ function CardHeaderBien({
 
 function BienOverview() {
   const { id } = useParams<{ id: string }>();
+  const { data: bien } = useBien(id);
   const [editing, setEditing] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   return (
     <div
@@ -1506,19 +1709,19 @@ function BienOverview() {
         bienId={id}
         editing={editing}
         onToggleEdit={() => setEditing((e) => !e)}
+        onRequestDelete={() => setShowDeleteModal(true)}
       />
 
       {/* Édition complète conditionnelle (toggle via bouton "Modifier" du header) */}
       {editing && <SectionInfos bienId={id} />}
 
       {/*
-        Grille 6 cards responsive — colonnes STRICTES (pas auto-fit) :
+        Grille 7 cards (PR-A10) responsive — colonnes STRICTES :
           - Mobile  (<768px)        : 1 colonne (ordre vertical)
-          - Tablette (768-1023px)   : 2 colonnes (3 lignes)
-          - Desktop (>=1024px)      : 3 colonnes (3×2 — tient en 1 viewport)
-        Tailwind suffit ici (Tailwind est configuré dans tailwind.config.ts
-        et scopé sur ce fichier via globals.css). Les cards elles-mêmes
-        gardent leurs inline-styles (pattern dominant du fichier).
+          - Tablette (768-1023px)   : 2 colonnes
+          - Desktop (>=1024px)      : 3 colonnes (3×2 + 1 sur la 3e ligne)
+        Tailwind utilisé uniquement pour le grid responsive ; les cards
+        elles-mêmes gardent leurs inline-styles (pattern dominant).
         Liens vers sous-pages via @/lib/bien-links (transition Phase 2-3
         modules globaux filtrés = modifier uniquement bien-links.ts).
       */}
@@ -1529,7 +1732,17 @@ function BienOverview() {
         <SectionInterventions bienId={id} />
         <SectionDocuments bienId={id} />
         <SectionHistorique bienId={id} />
+        <SectionCaracteristiques bienId={id} />
       </div>
+
+      {/* Modale soft delete (PR-A10) — affichée uniquement quand demandée. */}
+      {showDeleteModal && bien && (
+        <DeleteBienModal
+          bienId={id}
+          bienAdresse={`${bien.adresse}, ${bien.ville}`}
+          onClose={() => setShowDeleteModal(false)}
+        />
+      )}
     </div>
   );
 }

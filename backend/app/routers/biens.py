@@ -124,15 +124,34 @@ async def update_bien(
     return BienRead.model_validate(bien)
 
 
-@router.delete("/{bien_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
+@router.delete("/{bien_id}")
 async def delete_bien(
     bien_id: uuid.UUID,
     current_user: AuthDep,
     db: DbDep,
-) -> None:
-    ok = await BienService(db).delete(bien_id, current_user=current_user)
-    if not ok:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Bien introuvable")
+) -> dict:
+    """Soft delete d'un bien avec vérifications préalables (PR-A10).
+
+    Renvoie :
+      - 200 + message si OK
+      - 404 si bien introuvable
+      - 403 si pas de droit d'écriture
+      - 409 si locataire actif / paiement en attente / intervention active
+    """
+    result = await BienService(db).delete_with_checks(
+        bien_id, current_user=current_user
+    )
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "message": "Suppression impossible",
+                "blockers": result["blockers"],
+            },
+        )
+
+    return {"message": result["message"]}
 
 
 # ═════════════════════════════════════════════════════════════════════════════
