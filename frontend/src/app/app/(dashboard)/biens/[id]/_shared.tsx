@@ -5,7 +5,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  AlertTriangle, CheckCircle2, ChevronRight,
+  AlertTriangle, Award, Building2, Calculator, CheckCircle2,
+  ChevronDown, ChevronRight,
   Clock, Download, Eye, FileText, Lightbulb, Loader2, MapPin,
   PiggyBank, Plus, RefreshCw, Sparkles, TrendingUp, User, Wrench, XCircle,
 } from "lucide-react";
@@ -14,11 +15,15 @@ import {
   useLocataires, usePaiements, useScoring, useCreateIntervention,
   type DocumentAlthy, type Locataire, type Paiement,
 } from "@/lib/hooks/useBiens";
-import { usePotentielIA } from "@/lib/hooks/useDashboardData";
+import { useEstimationEnrichie } from "@/lib/hooks/useDashboardData";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { C } from "@/lib/design-tokens";
 import { bienLinks } from "@/lib/bien-links";
+import type {
+  EstimationIAEnrichie,
+  EstimationLocation as EstimationLocationT,
+} from "@/lib/types";
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 
@@ -671,151 +676,600 @@ function PotentielBloc({ title, children }: { title: string; children: React.Rea
   );
 }
 
-export function TabPotentielIA({ bienId }: { bienId: string }) {
-  const { data, isLoading, error, refetch, isFetching } = usePotentielIA(bienId);
+// ── Helpers Estimation IA enrichie (PR-A9.2) ──────────────────────────────────
 
-  if (isLoading) {
-    return (
-      <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(270px, 1fr))" }}>
-        {Array.from({ length: 7 }).map((_, i) => <Card key={i}><Skel h={100} /></Card>)}
-      </div>
-    );
-  }
+const fCHF = (n: number) => (n > 0 ? `CHF ${Math.round(n).toLocaleString("fr-CH")}` : "—");
+const fPct = (n: number) => `${Number(n).toFixed(1)} %`;
 
-  if (error || !data) {
-    return (
-      <Card style={{ textAlign: "center", padding: "2.5rem" }}>
-        <Sparkles size={32} style={{ margin: "0 auto 0.75rem", color: C.text3, opacity: 0.4 }} />
-        <p style={{ fontWeight: 600, color: C.text2, marginBottom: 4 }}>Analyse non disponible</p>
-        <p style={{ fontSize: 13, color: C.text3, marginBottom: "1rem" }}>
-          L&apos;analyse IA nécessite un loyer renseigné pour ce bien.
+function ExpandableSection({
+  title,
+  icon: Icon,
+  isOpen,
+  onToggle,
+  summary,
+  children,
+}: {
+  title: string;
+  icon: React.ElementType;
+  isOpen: boolean;
+  onToggle: () => void;
+  summary: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        borderRadius: 14,
+        border: `1px solid ${C.border}`,
+        background: C.surface,
+        overflow: "hidden",
+      }}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "16px 18px",
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          textAlign: "left",
+          fontFamily: "inherit",
+        }}
+        aria-expanded={isOpen}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ color: C.prussian, lineHeight: 0 }}>
+            <Icon size={20} />
+          </div>
+          <div>
+            <p style={{ fontFamily: "var(--font-serif)", fontSize: 15, color: C.text, margin: 0 }}>
+              {title}
+            </p>
+            <p style={{ fontSize: 12, color: C.text3, margin: "2px 0 0" }}>{summary}</p>
+          </div>
+        </div>
+        <ChevronDown
+          size={20}
+          style={{
+            color: C.text3,
+            transition: "transform 0.2s",
+            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+          }}
+        />
+      </button>
+      {isOpen && (
+        <div
+          style={{
+            padding: "12px 18px 18px",
+            borderTop: `1px solid ${C.border2}`,
+          }}
+        >
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p
+        style={{
+          fontSize: 10,
+          color: C.text3,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          margin: 0,
+        }}
+      >
+        {label}
+      </p>
+      <p
+        style={{
+          fontFamily: "var(--font-serif)",
+          fontSize: 18,
+          fontWeight: 300,
+          color: C.text,
+          margin: "2px 0 0",
+        }}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function LocationCard({
+  location,
+  isRecommended,
+}: {
+  location: EstimationLocationT;
+  isRecommended: boolean;
+}) {
+  return (
+    <div
+      style={{
+        borderRadius: 10,
+        border: `1px solid ${isRecommended ? C.gold : C.border}`,
+        background: isRecommended ? C.goldBg : C.surface,
+        padding: 12,
+      }}
+    >
+      <p
+        style={{
+          fontFamily: "var(--font-serif)",
+          fontSize: 14,
+          color: C.text,
+          textTransform: "capitalize",
+          margin: "0 0 8px",
+        }}
+      >
+        {location.type}
+        {isRecommended && <span style={{ color: C.gold, marginLeft: 6 }}>★</span>}
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+        <p style={{ color: C.text2, margin: 0 }}>
+          {fCHF(location.revenu_brut_an_chf_min)} – {fCHF(location.revenu_brut_an_chf_max)}/an
         </p>
-        <button style={btnP} onClick={() => refetch()} disabled={isFetching}>
-          {isFetching && <Loader2 size={12} className="animate-spin" />}
-          Générer l&apos;analyse
-        </button>
-      </Card>
-    );
-  }
+        <p style={{ fontSize: 11, color: C.green, margin: 0 }}>
+          Rendement net : {fPct(location.rendement_net_estime_pct)}
+        </p>
+        <p style={{ fontSize: 11, color: C.text3, margin: 0 }}>
+          Occupation : {fPct(location.taux_occupation_estime_pct)}
+        </p>
+      </div>
+      {location.warnings.length > 0 && (
+        <div
+          style={{
+            marginTop: 8,
+            paddingTop: 8,
+            borderTop: `1px solid ${C.amber}33`,
+          }}
+        >
+          <p style={{ fontSize: 11, color: C.amber, fontWeight: 600, margin: "0 0 4px" }}>
+            ⚠ Contraintes légales
+          </p>
+          <ul style={{ margin: 0, padding: "0 0 0 14px", fontSize: 11, color: C.text2 }}>
+            {location.warnings.map((w, i) => (
+              <li key={i}>{w}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {location.recommandation && (
+        <p style={{ fontSize: 11, color: C.text3, fontStyle: "italic", margin: "8px 0 0" }}>
+          {location.recommandation}
+        </p>
+      )}
+    </div>
+  );
+}
 
-  const fCHF = (n: number) => n > 0 ? `CHF ${Math.round(n).toLocaleString("fr-CH")}` : "—";
-  const fPct = (n: number) => `${n.toFixed(2)} %`;
+function ListBlock({
+  title,
+  items,
+  icon,
+  color,
+}: {
+  title: string;
+  items: string[];
+  icon: string;
+  color: string;
+}) {
+  return (
+    <div>
+      <p
+        style={{
+          fontSize: 11,
+          color: C.text3,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          margin: "0 0 8px",
+        }}
+      >
+        {title}
+      </p>
+      {items.length === 0 ? (
+        <p style={{ fontSize: 12, color: C.text3, fontStyle: "italic", margin: 0 }}>—</p>
+      ) : (
+        <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
+          {items.map((item, i) => (
+            <li key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 13 }}>
+              <span style={{ color, flexShrink: 0 }}>{icon}</span>
+              <span style={{ color: C.text2, lineHeight: 1.4 }}>{item}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function ScoreCard({ label, score }: { label: string; score: number }) {
+  const color = score >= 7 ? C.green : score >= 5 ? C.amber : C.red;
+  return (
+    <div
+      style={{
+        textAlign: "center",
+        padding: 16,
+        borderRadius: 12,
+        background: C.surface2,
+        border: `1px solid ${C.border}`,
+      }}
+    >
+      <p
+        style={{
+          fontSize: 11,
+          color: C.text3,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          margin: 0,
+        }}
+      >
+        {label}
+      </p>
+      <p
+        style={{
+          fontFamily: "var(--font-serif)",
+          fontSize: 32,
+          fontWeight: 300,
+          color,
+          margin: "8px 0 0",
+        }}
+      >
+        {score}
+        <span style={{ fontSize: 14, color: C.text3 }}>/10</span>
+      </p>
+    </div>
+  );
+}
+
+function EstimationLoading() {
+  return (
+    <Card style={{ textAlign: "center", padding: "2.5rem" }}>
+      <Sparkles size={36} style={{ margin: "0 auto 0.75rem", color: C.gold, opacity: 0.85 }} />
+      <p style={{ fontFamily: "var(--font-serif)", fontSize: 18, color: C.text, margin: 0 }}>
+        Analyse IA en cours…
+      </p>
+      <p style={{ fontSize: 13, color: C.text3, margin: "6px 0 0" }}>
+        Estimation valeur, marché local, scénarios de location, fiscalité…
+      </p>
+      <p style={{ fontSize: 11, color: C.text3, margin: "10px 0 0" }}>~5-10 secondes</p>
+    </Card>
+  );
+}
+
+function EstimationError({
+  onRetry,
+  isFetching,
+}: {
+  onRetry: () => void;
+  isFetching: boolean;
+}) {
+  return (
+    <Card style={{ textAlign: "center", padding: "2.5rem" }}>
+      <AlertTriangle size={32} style={{ margin: "0 auto 0.75rem", color: C.red, opacity: 0.85 }} />
+      <p style={{ fontWeight: 600, color: C.text, margin: 0 }}>Estimation indisponible</p>
+      <p style={{ fontSize: 13, color: C.text3, margin: "6px 0 1rem" }}>
+        Une erreur est survenue lors de l&apos;analyse IA. Veuillez réessayer.
+      </p>
+      <button style={btnP} onClick={onRetry} disabled={isFetching}>
+        {isFetching && <Loader2 size={12} className="animate-spin" />}
+        Réessayer
+      </button>
+    </Card>
+  );
+}
+
+export function TabPotentielIA({ bienId }: { bienId: string }) {
+  const { data, isLoading, error, refetch, isFetching } = useEstimationEnrichie(bienId);
+  // Ouvert par défaut : valeur, localité, locations (les sections critiques).
+  // Les 3 autres (fiscalité, recommandations, scores) sont collapsées.
+  const [openSections, setOpenSections] = useState<Set<string>>(
+    () => new Set(["valeur", "localite", "locations"]),
+  );
+
+  const toggle = (key: string) =>
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  if (isLoading) return <EstimationLoading />;
+  if (error || !data) return <EstimationError onRetry={refetch} isFetching={isFetching} />;
+
+  const estim: EstimationIAEnrichie = data;
 
   return (
-    <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
-      <PotentielBloc title="Valeur estimée du bien">
-        <div style={{ display: "flex", gap: "1.5rem", alignItems: "flex-end" }}>
-          <div>
-            <p style={{ fontSize: 11, color: C.text3, marginBottom: 2 }}>Fourchette</p>
-            <p style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 300, color: C.text }}>
-              {fCHF(data.valeur_min)} – {fCHF(data.valeur_max)}
-            </p>
-          </div>
-        </div>
-        <p style={{ fontSize: 11, color: C.text3, marginTop: 6 }}>
-          Estimation basée sur multiplicateur 200–260× loyer mensuel (marché CH)
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Disclaimer LSFin permanent */}
+      <div
+        style={{
+          borderRadius: 10,
+          border: `1px solid ${C.amber}55`,
+          background: C.amberBg,
+          padding: "10px 14px",
+          display: "flex",
+          gap: 8,
+          alignItems: "flex-start",
+        }}
+      >
+        <AlertTriangle size={16} style={{ color: C.amber, flexShrink: 0, marginTop: 2 }} />
+        <p style={{ fontSize: 12, color: C.text2, margin: 0, lineHeight: 1.5 }}>
+          {estim.disclaimer}
         </p>
-      </PotentielBloc>
+      </div>
 
-      <PotentielBloc title="Rendement locatif">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {[
-            { label: "Brut", val: fPct(data.rendement_brut), color: C.green },
-            { label: "Net charges", val: fPct(data.rendement_net), color: C.text2 },
-          ].map(m => (
-            <div key={m.label} style={{ padding: "0.75rem", borderRadius: 10, background: C.surface2, border: `1px solid ${C.border}`, textAlign: "center" }}>
-              <p style={{ fontSize: 10, color: C.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>{m.label}</p>
-              <p style={{ fontFamily: "var(--font-serif)", fontSize: 20, fontWeight: 300, color: m.color }}>{m.val}</p>
+      {/* SECTION 1 — VALEUR */}
+      <ExpandableSection
+        title="Valeur estimée du bien"
+        icon={Building2}
+        isOpen={openSections.has("valeur")}
+        onToggle={() => toggle("valeur")}
+        summary={`${fCHF(estim.valeur_estimee_chf_min)} – ${fCHF(estim.valeur_estimee_chf_max)}`}
+      >
+        <div
+          style={{
+            display: "grid",
+            gap: 16,
+            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+          }}
+        >
+          <Stat label="Min estimé" value={fCHF(estim.valeur_estimee_chf_min)} />
+          <Stat label="Max estimé" value={fCHF(estim.valeur_estimee_chf_max)} />
+          <Stat label="Prix au m²" value={fCHF(estim.valeur_par_m2_estimee_chf)} />
+          <Stat label="Confiance IA" value={`${Number(estim.confidence_score).toFixed(1)}/10`} />
+        </div>
+      </ExpandableSection>
+
+      {/* SECTION 2 — LOCALITÉ */}
+      <ExpandableSection
+        title="Analyse du marché local"
+        icon={TrendingUp}
+        isOpen={openSections.has("localite")}
+        onToggle={() => toggle("localite")}
+        summary={`${estim.localite.ville} (${estim.localite.canton}) · Tendance ${estim.localite.tendance_12_mois}`}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div
+            style={{
+              display: "grid",
+              gap: 12,
+              gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+            }}
+          >
+            <Stat label="Vente m²" value={fCHF(estim.localite.prix_moyen_m2_vente_chf)} />
+            <Stat label="Loyer m²/an" value={fCHF(estim.localite.prix_moyen_m2_loyer_an_chf)} />
+            <Stat label="Délai vente" value={`${estim.localite.delai_vente_moyen_jours} j`} />
+            <Stat label="Attractivité" value={`${estim.localite.note_attractivite}/10`} />
+          </div>
+          {estim.localite.notes_locales && (
+            <p
+              style={{
+                fontSize: 13,
+                color: C.text2,
+                lineHeight: 1.5,
+                fontStyle: "italic",
+                borderLeft: `3px solid ${C.prussianBorder}`,
+                padding: "4px 0 4px 12px",
+                margin: 0,
+              }}
+            >
+              {estim.localite.notes_locales}
+            </p>
+          )}
+        </div>
+      </ExpandableSection>
+
+      {/* SECTION 3 — LOCATIONS (3 scénarios) */}
+      <ExpandableSection
+        title="Scénarios de location"
+        icon={Sparkles}
+        isOpen={openSections.has("locations")}
+        onToggle={() => toggle("locations")}
+        summary={`Recommandé : ${estim.location_recommandee}`}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div
+            style={{
+              borderRadius: 8,
+              border: `1px solid ${C.gold}55`,
+              background: C.goldBg,
+              padding: "10px 14px",
+            }}
+          >
+            <p style={{ fontSize: 13, color: C.text, margin: 0 }}>
+              <strong>Recommandation Althy : </strong>
+              <span style={{ textTransform: "capitalize" }}>{estim.location_recommandee}</span>
+            </p>
+            <p style={{ fontSize: 12, color: C.text2, margin: "4px 0 0", lineHeight: 1.5 }}>
+              {estim.raison_recommandation}
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gap: 12,
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            }}
+          >
+            <LocationCard
+              location={estim.location_annuelle}
+              isRecommended={estim.location_recommandee === "annuelle"}
+            />
+            <LocationCard
+              location={estim.location_saisonniere}
+              isRecommended={estim.location_recommandee === "saisonniere"}
+            />
+            <LocationCard
+              location={estim.location_semaine}
+              isRecommended={estim.location_recommandee === "semaine"}
+            />
+          </div>
+        </div>
+      </ExpandableSection>
+
+      {/* SECTION 4 — FISCALITÉ */}
+      <ExpandableSection
+        title="Optimisation fiscale CH"
+        icon={Calculator}
+        isOpen={openSections.has("fiscalite")}
+        onToggle={() => toggle("fiscalite")}
+        summary={`Impôt estimé : ${fCHF(estim.fiscalite.impot_revenu_locatif_estime_chf_an)}/an`}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div
+            style={{
+              display: "grid",
+              gap: 12,
+              gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            }}
+          >
+            <Stat
+              label="Impôt annuel estimé"
+              value={fCHF(estim.fiscalite.impot_revenu_locatif_estime_chf_an)}
+            />
+            {estim.fiscalite.valeur_locative_estimee_chf != null && (
+              <Stat
+                label="Valeur locative"
+                value={fCHF(estim.fiscalite.valeur_locative_estimee_chf)}
+              />
+            )}
+          </div>
+
+          <ListBlock
+            title="Déductions possibles"
+            items={estim.fiscalite.deductions_possibles}
+            icon="✓"
+            color={C.gold}
+          />
+
+          {estim.fiscalite.conseil_fiscal_principal && (
+            <div
+              style={{
+                fontSize: 13,
+                color: C.text2,
+                lineHeight: 1.5,
+                background: C.goldBg,
+                borderLeft: `3px solid ${C.gold}`,
+                padding: "8px 12px",
+                borderRadius: 6,
+              }}
+            >
+              <strong>Conseil :</strong> {estim.fiscalite.conseil_fiscal_principal}
             </div>
-          ))}
+          )}
         </div>
-      </PotentielBloc>
+      </ExpandableSection>
 
-      <PotentielBloc title="Loyer vs marché">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-          <div>
-            <p style={{ fontSize: 11, color: C.text3 }}>Actuel</p>
-            <p style={{ fontSize: 18, fontWeight: 700, color: C.text }}>{fCHF(data.loyer_actuel)}/m</p>
-          </div>
-          <div style={{ fontSize: 20, color: C.text3 }}>→</div>
-          <div>
-            <p style={{ fontSize: 11, color: C.text3 }}>Marché estimé</p>
-            <p style={{ fontSize: 18, fontWeight: 700, color: C.prussian }}>{fCHF(data.loyer_marche)}/m</p>
-          </div>
-        </div>
-        {data.ecart_marche_pct > 0 && (
-          <div style={{ padding: "6px 10px", borderRadius: 8, background: C.greenBg, fontSize: 12, color: C.green, fontWeight: 600 }}>
-            +{data.ecart_marche_pct}% de potentiel de revalorisation
-          </div>
-        )}
-      </PotentielBloc>
-
-      <PotentielBloc title="Score investissement">
-        <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
-          <ScoreRing score={data.score_investissement} />
-          <div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: C.text }}>
-              {data.score_investissement >= 7 ? "Excellent" : data.score_investissement >= 5 ? "Correct" : "À améliorer"}
+      {/* SECTION 5 — RECOMMANDATIONS */}
+      <ExpandableSection
+        title="Recommandations IA"
+        icon={Lightbulb}
+        isOpen={openSections.has("recommandations")}
+        onToggle={() => toggle("recommandations")}
+        summary={estim.prochaine_action_prioritaire}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div
+            style={{
+              borderRadius: 8,
+              border: `1px solid ${C.gold}`,
+              background: C.goldBg,
+              padding: "10px 14px",
+            }}
+          >
+            <p style={{ fontSize: 12, fontWeight: 700, color: C.text, margin: 0 }}>
+              Action prioritaire
             </p>
-            <p style={{ fontSize: 12, color: C.text3 }}>Score global Althy IA</p>
-            <p style={{ fontSize: 11, color: C.text3, marginTop: 3 }}>
-              Basé sur rendement, statut, surface et loyer marché
+            <p style={{ fontSize: 13, color: C.text2, margin: "4px 0 0", lineHeight: 1.5 }}>
+              {estim.prochaine_action_prioritaire}
             </p>
           </div>
-        </div>
-      </PotentielBloc>
 
-      <PotentielBloc title="Recommandations IA">
-        {data.recommandations.length > 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {data.recommandations.map((rec, i) => (
-              <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                <div style={{
-                  width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
-                  background: C.prussianBg, color: C.prussian,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 10, fontWeight: 800,
-                }}>{i + 1}</div>
-                <p style={{ fontSize: 13, color: C.text2, lineHeight: 1.45 }}>{rec}</p>
-              </div>
-            ))}
+          <div
+            style={{
+              display: "grid",
+              gap: 14,
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            }}
+          >
+            <ListBlock title="Points forts" items={estim.points_forts} icon="✓" color={C.green} />
+            <ListBlock
+              title="À améliorer"
+              items={estim.points_amelioration}
+              icon="!"
+              color={C.amber}
+            />
+            <ListBlock
+              title="Actions recommandées"
+              items={estim.actions_recommandees}
+              icon="→"
+              color={C.prussian}
+            />
           </div>
-        ) : (
-          <Empty icon={Lightbulb} title="Aucune recommandation" />
-        )}
-      </PotentielBloc>
-
-      <PotentielBloc title="Optimisation fiscale CH">
-        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-          <PiggyBank size={18} style={{ color: C.green, flexShrink: 0, marginTop: 2 }} />
-          <p style={{ fontSize: 13, color: C.text2, lineHeight: 1.55 }}>
-            {data.conseil_fiscal || "—"}
-          </p>
         </div>
-      </PotentielBloc>
+      </ExpandableSection>
 
-      <PotentielBloc title="Prochaine action prioritaire">
-        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-          <div style={{
-            width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-            background: C.prussianBg, color: C.prussian,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <TrendingUp size={14} />
-          </div>
-          <p style={{ fontSize: 14, fontWeight: 600, color: C.text, lineHeight: 1.45 }}>
-            {data.prochaine_action || "—"}
-          </p>
+      {/* SECTION 6 — SCORES */}
+      <ExpandableSection
+        title="Scores"
+        icon={Award}
+        isOpen={openSections.has("scores")}
+        onToggle={() => toggle("scores")}
+        summary={`Investissement ${estim.score_investissement}/10 · Locatif ${estim.score_locatif}/10 · Revente ${estim.score_revente}/10`}
+      >
+        <div
+          style={{
+            display: "grid",
+            gap: 12,
+            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+          }}
+        >
+          <ScoreCard label="Investissement" score={estim.score_investissement} />
+          <ScoreCard label="Locatif" score={estim.score_locatif} />
+          <ScoreCard label="Revente" score={estim.score_revente} />
         </div>
+      </ExpandableSection>
+
+      {/* META FOOTER */}
+      <p
+        style={{
+          fontSize: 11,
+          color: C.text3,
+          textAlign: "center",
+          margin: "4px 0 0",
+        }}
+      >
+        Généré par {estim.model_used} · Dernière analyse :{" "}
+        {new Date(estim.generated_at).toLocaleString("fr-CH")} ·{" "}
         <button
+          type="button"
           onClick={() => refetch()}
           disabled={isFetching}
-          style={{ ...btnS, marginTop: "1rem", fontSize: 12 }}
+          style={{
+            background: "none",
+            border: "none",
+            color: C.prussian,
+            textDecoration: "underline",
+            cursor: isFetching ? "not-allowed" : "pointer",
+            fontFamily: "inherit",
+            fontSize: 11,
+            padding: 0,
+          }}
         >
-          {isFetching ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-          Régénérer l&apos;analyse
+          {isFetching ? "Régénération…" : "Régénérer"}
         </button>
-      </PotentielBloc>
+      </p>
     </div>
   );
 }

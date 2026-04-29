@@ -213,6 +213,10 @@ export interface Bien {
   // Coordonnées Mapbox
   lat: number | null;
   lng: number | null;
+
+  // Estimation IA enrichie (PR-A9.1 sprint 12) — nullable rétro-compat
+  residence_type?: ResidenceType | null;
+  location_type_actuel?: LocationTypeActuel | null;
 }
 
 /** Liste paginée lightweight — ajoute l'image de couverture. */
@@ -660,4 +664,88 @@ export interface RendementNetResponse {
   deductions: RendementDeduction[];
   rendement_net_chf: number;
   rendement_net_pct: number;
+}
+
+// ── Estimation IA enrichie v2 (PR-A9 sprint 12) ──────────────────────────────
+// Endpoint /biens/{id}/potentiel-v2 — refonte complète du potentiel IA
+// (analyse localité, 3 scénarios location, fiscalité CH, scores).
+
+export type ResidenceType = "principale" | "secondaire" | "mixte";
+export type LocationType = "annuelle" | "saisonniere" | "semaine";
+export type LocationTypeActuel = LocationType | "vide";
+export type TendanceMarche = "hausse" | "stable" | "baisse";
+
+export interface EstimationLocalite {
+  canton: string;
+  ville: string;
+  quartier: string | null;
+  prix_moyen_m2_vente_chf: number;
+  prix_moyen_m2_loyer_an_chf: number;
+  tendance_12_mois: TendanceMarche;
+  delai_vente_moyen_jours: number;
+  note_attractivite: number;
+  notes_locales: string;
+}
+
+export interface EstimationLocation {
+  type: LocationType;
+  revenu_brut_an_chf_min: number;
+  revenu_brut_an_chf_max: number;
+  taux_occupation_estime_pct: number;
+  rendement_brut_pct: number;
+  rendement_net_estime_pct: number;
+  contraintes: string[];
+  avantages: string[];
+  warnings: string[];
+  recommandation: string;
+}
+
+export interface EstimationFiscalite {
+  impot_revenu_locatif_estime_chf_an: number;
+  deductions_possibles: string[];
+  valeur_locative_estimee_chf: number | null;
+  conseil_fiscal_principal: string;
+}
+
+export interface EstimationIAEnrichie {
+  // Métadonnées
+  bien_id: string;
+  generated_at: string;
+  model_used: string;
+  confidence_score: number;
+  disclaimer: string;
+
+  // Configuration analysée
+  meuble: boolean;
+  residence_type: ResidenceType;
+  location_type_actuel: LocationTypeActuel | null;
+
+  // 1. Valeur estimée
+  valeur_estimee_chf_min: number;
+  valeur_estimee_chf_max: number;
+  valeur_par_m2_estimee_chf: number;
+
+  // 2. Localité
+  localite: EstimationLocalite;
+
+  // 3. Locations (3 scénarios)
+  location_annuelle: EstimationLocation;
+  location_saisonniere: EstimationLocation;
+  location_semaine: EstimationLocation;
+  location_recommandee: LocationType;
+  raison_recommandation: string;
+
+  // 4. Fiscalité
+  fiscalite: EstimationFiscalite;
+
+  // 5. Recommandations
+  points_forts: string[];
+  points_amelioration: string[];
+  actions_recommandees: string[];
+  prochaine_action_prioritaire: string;
+
+  // 6. Scores
+  score_investissement: number;
+  score_locatif: number;
+  score_revente: number;
 }

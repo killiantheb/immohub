@@ -173,6 +173,33 @@ export function usePotentielIA(bienId: string | undefined) {
   });
 }
 
+/**
+ * Estimation IA enrichie v2 (PR-A9.2).
+ *
+ * Endpoint `/biens/{id}/potentiel-v2` — refonte complète : analyse localité,
+ * 3 scénarios location (annuelle/saisonnière/semaine), fiscalité CH,
+ * 3 scores (investissement/locatif/revente).
+ *
+ * Cache 24h (P2.1 backlog) pour limiter coût Claude API
+ * (~CHF 0.05-0.08 par appel).
+ */
+import type { EstimationIAEnrichie } from "@/lib/types";
+
+export function useEstimationEnrichie(bienId: string | undefined, enabled = true) {
+  return useQuery<EstimationIAEnrichie>({
+    queryKey: ["bien", bienId, "potentiel-v2"],
+    queryFn: async () => {
+      const { data } = await api.get<EstimationIAEnrichie>(
+        `/biens/${bienId}/potentiel-v2`,
+      );
+      return data;
+    },
+    enabled: Boolean(bienId) && enabled,
+    staleTime: 24 * 60 * 60 * 1000, // 24h — limite coût Claude (P2.1 backlog)
+    retry: 1,
+  });
+}
+
 // ── Artisan dashboard ─────────────────────────────────────────────────────────
 
 import type { Devis } from "./useBiens";
