@@ -32,6 +32,7 @@ from app.schemas.bien import (
     BienRead,
     BienUpdate,
     CatalogueEquipementRead,
+    EstimationIAEnrichie,
     GenerateDescriptionResponse,
     PaginatedBiens,
     PotentielIAResponse,
@@ -311,3 +312,34 @@ async def get_bien_rendement_net(
     commission agence, charges proprio) — schéma déjà extensible.
     """
     return await BienService(db).get_rendement_net(bien_id, annee, current_user)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Estimation IA enrichie v2 — passe-plat vers BienService (PR-A9.1)
+# Endpoint parallèle à l'ancien /potentiel (rétro-compat). Phase 2 :
+# dépréciation + suppression de l'ancien.
+# ═════════════════════════════════════════════════════════════════════════════
+
+
+@router.get(
+    "/{bien_id}/potentiel-v2",
+    response_model=EstimationIAEnrichie,
+    summary="Estimation IA enrichie du bien (v2)",
+)
+async def get_bien_potentiel_v2(
+    bien_id: uuid.UUID,
+    current_user: AuthDep,
+    db: DbDep,
+) -> EstimationIAEnrichie:
+    """Estimation IA enrichie : analyse localité, 3 scénarios de location
+    (annuelle / saisonnière / semaine), fiscalité CH, scores
+    investissement/locatif/revente.
+
+    Phase 1 : Claude Sonnet 4.6 + knowledge marché suisse + cadre légal
+    (LRA Valais, Lex Weber, permis communaux).
+    Phase 2-3 : intégration API marché réelle (Comparis, Homegate Open Data).
+
+    Disclaimer LSFin : l'estimation est INDICATIVE et ne constitue pas une
+    expertise formelle. Cf docs/6-LEGAL.md §6.8.
+    """
+    return await BienService(db).get_potentiel_ia_v2(bien_id, current_user)
