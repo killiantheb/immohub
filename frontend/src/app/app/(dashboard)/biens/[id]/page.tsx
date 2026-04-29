@@ -122,6 +122,9 @@ function SectionInfos({ bienId }: { bienId: string }) {
         type: bien.type,
         surface: bien.surface ?? undefined,
         etage: bien.etage ?? undefined,
+        is_furnished: bien.is_furnished ?? false,
+        residence_type: bien.residence_type ?? null,
+        location_type_actuel: bien.location_type_actuel ?? null,
       });
       setDirty(false);
     }
@@ -226,6 +229,65 @@ function SectionInfos({ bienId }: { bienId: string }) {
             placeholder="2"
           />
         </div>
+      </div>
+
+      {/* PR-A9.2 — Configuration estimation IA enrichie : 3 champs qui
+          alimentent le contexte envoyé à Claude (`/potentiel-v2`). */}
+      <div style={ROW}>
+        <div style={{ ...FIELD, flex: 1 }}>
+          <label style={LABEL}>Bien meublé ?</label>
+          <button
+            type="button"
+            onClick={() => set("is_furnished", !form.is_furnished)}
+            style={{
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: `1px solid ${form.is_furnished ? C.prussian : C.border}`,
+              background: form.is_furnished ? C.prussian : C.surface,
+              color: form.is_furnished ? "#fff" : C.text2,
+              fontSize: 14,
+              fontWeight: 500,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              textAlign: "left",
+            }}
+            aria-pressed={Boolean(form.is_furnished)}
+          >
+            {form.is_furnished ? "✓ Meublé" : "Non meublé"}
+          </button>
+        </div>
+        <div style={{ ...FIELD, flex: 2 }}>
+          <label style={LABEL}>Type de résidence</label>
+          <select
+            style={{ ...INPUT, cursor: "pointer" }}
+            value={form.residence_type ?? ""}
+            onChange={(e) =>
+              set("residence_type", e.target.value || null)
+            }
+          >
+            <option value="">— Non renseigné —</option>
+            <option value="principale">Résidence principale</option>
+            <option value="secondaire">Résidence secondaire</option>
+            <option value="mixte">Mixte (les deux)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style={FIELD}>
+        <label style={LABEL}>Type de location actuel</label>
+        <select
+          style={{ ...INPUT, cursor: "pointer" }}
+          value={form.location_type_actuel ?? ""}
+          onChange={(e) =>
+            set("location_type_actuel", e.target.value || null)
+          }
+        >
+          <option value="">— Non renseigné —</option>
+          <option value="vide">Bien vacant</option>
+          <option value="annuelle">Location annuelle (bail traditionnel)</option>
+          <option value="saisonniere">Location saisonnière (Airbnb, été/hiver)</option>
+          <option value="semaine">Location à la semaine (vacances)</option>
+        </select>
       </div>
 
       {dirty && (
