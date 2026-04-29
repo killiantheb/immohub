@@ -10,6 +10,7 @@ actuel d'Althy.
 - `business-plans/` : versions historiques du business plan
 - `legal/` : audits juridiques antérieurs (à comparer avec `6-LEGAL.md` actuel)
 - `sprints/` : plans de sprints terminés et journaux de sprint historiques
+- `specs/` : anciennes spécifications (plan d'architecture initial, ROADMAP racine)
 
 ## Source de vérité actuelle
 

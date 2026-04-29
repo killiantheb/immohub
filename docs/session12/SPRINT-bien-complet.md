@@ -3,7 +3,7 @@
 > Session 12 · Ouverture 2026-04-26 · branche `main`
 > Sprint précédent : Session 11 (clôture bug P0 pagination + audit log Decimal)
 > Sprint suivant : à définir
-> Doc adjacent : `docs/session11/HANDOFF-cloture-bug-P0-pagination.md`
+> Doc adjacent : `docs/archive/sessions/HANDOFF-cloture-bug-P0-pagination.md`
 
 ---
 
@@ -196,10 +196,10 @@ Bugs résiduels P2 / P3 reportés depuis session 11, à traiter dans un sprint d
 - 🟢 P3 — CI/CD GitHub Actions cassé (secrets Supabase manquants en repo settings).
 - 🟢 P3 — 14 erreurs Integrity Check pré-existantes (TS strict mode partiel).
 - 🟢 P3 — 536 erreurs `ruff` backend (441 auto-fixables, à passer en un commit dédié).
-- 📝 Doc session 10 manquante — extraction depuis `SPRINT_LOG.md` (« Sprint — Fusion properties → biens ») vers `docs/session10/HANDOFF-...md` rétroactif si on veut une chaîne docs cohérente. Non bloquant.
+- 📝 Doc session 10 manquante — extraction depuis `docs/archive/sprints/SPRINT_LOG.md` (« Sprint — Fusion properties → biens ») vers `docs/archive/sessions/HANDOFF-session10-...md` rétroactif si on veut une chaîne docs cohérente. Non bloquant.
 - 📚 **Sprint « Cohérence doc »** (post-sprint 12, avant sprint 13) — aligner tous les fichiers de doc sur la réalité produit avril 2026. Contradictions identifiées à investiguer :
   * **DA produit** : business plan PDF mentionne palette terre cuite `#B55A30` + stone `#FAFAF8`. Killian indique nouvelle DA bleu (Bleu de Prusse `#0F2E4C` + Or `#C9A961`, migration v8 datée 2026-04-20 dans `CLAUDE.md`). À vérifier puis documenter source de vérité unique.
-  * **Nom société** : « Althy SA » en backend (`config.py`, `qr_facture.py`, `quittance.py`) vs « Althy Sàrl » en frontend (CGU, mentions légales). Réalité actuelle : « Killian Thébaud — Althy » (raison individuelle, Sàrl en cours) selon `lib/legal-entity.ts`. Risque LCD identifié dans `docs/dossier-avocat-audit-juridique.md`.
+  * **Nom société** : « Althy SA » en backend (`config.py`, `qr_facture.py`, `quittance.py`) vs « Althy Sàrl » en frontend (CGU, mentions légales). Réalité actuelle figée 2026-04-29 : entité opérationnelle = **HBM Swiss Sàrl** (CHE-179.984.757 TVA), marque commerciale = **Althy**. Source unique : `lib/legal-entity.ts` + `backend/app/core/config.py`. Risque LCD documenté dans `docs/6-LEGAL.md` §6.14 et questions archivées `docs/archive/legal/dossier-avocat-audit-juridique-2026-04-19.md`.
   * **Nombre tables DB** : 13 (`README.md`) vs 18 (business plan) vs 20 migrations actives (`CLAUDE.md` Section I, 004 → 0037). À vérifier.
   * **Phases produit** : numérotation divergente entre `ROADMAP.md` (Phase 0-5+), `docs/plan-communication-roles-phase1.md` (Phase 1-3) et business plan PDF.
   * **APP_NAME** : `CATHY` dans `.env.example` vs Althy partout ailleurs.

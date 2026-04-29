@@ -2,6 +2,26 @@
 
 Stack : **Next.js 14** (frontend) + **FastAPI** (backend) + **Supabase** (auth + storage) + **PostgreSQL** + **Redis/Celery** + **Claude AI**
 
+> Entité opérationnelle : **HBM Swiss Sàrl** (CHE-179.984.757 TVA) — Marque commerciale : **Althy**.
+
+---
+
+## Documentation
+
+Pour comprendre Althy, lire les 6 docs principaux :
+
+1. [`docs/1-VISION.md`](docs/1-VISION.md) — Vision macro et cible
+2. [`docs/2-ROADMAP.md`](docs/2-ROADMAP.md) — Phases produit et sprints
+3. [`docs/3-ARCHITECTURE.md`](docs/3-ARCHITECTURE.md) — Stack technique + DA + i18n
+4. [`docs/4-PRODUIT.md`](docs/4-PRODUIT.md) — Spec fonctionnelle (rôles, modules)
+5. [`docs/5-FINANCES.md`](docs/5-FINANCES.md) — Modèle économique
+6. [`docs/6-LEGAL.md`](docs/6-LEGAL.md) — Conformité juridique
+
+Pour Claude Code (agents IA) : voir [`CLAUDE.md`](CLAUDE.md).
+
+Sprint en cours : [`docs/session12/SPRINT-bien-complet.md`](docs/session12/SPRINT-bien-complet.md).
+Archives historiques : [`docs/archive/`](docs/archive/).
+
 ---
 
 ## Prérequis
@@ -259,3 +279,8 @@ make shell-backend  # shell dans le container backend
 make shell-db       # psql dans le container postgres
 make clean          # supprime les volumes Docker (⚠️ efface les données locales)
 ```
+
+---
+
+© Althy — HBM Swiss Sàrl (CHE-179.984.757 TVA)
+
