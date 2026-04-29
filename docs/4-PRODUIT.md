@@ -1,0 +1,517 @@
+# 4. Produit Althy
+
+> **Source de vérité unique** pour la spec fonctionnelle.
+> Last update : 2026-04-29
+> Audience : Killian, équipe produit, designers, Claude Code.
+> Entité opérationnelle : **HBM Swiss Sàrl** (CHE-179.984.757 TVA).
+
+---
+
+## 4.1 Les 9 rôles utilisateurs
+
+| Rôle | Phase | Flag | Dashboard | Statut |
+|---|---|---|---|---|
+| `super_admin` | technique | toujours | DTopNav admin + admin pages | ✅ actif |
+| `proprio_solo` | 1 | toujours | `DashboardProprioSolo` | ✅ actif |
+| `locataire` | 1 | toujours | `DashboardLocataire` | ✅ actif |
+| `agence` | 2 | `NEXT_PUBLIC_FLAG_AGENCE` | `DashboardAgence` | 🔮 ComingSoon |
+| `portail_proprio` | 2 | `NEXT_PUBLIC_FLAG_PORTAIL` | `DashboardPortailProprio` | 🔮 ComingSoon |
+| `artisan` | 3 | `NEXT_PUBLIC_FLAG_ARTISAN` | `DashboardArtisan` | 🟡 partiel (M1 GE+VD) |
+| `opener` | 3 | `NEXT_PUBLIC_FLAG_OPENER` | `DashboardOpener` | 🔮 ComingSoon |
+| `expert` | 3 | hardcoded `false` | `DashboardExpert` | 🔮 ComingSoon |
+| `hunter` | post-3 | hardcoded `false` | `DashboardHunter` | 🔮 Phase 4 |
+| `acheteur_premium` | post-5 | hardcoded `false` | `DashboardAcheteur` | 🔮 Phase 5+ |
+
+> **Note de comptage** : 9 rôles techniques dans le code (10 si on compte `acheteur_premium`) = **8 profils utilisateurs métier** + `super_admin` (rôle technique). Les 8 profils métier reflètent les 8 personas business du BP. Le rôle `super_admin` est technique (Killian + futurs admins ops).
+
+**Mappings legacy** : `owner` → `proprio_solo`, `agency` → `agence`, `tenant` → `locataire`, `company` → `artisan`. Source : `frontend/src/lib/useRole.ts`.
+
+**Source code** : `frontend/src/lib/useRole.ts` (`ROLE_SECTIONS`) + `frontend/src/lib/flags.ts` (`FLAGS`) + `backend/app/core/config.py` (`ALLOWED_SIGNUP_ROLES`).
+
+**Plan d'activation détaillé** : §4.14 + [`2-ROADMAP.md`](./2-ROADMAP.md).
+
+---
+
+## 4.2 Mot d'ordre « 1 clic » + triple test
+
+Toute décision design — UI, schéma DB, endpoint, naming — passe un **triple test obligatoire** :
+
+✅ **Simple pour l'utilisateur** — 1 clic, vocabulaire clair (« loyer mensuel » et pas `rent_amount_monthly`), pas de jargon brutal, pas de friction inutile. Le grand-père doit comprendre.
+
+✅ **Complet pour le pro** — aucun champ métier sacrifié, aucun écran amputé sous prétexte de simplicité. Une régie qui regarde Althy doit y voir tout ce qu'elle a dans son logiciel actuel — plus l'intelligence en plus.
+
+✅ **Lisible pour une IA agent future** — structure sémantique forte (champs nommés explicitement, enums plutôt que strings libres), events traçables (`audit_log` à jour), état du bien introspectable depuis n'importe quel point du code (pas de state caché en mémoire React).
+
+Si une livraison échoue **un seul** des trois critères → retour à la planche à dessin.
+
+### Patterns appliqués
+
+- **Création bien express** (sprint 12 ✅) — 8 champs au lieu de 30+. Auto-fill canton depuis NPA. Titre auto-généré « Type, Adresse, Ville ».
+- **Édition inline** (sprint 12 étape 4 🔄) — pas de modal pour modifier un champ unique. Double-click → édition → auto-save avec optimistic update.
+- **Cards interactives** (sprint 12 étape 4) — pas de menus imbriqués. Click sur la card « Locataire » → navigation directe vers la sous-page (Phase 1) ou le module global filtré (Phase 2-3).
+- **Pas de hard delete** — toute action irréversible nécessite un double clic + confirmation explicite.
+
+---
+
+## 4.3 La Sphère IA
+
+**Concept** : interface conversationnelle principale, accessible depuis tout l'app via la sphère flottante (`SphereWidget`). L'utilisateur écrit (ou dit, plus tard) en langage naturel. La sphère comprend l'intent, propose une action, demande validation.
+
+**Source code** : `backend/app/routers/sphere_agent.py` + `backend/app/services/ai_service.py` + `frontend/src/components/sphere/AlthySphere.tsx`.
+
+### Capacités v1 (Phase 1)
+
+| Capacité | Endpoint backend | Statut |
+|---|---|---|
+| Briefing matinal | `GET /sphere/briefing` (SSE) | ✅ Active |
+| Chat conversationnel | `POST /sphere/chat` (SSE) | ✅ Active |
+| Création bien depuis description | `POST /sphere/parse-location` | ✅ Active |
+| Génération description bien | `POST /sphere/rediger-description` | ✅ Active |
+| OCR facture | `POST /sphere/ocr-facture` | 🟡 Partiel |
+| Voice action | `POST /sphere/voice-action` | 🔮 Phase 2 |
+
+### Intents principaux Phase 1
+
+- `creer_bien` — formulaire pré-rempli depuis description naturelle
+- `lancer_changement_locataire` — déclenche le cycle (sprint 12 livré)
+- `relance_loyer` — propose le brouillon, demande validation envoi
+- `generer_quittance` — propose le PDF, validation puis envoi
+- `signaler_intervention` — crée la fiche intervention, demande détail catégorie
+- `chat_compta` — questions simples sur la compta du proprio
+
+### Garde-fous
+
+- **Validation humaine obligatoire** avant toute action irréversible (envoi email, débit, suppression, génération document signé).
+- **Disclaimer permanent** : « Réponses IA à titre indicatif, validation utilisateur requise ».
+- **Pseudonymisation** des données personnelles avant envoi à Anthropic Claude (cf [`6-LEGAL.md`](./6-LEGAL.md) §6.5).
+- **Rate limiting** : 30 interactions/jour pour `starter`, 100/jour pour `proprio_pro`. Au-delà : réponse simplifiée (fewer tokens).
+- **Audit log** : toute interaction sphère + action proposée + validation user → tracée dans `ai_sessions`.
+
+### Hors scope Phase 1 (reporté)
+
+- Sphère agentique (actions autonomes en chaîne) → Phase 3.
+- Voice (Web Speech API) — fallback texte uniquement Phase 1.
+- Suggestions cross-bien proactives (« tu pourrais augmenter le loyer du bien X ») → Phase 2.
+
+---
+
+## 4.4 Pages publiques
+
+Source : `frontend/src/app/(landing)/`.
+
+| Page | Route | Rôle |
+|---|---|---|
+| Landing principale | `/` | Hero + sphère + features + témoignages + CTA inscription |
+| Estimation IA | `/estimation` | Lead magnet acquisition (sans inscription) |
+| Inscription | `/register` | Filtrée par `LOCALES_ENABLED` + flags Phase 1 |
+| Connexion | `/login` | Supabase Auth |
+| Reset mot de passe | `/reset-password` | Supabase Auth |
+| Coming Soon par rôle | `/bientot/[role]` | Waitlist email pour rôles désactivés Phase 1 |
+| Mentions légales | `/legal` | Source : `lib/legal-entity.ts` (HBM Swiss Sàrl, IDE) |
+| CGU | `/legal/cgu` | Markdown rendered depuis `frontend/src/legal/CH/cgu.md` |
+| Confidentialité | `/legal/confidentialite` | Markdown depuis `frontend/src/legal/CH/confidentialite.md` |
+| Cookies | `/legal/cookies` | Markdown depuis `frontend/src/legal/CH/cookies.md` |
+| Disclaimer IA | `/legal/disclaimer-ia` | Markdown depuis `frontend/src/legal/CH/disclaimer-ia.md` |
+| Marketplace publique | `/biens` | 🚫 **Routée mais MASQUÉE Phase 1** (cleanup PR #6 + #7). Réactivation Phase 2. |
+
+### Règle absolue témoignages
+
+- Tout témoignage = **sourçable, daté, vérifiable**.
+- Témoignage "Patrick M." (130 biens fondateur) : **RETIRÉ** de la landing (LCD art. 3 al. 1 let. b).
+- "2 847 estimations réalisées" : **RETIRÉ** (non vérifiable).
+- "130 biens gérés" : à clarifier (= biens Sunimmo, séparation marque).
+
+Détail : [`6-LEGAL.md`](./6-LEGAL.md) §6.6.
+
+---
+
+## 4.5 Pages dashboard
+
+**Source** : `frontend/src/app/app/(dashboard)/` — **61 pages routées par rôle**.
+
+**Layout** :
+- `DashboardLayoutClient` (auth guard + role guard + écran « en préparation » pour rôles désactivés)
+- `DTopNav` (header avec breadcrumb + recherche + sphère + profil)
+- Sidebar dynamique selon `useRole()` → `ROLE_SECTIONS`
+
+**Pages clés Phase 1** :
+- `/app` — dashboard principal (KPIs + actions du jour)
+- `/app/biens` — liste biens
+- `/app/biens/[id]` — fiche bien (vue cards refonte sprint 12 étape 4 🔄)
+- `/app/biens/nouveau` — création express ✅ (sprint 12 étape 3, branche `feat/biens-nouveau-creation-express`)
+- `/app/locataires` — CRM locataires
+- `/app/finances` — loyers + revenus + charges
+- `/app/documents` — bibliothèque documents
+- `/app/interventions` — signalements
+- `/app/sphere` — sphère IA plein écran
+- `/app/settings` — préférences + abonnement + paiement
+
+---
+
+## 4.6 Module Bien
+
+### Création express (sprint 12 étape 3 ✅)
+
+**Branche** : `feat/biens-nouveau-creation-express` (commit `0da0848`).
+
+**8 champs Phase 1 critiques** :
+1. `type_bien` (enum : appartement, maison, etc.)
+2. `titre` (auto-généré « Type, Adresse, Ville », modifiable)
+3. `adresse` — rue
+4. `adresse` — ville
+5. `adresse` — npa (4 chiffres CH)
+6. `adresse` — canton (auto-fill depuis NPA via `swiss-postal-codes.ts`)
+7. `surface_habitable` (m², obligatoire)
+8. `loyer_charges_inclus` (CHF, optionnel)
++ `nb_pieces` (optionnel, step 0.5 pour pièces 1/2 CH)
+
+**UX** : 1 page, 3 sections (Titre / Localisation / Caractéristiques + Loyer), 1 clic submit, toast succès, redirect vers fiche bien.
+
+**Auto-fill canton** : helper `frontend/src/lib/swiss-postal-codes.ts` couvre les 26 cantons CH par plages NPA officielles La Poste Suisse. Couverture ~90 %, fallback manuel pour les 10 % restants.
+
+**Aucun champ obligatoire au-delà de ces 8** — politique « backend permissif, UX discipline » alignée avec backend `BienCreate` (3 obligatoires : adresse, ville, cp).
+
+### Fiche Bien (sprint 12 étape 4 🔄 EN COURS)
+
+**Vision** : vue d'ensemble en **cards** (pas tabs). Hiérarchie visuelle :
+
+```
+┌─────────────────────────────────────────────────┐
+│ Header bien : titre + adresse + statut + photo │
+└─────────────────────────────────────────────────┘
+┌──────────┐ ┌──────────┐ ┌──────────┐ ┌─────────┐
+│ Card     │ │ Card     │ │ Card     │ │ Card    │
+│ Loca-    │ │ Finance  │ │ Estim    │ │ Inter-  │
+│ taire    │ │          │ │ IA       │ │ ventions│
+└──────────┘ └──────────┘ └──────────┘ └─────────┘
+┌──────────┐ ┌──────────┐ ┌──────────┐ ┌─────────┐
+│ Card     │ │ Card     │ │ Card     │ │ Card    │
+│ Documents│ │ Histo-   │ │ Change-  │ │ Poten-  │
+│          │ │ rique    │ │ ment     │ │ tiel IA │
+└──────────┘ └──────────┘ └──────────┘ └─────────┘
+```
+
+Chaque card affiche un résumé (3-5 lignes), une action principale (1 clic), et un lien vers la sous-page complète. Click sur la card → navigation vers la sous-page existante (Phase 1) ou le module global filtré (Phase 2-3 — cf [`3-ARCHITECTURE.md`](./3-ARCHITECTURE.md) §3.11).
+
+### Édition inline + optimistic update
+
+**Pattern Notion** : double-click sur un champ → édition inline → blur ou Enter → save backend. Optimistic update frontend, rollback visuel + toast erreur si backend rejette.
+
+**Source code** : `frontend/src/lib/useBiens.ts` → `useUpdateBien` (déjà en place ligne 271).
+
+### Modification / archivage soft delete (sprint 12 étape 5 ⏭️)
+
+- **Pas de hard delete** (préservation audit nLPD — cf [`6-LEGAL.md`](./6-LEGAL.md) §6.10).
+- `is_active = false` pour archive.
+- Filtre par défaut : `WHERE is_active = true` partout.
+- Bouton « Archiver » 1 clic + écran de confirmation (action irréversible-ish).
+- Audit log capture l'action (`audit_log.action = "archive"`, `old_values` / `new_values`).
+
+---
+
+## 4.7 Module Locataire
+
+### Dossier IA scoré 0-100
+
+**Champs** : `tenants.ai_score` (int 0-100) + `tenants.ai_score_detail` (JSONB).
+
+**Critères du score IA** :
+- Revenus (ratio loyer/salaire — cible < 33 %)
+- Stabilité emploi (CDI / CDD / indépendant / sans emploi)
+- Garants (présence + qualité)
+- Antécédents (extrait poursuites OPF)
+- Cohérence dossier (pièces complètes ou manquantes)
+
+**Disclaimer obligatoire** : le score est une estimation IA, pas une décision. Le propriétaire reste seul juge.
+
+### Candidature gratuite (politique viralité)
+
+**Règle absolue** : le locataire ne paie **JAMAIS** rien à Althy. Ni inscription, ni candidature, ni acceptation, ni frais cachés. Tout endpoint qui facturerait un locataire est un **bug à corriger immédiatement**.
+
+**Soumission** : nom + email + téléphone + dossier (CV bail, fiches salaire, extrait poursuites, attestation RC). Upload via Supabase Storage bucket `candidatures` avec RLS strict.
+
+### Frais propriétaire CHF 45 (migration 0033)
+
+- Prélevés à l'**acceptation** d'une candidature (pas à la soumission).
+- Migration 0033 : champs `owner_fee_amount`, `owner_fee_paid_at`, `owner_fee_stripe_intent_id`, `owner_fee_failed_at` sur `candidatures`.
+- Mode : Stripe **off-session** (carte enregistrée à l'inscription proprio).
+- Échec de prélèvement n'annule pas l'acceptation (le proprio est notifié pour régulariser).
+
+**Anciennes colonnes** `candidatures.frais_payes` et `candidatures.stripe_pi_id` : conservées pour audit mais **plus jamais écrites**.
+
+### CRM contacts
+
+- Liste de tous les locataires + candidats par bien
+- Filtres : actuel / ancien / candidat / refusé
+- Source : `frontend/src/app/app/(dashboard)/crm/page.tsx`
+
+---
+
+## 4.8 Module Finances
+
+### Loyers QR-facture SPC 2.0 (sprint 15)
+
+- **Génération automatique** mensuelle (J-3 du mois).
+- Norme suisse SPC 2.0 (compatible toutes banques CH).
+- **Émetteur** : HBM Swiss Sàrl (source `legal-entity.ts` + `backend/app/core/config.py`).
+- Référence structurée pour réconciliation automatique.
+- Endpoint : `POST /loyers/generer-qr`.
+
+### Réconciliation CAMT.054
+
+- Import du fichier bancaire suisse (XML CAMT.054).
+- Matching automatique paiements ↔ loyers attendus via référence QR.
+- Statut : `pending` → `received` → `late` → `partial` → `disputed`.
+- Endpoint : `POST /loyers/reconcilier`.
+- Parser : `backend/app/services/bank_parsers/camt054.py`.
+
+### Quittances automatiques
+
+- Générées à la réconciliation du loyer.
+- PDF avec disclaimer IA (cf [`6-LEGAL.md`](./6-LEGAL.md) §6.12).
+- Endpoint : `POST /loyers/quittance`.
+- Émetteur : HBM Swiss Sàrl (source `config.py` → `ALTHY_CREDITOR_NAME`).
+
+### Relances automatiques
+
+- **J-3** : rappel doux avant échéance.
+- **J0** : échéance dépassée — premier rappel.
+- **J+5** : relance ferme.
+- **J+10** : mise en demeure CO art. 257d (juridique).
+- Désactivables par locataire (paiement bulletin de versement papier, etc.).
+
+### Rendement net
+
+- **Phase 1 basique** : loyer brut annuel - interventions année civile.
+- **Phase 2 dynamique** : enrichi avec commission Althy 3 % + comparaison marché (estim IA) en temps réel.
+
+---
+
+## 4.9 Module Documents
+
+### Storage Supabase
+
+- Bucket `documents` (migration 0030) — PDFs générés.
+- Bucket `biens-images` — photos de biens.
+- Bucket `candidatures` — dossiers locataires.
+- RLS strict (chaque user = ses docs).
+
+### 10 types de documents
+
+1. `bail` — contrat de bail signé
+2. `quittance` — quittance mensuelle
+3. `edl_entree` — état des lieux entrée
+4. `edl_sortie` — état des lieux sortie
+5. `relance` — courrier de relance
+6. `attestation` — attestation diverse (domicile, IFD, etc.)
+7. `courrier` — courrier libre généré IA
+8. `facture` — facture de charge ou d'intervention
+9. `devis` — devis artisan
+10. `rapport` — rapport de visite, EDL, audit
++ `autre` (catch-all)
+
+### OCR factures
+
+- **Phase 1** : Tesseract (basique) — extraction montant/date/fournisseur.
+- **Phase 2** : Anthropic Vision API + affectation IA OBLF (« cette facture concerne le bien X — proprio ou locataire ? »).
+- Endpoint : `POST /sphere/ocr-facture`.
+
+### Disclaimer IA obligatoire
+
+- Champ `documents.disclaimer_included` (bool).
+- Si `generated_by_ai = true` → `disclaimer_included` doit être `true`.
+- Pied de page automatique avec disclaimer.
+- Source texte : `frontend/src/legal/CH/disclaimer-ia.md`.
+
+### Templates par canton
+
+- **Phase 1** : VD, GE, VS (90 % du marché romand).
+- **Phase 2** : autres cantons romands (FR, NE, JU).
+- **Phase 2** : ZH, BE, BS (suite activation `de-CH`).
+- Source : `backend/templates/baux/{canton}/` (à créer sprint 13).
+
+---
+
+## 4.10 Module Interventions
+
+### Signalement proprio/locataire
+
+- Formulaire : titre, description, photos, urgence (low / normal / high / urgent).
+- Notification proprio (Phase 1) + match artisan (Phase 3).
+- Endpoint : `POST /interventions`.
+- Photos uploadées avec UUID randomisés.
+
+### Devis comparé IA (Phase 3)
+
+- 3 artisans matchés par `(canton + specialty)`.
+- IA compare : prix, matériaux, délais, notation client.
+- Recommandation IA + alerte si surfacturation détectée.
+- Endpoint : `POST /interventions/{id}/request-quotes`.
+
+### Stripe Connect (Phase 2-3)
+
+- Split 95/5 (artisan reçoit 95 %, Althy 5 %).
+- Frais Stripe (~2.9 %) à la charge de l'artisan.
+- Onboarding Stripe Connect Express (KYC + IBAN).
+- Endpoint : `POST /profiles-artisans/stripe-connect/onboard`.
+
+### Audit IA matériaux (Phase 3-4)
+
+- Détection prix anormaux (vs benchmark régional).
+- Recommandation matériaux alternatifs.
+- Conseil sur durée travaux probable.
+
+---
+
+## 4.11 Module Changement de locataire ✅ TERMINÉ Sprint 12
+
+**Statut** : TERMINÉ (PR #4, commit `ca13842`).
+
+- **7 endpoints** fonctionnels :
+  - `GET /biens/{id}/changement/actif`
+  - `POST /biens/{id}/changement/creer`
+  - `PATCH /biens/{id}/changement/{cid}`
+  - `POST /biens/{id}/changement/{cid}/checkout`
+  - `POST /biens/{id}/changement/{cid}/checkin`
+  - `POST /biens/{id}/changement/{cid}/edl/upload`
+  - `DELETE /biens/{id}/changement/{cid}` (annulation)
+- **5 phases métier** : `depart_annonce` → `recherche` → `checkout` → `checkin` → `termine`.
+- **Migration 0030** enrichie 7 colonnes (5 types résiliation suisse au sens du CO art. 266g et suivants).
+- Cycle complet validé en prod sur le bien Crans-Montana (compte test).
+
+**Backlog** : refonte UX du module changement (tabs cohérents, édition inline) → reportée sprint 16-17.
+
+---
+
+## 4.12 Compta intégrée
+
+### Phase 1 (basique)
+
+- Revenus / charges par bien.
+- Catégorisation simple : loyer, intervention, charge, taxe, autre.
+- Export CSV mensuel (1 clic depuis `/app/comptabilite`).
+
+### Phase 2 (dynamique — sprint 14)
+
+- Transactions live (rendement net mis à jour temps réel).
+- OCR factures + affectation IA OBLF (proprio vs locataire — Ordonnance sur le bail à loyer).
+- Réconciliation CAMT.054 enrichie.
+- Export plan comptable suisse standard (PME OBA art. 957) — compatible Bexio, Banana, AbaWeb.
+- Déclaration fiscale IFD assistée (calcul revenus nets locatifs par bien).
+
+### Phase 4 (compta agence)
+
+- EBITDA live agence.
+- Charges, salaires, impôts intégrés.
+- Audit IA rentabilité par mandat (« seuil rentabilité loyer pour conserver le mandat »).
+
+---
+
+## 4.13 Communication
+
+### Messagerie in-app (Phase 1)
+
+- Table `messages` (migration 004).
+- Canal proprio ↔ locataire.
+- Notifications email Resend si message non lu après 24h.
+- Realtime configuré Supabase mais pas branché en Phase 1 (refresh manuel).
+
+### Email Resend (Phase 1)
+
+- Transactionnel : signup, reset password, quittances mensuelles, relances loyers.
+- Templates par locale (Phase 1 : `fr-CH` seul).
+- Émetteur : `noreply@althy.ch` (SPF/DKIM configurés).
+
+### SMS Twilio (Phase 1 partiel)
+
+- Notifications critiques uniquement (paiement réussi, échec relance).
+- Numéro identifiable Althy (Sender ID).
+- Configuration prête, envoi non testé en prod (cf TODO connus CLAUDE.md).
+
+### WhatsApp Business API (Phase 5+ Hub IA)
+
+- **Pas Phase 1**.
+- Conformité LCD : opt-out par message obligatoire.
+- Pattern unifié `InboxParser` côté backend.
+
+### Sync Google Calendar / Outlook (Phase 5+ Hub IA)
+
+- OAuth2 (jamais de mot de passe stocké).
+- Lecture mails + calendrier + IA propose actions contextuelles.
+- Microsoft Graph API + Google Workspace API + Infomaniak kMail API.
+
+---
+
+## 4.14 Plan d'activation des rôles
+
+### Phase 1 (active maintenant)
+
+- `proprio_solo`, `locataire`, `super_admin`.
+- + `artisan` partiellement (M1 — 50 places fondateurs par canton GE+VD).
+- Backend : `ALLOWED_SIGNUP_ROLES = ["proprio_solo", "locataire", "super_admin", "artisan"]`.
+- Frontend : flags `false` pour les autres rôles → écran « en préparation ».
+
+### Phase 2 (gated par flags)
+
+- Activer `NEXT_PUBLIC_FLAG_AGENCE = true` + `NEXT_PUBLIC_FLAG_PORTAIL = true`.
+- Ajouter `"agence"` et `"portail_proprio"` à `ALLOWED_SIGNUP_ROLES`.
+- Dashboard agence (Scénario B : comptes agence séparés avec vue multi-propriétaires).
+
+### Phase 3 (gated par flags)
+
+- Activer `NEXT_PUBLIC_FLAG_OPENER = true`.
+- Généralisation `NEXT_PUBLIC_FLAG_ARTISAN` à toute la Suisse.
+- Ajouter `"opener"` à `ALLOWED_SIGNUP_ROLES`.
+
+### Phases 4-5 (hardcoded)
+
+- `expert`, `hunter`, `acheteur_premium` → modifier les flags hardcodés `false` dans `flags.ts`.
+
+### Communication aux users existants
+
+Pour les utilisateurs qui se sont inscrits avec un rôle désactivé Phase 1 (artisan, opener, agence déjà inscrits avant) :
+
+- **Écran in-app** : « Votre espace est en préparation » avec CTA Sphère IA + contact.
+- **Email** : « Votre espace Althy arrive bientôt » via Resend.
+- **Page publique** : `/bientot/[role]` avec formulaire waitlist (table `waitlist`, migration 0034).
+
+Détail historique : `docs/plan-communication-roles-phase1.md` (à intégrer ou archiver Prompt 3).
+
+---
+
+## 4.15 Triple test appliqué — exemples concrets
+
+### Création bien (sprint 12 étape 3 ✅)
+
+| Critère | Application |
+|---|---|
+| Simple | 8 champs, 1 page, 1 clic submit. Auto-fill canton. Titre auto-généré. |
+| Complet | `type_bien`, `surface_habitable`, `nb_pieces` (avec step 0.5 pour les 3.5 / 4.5 pièces CH). Tous les champs `BienCreate` backend optionnels accessibles plus tard via édition. |
+| IA-ready | Titre auto-généré au format `"Type, Adresse, Ville"` (parsable). Enum `type_bien` (pas string libre). Audit log de la création (`action = "create"`). |
+
+### Édition loyer (sprint 12 étape 4 🔄)
+
+| Critère | Application |
+|---|---|
+| Simple | Double-click sur la card Finance → édition inline → save auto. Pas de modal. |
+| Complet | Montant + charges détaillées + index IPC + date prochaine indexation. |
+| IA-ready | Event `loyer_updated` traçable dans `audit_log`. `old_values` / `new_values` JSON. |
+
+### Archivage bien (sprint 12 étape 5 ⏭️)
+
+| Critère | Application |
+|---|---|
+| Simple | 1 clic « Archiver » + écran de confirmation. |
+| Complet | `is_active = false`. Conserve historique complet (changements, paiements, documents). Audit conservé indéfiniment. |
+| IA-ready | Query `WHERE is_active = true` partout. État archivé introspectable via `bien.is_active`. Soft delete préserve l'audit nLPD ([`6-LEGAL.md`](./6-LEGAL.md) §6.10). |
+
+---
+
+## Annexes
+
+- [1-VISION.md](./1-VISION.md) — Vision macro Althy
+- [2-ROADMAP.md](./2-ROADMAP.md) — Phases produit + sprints
+- [3-ARCHITECTURE.md](./3-ARCHITECTURE.md) — Stack technique, DA, intégrations
+- [5-FINANCES.md](./5-FINANCES.md) — Modèle économique
+- [6-LEGAL.md](./6-LEGAL.md) — Conformité juridique
+- [`docs/session12/SPRINT-bien-complet.md`](./session12/SPRINT-bien-complet.md) — Sprint en cours détaillé
