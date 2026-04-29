@@ -81,7 +81,7 @@
 - [ ] `next.config.js` : vérifier Content-Security-Policy headers
 
 ### Supabase
-- [ ] Email templates personnalisés (logo Althy, couleur orange)
+- [ ] Email templates personnalisés (logo Althy, palette Bleu de Prusse + Or — `#0F2E4C` / `#C9A961`)
 - [ ] SMTP custom configuré pour les emails Supabase Auth (ou déléguer à Resend)
 - [ ] Storage buckets : RLS configuré sur `candidatures` et `listings-photos`
 - [ ] Backup automatique activé (Supabase Pro)
