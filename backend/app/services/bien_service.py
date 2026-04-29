@@ -32,6 +32,8 @@ from app.models.bien import (
     CatalogueEquipement,
 )
 from app.models.intervention import Intervention
+from app.models.locataire import Locataire
+from app.models.paiement import Paiement
 from app.schemas.bien import (
     AuditLogResponse,
     BienCreate,
@@ -342,6 +344,7 @@ class BienService:
     # ─────────────────────────────────────────────────────────────────────────
 
     async def delete(self, bien_id: str, current_user: User) -> bool:
+        """Soft delete d'un bien (rétrocompat — usage interne sans checks)."""
         bien = await self._get(bien_id)
         if bien is None:
             return False
@@ -351,6 +354,80 @@ class BienService:
         await self.db.flush()
         await self._log(current_user, "delete", str(bien.id))
         return True
+
+    async def delete_with_checks(
+        self,
+        bien_id: uuid.UUID | str,
+        current_user: User,
+    ) -> dict:
+        """Soft delete avec vérifications préalables (PR-A10).
+
+        Bloque la suppression si :
+          - locataire `actif` rattaché au bien
+          - paiement(s) `en_attente` ou `retard`
+          - intervention(s) `nouveau`/`en_cours`/`planifie`
+
+        Retour :
+          - {"success": True, "message": "..."}    → 200
+          - {"success": False, "blockers": [...]}  → 409 côté router
+
+        Soft delete + audit log conservés (pas de hard delete — cf
+        docs/6-LEGAL.md §6.10 : préservation traçabilité).
+        """
+        bien = await self._get(bien_id)
+        if bien is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Bien introuvable")
+        if not _can_write(bien, current_user):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Suppression refusée")
+
+        bien_uuid = bien.id
+        blockers: list[str] = []
+
+        # 1. Locataire actif ?
+        locataire_q = await self.db.execute(
+            select(Locataire.id)
+            .where(Locataire.bien_id == bien_uuid, Locataire.statut == "actif")
+            .limit(1)
+        )
+        if locataire_q.scalar_one_or_none() is not None:
+            blockers.append("Un locataire est actuellement en bail sur ce bien")
+
+        # 2. Paiements en attente ou en retard ?
+        paiement_q = await self.db.execute(
+            select(Paiement.id)
+            .where(
+                Paiement.bien_id == bien_uuid,
+                Paiement.statut.in_(["en_attente", "retard"]),
+            )
+            .limit(1)
+        )
+        if paiement_q.scalar_one_or_none() is not None:
+            blockers.append("Des paiements sont en attente ou en retard")
+
+        # 3. Interventions actives ?
+        intervention_q = await self.db.execute(
+            select(Intervention.id)
+            .where(
+                Intervention.bien_id == bien_uuid,
+                Intervention.statut.in_(["nouveau", "en_cours", "planifie"]),
+            )
+            .limit(1)
+        )
+        if intervention_q.scalar_one_or_none() is not None:
+            blockers.append("Des interventions sont en cours ou planifiées")
+
+        if blockers:
+            return {"success": False, "blockers": blockers}
+
+        # Soft delete + audit
+        bien.is_active = False
+        await self.db.flush()
+        await self._log(current_user, "delete", str(bien.id))
+
+        return {
+            "success": True,
+            "message": "Bien archivé. Restauration possible Phase 2.",
+        }
 
     # ─────────────────────────────────────────────────────────────────────────
     # Images
