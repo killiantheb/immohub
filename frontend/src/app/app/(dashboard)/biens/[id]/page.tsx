@@ -287,7 +287,17 @@ function SectionFinances({ bienId }: { bienId: string }) {
 
   return (
     <div style={CARD}>
-      <p style={SEC_TITLE}>Finances</p>
+      {/* P1.2 fix : ajout du lien "Détail →" en header (symétrie avec
+          les autres cards Locataire/Interventions/Documents/Historique). */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <p style={{ ...SEC_TITLE, marginBottom: 0 }}>Finances</p>
+        <Link
+          href={bienLinks.finances(bienId)}
+          style={{ fontSize: 12, color: C.prussian, textDecoration: "none", fontWeight: 500 }}
+        >
+          Détail →
+        </Link>
+      </div>
 
       <div style={ROW}>
         <div style={FIELD}>
@@ -343,7 +353,7 @@ function SectionFinances({ bienId }: { bienId: string }) {
             </span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 12, color: C.text2 }}>Revenu annuel estimé</span>
+            <span style={{ fontSize: 12, color: C.text2 }}>Loyer net annuel après commission</span>
             <span style={{ fontSize: 13, fontWeight: 700, color: C.green }}>
               CHF {revenuAnnuel.toLocaleString("fr-CH")}
             </span>
@@ -761,9 +771,18 @@ function SectionLocataire({ bienId }: { bienId: string }) {
           </p>
         </div>
 
+        {/*
+          P0.1 + P0.2 fix : remplace deux CTAs trompeurs.
+          Avant : "Publier sur la marketplace" → /app/annonces (301 → liste biens)
+                  "Voir candidatures"          → TabLocataire <Empty>
+          Après : les deux pointent vers /app/candidatures (module global existant)
+                  avec ?bien_id=X. Le filtre côté module sera Phase 2 — en
+                  attendant, la liste complète s'affiche, ce qui est cohérent
+                  avec l'intention.
+        */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
           <Link
-            href="/app/annonces"
+            href={`/app/candidatures?bien_id=${bienId}`}
             style={{
               display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
               padding: "9px 16px", borderRadius: 10,
@@ -771,10 +790,10 @@ function SectionLocataire({ bienId }: { bienId: string }) {
               fontSize: 13, fontWeight: 600, textDecoration: "none",
             }}
           >
-            Publier sur la marketplace
+            Recevoir des candidatures
           </Link>
           <Link
-            href={bienLinks.locataire(bienId)}
+            href={`/app/candidatures?bien_id=${bienId}&statut=en_attente`}
             style={{
               display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
               padding: "8px 14px", borderRadius: 9,
@@ -782,7 +801,7 @@ function SectionLocataire({ bienId }: { bienId: string }) {
               color: C.text2, fontSize: 13, textDecoration: "none",
             }}
           >
-            Voir candidatures
+            Voir candidatures en attente
           </Link>
         </div>
       </div>
@@ -823,8 +842,14 @@ function SectionLocataire({ bienId }: { bienId: string }) {
       )}
 
       <div style={{ display: "flex", gap: 8 }}>
+        {/*
+          P1.3 fix : pointe directement vers /app/communication?tab=messages
+          au lieu du redirect 301 via /app/messagerie. Le pré-ciblage du
+          locataire (?contact=X) sera Phase 2 quand le module global lira
+          ce param.
+        */}
         <Link
-          href="/app/messagerie"
+          href="/app/communication?tab=messages"
           style={{
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "8px 14px", borderRadius: 9,
@@ -907,8 +932,10 @@ function SectionInterventions({ bienId }: { bienId: string }) {
               Signalez un problème pour qu&apos;un artisan intervienne.
             </p>
           </div>
+          {/* P1.7 fix : ?action=new ouvre le form auto dans TabInterventions
+              (cf _shared.tsx — useSearchParams initialise showForm). */}
           <Link
-            href={bienLinks.interventions(bienId)}
+            href={`${bienLinks.interventions(bienId)}?action=new`}
             style={{
               display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
               padding: "9px 14px", borderRadius: 10,
@@ -977,7 +1004,7 @@ function SectionDocuments({ bienId }: { bienId: string }) {
   }
 
   return (
-    <div style={CARD}>
+    <div style={{ ...CARD, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <p style={{ ...SEC_TITLE, marginBottom: 0 }}>Documents récents</p>
         <Link href={bienLinks.documents(bienId)} style={{ fontSize: 12, color: C.prussian, textDecoration: "none", fontWeight: 500 }}>
@@ -986,7 +1013,46 @@ function SectionDocuments({ bienId }: { bienId: string }) {
       </div>
 
       {derniers.length === 0 ? (
-        <p style={{ fontSize: 13, color: C.text3, margin: 0 }}>Aucun document</p>
+        <>
+          {/* P1.1 fix : densifie le cas vide avec icône + CTA, symétrique
+              à la card Interventions vide. */}
+          <div style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+            padding: "16px 8px",
+          }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: "50%",
+              background: C.prussianBg,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              marginBottom: 12,
+            }}>
+              <FileText size={24} style={{ color: C.prussian, opacity: 0.55 }} />
+            </div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: "0 0 4px" }}>
+              Aucun document
+            </p>
+            <p style={{ fontSize: 12, color: C.text3, margin: 0, maxWidth: 240 }}>
+              Téléversez ou générez un document pour ce bien.
+            </p>
+          </div>
+          <Link
+            href={bienLinks.documents(bienId)}
+            style={{
+              display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "9px 14px", borderRadius: 10,
+              border: `1px solid var(--border-subtle)`,
+              color: C.text2, fontSize: 13, fontWeight: 500, textDecoration: "none",
+              marginTop: 12,
+            }}
+          >
+            <Plus size={13} /> Ajouter un document
+          </Link>
+        </>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {derniers.map(doc => (
@@ -1111,11 +1177,15 @@ function SectionHistorique({ bienId }: { bienId: string }) {
     <div style={CARD}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <p style={{ ...SEC_TITLE, marginBottom: 0 }}>Historique</p>
+        {/* P1.6 fix : la sous-page /historique liste les anciens locataires
+            (TabHistorique), tandis que cette card overview liste les
+            événements audit log (création, modifs, etc.). On clarifie
+            l'asymétrie en renommant la cible du lien. */}
         <Link
           href={bienLinks.historique(bienId)}
           style={{ fontSize: 12, color: C.prussian, textDecoration: "none", fontWeight: 500 }}
         >
-          Voir tout →
+          Voir anciens locataires →
         </Link>
       </div>
 

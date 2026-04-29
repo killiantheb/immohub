@@ -32,6 +32,10 @@ export const bienLinks = {
 
   /** Cycle de changement de locataire */
   changement: (bienId: string) => `/app/biens/${bienId}/changement`,
+
+  /** Détail d'un ancien locataire d'un bien */
+  historiqueLocataire: (bienId: string, locataireId: string) =>
+    `/app/biens/${bienId}/historique/${locataireId}`,
 } as const;
 
 /**
