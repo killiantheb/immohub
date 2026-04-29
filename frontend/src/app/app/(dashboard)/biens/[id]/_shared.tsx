@@ -15,8 +15,10 @@ import {
   type DocumentAlthy, type Locataire, type Paiement,
 } from "@/lib/hooks/useBiens";
 import { usePotentielIA } from "@/lib/hooks/useDashboardData";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { C } from "@/lib/design-tokens";
+import { bienLinks } from "@/lib/bien-links";
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 
@@ -265,9 +267,18 @@ export function TabLocataire({ bienId }: { bienId: string }) {
             </p>
           </div>
         )}
-        <button style={{ ...btnP, marginTop: "1rem" }}>
+        {/*
+          P0.3 fix : ce bouton était décoratif (sans onClick). Pointe désormais
+          vers la sphère IA pour rédaction d'avenant. Le pré-remplissage du
+          prompt via query param sera ajouté Phase 2 (la sphère ne lit pas
+          encore `?prompt=` actuellement — vérifié par grep useSearchParams).
+        */}
+        <Link
+          href="/app/sphere"
+          style={{ ...btnP, marginTop: "1rem", textDecoration: "none" }}
+        >
           <RefreshCw size={12} /> Proposer renouvellement
-        </button>
+        </Link>
       </Card>
 
       {/* Paiement du mois */}
@@ -362,7 +373,7 @@ export function TabHistorique({ bienId }: { bienId: string }) {
               {loc.loyer && <span style={{ fontSize: 13, color: C.text3 }}>{fmtCHF(loc.loyer)}/m</span>}
               <Badge label="Sortie propre" color={C.green} bg={C.greenBg} />
               <Link
-                href={`/app/biens/${bienId}/historique/${loc.id}`}
+                href={bienLinks.historiqueLocataire(bienId, loc.id)}
                 style={{ ...btnS, marginTop: 0, textDecoration: "none", fontSize: 12 }}
               >
                 Voir dossier <ChevronRight size={11} />
@@ -388,9 +399,15 @@ export function TabDocuments({ bienId }: { bienId: string }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
-        <button style={btnS}>
+        {/*
+          P0.4 fix : ce bouton était décoratif. Pointe désormais vers
+          /app/documents qui héberge déjà DocumentQuickGenerator (composant
+          réutilisable, voir frontend/src/components/DocumentQuickGenerator.tsx).
+          Phase 2 : intégrer le générateur en modal dans cette même tab.
+        */}
+        <Link href="/app/documents" style={{ ...btnS, textDecoration: "none" }}>
           <Plus size={13} /> Générer document IA
-        </button>
+        </Link>
       </div>
       {!docs?.length
         ? <Empty icon={FileText} title="Aucun document" sub="Déposez ou générez vos premiers documents." />
@@ -431,7 +448,11 @@ export function TabDocuments({ bienId }: { bienId: string }) {
 // ══════════════════════════════════════════════════════════════════════════════
 export function TabInterventions({ bienId }: { bienId: string }) {
   const { data: interventions, isLoading } = useInterventions(bienId);
-  const [showForm, setShowForm] = useState(false);
+  // P1.7 — ouvre auto le form si ?action=new dans l'URL (CTA depuis la
+  // card overview de la fiche bien).
+  const searchParams = useSearchParams();
+  const initialOpen = searchParams.get("action") === "new";
+  const [showForm, setShowForm] = useState(initialOpen);
   const [form, setForm] = useState({ titre: "", categorie: "autre", urgence: "moderee", description: "" });
   const create = useCreateIntervention();
 
