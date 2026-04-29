@@ -224,6 +224,18 @@
   .badge-gold     { background: var(--althy-gold-bg);     color: var(--althy-gold-hover); border: 1px solid var(--althy-gold-border); }
 }
 
+/* ── Fiche bien — header hero responsive ──────────────────────────────────── */
+/* Mobile : photo/map en haut, infos en dessous (1 colonne)
+   Desktop (>= 768px) : photo/map à gauche (240px), infos à droite (1fr) */
+.card-header-bien-grid {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+  .card-header-bien-grid {
+    grid-template-columns: 240px 1fr;
+  }
+}
+
 /* ── Fraunces Variable — utilities ──────────────────────────────────────────
    Axes disponibles :
      wght  100–900   (poids)

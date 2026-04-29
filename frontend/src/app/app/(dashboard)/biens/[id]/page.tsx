@@ -7,8 +7,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   AlertTriangle, CheckCircle2, Clock, Download,
-  ExternalLink, FileText, Image as ImageIcon, Loader2, Mail,
-  Pencil, Sparkles, Wrench, XCircle,
+  ExternalLink, FileText, Loader2, Mail,
+  Pencil, Plus, Sparkles, User, Wrench, XCircle,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import {
@@ -26,6 +26,7 @@ import {
 import { NotificationDraft } from "@/components/NotificationDraft";
 import { C } from "@/lib/design-tokens";
 import { bienLinks } from "@/lib/bien-links";
+import { MiniMapBien } from "@/components/biens/MiniMapBien";
 import type { AuditLogEntry } from "@/lib/types";
 
 // ── Design constants ──────────────────────────────────────────────────────────
@@ -669,22 +670,58 @@ function SectionLocataire({ bienId }: { bienId: string }) {
 
   if (!locataire) {
     return (
-      <div style={CARD}>
-        <p style={SEC_TITLE}>Locataire actuel</p>
-        <p style={{ fontSize: 13, color: C.text3, margin: "0 0 14px" }}>
-          Aucun locataire — ce bien est vacant.
-        </p>
-        <Link
-          href="/app/annonces"
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            padding: "9px 16px", borderRadius: 10,
-            background: C.prussian, color: "#fff",
-            fontSize: 13, fontWeight: 600, textDecoration: "none",
-          }}
-        >
-          Publier sur la marketplace →
-        </Link>
+      <div style={{ ...CARD, display: "flex", flexDirection: "column" }}>
+        <p style={SEC_TITLE}>Locataire</p>
+
+        <div style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          padding: "16px 8px",
+        }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: "50%",
+            background: C.amberBg ?? "rgba(245, 158, 11, 0.08)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            marginBottom: 12,
+          }}>
+            <User size={26} style={{ color: C.amber }} />
+          </div>
+          <p style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: "0 0 4px" }}>
+            Bien vacant
+          </p>
+          <p style={{ fontSize: 12, color: C.text3, margin: 0, maxWidth: 240 }}>
+            Aucun locataire actuel. Publiez le bien ou consultez les candidatures en attente.
+          </p>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+          <Link
+            href="/app/annonces"
+            style={{
+              display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "9px 16px", borderRadius: 10,
+              background: C.prussian, color: "#fff",
+              fontSize: 13, fontWeight: 600, textDecoration: "none",
+            }}
+          >
+            Publier sur la marketplace
+          </Link>
+          <Link
+            href={bienLinks.locataire(bienId)}
+            style={{
+              display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "8px 14px", borderRadius: 9,
+              border: `1px solid var(--border-subtle)`,
+              color: C.text2, fontSize: 13, textDecoration: "none",
+            }}
+          >
+            Voir candidatures
+          </Link>
+        </div>
       </div>
     );
   }
@@ -767,17 +804,59 @@ function SectionInterventions({ bienId }: { bienId: string }) {
     );
   }
 
+  const total = interventions?.length ?? 0;
+
   return (
-    <div style={CARD}>
+    <div style={{ ...CARD, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <p style={{ ...SEC_TITLE, marginBottom: 0 }}>Interventions</p>
-        <Link href={bienLinks.interventions(bienId)} style={{ fontSize: 12, color: C.prussian, textDecoration: "none", fontWeight: 500 }}>
-          Voir tout →
+        <Link
+          href={bienLinks.interventions(bienId)}
+          style={{ fontSize: 12, color: C.prussian, textDecoration: "none", fontWeight: 500 }}
+        >
+          {total > 0 ? `Voir tout (${total}) →` : "Voir tout →"}
         </Link>
       </div>
 
       {dernieres.length === 0 ? (
-        <p style={{ fontSize: 13, color: C.text3, margin: 0 }}>Aucune intervention</p>
+        <>
+          <div style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+            padding: "16px 8px",
+          }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: "50%",
+              background: C.prussianBg,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              marginBottom: 12,
+            }}>
+              <Wrench size={24} style={{ color: C.prussian, opacity: 0.55 }} />
+            </div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: "0 0 4px" }}>
+              Aucune intervention
+            </p>
+            <p style={{ fontSize: 12, color: C.text3, margin: 0, maxWidth: 240 }}>
+              Signalez un problème pour qu&apos;un artisan intervienne.
+            </p>
+          </div>
+          <Link
+            href={bienLinks.interventions(bienId)}
+            style={{
+              display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "9px 14px", borderRadius: 10,
+              border: `1px solid var(--border-subtle)`,
+              color: C.text2, fontSize: 13, fontWeight: 500, textDecoration: "none",
+              marginTop: 12,
+            }}
+          >
+            <Plus size={13} /> Nouvelle intervention
+          </Link>
+        </>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {dernieres.map(inter => {
@@ -890,12 +969,19 @@ function SectionDocuments({ bienId }: { bienId: string }) {
 // ── SectionEstimationIA — card de redirection vers l'estim détaillée ─────────
 
 function SectionEstimationIA({ bienId }: { bienId: string }) {
+  const features = [
+    "Valeur de marché estimée",
+    "Rendement locatif potentiel",
+    "Recommandations IA personnalisées",
+  ];
+
   return (
     <Link
       href={bienLinks.potentiel(bienId)}
       style={{
         ...CARD,
-        display: "block",
+        display: "flex",
+        flexDirection: "column",
         textDecoration: "none",
         color: "inherit",
         transition: "border-color 0.15s",
@@ -906,18 +992,38 @@ function SectionEstimationIA({ bienId }: { bienId: string }) {
         <p style={{ ...SEC_TITLE, marginBottom: 0 }}>Estimation IA</p>
         <Sparkles size={18} style={{ color: C.gold }} />
       </div>
+
       <p style={{ fontSize: 13, color: C.text2, margin: "0 0 14px", lineHeight: 1.5 }}>
         Découvrez la valeur estimée de votre bien et son potentiel locatif grâce à l&apos;analyse IA.
       </p>
-      <span
-        style={{
-          display: "inline-flex", alignItems: "center", gap: 6,
-          fontSize: 12, fontWeight: 600,
-          color: C.prussian,
-        }}
-      >
-        Lancer l&apos;estimation →
-      </span>
+
+      <ul style={{
+        listStyle: "none", padding: 0, margin: "0 0 14px",
+        display: "flex", flexDirection: "column", gap: 8, flex: 1,
+      }}>
+        {features.map((f) => (
+          <li
+            key={f}
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              fontSize: 13, color: C.text2,
+            }}
+          >
+            <CheckCircle2 size={14} style={{ color: C.gold, flexShrink: 0 }} />
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div style={{
+        paddingTop: 12,
+        borderTop: `1px solid var(--border-subtle)`,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: C.prussian }}>
+          Lancer l&apos;estimation →
+        </span>
+      </div>
     </Link>
   );
 }
@@ -1045,25 +1151,28 @@ function CardHeaderBien({
 
   return (
     <div
+      className="card-header-bien-grid"
       style={{
         ...CARD,
         padding: 0,
         overflow: "hidden",
         display: "grid",
-        gridTemplateColumns: "240px 1fr",
         minHeight: 200,
       }}
     >
-      {/* Colonne 1 — Photo ou placeholder */}
+      {/* Colonne 1 — Photo (si uploadée) → Mini-map Mapbox (si lat/lng)
+          → Placeholder gradient (sinon).
+          Upload UI photos = Phase 2 (l'API backend POST /biens/{id}/images
+          existe déjà). */}
       <div
         style={{
-          background: C.prussianBg,
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          alignItems: "stretch",
+          justifyContent: "stretch",
           borderRight: `1px solid var(--border-subtle)`,
           position: "relative",
           overflow: "hidden",
+          minHeight: 200,
         }}
       >
         {cover ? (
@@ -1080,20 +1189,11 @@ function CardHeaderBien({
             }}
           />
         ) : (
-          <div style={{ textAlign: "center", padding: 16 }}>
-            <ImageIcon size={32} style={{ color: C.prussian, opacity: 0.4, marginBottom: 8 }} />
-            <p
-              style={{
-                fontSize: 11,
-                color: C.text3,
-                margin: 0,
-                fontStyle: "italic",
-              }}
-              title="Upload disponible Phase 2"
-            >
-              Aucune photo
-            </p>
-          </div>
+          <MiniMapBien
+            lat={bien.lat ?? null}
+            lng={bien.lng ?? null}
+            ville={bien.ville}
+          />
         )}
       </div>
 
@@ -1216,22 +1316,17 @@ function BienOverview() {
       {editing && <SectionInfos bienId={id} />}
 
       {/*
-        Grille 6 cards responsive :
-          - Mobile  (< ~640px)    : 1 colonne (ordre vertical)
-          - Tablette(< ~1000px)  : 2 colonnes
-          - Desktop (>= ~1000px) : 3 colonnes (3×2 — tient en 1 viewport ~900px)
-        Layout via auto-fit + minmax(320px, 1fr) — pas de media query nécessaire.
+        Grille 6 cards responsive — colonnes STRICTES (pas auto-fit) :
+          - Mobile  (<768px)        : 1 colonne (ordre vertical)
+          - Tablette (768-1023px)   : 2 colonnes (3 lignes)
+          - Desktop (>=1024px)      : 3 colonnes (3×2 — tient en 1 viewport)
+        Tailwind suffit ici (Tailwind est configuré dans tailwind.config.ts
+        et scopé sur ce fichier via globals.css). Les cards elles-mêmes
+        gardent leurs inline-styles (pattern dominant du fichier).
         Liens vers sous-pages via @/lib/bien-links (transition Phase 2-3
         modules globaux filtrés = modifier uniquement bien-links.ts).
       */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: 16,
-          alignItems: "stretch",
-        }}
-      >
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 items-stretch">
         <SectionLocataire bienId={id} />
         <SectionFinances bienId={id} />
         <SectionEstimationIA bienId={id} />
