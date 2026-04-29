@@ -14,7 +14,7 @@ import { api } from "@/lib/api";
 import {
   useBien, useUpdateBien, useLocataireActuel,
   usePaiements, useInterventions, useDocuments,
-  useBienHistory,
+  useBienHistory, useRendementNet,
   type Bien,
 } from "@/lib/hooks/useBiens";
 import {
@@ -242,6 +242,7 @@ function SectionInfos({ bienId }: { bienId: string }) {
 function SectionFinances({ bienId }: { bienId: string }) {
   const { data: bien, isLoading } = useBien(bienId);
   const { data: locataire } = useLocataireActuel(bienId);
+  const { data: rendement, isLoading: rendementLoading } = useRendementNet(bienId);
   const update = useUpdateBien(bienId);
   const [form, setForm] = useState({ loyer: "", charges: "" });
   const [dirty, setDirty] = useState(false);
@@ -346,6 +347,68 @@ function SectionFinances({ bienId }: { bienId: string }) {
             <span style={{ fontSize: 13, fontWeight: 700, color: C.green }}>
               CHF {revenuAnnuel.toLocaleString("fr-CH")}
             </span>
+          </div>
+
+          {/* Rendement net Phase 1 (PR-B) — loyer brut - interventions année civile.
+              Phase 2-3 enrichira via deductions[] (commission Althy, agence, etc.)
+              sans rupture API. */}
+          <div style={{
+            marginTop: 10,
+            paddingTop: 10,
+            borderTop: "1px solid var(--althy-prussian-border)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+          }}>
+            {rendementLoading ? (
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 12, color: C.text2 }}>
+                  Rendement net {new Date().getFullYear()}
+                </span>
+                <span style={{ fontSize: 12, color: C.text3, fontStyle: "italic" }}>
+                  Calcul…
+                </span>
+              </div>
+            ) : rendement ? (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 12, color: C.text2 }}>
+                    Rendement net {rendement.annee}
+                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>
+                    CHF {Math.round(Number(rendement.rendement_net_chf)).toLocaleString("fr-CH")}
+                  </span>
+                </div>
+                {rendement.deductions.map((d) => (
+                  <div
+                    key={d.type}
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <span style={{ fontSize: 11, color: C.text3 }}>
+                      − {d.label}
+                    </span>
+                    <span style={{ fontSize: 11, color: C.text3 }}>
+                      −CHF {Math.round(Number(d.montant)).toLocaleString("fr-CH")}
+                    </span>
+                  </div>
+                ))}
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+                  <span style={{ fontSize: 11, color: C.text2 }}>Taux net</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: C.green }}>
+                    {Number(rendement.rendement_net_pct).toFixed(1)}%
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 12, color: C.text2 }}>
+                  Rendement net {new Date().getFullYear()}
+                </span>
+                <span style={{ fontSize: 12, color: C.text3, fontStyle: "italic" }}>
+                  Indisponible
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}

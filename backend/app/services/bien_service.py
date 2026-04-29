@@ -15,6 +15,7 @@ from __future__ import annotations
 import math
 import mimetypes
 import uuid
+from decimal import Decimal
 from typing import TYPE_CHECKING
 
 import httpx
@@ -27,6 +28,7 @@ from app.models.bien import (
     BienImage,
     CatalogueEquipement,
 )
+from app.models.intervention import Intervention
 from app.schemas.bien import (
     AuditLogResponse,
     BienCreate,
@@ -39,9 +41,11 @@ from app.schemas.bien import (
     CatalogueEquipementRead,
     PaginatedBiens,
     PotentielIAResponse,
+    RendementDeduction,
+    RendementNetResponse,
 )
 from fastapi import HTTPException, UploadFile, status
-from sqlalchemy import func, select, text
+from sqlalchemy import extract, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
@@ -808,6 +812,72 @@ class BienService:
             recommandations=recommandations,
             conseil_fiscal=conseil_fiscal,
             prochaine_action=prochaine_action,
+        )
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Rendement net (PR-B sprint 12)
+    # Phase 1 : loyer_brut_annuel - cout_interventions (année civile).
+    # Phase 2-3 : ajout commission Althy 3 %, commission agence, etc.
+    #             — à insérer dans `deductions[]` sans rupture API.
+    # ─────────────────────────────────────────────────────────────────────────
+
+    async def get_rendement_net(
+        self,
+        bien_id: uuid.UUID | str,
+        annee: int,
+        current_user: User,
+    ) -> RendementNetResponse:
+        """Calcule le rendement net basique d'un bien sur une année donnée.
+
+        Filtre les interventions par `created_at` (Date NOT NULL via BaseModel)
+        plutôt que `date_intervention` (nullable) pour garantir que toutes
+        les interventions signalées dans l'année comptent dans le coût,
+        même si la date d'intervention finale n'est pas encore renseignée.
+        """
+        bien = await self.get_for_access_check(bien_id, current_user)
+
+        # Loyer brut annuel
+        loyer_mensuel = Decimal(str(bien.loyer or 0))
+        loyer_brut_annuel = loyer_mensuel * 12
+
+        # Coût total interventions année civile (somme cout, ignore NULL)
+        cout_query = select(
+            func.coalesce(func.sum(Intervention.cout), 0)
+        ).where(
+            Intervention.bien_id == bien.id,
+            extract("year", Intervention.created_at) == annee,
+        )
+        cout_total = (await self.db.execute(cout_query)).scalar() or 0
+        cout_interventions = Decimal(str(cout_total))
+
+        # Construction extensible des déductions (Phase 1 : interventions seulement)
+        deductions: list[RendementDeduction] = []
+        if cout_interventions > 0:
+            deductions.append(
+                RendementDeduction(
+                    type="interventions",
+                    montant=cout_interventions,
+                    label=f"Coût interventions {annee}",
+                )
+            )
+
+        # Calcul rendement net
+        rendement_net_chf = loyer_brut_annuel - cout_interventions
+        if rendement_net_chf < 0:
+            rendement_net_chf = Decimal("0")
+
+        if loyer_brut_annuel > 0:
+            rendement_net_pct = (rendement_net_chf / loyer_brut_annuel) * 100
+            rendement_net_pct = rendement_net_pct.quantize(Decimal("0.01"))
+        else:
+            rendement_net_pct = Decimal("0")
+
+        return RendementNetResponse(
+            annee=annee,
+            loyer_brut_annuel=loyer_brut_annuel,
+            deductions=deductions,
+            rendement_net_chf=rendement_net_chf,
+            rendement_net_pct=rendement_net_pct,
         )
 
     async def _log(

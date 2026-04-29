@@ -635,3 +635,29 @@ export interface ApiError {
   detail: string;
   status: number;
 }
+
+// ── Rendement net (PR-B sprint 12) ────────────────────────────────────────────
+// Phase 1 : `interventions` seulement.
+// Phase 2-3 : commission Althy / agence / charges proprio (mêmes types,
+//             juste de nouvelles entrées dans `deductions[]`).
+
+export type RendementDeductionType =
+  | "interventions"
+  | "commission_althy"
+  | "commission_agence"
+  | "charges_proprio";
+
+export interface RendementDeduction {
+  type: RendementDeductionType;
+  /** Decimal côté backend, sérialisé en string par Pydantic — coercé en number à la lecture. */
+  montant: number;
+  label: string;
+}
+
+export interface RendementNetResponse {
+  annee: number;
+  loyer_brut_annuel: number;
+  deductions: RendementDeduction[];
+  rendement_net_chf: number;
+  rendement_net_pct: number;
+}

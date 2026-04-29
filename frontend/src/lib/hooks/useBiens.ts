@@ -15,6 +15,7 @@ import type {
   EquipementCategorie,
   GenerateDescriptionResponse,
   PaginatedBiens,
+  RendementNetResponse,
 } from "@/lib/types";
 
 // TODO: Re-exports temporaires pour stabilité bundle 1b (étape 19).
@@ -495,6 +496,34 @@ export function useBienHistory(bienId: string, limit = 50) {
     },
     enabled: Boolean(bienId),
     staleTime: 30_000,
+  });
+}
+
+// ── Rendement net (PR-B sprint 12) ────────────────────────────────────────────
+
+/**
+ * Hook pour récupérer le rendement net d'un bien sur une année donnée.
+ *
+ * Phase 1 : `loyer_brut_annuel - sum(interventions.cout)` année civile.
+ * Phase 2-3 : enrichissement via `deductions[]` (commission Althy 3 %,
+ * agence, charges proprio) — schéma déjà extensible côté backend.
+ *
+ * @param bienId UUID du bien
+ * @param annee  Année cible (défaut : année courante)
+ */
+export function useRendementNet(bienId: string, annee?: number) {
+  const yearToUse = annee ?? new Date().getFullYear();
+  return useQuery({
+    queryKey: ["bien-rendement-net", bienId, yearToUse],
+    queryFn: async () => {
+      const { data } = await api.get<RendementNetResponse>(
+        `/biens/${bienId}/rendement-net`,
+        { params: { annee: yearToUse } },
+      );
+      return data;
+    },
+    enabled: Boolean(bienId),
+    staleTime: 60_000, // 1 minute (peu de mutations)
   });
 }
 
