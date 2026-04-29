@@ -36,6 +36,13 @@ ParkingTypeLiteral = Literal[
     "exterieur", "exterieur_couvert", "interieur", "interieur_box",
 ]
 
+# Estimation IA enrichie (PR-A9.1) — déclarés ici pour être résolus par
+# BienBase / BienUpdate (référencés plus bas dans EstimationIAEnrichie).
+ResidenceType = Literal["principale", "secondaire", "mixte"]
+LocationType = Literal["annuelle", "saisonniere", "semaine"]
+LocationTypeActuel = Literal["annuelle", "saisonniere", "semaine", "vide"]
+TendanceMarche = Literal["hausse", "stable", "baisse"]
+
 EquipementCategorie = Literal[
     "cuisine", "literie", "salle_bain", "tech", "loisirs", "entretien", "confort",
 ]
@@ -124,6 +131,10 @@ class BienBase(BaseModel):
     lat: Optional[float] = None
     lng: Optional[float] = None
 
+    # ── Estimation IA enrichie (PR-A9.1) ─────────────────────────────────────
+    residence_type: Optional[ResidenceType] = None
+    location_type_actuel: Optional[LocationTypeActuel] = None
+
 
 class BienCreate(BienBase):
     """Payload création — les champs obligatoires sont ceux de BienBase."""
@@ -198,6 +209,10 @@ class BienUpdate(BaseModel):
     # ── Coordonnées ───────────────────────────────────────────────────────────
     lat: Optional[float] = None
     lng: Optional[float] = None
+
+    # ── Estimation IA enrichie (PR-A9.1) ─────────────────────────────────────
+    residence_type: Optional[ResidenceType] = None
+    location_type_actuel: Optional[LocationTypeActuel] = None
 
 
 class BienRead(BienBase):
@@ -396,3 +411,107 @@ class RendementNetResponse(BaseModel):
     deductions: list[RendementDeduction] = Field(default_factory=list)
     rendement_net_chf: Decimal = Field(..., ge=0)
     rendement_net_pct: Decimal = Field(..., ge=0, le=100)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Estimation IA enrichie v2 (PR-A9.1 sprint 12)
+# Refonte de l'ancien PotentielIAResponse — endpoint parallèle /potentiel-v2.
+# Ancien endpoint /potentiel conservé (Phase 1) pour rétro-compat.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class EstimationLocalite(BaseModel):
+    """Analyse du marché local (canton / ville / quartier)."""
+
+    canton: str = Field(..., max_length=2)
+    ville: str = Field(..., max_length=100)
+    quartier: Optional[str] = Field(default=None, max_length=120)
+    prix_moyen_m2_vente_chf: Decimal = Field(..., ge=0)
+    prix_moyen_m2_loyer_an_chf: Decimal = Field(..., ge=0)
+    tendance_12_mois: TendanceMarche
+    delai_vente_moyen_jours: int = Field(..., ge=0)
+    note_attractivite: int = Field(..., ge=1, le=10)
+    notes_locales: str = Field(..., max_length=2000)
+
+
+class EstimationLocation(BaseModel):
+    """Revenus estimés selon un type de location (annuelle/saisonnière/semaine)."""
+
+    type: LocationType
+    revenu_brut_an_chf_min: Decimal = Field(..., ge=0)
+    revenu_brut_an_chf_max: Decimal = Field(..., ge=0)
+    taux_occupation_estime_pct: Decimal = Field(..., ge=0, le=100)
+    rendement_brut_pct: Decimal = Field(..., ge=0)
+    rendement_net_estime_pct: Decimal = Field(..., ge=0)
+    contraintes: list[str] = Field(default_factory=list)
+    avantages: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(
+        default_factory=list,
+        description="Avertissements légaux (LRA Valais, Lex Weber, permis communal).",
+    )
+    recommandation: str = Field(..., max_length=2000)
+
+
+class EstimationFiscalite(BaseModel):
+    """Optimisation fiscale CH selon résidence + canton."""
+
+    impot_revenu_locatif_estime_chf_an: Decimal = Field(..., ge=0)
+    deductions_possibles: list[str] = Field(default_factory=list)
+    valeur_locative_estimee_chf: Optional[Decimal] = Field(default=None, ge=0)
+    conseil_fiscal_principal: str = Field(..., max_length=2000)
+
+
+class EstimationIAEnrichie(BaseModel):
+    """Réponse complète de l'estimation IA enrichie (PR-A9.1).
+
+    Schéma extensible : Phase 2 ajoutera notamment des sources marché
+    réelles (Comparis / Homegate Open Data) sans rupture API.
+    """
+
+    # ── Métadonnées ──────────────────────────────────────────────────────────
+    bien_id: uuid.UUID
+    generated_at: datetime
+    model_used: str = Field(..., max_length=80)
+    confidence_score: Decimal = Field(..., ge=0, le=10)
+    disclaimer: str = Field(
+        default=(
+            "Estimation IA indicative. Vérifier auprès d'un expert agréé "
+            "avant toute décision financière. Ne constitue pas une expertise "
+            "formelle au sens de la LSFin."
+        ),
+        max_length=500,
+    )
+
+    # ── Configuration analysée ───────────────────────────────────────────────
+    meuble: bool
+    residence_type: ResidenceType
+    location_type_actuel: Optional[LocationTypeActuel] = None
+
+    # ── 1. Estimation valeur ─────────────────────────────────────────────────
+    valeur_estimee_chf_min: Decimal = Field(..., ge=0)
+    valeur_estimee_chf_max: Decimal = Field(..., ge=0)
+    valeur_par_m2_estimee_chf: Decimal = Field(..., ge=0)
+
+    # ── 2. Localité ──────────────────────────────────────────────────────────
+    localite: EstimationLocalite
+
+    # ── 3. Locations (3 scénarios) ───────────────────────────────────────────
+    location_annuelle: EstimationLocation
+    location_saisonniere: EstimationLocation
+    location_semaine: EstimationLocation
+    location_recommandee: LocationType
+    raison_recommandation: str = Field(..., max_length=2000)
+
+    # ── 4. Fiscalité ─────────────────────────────────────────────────────────
+    fiscalite: EstimationFiscalite
+
+    # ── 5. Recommandations ───────────────────────────────────────────────────
+    points_forts: list[str] = Field(default_factory=list)
+    points_amelioration: list[str] = Field(default_factory=list)
+    actions_recommandees: list[str] = Field(default_factory=list)
+    prochaine_action_prioritaire: str = Field(..., max_length=500)
+
+    # ── 6. Scores ────────────────────────────────────────────────────────────
+    score_investissement: int = Field(..., ge=0, le=10)
+    score_locatif: int = Field(..., ge=0, le=10)
+    score_revente: int = Field(..., ge=0, le=10)

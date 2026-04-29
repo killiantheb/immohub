@@ -192,6 +192,14 @@ class Bien(BaseModel):
     # ── Opérationnel (1) ──────────────────────────────────────────────────────
     keys_count: Mapped[int | None] = mapped_column(Integer, server_default="3")
 
+    # ── Estimation IA enrichie (PR-A9.1, migration 0033) ─────────────────────
+    # residence_type   : principale | secondaire | mixte
+    # location_type_actuel : annuelle | saisonniere | semaine | vide
+    # CHECK constraints en DB (cf. migration 0033) ; nullable pour
+    # rétrocompatibilité avec biens existants.
+    residence_type: Mapped[str | None] = mapped_column(String(20))
+    location_type_actuel: Mapped[str | None] = mapped_column(String(20))
+
     __table_args__ = (
         Index("ix_biens_agency_id", "agency_id"),
         Index("ix_biens_created_by_id", "created_by_id"),

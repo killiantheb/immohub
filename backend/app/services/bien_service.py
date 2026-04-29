@@ -39,6 +39,10 @@ from app.schemas.bien import (
     BienRead,
     BienUpdate,
     CatalogueEquipementRead,
+    EstimationFiscalite,
+    EstimationIAEnrichie,
+    EstimationLocalite,
+    EstimationLocation,
     PaginatedBiens,
     PotentielIAResponse,
     RendementDeduction,
@@ -878,6 +882,275 @@ class BienService:
             deductions=deductions,
             rendement_net_chf=rendement_net_chf,
             rendement_net_pct=rendement_net_pct,
+        )
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Estimation IA enrichie v2 (PR-A9.1 sprint 12)
+    # Endpoint /potentiel-v2 — parallèle à l'ancien /potentiel.
+    # Refonte complète : analyse localité, 3 scénarios location, fiscalité,
+    # 3 scores (investissement, locatif, revente).
+    # ─────────────────────────────────────────────────────────────────────────
+
+    async def get_potentiel_ia_v2(
+        self,
+        bien_id: uuid.UUID | str,
+        current_user: User,
+    ) -> EstimationIAEnrichie:
+        """Estimation IA enrichie. Phase 1 : Claude Sonnet 4.6 + knowledge."""
+        from datetime import datetime, timezone
+
+        bien = await self.get_for_access_check(bien_id, current_user)
+        contexte = self._build_contexte_enrichi(bien)
+
+        try:
+            data = await self._call_claude_estimation_v2(contexte)
+            data["bien_id"] = str(bien.id)
+            data["generated_at"] = datetime.now(timezone.utc)
+            data["model_used"] = "claude-sonnet-4-6"
+            data.setdefault("meuble", bool(bien.is_furnished))
+            data.setdefault("residence_type", bien.residence_type or "secondaire")
+            data.setdefault("location_type_actuel", bien.location_type_actuel)
+            return EstimationIAEnrichie(**data)
+        except Exception:
+            # Fallback déterministe — retourne TOUJOURS un EstimationIAEnrichie
+            # complet pour éviter une erreur de validation Pydantic au runtime.
+            return self._fallback_estimation_v2(bien)
+
+    def _build_contexte_enrichi(self, bien: Bien) -> dict:
+        """Construit le contexte riche (~25 champs) envoyé à Claude."""
+        return {
+            "id": str(bien.id),
+            "type": bien.type,
+            "adresse": bien.adresse,
+            "ville": bien.ville,
+            "cp": bien.cp,
+            "canton": bien.canton,
+            # Caractéristiques
+            "surface_m2": float(bien.surface) if bien.surface else None,
+            "rooms": float(bien.rooms) if bien.rooms else None,
+            "bedrooms": bien.bedrooms,
+            "bathrooms": bien.bathrooms,
+            "etage": bien.etage,
+            "annee_construction": bien.annee_construction,
+            "annee_renovation": bien.annee_renovation,
+            "classe_energetique": bien.classe_energetique,
+            # Configuration
+            "is_furnished": bool(bien.is_furnished),
+            "residence_type": bien.residence_type or "secondaire",
+            "location_type_actuel": bien.location_type_actuel or "vide",
+            # Équipements
+            "has_balcony": bool(bien.has_balcony),
+            "has_terrace": bool(bien.has_terrace),
+            "has_garden": bool(bien.has_garden),
+            "has_storage": bool(bien.has_storage),
+            "has_fireplace": bool(bien.has_fireplace),
+            "parking_type": bien.parking_type,
+            "pets_allowed": bool(bien.pets_allowed),
+            # Distances (situation)
+            "distance_gare_min": bien.distance_gare_minutes,
+            "distance_bus_min": bien.distance_arret_bus_minutes,
+            "distance_telecabine_min": bien.distance_telecabine_minutes,
+            "distance_lac_min": bien.distance_lac_minutes,
+            "distance_aeroport_min": bien.distance_aeroport_minutes,
+            # Description
+            "description_lieu": bien.description_lieu,
+            "description_logement": bien.description_logement,
+            "situation_notes": bien.situation_notes,
+            # Finances actuelles
+            "loyer_mensuel_chf": float(bien.loyer) if bien.loyer else None,
+            "charges_mensuelles_chf": float(bien.charges) if bien.charges else None,
+            "statut": bien.statut,
+            # Coords (Claude peut affiner le quartier)
+            "lat": bien.lat,
+            "lng": bien.lng,
+        }
+
+    async def _call_claude_estimation_v2(self, contexte: dict) -> dict:
+        """Appel Claude API avec prompt système enrichi. Retourne dict JSON parsé."""
+        import json as _json
+
+        from anthropic import AsyncAnthropic
+
+        prompt_systeme = (
+            "Tu es un expert immobilier suisse senior avec 20 ans d'expérience. "
+            "Tu analyses des biens en détail pour fournir une estimation complète "
+            "et nuancée selon le contexte local suisse.\n\n"
+            "CONNAISSANCE MARCHÉ SUISSE (référence) :\n"
+            "- Genève / Vaud : appartements ~CHF 7'000-12'000/m² vente, "
+            "~CHF 25-45/m²/mois loyer\n"
+            "- Valais (hors stations) : ~CHF 5'000-9'000/m²\n"
+            "- Fribourg / Neuchâtel : ~CHF 5'500-8'500/m²\n"
+            "- Stations ski (Crans-Montana, Verbier, Zermatt, Saas-Fee) : "
+            "×3-5 vs Plaine\n"
+            "- Lausanne / Berne : ~CHF 8'000-13'000/m²\n"
+            "- Tessin : ~CHF 6'000-10'000/m²\n\n"
+            "CADRE LÉGAL SUISSE :\n"
+            "- LRA Valais : limite 90 jours/an de location courte durée pour "
+            "résidences secondaires\n"
+            "- Lex Weber : interdiction nouvelles résidences secondaires "
+            ">20 % dans communes saturées\n"
+            "- Permis communaux requis pour location saisonnière (variable)\n"
+            "- Fiscalité : valeur locative imposable pour résidence principale "
+            "propriétaire-occupant\n\n"
+            "INSTRUCTIONS :\n"
+            "- Toujours fournir 3 scénarios (annuelle, saisonniere, semaine)\n"
+            "- Fourchettes (min-max) plutôt que valeurs ponctuelles\n"
+            "- Identifier contraintes légales SPÉCIFIQUES à la localité\n"
+            "- confidence_score entre 0 et 10 selon richesse des infos\n"
+            "- Réponds UNIQUEMENT en JSON valide selon le schéma demandé\n\n"
+            "FORMAT JSON STRICT (toutes les clés obligatoires) :\n"
+            "{\n"
+            '  "confidence_score": <0-10>,\n'
+            '  "valeur_estimee_chf_min": <number>,\n'
+            '  "valeur_estimee_chf_max": <number>,\n'
+            '  "valeur_par_m2_estimee_chf": <number>,\n'
+            '  "localite": {"canton","ville","quartier","prix_moyen_m2_vente_chf",'
+            '"prix_moyen_m2_loyer_an_chf","tendance_12_mois",'
+            '"delai_vente_moyen_jours","note_attractivite","notes_locales"},\n'
+            '  "location_annuelle": {"type":"annuelle","revenu_brut_an_chf_min",'
+            '"revenu_brut_an_chf_max","taux_occupation_estime_pct",'
+            '"rendement_brut_pct","rendement_net_estime_pct",'
+            '"contraintes":[],"avantages":[],"warnings":[],"recommandation"},\n'
+            '  "location_saisonniere": {idem type:"saisonniere"},\n'
+            '  "location_semaine": {idem type:"semaine"},\n'
+            '  "location_recommandee": "<annuelle|saisonniere|semaine>",\n'
+            '  "raison_recommandation": "<string>",\n'
+            '  "fiscalite": {"impot_revenu_locatif_estime_chf_an",'
+            '"deductions_possibles":[],"valeur_locative_estimee_chf",'
+            '"conseil_fiscal_principal"},\n'
+            '  "points_forts":[], "points_amelioration":[], '
+            '"actions_recommandees":[], "prochaine_action_prioritaire",\n'
+            '  "score_investissement":<0-10>, "score_locatif":<0-10>, '
+            '"score_revente":<0-10>\n'
+            "}\n\n"
+            "Pas de texte en dehors du JSON."
+        )
+
+        prompt_user = (
+            "Analyse ce bien et fournis une estimation enrichie complète.\n\n"
+            "BIEN À ANALYSER :\n"
+            f"{_json.dumps(contexte, indent=2, ensure_ascii=False, default=str)}"
+        )
+
+        client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        response = await client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=4000,
+            system=prompt_systeme,
+            messages=[{"role": "user", "content": prompt_user}],
+        )
+
+        raw = response.content[0].text.strip()
+        # Robustesse : strip d'éventuels code fences ```json ... ```
+        if raw.startswith("```"):
+            raw = raw.strip("`").lstrip("json").strip()
+        return _json.loads(raw)
+
+    def _fallback_estimation_v2(self, bien: Bien) -> EstimationIAEnrichie:
+        """Fallback déterministe — retourne un EstimationIAEnrichie complet.
+
+        Utilisé si Claude API indisponible ou parsing JSON échoué. Les chiffres
+        sont conservateurs (multiplicateur médian 230× loyer, scores neutres
+        à 5/10). L'utilisateur est averti via `confidence_score = 2.0` (faible).
+        """
+        from datetime import datetime, timezone
+
+        loyer = float(bien.loyer or 0)
+        charges = float(bien.charges or 0)
+        surface = float(bien.surface or 0)
+
+        loyer_an = loyer * 12
+        valeur_min = loyer * 12 * 200 if loyer > 0 else 0
+        valeur_max = loyer * 12 * 260 if loyer > 0 else 0
+        valeur_mid = (valeur_min + valeur_max) / 2 if valeur_max > 0 else 0
+        valeur_m2 = (valeur_mid / surface) if surface > 0 else 0
+        rendement_brut = round(loyer_an / valeur_mid * 100, 2) if valeur_mid > 0 else 0
+        rendement_net = (
+            round((loyer_an - charges * 12) / valeur_mid * 100, 2)
+            if valeur_mid > 0
+            else 0
+        )
+
+        location_neutre = lambda type_: EstimationLocation(  # noqa: E731
+            type=type_,
+            revenu_brut_an_chf_min=Decimal(str(loyer_an * 0.85)),
+            revenu_brut_an_chf_max=Decimal(str(loyer_an * 1.05)),
+            taux_occupation_estime_pct=Decimal("100" if type_ == "annuelle" else "60"),
+            rendement_brut_pct=Decimal(str(rendement_brut)),
+            rendement_net_estime_pct=Decimal(str(rendement_net)),
+            contraintes=[],
+            avantages=[],
+            warnings=[
+                "Fourchette générique — analyse IA indisponible. "
+                "Vérifier les contraintes légales locales (LRA, Lex Weber, "
+                "permis communal) avant toute décision."
+            ],
+            recommandation=(
+                "Estimation indisponible — réessayer plus tard ou consulter "
+                "un expert local."
+            ),
+        )
+
+        return EstimationIAEnrichie(
+            bien_id=bien.id,
+            generated_at=datetime.now(timezone.utc),
+            model_used="fallback-static",
+            confidence_score=Decimal("2.0"),
+            meuble=bool(bien.is_furnished),
+            residence_type=bien.residence_type or "secondaire",
+            location_type_actuel=bien.location_type_actuel,
+            valeur_estimee_chf_min=Decimal(str(round(valeur_min, 0))),
+            valeur_estimee_chf_max=Decimal(str(round(valeur_max, 0))),
+            valeur_par_m2_estimee_chf=Decimal(str(round(valeur_m2, 0))),
+            localite=EstimationLocalite(
+                canton=bien.canton or "??",
+                ville=bien.ville or "Inconnu",
+                quartier=None,
+                prix_moyen_m2_vente_chf=Decimal("7000"),
+                prix_moyen_m2_loyer_an_chf=Decimal("280"),
+                tendance_12_mois="stable",
+                delai_vente_moyen_jours=120,
+                note_attractivite=5,
+                notes_locales=(
+                    "Données indisponibles — analyse IA Claude n'a pas pu être "
+                    "complétée. Estimations génériques basées sur le multiplicateur "
+                    "230× loyer mensuel (marché CH médian)."
+                ),
+            ),
+            location_annuelle=location_neutre("annuelle"),
+            location_saisonniere=location_neutre("saisonniere"),
+            location_semaine=location_neutre("semaine"),
+            location_recommandee="annuelle",
+            raison_recommandation=(
+                "Sans analyse fine du marché local, la location annuelle reste "
+                "le scénario le plus stable et le moins exposé aux contraintes "
+                "légales (LRA, Lex Weber)."
+            ),
+            fiscalite=EstimationFiscalite(
+                impot_revenu_locatif_estime_chf_an=Decimal(str(round(loyer_an * 0.20, 0))),
+                deductions_possibles=[
+                    "Intérêts hypothécaires",
+                    "Charges d'entretien réelles",
+                    "Frais de gérance",
+                ],
+                valeur_locative_estimee_chf=None,
+                conseil_fiscal_principal=(
+                    "Consultez votre fiduciaire pour optimiser les déductions "
+                    "selon le canton et votre situation."
+                ),
+            ),
+            points_forts=[],
+            points_amelioration=[],
+            actions_recommandees=[
+                "Réessayer l'estimation IA dans quelques minutes."
+            ],
+            prochaine_action_prioritaire=(
+                "Vérifier la disponibilité de l'API Anthropic et relancer "
+                "l'estimation."
+            ),
+            score_investissement=5,
+            score_locatif=5,
+            score_revente=5,
         )
 
     async def _log(
