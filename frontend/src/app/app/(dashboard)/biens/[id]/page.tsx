@@ -6,7 +6,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
-  AlertTriangle, Camera, CheckCircle2, Clock, Download,
+  AlertTriangle, Camera, CheckCircle2, ChevronRight, Clock, Download,
   ExternalLink, FileText, Loader2, Mail,
   Pencil, Plus, Settings2, Sparkles, Trash2, User, Wrench, XCircle,
 } from "lucide-react";
@@ -1416,6 +1416,7 @@ function CardHeaderBien({
 }) {
   const { data: bien, isLoading } = useBien(bienId);
   const { data: locataire } = useLocataireActuel(bienId);
+  const [showCaracModal, setShowCaracModal] = useState(false);
 
   if (isLoading || !bien) {
     return (
@@ -1436,6 +1437,8 @@ function CardHeaderBien({
     { label: statutKey, color: C.text2, bg: C.border };
 
   const typeLabel = BIEN_TYPE_LABELS[bien.type] ?? bien.type;
+  const chips = buildCaracChips(bien);
+  const showCompleterChip = chips.length < 3;
 
   return (
     <div
@@ -1574,11 +1577,12 @@ function CardHeaderBien({
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          gap: 12,
+          gap: 14,
+          minWidth: 0,
         }}
       >
         {/* Titre + statut */}
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div
             style={{
               display: "flex",
@@ -1596,6 +1600,9 @@ function CardHeaderBien({
                 color: C.text,
                 margin: 0,
                 lineHeight: 1.15,
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
             >
               {bien.adresse}
@@ -1628,6 +1635,113 @@ function CardHeaderBien({
               · {fmtCHF(bien.loyer)}/mois
             </span>
           )}
+        </div>
+
+        {/* Séparateur visuel + chips caractéristiques (PR-A11.A.1) */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+            paddingTop: 10,
+            borderTop: `1px solid var(--border-subtle)`,
+          }}
+        >
+          {chips.length > 0 ? (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {chips.map((chip) => (
+                <span
+                  key={chip.key}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    padding: "4px 12px",
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    background: chip.bg ?? "var(--althy-prussian-bg)",
+                    color: chip.color ?? C.prussian,
+                    border: chip.border
+                      ? `1px solid ${chip.border}`
+                      : "1px solid transparent",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {chip.label}
+                </span>
+              ))}
+              {showCompleterChip && (
+                <button
+                  type="button"
+                  onClick={onToggleEdit}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    padding: "4px 12px",
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    background: "transparent",
+                    color: C.text3,
+                    border: `1px dashed var(--border-subtle)`,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  + Compléter le profil
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onToggleEdit}
+              style={{
+                alignSelf: "flex-start",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "4px 12px",
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 500,
+                background: "transparent",
+                color: C.text3,
+                border: `1px dashed var(--border-subtle)`,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              + Compléter le profil
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowCaracModal(true)}
+            style={{
+              alignSelf: "flex-start",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 2,
+              padding: 0,
+              border: "none",
+              background: "none",
+              color: C.prussian,
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              textDecoration: "underline",
+              textDecorationColor: "var(--althy-prussian-border)",
+              textUnderlineOffset: 3,
+            }}
+          >
+            Voir toutes les caractéristiques
+            <ChevronRight size={14} />
+          </button>
         </div>
 
         {/* Actions — Modifier + Supprimer (PR-A10) */}
@@ -1677,6 +1791,17 @@ function CardHeaderBien({
           </button>
         </div>
       </div>
+
+      {/* Modale Caractéristiques détaillées (lecture seule en PR-A11.A.1 ;
+          mode édition arrive en PR-A11.A.3). Instance distincte de celle
+          ouverte par SectionCaracteristiques (qui reste en place jusqu'à
+          PR-A11.A.4 où la grille passera de 3+3+1 à 3×2). */}
+      {showCaracModal && (
+        <CaracteristiquesModal
+          bien={bien}
+          onClose={() => setShowCaracModal(false)}
+        />
+      )}
     </div>
   );
 }
