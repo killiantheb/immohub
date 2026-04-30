@@ -6,7 +6,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
-  AlertTriangle, CheckCircle2, Clock, Download,
+  AlertTriangle, Camera, CheckCircle2, Clock, Download,
   ExternalLink, FileText, Loader2, Mail,
   Pencil, Plus, Settings2, Sparkles, Trash2, User, Wrench, XCircle,
 } from "lucide-react";
@@ -26,7 +26,6 @@ import {
 import { NotificationDraft } from "@/components/NotificationDraft";
 import { C } from "@/lib/design-tokens";
 import { bienLinks } from "@/lib/bien-links";
-import { MiniMapBien } from "@/components/biens/MiniMapBien";
 import { DeleteBienModal } from "@/components/biens/DeleteBienModal";
 import { CaracteristiquesModal } from "@/components/biens/CaracteristiquesModal";
 import type { AuditLogEntry } from "@/lib/types";
@@ -1449,40 +1448,122 @@ function CardHeaderBien({
         minHeight: 200,
       }}
     >
-      {/* Colonne 1 — Photo (si uploadée) → Mini-map Mapbox (si lat/lng)
-          → Placeholder gradient (sinon).
-          Upload UI photos = Phase 2 (l'API backend POST /biens/{id}/images
-          existe déjà). */}
+      {/* Colonne 1 — Carrousel photos (PR-A11.A.1)
+          - Cover si bien.images contient une image (carrousel multi-photos
+            arrive en PR-A11.A.2 avec la modale gestion).
+          - Placeholder cliquable sinon (icône Camera + label "Ajouter des
+            photos"). Le placeholder ouvre la modale gestion photos qui sera
+            livrée en PR-A11.A.2 — pour l'instant, console.log TODO.
+          - Bouton overlay "Gérer photos" en bas à droite quand une cover est
+            présente. */}
       <div
         style={{
-          display: "flex",
-          alignItems: "stretch",
-          justifyContent: "stretch",
           borderRight: `1px solid var(--border-subtle)`,
           position: "relative",
           overflow: "hidden",
           minHeight: 200,
+          background: cover ? C.surface2 : "transparent",
         }}
       >
         {cover ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={cover.url}
-            alt={bien.adresse}
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={cover.url}
+              alt={bien.adresse}
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => console.log("TODO PR-A11.A.2 — ouvrir modale gestion photos")}
+              aria-label="Gérer les photos du bien"
+              style={{
+                position: "absolute",
+                bottom: 12,
+                right: 12,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: "none",
+                background: "rgba(15, 46, 76, 0.85)",
+                color: "#fff",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                backdropFilter: "blur(4px)",
+              }}
+            >
+              <Camera size={14} />
+              Gérer photos
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => console.log("TODO PR-A11.A.2 — ouvrir modale gestion photos")}
+            aria-label="Ajouter des photos au bien"
             style={{
               position: "absolute",
               inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+              border: "none",
+              background:
+                "linear-gradient(135deg, var(--althy-prussian-bg) 0%, var(--althy-glacier) 100%)",
+              color: C.prussian,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              padding: 24,
             }}
-          />
-        ) : (
-          <MiniMapBien
-            lat={bien.lat ?? null}
-            lng={bien.lng ?? null}
-            ville={bien.ville}
-          />
+          >
+            <div
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: "50%",
+                background: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 2px 8px rgba(15, 46, 76, 0.12)",
+              }}
+            >
+              <Camera size={26} style={{ color: C.prussian }} />
+            </div>
+            <p
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: C.prussian,
+                margin: 0,
+              }}
+            >
+              Ajouter des photos
+            </p>
+            <p
+              style={{
+                fontSize: 12,
+                color: C.text2,
+                margin: 0,
+                textAlign: "center",
+                maxWidth: 220,
+              }}
+            >
+              Mettez votre bien en valeur avec quelques clichés.
+            </p>
+          </button>
         )}
       </div>
 
