@@ -6,9 +6,11 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
-  AlertTriangle, Camera, CheckCircle2, ChevronRight, Clock, Download,
-  ExternalLink, FileText, Loader2, Mail,
-  Pencil, Plus, Settings2, Sparkles, Trash2, User, Wrench, XCircle,
+  AlertTriangle, Archive, Camera, Car, CheckCircle2, ChevronRight, Cigarette,
+  Clock, Dog, Download, ExternalLink, FileText, Flame, Home as HomeIcon,
+  Loader2, Mail, Pencil, Plus, Settings2, Sofa, Sparkles, Trash2, TreePine,
+  Trees, User, WashingMachine, Wind, Wrench, XCircle,
+  type LucideIcon,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import {
@@ -1395,13 +1397,119 @@ function buildCaracChips(bien: Bien): CaracChip[] {
 
 // ── CardHeaderBien — Hero Pattern C (PR-A11.A.1) ─────────────────────────────
 //
-// Layout 40/60 desktop : carrousel photos zone gauche + adresse/méta/chips
+// Layout 40/60 desktop : carrousel photos zone gauche + adresse/méta/bloc
 // caractéristiques zone droite. Remplace l'ancien Pattern B (240px photo + infos).
 // Les 4 frictions UX du 29/04/2026 sont adressées progressivement :
-//   - PR-A11.A.1 (cette PR) : refonte CardHeaderBien
+//   - PR-A11.A.1 + .1.b (cette PR) : refonte CardHeaderBien
 //   - PR-A11.A.2 : modale gestion photos
 //   - PR-A11.A.3 : modale Caractéristiques en mode édition
 //   - PR-A11.A.4 : retrait SectionInfos + SectionCaracteristiques (grille 3×2)
+
+// ── Helpers du bloc Caractéristiques (PR-A11.A.1.b) ──────────────────────────
+
+/** Une ligne label/valeur en grille 100px / 1fr — utilisée par les sections
+ *  Configuration et Distances. Valeur "—" si null/undefined. */
+function CaracRow({
+  label,
+  value,
+  valueColor,
+}: {
+  label: string;
+  value: React.ReactNode;
+  valueColor?: string;
+}) {
+  const isEmpty = value == null || value === "" || value === "—";
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "100px 1fr",
+        alignItems: "center",
+        gap: 8,
+        fontSize: 13,
+      }}
+    >
+      <span style={{ color: C.textMuted, fontWeight: 400 }}>{label}</span>
+      <span
+        style={{
+          color: isEmpty ? C.textMuted : valueColor ?? C.text,
+          fontSize: 14,
+          fontWeight: 500,
+        }}
+      >
+        {isEmpty ? "—" : value}
+      </span>
+    </div>
+  );
+}
+
+/** Une ligne icône / label / valeur — utilisée par Équipements et Règles. */
+function CaracIconRow({
+  Icon,
+  label,
+  value,
+}: {
+  Icon: LucideIcon;
+  label: string;
+  value: React.ReactNode;
+}) {
+  const isEmpty = value == null || value === "" || value === "—";
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "16px 1fr auto",
+        alignItems: "center",
+        columnGap: 10,
+        fontSize: 13,
+      }}
+    >
+      <Icon size={14} style={{ color: C.prussian, opacity: isEmpty ? 0.4 : 1 }} />
+      <span style={{ color: C.textMuted, fontWeight: 400 }}>{label}</span>
+      <span
+        style={{
+          color: isEmpty ? C.textMuted : C.text,
+          fontSize: 14,
+          fontWeight: 500,
+        }}
+      >
+        {isEmpty ? "—" : value}
+      </span>
+    </div>
+  );
+}
+
+const RESIDENCE_LABELS_HEADER: Record<string, string> = {
+  principale: "Principale",
+  secondaire: "Secondaire",
+  mixte: "Mixte",
+};
+
+function buanderieValue(bien: Bien): string | null {
+  if (bien.has_laundry_private) return "Privée";
+  if (bien.has_laundry_building) return "Commune";
+  return null;
+}
+
+/** Sous-titre de catégorie dans le bloc Caractéristiques du header. */
+function CaracSubtitle({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      style={{
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: "0.06em",
+        color: C.text,
+        textTransform: "uppercase",
+        margin: 0,
+        paddingBottom: 6,
+        borderBottom: `1px solid var(--border-subtle)`,
+      }}
+    >
+      {children}
+    </p>
+  );
+}
 
 function CardHeaderBien({
   bienId,
@@ -1631,7 +1739,180 @@ function CardHeaderBien({
           )}
         </div>
 
-        {/* Bloc Caractéristiques — intégré dans le commit suivant. */}
+        {/* Bloc Caractéristiques — 4 sous-sections (Configuration, Équipements,
+            Distances, Règles) en grille 2 colonnes desktop. */}
+        <div className="card-header-bien-section card-header-bien-carac">
+          <p
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              color: C.textMuted,
+              textTransform: "uppercase",
+              margin: "0 0 16px",
+            }}
+          >
+            Caractéristiques du bien
+          </p>
+
+          <div className="card-header-bien-carac-grid">
+            {/* A — Configuration */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <CaracSubtitle>Configuration</CaracSubtitle>
+              <CaracRow label="Type" value={typeLabel} />
+              <CaracRow
+                label="Surface"
+                value={bien.surface != null ? `${bien.surface} m²` : null}
+              />
+              <CaracRow
+                label="Pièces"
+                value={bien.rooms != null ? String(bien.rooms) : null}
+              />
+              <CaracRow
+                label="Étage"
+                value={bien.etage != null ? String(bien.etage) : null}
+              />
+              <CaracRow
+                label="Année"
+                value={
+                  bien.annee_construction != null
+                    ? String(bien.annee_construction)
+                    : null
+                }
+              />
+              <CaracRow
+                label="DPE"
+                value={bien.classe_energetique}
+                valueColor={
+                  bien.classe_energetique
+                    ? getDpeColor(bien.classe_energetique)
+                    : undefined
+                }
+              />
+            </div>
+
+            {/* B — Équipements */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <CaracSubtitle>Équipements</CaracSubtitle>
+              <CaracIconRow
+                Icon={Wind}
+                label="Balcon"
+                value={bien.has_balcony ? "Oui" : null}
+              />
+              <CaracIconRow
+                Icon={TreePine}
+                label="Terrasse"
+                value={bien.has_terrace ? "Oui" : null}
+              />
+              <CaracIconRow
+                Icon={Trees}
+                label="Jardin"
+                value={bien.has_garden ? "Oui" : null}
+              />
+              <CaracIconRow
+                Icon={Flame}
+                label="Cheminée"
+                value={bien.has_fireplace ? "Oui" : null}
+              />
+              <CaracIconRow
+                Icon={Archive}
+                label="Cave"
+                value={bien.has_storage ? "Oui" : null}
+              />
+              <CaracIconRow
+                Icon={Car}
+                label="Parking"
+                value={
+                  bien.parking_type
+                    ? PARKING_CHIP_LABELS[bien.parking_type] ?? "Oui"
+                    : null
+                }
+              />
+              <CaracIconRow
+                Icon={WashingMachine}
+                label="Buanderie"
+                value={buanderieValue(bien)}
+              />
+            </div>
+
+            {/* C — Distances */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <CaracSubtitle>Distances</CaracSubtitle>
+              <CaracRow
+                label="Gare"
+                value={
+                  bien.distance_gare_minutes != null
+                    ? `${bien.distance_gare_minutes} min`
+                    : null
+                }
+              />
+              <CaracRow
+                label="Bus"
+                value={
+                  bien.distance_arret_bus_minutes != null
+                    ? `${bien.distance_arret_bus_minutes} min`
+                    : null
+                }
+              />
+              <CaracRow
+                label="Lac"
+                value={
+                  bien.distance_lac_minutes != null
+                    ? `${bien.distance_lac_minutes} min`
+                    : null
+                }
+              />
+            </div>
+
+            {/* D — Règles */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <CaracSubtitle>Règles</CaracSubtitle>
+              <CaracIconRow
+                Icon={Dog}
+                label="Animaux"
+                value={
+                  bien.pets_allowed === true
+                    ? "Oui"
+                    : bien.pets_allowed === false
+                    ? "Non"
+                    : null
+                }
+              />
+              <CaracIconRow
+                Icon={Cigarette}
+                label="Fumeurs"
+                value={
+                  bien.smoking_allowed === true
+                    ? "Oui"
+                    : bien.smoking_allowed === false
+                    ? "Non"
+                    : null
+                }
+              />
+              <CaracIconRow
+                Icon={Sofa}
+                label="Meublé"
+                value={
+                  bien.is_furnished === true
+                    ? "Oui"
+                    : bien.is_furnished === false
+                    ? "Non"
+                    : null
+                }
+              />
+              <CaracIconRow
+                Icon={HomeIcon}
+                label="Résidence"
+                value={
+                  bien.residence_type
+                    ? RESIDENCE_LABELS_HEADER[bien.residence_type] ??
+                      bien.residence_type
+                    : null
+                }
+              />
+            </div>
+          </div>
+        </div>
 
         {/* Lien Voir toutes les caractéristiques → */}
         <div className="card-header-bien-section">

@@ -270,6 +270,20 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* Bloc Caractéristiques du header — grille 2 colonnes desktop / 1 col mobile. */
+.card-header-bien-carac-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 32px;
+  row-gap: 24px;
+}
+@media (max-width: 767px) {
+  .card-header-bien-carac-grid {
+    grid-template-columns: 1fr;
+    row-gap: 18px;
+  }
+}
 @media (max-width: 767px) {
   .card-header-bien-infos {
     padding: 20px;
