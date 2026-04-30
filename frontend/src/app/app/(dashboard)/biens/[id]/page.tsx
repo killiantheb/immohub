@@ -1460,8 +1460,8 @@ function CardHeaderBien({
           - Bouton overlay "Gérer photos" en bas à droite quand une cover est
             présente. */}
       <div
+        className="card-header-bien-photos"
         style={{
-          borderRight: `1px solid var(--border-subtle)`,
           position: "relative",
           overflow: "hidden",
           minHeight: 200,

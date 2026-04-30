@@ -224,15 +224,33 @@
   .badge-gold     { background: var(--althy-gold-bg);     color: var(--althy-gold-hover); border: 1px solid var(--althy-gold-border); }
 }
 
-/* ── Fiche bien — header hero responsive ──────────────────────────────────── */
-/* Mobile : photo/map en haut, infos en dessous (1 colonne)
-   Desktop (>= 768px) : photo/map à gauche (240px), infos à droite (1fr) */
+/* ── Fiche bien — header hero responsive (PR-A11.A.1 Pattern C) ─────────────
+   Mobile (<768px)         : 1 colonne — photos en haut, infos dessous.
+   Tablette (768-1023px)   : 45/55 — proportions intermédiaires, chips wrap.
+   Desktop (>=1024px)      : 40/60 — proportions cibles Option C audit. */
 .card-header-bien-grid {
   grid-template-columns: 1fr;
 }
 @media (min-width: 768px) {
   .card-header-bien-grid {
-    grid-template-columns: 240px 1fr;
+    grid-template-columns: minmax(0, 45fr) minmax(0, 55fr);
+  }
+}
+@media (min-width: 1024px) {
+  .card-header-bien-grid {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  }
+}
+
+/* Zone photos : bordure à droite en mode 2 colonnes, en bas en mobile. */
+.card-header-bien-photos {
+  border-right: 1px solid var(--border-subtle);
+}
+@media (max-width: 767px) {
+  .card-header-bien-photos {
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+    min-height: 220px;
   }
 }
 
