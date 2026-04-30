@@ -1314,86 +1314,18 @@ function TimelineItem({ event, isLast }: { event: AuditLogEntry; isLast: boolean
   );
 }
 
-// ── Helpers Header Bien — chips caractéristiques ─────────────────────────────
+// ── Helpers Header Bien (PR-A11.A.1.b) ───────────────────────────────────────
 //
-// PR-A11.A.1 : sélection des chips à afficher dans le header (max 7).
-// Ordre de priorité fixé pour garantir un rendu déterministe et pertinent :
-//   1. Meublé / 2. Parking / 3-7. Equipements de plein air et confort /
-//   8. DPE / 9. Année construction / 10-11. Distances < 15 min /
-//   12. Animaux acceptés.
-// Si moins de 3 chips effectivement disponibles, le composant ajoute un
-// chip discret « + Compléter le profil » qui ouvre la modale d'édition
-// (callback géré par le parent — onCompleter).
-
-type CaracChip = {
-  key: string;
-  label: string;
-  color?: string;
-  bg?: string;
-  border?: string;
-};
+// Le bloc « Caractéristiques du bien » du header expose tous les champs
+// pertinents en grille 2×2. PARKING_CHIP_LABELS reste partagé avec le bloc
+// Caractéristiques pour formatter la valeur Parking de manière courte.
 
 const PARKING_CHIP_LABELS: Record<string, string> = {
-  exterieur: "Parking ext.",
-  exterieur_couvert: "Parking couvert",
-  interieur: "Parking int.",
-  interieur_box: "Parking box",
+  exterieur: "Extérieur",
+  exterieur_couvert: "Couvert",
+  interieur: "Intérieur",
+  interieur_box: "Box",
 };
-
-function buildCaracChips(bien: Bien): CaracChip[] {
-  const chips: CaracChip[] = [];
-
-  if (bien.is_furnished) chips.push({ key: "meuble", label: "Meublé" });
-
-  if (bien.parking_type) {
-    chips.push({
-      key: "parking",
-      label: PARKING_CHIP_LABELS[bien.parking_type] ?? "Parking",
-    });
-  }
-
-  if (bien.has_balcony) chips.push({ key: "balcon", label: "Balcon" });
-  if (bien.has_terrace) chips.push({ key: "terrasse", label: "Terrasse" });
-  if (bien.has_garden) chips.push({ key: "jardin", label: "Jardin" });
-  if (bien.has_fireplace) chips.push({ key: "cheminee", label: "Cheminée" });
-  if (bien.has_storage) chips.push({ key: "cave", label: "Cave" });
-
-  if (bien.classe_energetique) {
-    chips.push({
-      key: "dpe",
-      label: `DPE ${bien.classe_energetique}`,
-      color: getDpeColor(bien.classe_energetique),
-    });
-  }
-
-  if (bien.annee_construction) {
-    chips.push({
-      key: "annee",
-      label: String(bien.annee_construction),
-    });
-  }
-
-  if (bien.distance_gare_minutes != null && bien.distance_gare_minutes <= 15) {
-    chips.push({
-      key: "gare",
-      label: `${bien.distance_gare_minutes}min gare`,
-    });
-  }
-
-  if (
-    bien.distance_telecabine_minutes != null &&
-    bien.distance_telecabine_minutes <= 15
-  ) {
-    chips.push({
-      key: "telecabine",
-      label: `${bien.distance_telecabine_minutes}min télécabine`,
-    });
-  }
-
-  if (bien.pets_allowed) chips.push({ key: "pets", label: "Animaux OK" });
-
-  return chips.slice(0, 7);
-}
 
 // ── CardHeaderBien — Hero Pattern C (PR-A11.A.1) ─────────────────────────────
 //
@@ -1970,10 +1902,9 @@ function CardHeaderBien({
         </div>
       </div>
 
-      {/* Modale Caractéristiques détaillées (lecture seule en PR-A11.A.1 ;
-          mode édition arrive en PR-A11.A.3). Instance distincte de celle
-          ouverte par SectionCaracteristiques (qui reste en place jusqu'à
-          PR-A11.A.4 où la grille passera de 3+3+1 à 3×2). */}
+      {/* Modale Caractéristiques détaillées (lecture seule en PR-A11.A.1.b ;
+          mode édition arrive en PR-A11.A.3). Unique instance de la modale
+          dans la page depuis le retrait de SectionCaracteristiques. */}
       {showCaracModal && (
         <CaracteristiquesModal
           bien={bien}
@@ -1984,10 +1915,13 @@ function CardHeaderBien({
   );
 }
 
-// ── SectionCaracteristiques — 7e card de la grille (PR-A10) ──────────────────
+// ── SectionCaracteristiques (PR-A10) ─────────────────────────────────────────
 //
-// Aperçu compact + bouton "Voir toutes les caractéristiques" qui ouvre
-// CaracteristiquesModal (modale détaillée 7 sections).
+// @deprecated removed from grid in A11.A.1.b — son contenu remonte dans le
+// CardHeaderBien (bloc Caractéristiques). Le composant est conserve dans le
+// fichier au cas ou il faudrait y revenir, mais n'est plus utilise par
+// BienOverview. A supprimer definitivement quand la modale d'edition (A11.A.3)
+// sera stable.
 
 function getDpeColor(classe: string | null | undefined): string {
   if (!classe) return C.text3;
@@ -2003,6 +1937,7 @@ function getDpeColor(classe: string | null | undefined): string {
   return map[classe.toUpperCase()] || C.text;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function SectionCaracteristiques({ bienId }: { bienId: string }) {
   const { data: bien, isLoading } = useBien(bienId);
   const [showModal, setShowModal] = useState(false);
@@ -2205,7 +2140,6 @@ function BienOverview() {
         <SectionInterventions bienId={id} />
         <SectionDocuments bienId={id} />
         <SectionHistorique bienId={id} />
-        <SectionCaracteristiques bienId={id} />
       </div>
 
       {/* Modale soft delete (PR-A10) — affichée uniquement quand demandée. */}
