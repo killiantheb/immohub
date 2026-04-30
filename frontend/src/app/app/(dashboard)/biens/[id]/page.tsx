@@ -1437,8 +1437,6 @@ function CardHeaderBien({
     { label: statutKey, color: C.text2, bg: C.border };
 
   const typeLabel = BIEN_TYPE_LABELS[bien.type] ?? bien.type;
-  const chips = buildCaracChips(bien);
-  const showCompleterChip = chips.length < 3;
 
   return (
     <div
@@ -1570,17 +1568,11 @@ function CardHeaderBien({
         )}
       </div>
 
-      {/* Colonne 2 — Infos hero */}
-      <div
-        style={{
-          padding: "20px 24px",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          gap: 14,
-          minWidth: 0,
-        }}
-      >
+      {/* Colonne 2 — Bloc Informations principales (PR-A11.A.1.b)
+          Structure : titre + ville → meta ligne unique → bloc Caractéristiques
+          (intégré au commit suivant) → lien Voir toutes → boutons.
+          Tous les blocs sont séparés par une fine ligne `--border-subtle`. */}
+      <div className="card-header-bien-infos">
         {/* Titre + statut */}
         <div style={{ minWidth: 0 }}>
           <div
@@ -1589,15 +1581,15 @@ function CardHeaderBien({
               alignItems: "flex-start",
               justifyContent: "space-between",
               gap: 16,
-              marginBottom: 6,
+              marginBottom: 4,
             }}
           >
             <h1
               style={{
                 fontFamily: "var(--font-serif)",
                 fontWeight: 400,
-                fontSize: 26,
-                color: C.text,
+                fontSize: 28,
+                color: C.prussian,
                 margin: 0,
                 lineHeight: 1.15,
                 minWidth: 0,
@@ -1609,21 +1601,23 @@ function CardHeaderBien({
             </h1>
             <Badge label={s.label} color={s.color} bg={s.bg} />
           </div>
-          <p style={{ fontSize: 14, color: C.text2, margin: 0 }}>
+          <p style={{ fontSize: 15, color: C.textMuted, margin: 0 }}>
             {bien.cp ? `${bien.cp} ` : ""}
             {bien.ville}
           </p>
         </div>
 
-        {/* Métadonnées */}
+        {/* Méta ligne unique : type · m² · pièces · étage · loyer */}
         <div
+          className="card-header-bien-section"
           style={{
             display: "flex",
             flexWrap: "wrap",
-            columnGap: 14,
+            columnGap: 12,
             rowGap: 4,
-            fontSize: 13,
-            color: C.text2,
+            fontSize: 14,
+            fontWeight: 500,
+            color: C.text,
           }}
         >
           <span>{typeLabel}</span>
@@ -1637,115 +1631,44 @@ function CardHeaderBien({
           )}
         </div>
 
-        {/* Séparateur visuel + chips caractéristiques (PR-A11.A.1) */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 10,
-            paddingTop: 10,
-            borderTop: `1px solid var(--border-subtle)`,
-          }}
-        >
-          {chips.length > 0 ? (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {chips.map((chip) => (
-                <span
-                  key={chip.key}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    padding: "4px 12px",
-                    borderRadius: 999,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    background: chip.bg ?? "var(--althy-prussian-bg)",
-                    color: chip.color ?? C.prussian,
-                    border: chip.border
-                      ? `1px solid ${chip.border}`
-                      : "1px solid transparent",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {chip.label}
-                </span>
-              ))}
-              {showCompleterChip && (
-                <button
-                  type="button"
-                  onClick={onToggleEdit}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 4,
-                    padding: "4px 12px",
-                    borderRadius: 999,
-                    fontSize: 12,
-                    fontWeight: 500,
-                    background: "transparent",
-                    color: C.text3,
-                    border: `1px dashed var(--border-subtle)`,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  + Compléter le profil
-                </button>
-              )}
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={onToggleEdit}
-              style={{
-                alignSelf: "flex-start",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                padding: "4px 12px",
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 500,
-                background: "transparent",
-                color: C.text3,
-                border: `1px dashed var(--border-subtle)`,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              + Compléter le profil
-            </button>
-          )}
+        {/* Bloc Caractéristiques — intégré dans le commit suivant. */}
 
+        {/* Lien Voir toutes les caractéristiques → */}
+        <div className="card-header-bien-section">
           <button
             type="button"
             onClick={() => setShowCaracModal(true)}
+            className="card-header-bien-link"
             style={{
-              alignSelf: "flex-start",
               display: "inline-flex",
               alignItems: "center",
-              gap: 2,
+              gap: 4,
               padding: 0,
               border: "none",
               background: "none",
               color: C.prussian,
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 500,
               cursor: "pointer",
               fontFamily: "inherit",
-              textDecoration: "underline",
-              textDecorationColor: "var(--althy-prussian-border)",
-              textUnderlineOffset: 3,
             }}
           >
             Voir toutes les caractéristiques
-            <ChevronRight size={14} />
+            <ChevronRight size={16} />
           </button>
         </div>
 
-        {/* Actions — Modifier + Supprimer (PR-A10) */}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {/* Actions — Modifier (plein prussian) + Supprimer (ghost rouge subtle) */}
+        <div
+          className="card-header-bien-actions"
+          style={{
+            display: "flex",
+            gap: 12,
+            justifyContent: "flex-end",
+            paddingTop: 24,
+            borderTop: `1px solid var(--border-subtle)`,
+          }}
+        >
           <button
             type="button"
             onClick={onToggleEdit}
@@ -1753,19 +1676,21 @@ function CardHeaderBien({
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
-              padding: "8px 14px",
-              borderRadius: 9,
-              border: `1px solid ${editing ? C.prussian : "var(--border-subtle)"}`,
-              background: editing ? C.prussian : "transparent",
-              color: editing ? "#fff" : C.text2,
-              fontSize: 13,
-              fontWeight: 500,
+              padding: "10px 20px",
+              borderRadius: 10,
+              border: editing
+                ? `1px solid var(--althy-prussian-border)`
+                : "1px solid transparent",
+              background: editing ? "transparent" : C.prussian,
+              color: editing ? C.prussian : "#fff",
+              fontSize: 14,
+              fontWeight: 600,
               cursor: "pointer",
               fontFamily: "inherit",
             }}
             aria-pressed={editing}
           >
-            <Pencil size={13} />
+            <Pencil size={16} />
             {editing ? "Fermer" : "Modifier"}
           </button>
           <button
@@ -1775,18 +1700,18 @@ function CardHeaderBien({
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
-              padding: "8px 14px",
-              borderRadius: 9,
-              border: `1px solid ${C.red}33`,
+              padding: "10px 16px",
+              borderRadius: 10,
+              border: `1px solid ${C.red}55`,
               background: "transparent",
               color: C.red,
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 500,
               cursor: "pointer",
               fontFamily: "inherit",
             }}
           >
-            <Trash2 size={13} />
+            <Trash2 size={16} />
             Supprimer
           </button>
         </div>

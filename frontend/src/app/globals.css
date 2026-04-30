@@ -254,6 +254,36 @@
   }
 }
 
+/* Zone infos (droite) — sections séparées par un trait subtle (PR-A11.A.1.b). */
+.card-header-bien-infos {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.card-header-bien-infos > .card-header-bien-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+.card-header-bien-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (max-width: 767px) {
+  .card-header-bien-infos {
+    padding: 20px;
+  }
+  .card-header-bien-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .card-header-bien-actions > button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* ── Fraunces Variable — utilities ──────────────────────────────────────────
    Axes disponibles :
      wght  100–900   (poids)
