@@ -1620,41 +1620,13 @@ function CardHeaderBien({
             type="button"
             onClick={() => console.log("TODO PR-A11.A.2 — ouvrir modale gestion photos")}
             aria-label="Ajouter des photos au bien"
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              border: "none",
-              background:
-                "linear-gradient(135deg, var(--althy-prussian-bg) 0%, var(--althy-glacier) 100%)",
-              color: C.prussian,
-              cursor: "pointer",
-              fontFamily: "inherit",
-              padding: 24,
-            }}
+            className="card-header-bien-photos-empty"
           >
-            <div
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: "50%",
-                background: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 2px 8px rgba(15, 46, 76, 0.12)",
-              }}
-            >
-              <Camera size={26} style={{ color: C.prussian }} />
-            </div>
+            <Camera size={40} className="card-header-bien-photos-empty-icon" />
             <p
               style={{
-                fontSize: 14,
-                fontWeight: 600,
+                fontSize: 16,
+                fontWeight: 500,
                 color: C.prussian,
                 margin: 0,
               }}
@@ -1663,14 +1635,14 @@ function CardHeaderBien({
             </p>
             <p
               style={{
-                fontSize: 12,
-                color: C.text2,
+                fontSize: 13,
+                color: C.textMuted,
                 margin: 0,
                 textAlign: "center",
                 maxWidth: 220,
               }}
             >
-              Mettez votre bien en valeur avec quelques clichés.
+              Mettez votre bien en valeur
             </p>
           </button>
         )}
