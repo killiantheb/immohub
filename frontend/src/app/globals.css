@@ -224,15 +224,107 @@
   .badge-gold     { background: var(--althy-gold-bg);     color: var(--althy-gold-hover); border: 1px solid var(--althy-gold-border); }
 }
 
-/* ── Fiche bien — header hero responsive ──────────────────────────────────── */
-/* Mobile : photo/map en haut, infos en dessous (1 colonne)
-   Desktop (>= 768px) : photo/map à gauche (240px), infos à droite (1fr) */
+/* ── Fiche bien — header hero responsive (PR-A11.A.1 Pattern C) ─────────────
+   Mobile (<768px)         : 1 colonne — photos en haut, infos dessous.
+   Tablette (768-1023px)   : 45/55 — proportions intermédiaires, chips wrap.
+   Desktop (>=1024px)      : 40/60 — proportions cibles Option C audit. */
 .card-header-bien-grid {
   grid-template-columns: 1fr;
 }
 @media (min-width: 768px) {
   .card-header-bien-grid {
-    grid-template-columns: 240px 1fr;
+    grid-template-columns: minmax(0, 45fr) minmax(0, 55fr);
+  }
+}
+@media (min-width: 1024px) {
+  .card-header-bien-grid {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  }
+}
+
+/* Zone photos : bordure à droite en mode 2 colonnes, en bas en mobile. */
+.card-header-bien-photos {
+  border-right: 1px solid var(--border-subtle);
+}
+@media (max-width: 767px) {
+  .card-header-bien-photos {
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+    min-height: 220px;
+  }
+}
+
+/* Zone infos (droite) — sections séparées par un trait subtle (PR-A11.A.1.b). */
+.card-header-bien-infos {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.card-header-bien-infos > .card-header-bien-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+.card-header-bien-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Placeholder photos vide — border dashed + hover or premium (PR-A11.A.1.b). */
+.card-header-bien-photos-empty {
+  position: absolute;
+  inset: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  border: 2px dashed var(--althy-border-2);
+  border-radius: 16px;
+  background: var(--althy-surface-2);
+  color: var(--althy-prussian);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 200ms ease, background 200ms ease;
+}
+.card-header-bien-photos-empty-icon {
+  color: var(--althy-gold);
+  transition: transform 200ms ease;
+}
+.card-header-bien-photos-empty:hover {
+  border-color: var(--althy-gold);
+  background: var(--althy-gold-bg);
+}
+.card-header-bien-photos-empty:hover .card-header-bien-photos-empty-icon {
+  transform: scale(1.05);
+}
+
+/* Bloc Caractéristiques du header — grille 2 colonnes desktop / 1 col mobile. */
+.card-header-bien-carac-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 32px;
+  row-gap: 24px;
+}
+@media (max-width: 767px) {
+  .card-header-bien-carac-grid {
+    grid-template-columns: 1fr;
+    row-gap: 18px;
+  }
+}
+@media (max-width: 767px) {
+  .card-header-bien-infos {
+    padding: 20px;
+  }
+  .card-header-bien-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .card-header-bien-actions > button {
+    width: 100%;
+    justify-content: center;
   }
 }
 

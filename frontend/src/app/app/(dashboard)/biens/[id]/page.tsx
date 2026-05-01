@@ -6,9 +6,11 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
-  AlertTriangle, CheckCircle2, Clock, Download,
-  ExternalLink, FileText, Loader2, Mail,
-  Pencil, Plus, Settings2, Sparkles, Trash2, User, Wrench, XCircle,
+  AlertTriangle, Archive, Camera, Car, CheckCircle2, ChevronRight, Cigarette,
+  Clock, Dog, Download, ExternalLink, FileText, Flame, Home as HomeIcon,
+  Loader2, Mail, Pencil, Plus, Settings2, Sofa, Sparkles, Trash2, TreePine,
+  Trees, User, WashingMachine, Wind, Wrench, XCircle,
+  type LucideIcon,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import {
@@ -26,7 +28,6 @@ import {
 import { NotificationDraft } from "@/components/NotificationDraft";
 import { C } from "@/lib/design-tokens";
 import { bienLinks } from "@/lib/bien-links";
-import { MiniMapBien } from "@/components/biens/MiniMapBien";
 import { DeleteBienModal } from "@/components/biens/DeleteBienModal";
 import { CaracteristiquesModal } from "@/components/biens/CaracteristiquesModal";
 import type { AuditLogEntry } from "@/lib/types";
@@ -1313,7 +1314,134 @@ function TimelineItem({ event, isLast }: { event: AuditLogEntry; isLast: boolean
   );
 }
 
-// ── CardHeaderBien — Hero Pattern B (200px photo + infos) ────────────────────
+// ── Helpers Header Bien (PR-A11.A.1.b) ───────────────────────────────────────
+//
+// Le bloc « Caractéristiques du bien » du header expose tous les champs
+// pertinents en grille 2×2. PARKING_CHIP_LABELS reste partagé avec le bloc
+// Caractéristiques pour formatter la valeur Parking de manière courte.
+
+const PARKING_CHIP_LABELS: Record<string, string> = {
+  exterieur: "Extérieur",
+  exterieur_couvert: "Couvert",
+  interieur: "Intérieur",
+  interieur_box: "Box",
+};
+
+// ── CardHeaderBien — Hero Pattern C (PR-A11.A.1) ─────────────────────────────
+//
+// Layout 40/60 desktop : carrousel photos zone gauche + adresse/méta/bloc
+// caractéristiques zone droite. Remplace l'ancien Pattern B (240px photo + infos).
+// Les 4 frictions UX du 29/04/2026 sont adressées progressivement :
+//   - PR-A11.A.1 + .1.b (cette PR) : refonte CardHeaderBien
+//   - PR-A11.A.2 : modale gestion photos
+//   - PR-A11.A.3 : modale Caractéristiques en mode édition
+//   - PR-A11.A.4 : retrait SectionInfos + SectionCaracteristiques (grille 3×2)
+
+// ── Helpers du bloc Caractéristiques (PR-A11.A.1.b) ──────────────────────────
+
+/** Une ligne label/valeur en grille 100px / 1fr — utilisée par les sections
+ *  Configuration et Distances. Valeur "—" si null/undefined. */
+function CaracRow({
+  label,
+  value,
+  valueColor,
+}: {
+  label: string;
+  value: React.ReactNode;
+  valueColor?: string;
+}) {
+  const isEmpty = value == null || value === "" || value === "—";
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "100px 1fr",
+        alignItems: "center",
+        gap: 8,
+        fontSize: 13,
+      }}
+    >
+      <span style={{ color: C.textMuted, fontWeight: 400 }}>{label}</span>
+      <span
+        style={{
+          color: isEmpty ? C.textMuted : valueColor ?? C.text,
+          fontSize: 14,
+          fontWeight: 500,
+        }}
+      >
+        {isEmpty ? "—" : value}
+      </span>
+    </div>
+  );
+}
+
+/** Une ligne icône / label / valeur — utilisée par Équipements et Règles. */
+function CaracIconRow({
+  Icon,
+  label,
+  value,
+}: {
+  Icon: LucideIcon;
+  label: string;
+  value: React.ReactNode;
+}) {
+  const isEmpty = value == null || value === "" || value === "—";
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "16px 1fr auto",
+        alignItems: "center",
+        columnGap: 10,
+        fontSize: 13,
+      }}
+    >
+      <Icon size={14} style={{ color: C.prussian, opacity: isEmpty ? 0.4 : 1 }} />
+      <span style={{ color: C.textMuted, fontWeight: 400 }}>{label}</span>
+      <span
+        style={{
+          color: isEmpty ? C.textMuted : C.text,
+          fontSize: 14,
+          fontWeight: 500,
+        }}
+      >
+        {isEmpty ? "—" : value}
+      </span>
+    </div>
+  );
+}
+
+const RESIDENCE_LABELS_HEADER: Record<string, string> = {
+  principale: "Principale",
+  secondaire: "Secondaire",
+  mixte: "Mixte",
+};
+
+function buanderieValue(bien: Bien): string | null {
+  if (bien.has_laundry_private) return "Privée";
+  if (bien.has_laundry_building) return "Commune";
+  return null;
+}
+
+/** Sous-titre de catégorie dans le bloc Caractéristiques du header. */
+function CaracSubtitle({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      style={{
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: "0.06em",
+        color: C.text,
+        textTransform: "uppercase",
+        margin: 0,
+        paddingBottom: 6,
+        borderBottom: `1px solid var(--border-subtle)`,
+      }}
+    >
+      {children}
+    </p>
+  );
+}
 
 function CardHeaderBien({
   bienId,
@@ -1328,6 +1456,7 @@ function CardHeaderBien({
 }) {
   const { data: bien, isLoading } = useBien(bienId);
   const { data: locataire } = useLocataireActuel(bienId);
+  const [showCaracModal, setShowCaracModal] = useState(false);
 
   if (isLoading || !bien) {
     return (
@@ -1360,93 +1489,147 @@ function CardHeaderBien({
         minHeight: 200,
       }}
     >
-      {/* Colonne 1 — Photo (si uploadée) → Mini-map Mapbox (si lat/lng)
-          → Placeholder gradient (sinon).
-          Upload UI photos = Phase 2 (l'API backend POST /biens/{id}/images
-          existe déjà). */}
+      {/* Colonne 1 — Carrousel photos (PR-A11.A.1)
+          - Cover si bien.images contient une image (carrousel multi-photos
+            arrive en PR-A11.A.2 avec la modale gestion).
+          - Placeholder cliquable sinon (icône Camera + label "Ajouter des
+            photos"). Le placeholder ouvre la modale gestion photos qui sera
+            livrée en PR-A11.A.2 — pour l'instant, console.log TODO.
+          - Bouton overlay "Gérer photos" en bas à droite quand une cover est
+            présente. */}
       <div
+        className="card-header-bien-photos"
         style={{
-          display: "flex",
-          alignItems: "stretch",
-          justifyContent: "stretch",
-          borderRight: `1px solid var(--border-subtle)`,
           position: "relative",
           overflow: "hidden",
           minHeight: 200,
+          background: cover ? C.surface2 : "transparent",
         }}
       >
         {cover ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={cover.url}
-            alt={bien.adresse}
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
-          />
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={cover.url}
+              alt={bien.adresse}
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => console.log("TODO PR-A11.A.2 — ouvrir modale gestion photos")}
+              aria-label="Gérer les photos du bien"
+              style={{
+                position: "absolute",
+                bottom: 12,
+                right: 12,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: "none",
+                background: "rgba(15, 46, 76, 0.85)",
+                color: "#fff",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                backdropFilter: "blur(4px)",
+              }}
+            >
+              <Camera size={14} />
+              Gérer photos
+            </button>
+          </>
         ) : (
-          <MiniMapBien
-            lat={bien.lat ?? null}
-            lng={bien.lng ?? null}
-            ville={bien.ville}
-          />
+          <button
+            type="button"
+            onClick={() => console.log("TODO PR-A11.A.2 — ouvrir modale gestion photos")}
+            aria-label="Ajouter des photos au bien"
+            className="card-header-bien-photos-empty"
+          >
+            <Camera size={40} className="card-header-bien-photos-empty-icon" />
+            <p
+              style={{
+                fontSize: 16,
+                fontWeight: 500,
+                color: C.prussian,
+                margin: 0,
+              }}
+            >
+              Ajouter des photos
+            </p>
+            <p
+              style={{
+                fontSize: 13,
+                color: C.textMuted,
+                margin: 0,
+                textAlign: "center",
+                maxWidth: 220,
+              }}
+            >
+              Mettez votre bien en valeur
+            </p>
+          </button>
         )}
       </div>
 
-      {/* Colonne 2 — Infos hero */}
-      <div
-        style={{
-          padding: "20px 24px",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          gap: 12,
-        }}
-      >
+      {/* Colonne 2 — Bloc Informations principales (PR-A11.A.1.b)
+          Structure : titre + ville → meta ligne unique → bloc Caractéristiques
+          (intégré au commit suivant) → lien Voir toutes → boutons.
+          Tous les blocs sont séparés par une fine ligne `--border-subtle`. */}
+      <div className="card-header-bien-infos">
         {/* Titre + statut */}
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div
             style={{
               display: "flex",
               alignItems: "flex-start",
               justifyContent: "space-between",
               gap: 16,
-              marginBottom: 6,
+              marginBottom: 4,
             }}
           >
             <h1
               style={{
                 fontFamily: "var(--font-serif)",
                 fontWeight: 400,
-                fontSize: 26,
-                color: C.text,
+                fontSize: 28,
+                color: C.prussian,
                 margin: 0,
                 lineHeight: 1.15,
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
             >
               {bien.adresse}
             </h1>
             <Badge label={s.label} color={s.color} bg={s.bg} />
           </div>
-          <p style={{ fontSize: 14, color: C.text2, margin: 0 }}>
+          <p style={{ fontSize: 15, color: C.textMuted, margin: 0 }}>
             {bien.cp ? `${bien.cp} ` : ""}
             {bien.ville}
           </p>
         </div>
 
-        {/* Métadonnées */}
+        {/* Méta ligne unique : type · m² · pièces · étage · loyer */}
         <div
+          className="card-header-bien-section"
           style={{
             display: "flex",
             flexWrap: "wrap",
-            columnGap: 14,
+            columnGap: 12,
             rowGap: 4,
-            fontSize: 13,
-            color: C.text2,
+            fontSize: 14,
+            fontWeight: 500,
+            color: C.text,
           }}
         >
           <span>{typeLabel}</span>
@@ -1460,8 +1643,217 @@ function CardHeaderBien({
           )}
         </div>
 
-        {/* Actions — Modifier + Supprimer (PR-A10) */}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {/* Bloc Caractéristiques — 4 sous-sections (Configuration, Équipements,
+            Distances, Règles) en grille 2 colonnes desktop. */}
+        <div className="card-header-bien-section card-header-bien-carac">
+          <p
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              color: C.textMuted,
+              textTransform: "uppercase",
+              margin: "0 0 16px",
+            }}
+          >
+            Caractéristiques du bien
+          </p>
+
+          <div className="card-header-bien-carac-grid">
+            {/* A — Configuration */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <CaracSubtitle>Configuration</CaracSubtitle>
+              <CaracRow label="Type" value={typeLabel} />
+              <CaracRow
+                label="Surface"
+                value={bien.surface != null ? `${bien.surface} m²` : null}
+              />
+              <CaracRow
+                label="Pièces"
+                value={bien.rooms != null ? String(bien.rooms) : null}
+              />
+              <CaracRow
+                label="Étage"
+                value={bien.etage != null ? String(bien.etage) : null}
+              />
+              <CaracRow
+                label="Année"
+                value={
+                  bien.annee_construction != null
+                    ? String(bien.annee_construction)
+                    : null
+                }
+              />
+              <CaracRow
+                label="DPE"
+                value={bien.classe_energetique}
+                valueColor={
+                  bien.classe_energetique
+                    ? getDpeColor(bien.classe_energetique)
+                    : undefined
+                }
+              />
+            </div>
+
+            {/* B — Équipements */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <CaracSubtitle>Équipements</CaracSubtitle>
+              <CaracIconRow
+                Icon={Wind}
+                label="Balcon"
+                value={bien.has_balcony ? "Oui" : null}
+              />
+              <CaracIconRow
+                Icon={TreePine}
+                label="Terrasse"
+                value={bien.has_terrace ? "Oui" : null}
+              />
+              <CaracIconRow
+                Icon={Trees}
+                label="Jardin"
+                value={bien.has_garden ? "Oui" : null}
+              />
+              <CaracIconRow
+                Icon={Flame}
+                label="Cheminée"
+                value={bien.has_fireplace ? "Oui" : null}
+              />
+              <CaracIconRow
+                Icon={Archive}
+                label="Cave"
+                value={bien.has_storage ? "Oui" : null}
+              />
+              <CaracIconRow
+                Icon={Car}
+                label="Parking"
+                value={
+                  bien.parking_type
+                    ? PARKING_CHIP_LABELS[bien.parking_type] ?? "Oui"
+                    : null
+                }
+              />
+              <CaracIconRow
+                Icon={WashingMachine}
+                label="Buanderie"
+                value={buanderieValue(bien)}
+              />
+            </div>
+
+            {/* C — Distances */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <CaracSubtitle>Distances</CaracSubtitle>
+              <CaracRow
+                label="Gare"
+                value={
+                  bien.distance_gare_minutes != null
+                    ? `${bien.distance_gare_minutes} min`
+                    : null
+                }
+              />
+              <CaracRow
+                label="Bus"
+                value={
+                  bien.distance_arret_bus_minutes != null
+                    ? `${bien.distance_arret_bus_minutes} min`
+                    : null
+                }
+              />
+              <CaracRow
+                label="Lac"
+                value={
+                  bien.distance_lac_minutes != null
+                    ? `${bien.distance_lac_minutes} min`
+                    : null
+                }
+              />
+            </div>
+
+            {/* D — Règles */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <CaracSubtitle>Règles</CaracSubtitle>
+              <CaracIconRow
+                Icon={Dog}
+                label="Animaux"
+                value={
+                  bien.pets_allowed === true
+                    ? "Oui"
+                    : bien.pets_allowed === false
+                    ? "Non"
+                    : null
+                }
+              />
+              <CaracIconRow
+                Icon={Cigarette}
+                label="Fumeurs"
+                value={
+                  bien.smoking_allowed === true
+                    ? "Oui"
+                    : bien.smoking_allowed === false
+                    ? "Non"
+                    : null
+                }
+              />
+              <CaracIconRow
+                Icon={Sofa}
+                label="Meublé"
+                value={
+                  bien.is_furnished === true
+                    ? "Oui"
+                    : bien.is_furnished === false
+                    ? "Non"
+                    : null
+                }
+              />
+              <CaracIconRow
+                Icon={HomeIcon}
+                label="Résidence"
+                value={
+                  bien.residence_type
+                    ? RESIDENCE_LABELS_HEADER[bien.residence_type] ??
+                      bien.residence_type
+                    : null
+                }
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Lien Voir toutes les caractéristiques → */}
+        <div className="card-header-bien-section">
+          <button
+            type="button"
+            onClick={() => setShowCaracModal(true)}
+            className="card-header-bien-link"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              padding: 0,
+              border: "none",
+              background: "none",
+              color: C.prussian,
+              fontSize: 14,
+              fontWeight: 500,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            Voir toutes les caractéristiques
+            <ChevronRight size={16} />
+          </button>
+        </div>
+
+        {/* Actions — Modifier (plein prussian) + Supprimer (ghost rouge subtle) */}
+        <div
+          className="card-header-bien-actions"
+          style={{
+            display: "flex",
+            gap: 12,
+            justifyContent: "flex-end",
+            paddingTop: 24,
+            borderTop: `1px solid var(--border-subtle)`,
+          }}
+        >
           <button
             type="button"
             onClick={onToggleEdit}
@@ -1469,19 +1861,21 @@ function CardHeaderBien({
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
-              padding: "8px 14px",
-              borderRadius: 9,
-              border: `1px solid ${editing ? C.prussian : "var(--border-subtle)"}`,
-              background: editing ? C.prussian : "transparent",
-              color: editing ? "#fff" : C.text2,
-              fontSize: 13,
-              fontWeight: 500,
+              padding: "10px 20px",
+              borderRadius: 10,
+              border: editing
+                ? `1px solid var(--althy-prussian-border)`
+                : "1px solid transparent",
+              background: editing ? "transparent" : C.prussian,
+              color: editing ? C.prussian : "#fff",
+              fontSize: 14,
+              fontWeight: 600,
               cursor: "pointer",
               fontFamily: "inherit",
             }}
             aria-pressed={editing}
           >
-            <Pencil size={13} />
+            <Pencil size={16} />
             {editing ? "Fermer" : "Modifier"}
           </button>
           <button
@@ -1491,30 +1885,43 @@ function CardHeaderBien({
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
-              padding: "8px 14px",
-              borderRadius: 9,
-              border: `1px solid ${C.red}33`,
+              padding: "10px 16px",
+              borderRadius: 10,
+              border: `1px solid ${C.red}55`,
               background: "transparent",
               color: C.red,
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 500,
               cursor: "pointer",
               fontFamily: "inherit",
             }}
           >
-            <Trash2 size={13} />
+            <Trash2 size={16} />
             Supprimer
           </button>
         </div>
       </div>
+
+      {/* Modale Caractéristiques détaillées (lecture seule en PR-A11.A.1.b ;
+          mode édition arrive en PR-A11.A.3). Unique instance de la modale
+          dans la page depuis le retrait de SectionCaracteristiques. */}
+      {showCaracModal && (
+        <CaracteristiquesModal
+          bien={bien}
+          onClose={() => setShowCaracModal(false)}
+        />
+      )}
     </div>
   );
 }
 
-// ── SectionCaracteristiques — 7e card de la grille (PR-A10) ──────────────────
+// ── SectionCaracteristiques (PR-A10) ─────────────────────────────────────────
 //
-// Aperçu compact + bouton "Voir toutes les caractéristiques" qui ouvre
-// CaracteristiquesModal (modale détaillée 7 sections).
+// @deprecated removed from grid in A11.A.1.b — son contenu remonte dans le
+// CardHeaderBien (bloc Caractéristiques). Le composant est conserve dans le
+// fichier au cas ou il faudrait y revenir, mais n'est plus utilise par
+// BienOverview. A supprimer definitivement quand la modale d'edition (A11.A.3)
+// sera stable.
 
 function getDpeColor(classe: string | null | undefined): string {
   if (!classe) return C.text3;
@@ -1530,6 +1937,7 @@ function getDpeColor(classe: string | null | undefined): string {
   return map[classe.toUpperCase()] || C.text;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function SectionCaracteristiques({ bienId }: { bienId: string }) {
   const { data: bien, isLoading } = useBien(bienId);
   const [showModal, setShowModal] = useState(false);
@@ -1732,7 +2140,6 @@ function BienOverview() {
         <SectionInterventions bienId={id} />
         <SectionDocuments bienId={id} />
         <SectionHistorique bienId={id} />
-        <SectionCaracteristiques bienId={id} />
       </div>
 
       {/* Modale soft delete (PR-A10) — affichée uniquement quand demandée. */}
