@@ -16,11 +16,12 @@
  *   - initialMode : 'read' (défaut) | 'edit'
  */
 
-import { Pencil, X } from "lucide-react";
-import { useEffect, useState } from "react";
-import type { BienDetail } from "@/lib/types";
+import { CheckCircle2, Pencil, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import type { Bien, BienDetail, BienUpdate } from "@/lib/types";
 import { C } from "@/lib/design-tokens";
-import { useBien } from "@/lib/hooks/useBiens";
+import { useBien, useUpdateBien } from "@/lib/hooks/useBiens";
 
 type CaracMode = "read" | "edit";
 
@@ -422,26 +423,553 @@ function ReadView({ bien }: { bien: BienDetail }) {
   );
 }
 
-// ── Mode Édition (squelette — implémenté au commit suivant) ──────────────────
+// ── Mode Édition — formulaire complet 24+ champs (PR-A11.A.3) ────────────────
+
+const MAX_TEXT_LENGTH = 5000;
+const ANNEE_MIN = 1800;
+const ANNEE_MAX = new Date().getFullYear();
+
+const TYPE_OPTIONS = [
+  { value: "appartement", label: "Appartement" },
+  { value: "villa", label: "Villa" },
+  { value: "studio", label: "Studio" },
+  { value: "maison", label: "Maison" },
+  { value: "commerce", label: "Commerce" },
+  { value: "bureau", label: "Bureau" },
+  { value: "parking", label: "Parking" },
+  { value: "garage", label: "Garage" },
+  { value: "cave", label: "Cave" },
+  { value: "autre", label: "Autre" },
+];
+
+const RESIDENCE_OPTIONS = [
+  { value: "", label: "Non renseigné" },
+  { value: "principale", label: "Résidence principale" },
+  { value: "secondaire", label: "Résidence secondaire" },
+  { value: "mixte", label: "Mixte (les deux)" },
+];
+
+const LOCATION_OPTIONS = [
+  { value: "", label: "Non renseigné" },
+  { value: "annuelle", label: "Annuelle (bail traditionnel)" },
+  { value: "saisonniere", label: "Saisonnière (Airbnb, été/hiver)" },
+  { value: "semaine", label: "À la semaine (vacances)" },
+  { value: "vide", label: "Bien vacant" },
+];
+
+const PARKING_OPTIONS = [
+  { value: "", label: "Aucun" },
+  { value: "exterieur", label: "Extérieur" },
+  { value: "exterieur_couvert", label: "Extérieur couvert" },
+  { value: "interieur", label: "Intérieur" },
+  { value: "interieur_box", label: "Intérieur (box)" },
+];
+
+const DPE_OPTIONS = [
+  { value: "", label: "Non renseigné" },
+  ...["A", "B", "C", "D", "E", "F", "G"].map((c) => ({ value: c, label: c })),
+];
+
+/** Forme du form interne — strings pour les inputs numériques afin de
+ *  préserver le distinction "vide" vs "0", convertis au submit. */
+type EditFormValues = {
+  type: string;
+  residence_type: string;
+  location_type_actuel: string;
+  is_furnished: boolean;
+  surface: string;
+  rooms: string;
+  bedrooms: string;
+  bathrooms: string;
+  etage: string;
+  annee_construction: string;
+  annee_renovation: string;
+  classe_energetique: string;
+  has_balcony: boolean;
+  has_terrace: boolean;
+  has_garden: boolean;
+  has_storage: boolean;
+  has_fireplace: boolean;
+  has_laundry_private: boolean;
+  has_laundry_building: boolean;
+  parking_type: string;
+  pets_allowed: "null" | "true" | "false";
+  smoking_allowed: "null" | "true" | "false";
+  distance_gare_minutes: string;
+  distance_arret_bus_minutes: string;
+  distance_telecabine_minutes: string;
+  distance_lac_minutes: string;
+  distance_aeroport_minutes: string;
+  situation_notes: string;
+  description_lieu: string;
+  description_logement: string;
+  remarques: string;
+  deposit: string;
+  loyer: string;
+  charges: string;
+};
+
+function bienToForm(bien: Bien): EditFormValues {
+  const numStr = (v: number | null | undefined) =>
+    v == null ? "" : String(v);
+  const triState = (v: boolean | null | undefined): "null" | "true" | "false" =>
+    v == null ? "null" : v ? "true" : "false";
+
+  return {
+    type: bien.type ?? "appartement",
+    residence_type: bien.residence_type ?? "",
+    location_type_actuel: bien.location_type_actuel ?? "",
+    is_furnished: bien.is_furnished ?? false,
+    surface: numStr(bien.surface),
+    rooms: numStr(bien.rooms),
+    bedrooms: numStr(bien.bedrooms),
+    bathrooms: numStr(bien.bathrooms),
+    etage: numStr(bien.etage),
+    annee_construction: numStr(bien.annee_construction),
+    annee_renovation: numStr(bien.annee_renovation),
+    classe_energetique: bien.classe_energetique ?? "",
+    has_balcony: Boolean(bien.has_balcony),
+    has_terrace: Boolean(bien.has_terrace),
+    has_garden: Boolean(bien.has_garden),
+    has_storage: Boolean(bien.has_storage),
+    has_fireplace: Boolean(bien.has_fireplace),
+    has_laundry_private: Boolean(bien.has_laundry_private),
+    has_laundry_building: Boolean(bien.has_laundry_building),
+    parking_type: bien.parking_type ?? "",
+    pets_allowed: triState(bien.pets_allowed),
+    smoking_allowed: triState(bien.smoking_allowed),
+    distance_gare_minutes: numStr(bien.distance_gare_minutes),
+    distance_arret_bus_minutes: numStr(bien.distance_arret_bus_minutes),
+    distance_telecabine_minutes: numStr(bien.distance_telecabine_minutes),
+    distance_lac_minutes: numStr(bien.distance_lac_minutes),
+    distance_aeroport_minutes: numStr(bien.distance_aeroport_minutes),
+    situation_notes: bien.situation_notes ?? "",
+    description_lieu: bien.description_lieu ?? "",
+    description_logement: bien.description_logement ?? "",
+    remarques: bien.remarques ?? "",
+    deposit: numStr(bien.deposit),
+    loyer: numStr(bien.loyer),
+    charges: numStr(bien.charges),
+  };
+}
+
+/** Transforme la valeur form en valeur DB type-safe (null si vide). */
+function formValueToDb(
+  field: keyof EditFormValues,
+  value: EditFormValues[keyof EditFormValues],
+): unknown {
+  // Tri-state booléen
+  if (field === "pets_allowed" || field === "smoking_allowed") {
+    if (value === "null" || value === "") return null;
+    return value === "true";
+  }
+  // Booléens
+  if (typeof value === "boolean") return value;
+  // Strings vides → null pour les selects optionnels et descriptions
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed === "") return null;
+    // Champs numériques
+    const numericFields: (keyof EditFormValues)[] = [
+      "surface", "rooms", "bedrooms", "bathrooms", "etage",
+      "annee_construction", "annee_renovation",
+      "distance_gare_minutes", "distance_arret_bus_minutes",
+      "distance_telecabine_minutes", "distance_lac_minutes",
+      "distance_aeroport_minutes",
+      "deposit", "loyer", "charges",
+    ];
+    if (numericFields.includes(field)) {
+      const n = Number(trimmed);
+      return Number.isFinite(n) ? n : null;
+    }
+    return trimmed;
+  }
+  return value;
+}
+
+/** Calcule le diff entre les valeurs courantes et initiales. Ne retourne
+ *  que les champs réellement modifiés (évite B-07 par construction). */
+function computeDirty(
+  current: EditFormValues,
+  initial: EditFormValues,
+): BienUpdate {
+  const dirty: Record<string, unknown> = {};
+  (Object.keys(current) as (keyof EditFormValues)[]).forEach((key) => {
+    if (current[key] !== initial[key]) {
+      dirty[key] = formValueToDb(key, current[key]);
+    }
+  });
+  return dirty as BienUpdate;
+}
 
 function EditView({
-  bien: _bien,
+  bien,
   onCancel,
-  onSaved: _onSaved,
+  onSaved,
 }: {
   bien: BienDetail;
   onCancel: () => void;
   onSaved: () => void;
 }) {
+  const update = useUpdateBien(bien.id);
+  const initial = useMemo(() => bienToForm(bien), [bien]);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [savedToast, setSavedToast] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<EditFormValues>({
+    defaultValues: initial,
+    mode: "onBlur",
+  });
+
+  const current = watch();
+  const dirty = useMemo(() => computeDirty(current, initial), [current, initial]);
+  const hasDirty = Object.keys(dirty).length > 0;
+
+  const onSubmit = handleSubmit(async () => {
+    setServerError(null);
+    try {
+      await update.mutateAsync(dirty);
+      setSavedToast(true);
+      setTimeout(() => setSavedToast(false), 2500);
+      onSaved();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })
+        ?.response?.data?.detail;
+      setServerError(msg ?? "Erreur lors de l'enregistrement. Réessayez.");
+    }
+  });
+
+  function handleCancelClick() {
+    if (hasDirty && !window.confirm("Annuler les modifications ?")) return;
+    onCancel();
+  }
+
+  // Bloque la fermeture par Esc / backdrop si dirty (le parent gère via onClose
+  // — ici on contrôle juste l'annulation explicite). La protection backdrop est
+  // gérée au niveau wrapper modale (parent).
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <p style={{ fontSize: 13, color: C.text3, fontStyle: "italic", margin: 0 }}>
-        Formulaire d&apos;édition — implémenté dans le commit suivant (PR-A11.A.3).
-      </p>
-      <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+    <form
+      onSubmit={onSubmit}
+      style={{ display: "flex", flexDirection: "column", gap: 24 }}
+      noValidate
+    >
+      {serverError && (
+        <div
+          role="alert"
+          style={{
+            padding: "10px 14px",
+            borderRadius: 10,
+            background: C.redBg,
+            border: `1px solid ${C.red}55`,
+            color: C.red,
+            fontSize: 13,
+          }}
+        >
+          {serverError}
+        </div>
+      )}
+
+      {/* 1. Configuration */}
+      <FormSection title="Configuration">
+        <FormSelectField
+          label="Type de résidence"
+          options={RESIDENCE_OPTIONS}
+          {...register("residence_type")}
+        />
+        <FormSelectField
+          label="Type de location actuel"
+          options={LOCATION_OPTIONS}
+          {...register("location_type_actuel")}
+        />
+        <FormToggleField label="Bien meublé" {...register("is_furnished")} />
+      </FormSection>
+
+      {/* 2. Technique */}
+      <FormSection title="Caractéristiques techniques">
+        <FormSelectField
+          label="Type de bien"
+          options={TYPE_OPTIONS}
+          {...register("type")}
+        />
+        <FormNumberField
+          label="Surface"
+          suffix="m²"
+          step={1}
+          min={0}
+          error={errors.surface?.message}
+          {...register("surface", {
+            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
+          })}
+        />
+        <FormNumberField
+          label="Pièces"
+          step={0.5}
+          min={0}
+          error={errors.rooms?.message}
+          {...register("rooms", {
+            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
+          })}
+        />
+        <FormNumberField
+          label="Chambres"
+          step={1}
+          min={0}
+          error={errors.bedrooms?.message}
+          {...register("bedrooms", {
+            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
+          })}
+        />
+        <FormNumberField
+          label="Salles de bain"
+          step={1}
+          min={0}
+          error={errors.bathrooms?.message}
+          {...register("bathrooms", {
+            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
+          })}
+        />
+        <FormNumberField
+          label="Étage"
+          step={1}
+          {...register("etage")}
+        />
+        <FormNumberField
+          label="Année construction"
+          step={1}
+          min={ANNEE_MIN}
+          max={ANNEE_MAX}
+          error={errors.annee_construction?.message}
+          {...register("annee_construction", {
+            validate: (v) => {
+              if (v === "") return true;
+              const n = Number(v);
+              if (n < ANNEE_MIN || n > ANNEE_MAX) {
+                return `Entre ${ANNEE_MIN} et ${ANNEE_MAX}`;
+              }
+              return true;
+            },
+          })}
+        />
+        <FormNumberField
+          label="Année rénovation"
+          step={1}
+          min={ANNEE_MIN}
+          max={ANNEE_MAX}
+          error={errors.annee_renovation?.message}
+          {...register("annee_renovation", {
+            validate: (v) => {
+              if (v === "") return true;
+              const n = Number(v);
+              if (n < ANNEE_MIN || n > ANNEE_MAX) {
+                return `Entre ${ANNEE_MIN} et ${ANNEE_MAX}`;
+              }
+              return true;
+            },
+          })}
+        />
+        <FormSelectField
+          label="Classe énergétique (DPE)"
+          options={DPE_OPTIONS}
+          {...register("classe_energetique")}
+        />
+      </FormSection>
+
+      {/* 3. Équipements */}
+      <FormSection title="Équipements">
+        <div
+          style={{
+            display: "grid",
+            gap: 8,
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          }}
+        >
+          <FormToggleField label="Balcon" {...register("has_balcony")} />
+          <FormToggleField label="Terrasse" {...register("has_terrace")} />
+          <FormToggleField label="Jardin" {...register("has_garden")} />
+          <FormToggleField label="Cave / Réduit" {...register("has_storage")} />
+          <FormToggleField label="Cheminée" {...register("has_fireplace")} />
+          <FormToggleField label="Buanderie privée" {...register("has_laundry_private")} />
+          <FormToggleField label="Buanderie commune" {...register("has_laundry_building")} />
+        </div>
+        <FormSelectField
+          label="Parking"
+          options={PARKING_OPTIONS}
+          {...register("parking_type")}
+        />
+      </FormSection>
+
+      {/* 4. Règles — tri-state */}
+      <FormSection title="Règles">
+        <FormTriStateField
+          label="Animaux acceptés"
+          {...register("pets_allowed")}
+        />
+        <FormTriStateField
+          label="Fumeurs acceptés"
+          {...register("smoking_allowed")}
+        />
+      </FormSection>
+
+      {/* 5. Situation */}
+      <FormSection title="Situation géographique">
+        <FormNumberField
+          label="Distance gare"
+          suffix="min"
+          step={1}
+          min={0}
+          {...register("distance_gare_minutes", {
+            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
+          })}
+          error={errors.distance_gare_minutes?.message}
+        />
+        <FormNumberField
+          label="Distance arrêt bus"
+          suffix="min"
+          step={1}
+          min={0}
+          {...register("distance_arret_bus_minutes", {
+            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
+          })}
+          error={errors.distance_arret_bus_minutes?.message}
+        />
+        <FormNumberField
+          label="Distance télécabine"
+          suffix="min"
+          step={1}
+          min={0}
+          {...register("distance_telecabine_minutes", {
+            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
+          })}
+          error={errors.distance_telecabine_minutes?.message}
+        />
+        <FormNumberField
+          label="Distance lac"
+          suffix="min"
+          step={1}
+          min={0}
+          {...register("distance_lac_minutes", {
+            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
+          })}
+          error={errors.distance_lac_minutes?.message}
+        />
+        <FormNumberField
+          label="Distance aéroport"
+          suffix="min"
+          step={1}
+          min={0}
+          {...register("distance_aeroport_minutes", {
+            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
+          })}
+          error={errors.distance_aeroport_minutes?.message}
+        />
+        <FormTextareaField
+          label="Notes situation"
+          rows={3}
+          maxLength={MAX_TEXT_LENGTH}
+          watchValue={current.situation_notes}
+          {...register("situation_notes", {
+            maxLength: { value: MAX_TEXT_LENGTH, message: `Max ${MAX_TEXT_LENGTH} caractères` },
+          })}
+          error={errors.situation_notes?.message}
+        />
+      </FormSection>
+
+      {/* 6. Descriptions */}
+      <FormSection title="Descriptions">
+        <FormTextareaField
+          label="Description du lieu"
+          rows={4}
+          maxLength={MAX_TEXT_LENGTH}
+          watchValue={current.description_lieu}
+          {...register("description_lieu", {
+            maxLength: { value: MAX_TEXT_LENGTH, message: `Max ${MAX_TEXT_LENGTH} caractères` },
+          })}
+          error={errors.description_lieu?.message}
+        />
+        <FormTextareaField
+          label="Description du logement"
+          rows={4}
+          maxLength={MAX_TEXT_LENGTH}
+          watchValue={current.description_logement}
+          {...register("description_logement", {
+            maxLength: { value: MAX_TEXT_LENGTH, message: `Max ${MAX_TEXT_LENGTH} caractères` },
+          })}
+          error={errors.description_logement?.message}
+        />
+        <FormTextareaField
+          label="Remarques"
+          rows={3}
+          maxLength={MAX_TEXT_LENGTH}
+          watchValue={current.remarques}
+          {...register("remarques", {
+            maxLength: { value: MAX_TEXT_LENGTH, message: `Max ${MAX_TEXT_LENGTH} caractères` },
+          })}
+          error={errors.remarques?.message}
+        />
+      </FormSection>
+
+      {/* 7. Finances annexes */}
+      <FormSection title="Finances annexes">
+        <FormNumberField
+          label="Caution / Dépôt"
+          suffix="CHF"
+          step={10}
+          min={0}
+          {...register("deposit", {
+            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
+          })}
+          error={errors.deposit?.message}
+        />
+        <FormNumberField
+          label="Loyer mensuel"
+          suffix="CHF"
+          step={10}
+          min={0}
+          {...register("loyer", {
+            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
+          })}
+          error={errors.loyer?.message}
+        />
+        <FormNumberField
+          label="Charges mensuelles"
+          suffix="CHF"
+          step={10}
+          min={0}
+          {...register("charges", {
+            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
+          })}
+          error={errors.charges?.message}
+        />
+      </FormSection>
+
+      {/* Footer édition */}
+      <div
+        style={{
+          position: "sticky",
+          bottom: 0,
+          background: "#fff",
+          borderTop: `1px solid ${C.border}`,
+          padding: "12px 0 4px",
+          display: "flex",
+          gap: 12,
+          justifyContent: "flex-end",
+          alignItems: "center",
+        }}
+      >
+        {!hasDirty && (
+          <span style={{ fontSize: 12, color: C.text3, marginRight: "auto" }}>
+            Aucune modification à enregistrer
+          </span>
+        )}
         <button
           type="button"
-          onClick={onCancel}
+          onClick={handleCancelClick}
           style={{
             padding: "10px 20px",
             borderRadius: 10,
@@ -457,8 +985,8 @@ function EditView({
           Annuler
         </button>
         <button
-          type="button"
-          disabled
+          type="submit"
+          disabled={!hasDirty || update.isPending}
           style={{
             padding: "10px 20px",
             borderRadius: 10,
@@ -467,14 +995,274 @@ function EditView({
             color: "#fff",
             fontSize: 14,
             fontWeight: 600,
-            cursor: "not-allowed",
+            cursor: !hasDirty || update.isPending ? "not-allowed" : "pointer",
             fontFamily: "inherit",
-            opacity: 0.5,
+            opacity: !hasDirty || update.isPending ? 0.5 : 1,
           }}
         >
-          Enregistrer
+          {update.isPending ? "Enregistrement…" : "Enregistrer"}
         </button>
       </div>
+
+      {savedToast && <SavedToast />}
+    </form>
+  );
+}
+
+// ── Form sub-components ──────────────────────────────────────────────────────
+
+function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3
+        style={{
+          fontFamily: "var(--font-serif)",
+          fontSize: 15,
+          color: C.text,
+          margin: "0 0 12px",
+          paddingBottom: 8,
+          borderBottom: `1px solid ${C.border}`,
+        }}
+      >
+        {title}
+      </h3>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+const fieldLabelStyle: React.CSSProperties = {
+  display: "block",
+  fontSize: 12,
+  fontWeight: 500,
+  color: C.text3,
+  marginBottom: 6,
+};
+
+const fieldInputStyle: React.CSSProperties = {
+  width: "100%",
+  boxSizing: "border-box",
+  background: "#fff",
+  border: `1px solid ${C.border}`,
+  borderRadius: 9,
+  padding: "9px 12px",
+  fontSize: 14,
+  color: C.text,
+  fontFamily: "inherit",
+  outline: "none",
+};
+
+const fieldErrorStyle: React.CSSProperties = {
+  fontSize: 11,
+  color: C.red,
+  marginTop: 4,
+};
+
+type RegisterReturn = ReturnType<ReturnType<typeof useForm>["register"]>;
+
+const FormNumberField = ({
+  label,
+  suffix,
+  step,
+  min,
+  max,
+  error,
+  ...rest
+}: {
+  label: string;
+  suffix?: string;
+  step?: number | string;
+  min?: number | string;
+  max?: number | string;
+  error?: string;
+} & Partial<RegisterReturn>) => (
+  <div>
+    <label style={fieldLabelStyle}>{label}</label>
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <input
+        type="number"
+        step={step}
+        min={min}
+        max={max}
+        style={{
+          ...fieldInputStyle,
+          flex: 1,
+          borderColor: error ? C.red : C.border,
+        }}
+        {...(rest as Record<string, unknown>)}
+      />
+      {suffix && (
+        <span style={{ fontSize: 12, color: C.text3, whiteSpace: "nowrap" }}>
+          {suffix}
+        </span>
+      )}
+    </div>
+    {error && <p style={fieldErrorStyle}>{error}</p>}
+  </div>
+);
+
+const FormSelectField = ({
+  label,
+  options,
+  ...rest
+}: {
+  label: string;
+  options: { value: string; label: string }[];
+} & Partial<RegisterReturn>) => (
+  <div>
+    <label style={fieldLabelStyle}>{label}</label>
+    <select
+      style={{ ...fieldInputStyle, cursor: "pointer" }}
+      {...(rest as Record<string, unknown>)}
+    >
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  </div>
+);
+
+const FormToggleField = ({
+  label,
+  ...rest
+}: {
+  label: string;
+} & Partial<RegisterReturn>) => (
+  <label
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      padding: "8px 12px",
+      borderRadius: 9,
+      border: `1px solid ${C.border}`,
+      background: C.surface,
+      cursor: "pointer",
+      fontSize: 14,
+      color: C.text,
+    }}
+  >
+    <input
+      type="checkbox"
+      style={{
+        width: 16,
+        height: 16,
+        accentColor: C.prussian,
+        cursor: "pointer",
+      }}
+      {...(rest as Record<string, unknown>)}
+    />
+    {label}
+  </label>
+);
+
+const FormTriStateField = ({
+  label,
+  name,
+  onChange,
+  onBlur,
+  ref,
+}: {
+  label: string;
+} & Partial<RegisterReturn>) => (
+  <div>
+    <label style={fieldLabelStyle}>{label}</label>
+    <div style={{ display: "flex", gap: 16, fontSize: 14, color: C.text }}>
+      {[
+        { v: "null", l: "Non renseigné" },
+        { v: "true", l: "Autorisés" },
+        { v: "false", l: "Interdits" },
+      ].map((opt) => (
+        <label
+          key={opt.v}
+          style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+        >
+          <input
+            type="radio"
+            name={name}
+            value={opt.v}
+            onChange={onChange}
+            onBlur={onBlur}
+            ref={ref}
+            style={{ accentColor: C.prussian, cursor: "pointer" }}
+          />
+          {opt.l}
+        </label>
+      ))}
+    </div>
+  </div>
+);
+
+const FormTextareaField = ({
+  label,
+  rows,
+  maxLength,
+  watchValue,
+  error,
+  ...rest
+}: {
+  label: string;
+  rows: number;
+  maxLength: number;
+  watchValue: string;
+  error?: string;
+} & Partial<RegisterReturn>) => {
+  const len = (watchValue ?? "").length;
+  const overLimit = len > maxLength;
+  return (
+    <div>
+      <label style={fieldLabelStyle}>{label}</label>
+      <textarea
+        rows={rows}
+        style={{
+          ...fieldInputStyle,
+          resize: "vertical",
+          fontFamily: "inherit",
+          borderColor: error || overLimit ? C.red : C.border,
+        }}
+        {...(rest as Record<string, unknown>)}
+      />
+      <p
+        style={{
+          fontSize: 11,
+          color: overLimit ? C.red : C.text3,
+          marginTop: 4,
+          textAlign: "right",
+        }}
+      >
+        {len} / {maxLength}
+      </p>
+      {error && <p style={fieldErrorStyle}>{error}</p>}
+    </div>
+  );
+};
+
+function SavedToast() {
+  return (
+    <div
+      role="status"
+      style={{
+        position: "fixed",
+        bottom: 24,
+        left: "50%",
+        transform: "translateX(-50%)",
+        background: C.text,
+        color: "#fff",
+        padding: "10px 20px",
+        borderRadius: 12,
+        fontSize: 13,
+        fontWeight: 600,
+        zIndex: 9999,
+        boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+      }}
+    >
+      <CheckCircle2 size={16} />
+      Modifications enregistrées
     </div>
   );
 }
