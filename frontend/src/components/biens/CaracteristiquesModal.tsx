@@ -17,7 +17,7 @@
  */
 
 import { CheckCircle2, ChevronDown, ChevronRight, Pencil, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { Bien, BienDetail, BienUpdate } from "@/lib/types";
 import { C } from "@/lib/design-tokens";
@@ -85,11 +85,41 @@ export function CaracteristiquesModal({
 }: Props) {
   const { data: bien, isLoading } = useBien(bienId);
   const [mode, setMode] = useState<CaracMode>(initialMode);
+  // dirty est lifted up depuis EditView pour qu'attemptClose puisse savoir
+  // s'il faut demander confirmation, quel que soit le chemin de fermeture
+  // (X, backdrop, Esc, bouton Annuler).
+  const [editDirty, setEditDirty] = useState(false);
 
-  // Lorsque la modale (re)s'ouvre, on resync le mode demandé par le parent.
+  // Lorsque la modale (re)s'ouvre, on resync le mode demandé par le parent
+  // et on reset le suivi dirty.
   useEffect(() => {
-    if (open) setMode(initialMode);
+    if (open) {
+      setMode(initialMode);
+      setEditDirty(false);
+    }
   }, [open, initialMode]);
+
+  // Fonction unifiée de fermeture (tous les chemins passent par ici).
+  // - mode lecture : ferme directement.
+  // - mode édition + form non dirty : ferme directement.
+  // - mode édition + form dirty : confirmation native.
+  const attemptClose = useCallback(() => {
+    if (mode === "edit" && editDirty) {
+      if (!window.confirm("Annuler les modifications en cours ?")) return;
+    }
+    setEditDirty(false);
+    onClose();
+  }, [mode, editDirty, onClose]);
+
+  // Listener Escape global tant que la modale est ouverte.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") attemptClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, attemptClose]);
 
   if (!open) return null;
 
@@ -107,10 +137,13 @@ export function CaracteristiquesModal({
         zIndex: 100,
         padding: 16,
       }}
-      onClick={onClose}
+      onClick={(e) => {
+        // On ne déclenche que si le clic est sur le backdrop lui-même,
+        // pas un enfant qui aurait bubblé jusqu'ici.
+        if (e.target === e.currentTarget) attemptClose();
+      }}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
         style={{
           background: "#fff",
           borderRadius: 16,
@@ -127,7 +160,7 @@ export function CaracteristiquesModal({
           mode={mode}
           adresse={bien?.adresse}
           onSwitchToEdit={() => setMode("edit")}
-          onClose={onClose}
+          onClose={attemptClose}
         />
 
         <div style={{ overflowY: "auto", padding: "20px 24px", flex: 1 }}>
@@ -138,7 +171,15 @@ export function CaracteristiquesModal({
           ) : mode === "read" ? (
             <ReadView bien={bien} />
           ) : (
-            <EditView bien={bien} onCancel={() => setMode("read")} onSaved={() => setMode("read")} />
+            <EditView
+              bien={bien}
+              onCancel={attemptClose}
+              onSaved={() => {
+                setEditDirty(false);
+                setMode("read");
+              }}
+              onDirtyChange={setEditDirty}
+            />
           )}
         </div>
 
@@ -154,7 +195,7 @@ export function CaracteristiquesModal({
           >
             <button
               type="button"
-              onClick={onClose}
+              onClick={attemptClose}
               style={{
                 padding: "8px 18px",
                 borderRadius: 10,
@@ -748,10 +789,12 @@ function EditView({
   bien,
   onCancel,
   onSaved,
+  onDirtyChange,
 }: {
   bien: BienDetail;
   onCancel: () => void;
   onSaved: () => void;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const update = useUpdateBien(bien.id);
   const initial = useMemo(() => bienToForm(bien), [bien]);
@@ -772,6 +815,12 @@ function EditView({
   const dirty = useMemo(() => computeDirty(current, initial), [current, initial]);
   const hasDirty = Object.keys(dirty).length > 0;
 
+  // Remonte le suivi dirty au composant racine pour que tous les chemins de
+  // fermeture (backdrop, X, Esc, Annuler) passent par la confirmation unifiée.
+  useEffect(() => {
+    onDirtyChange(hasDirty);
+  }, [hasDirty, onDirtyChange]);
+
   const onSubmit = handleSubmit(async () => {
     setServerError(null);
     try {
@@ -785,15 +834,6 @@ function EditView({
       setServerError(msg ?? "Erreur lors de l'enregistrement. Réessayez.");
     }
   });
-
-  function handleCancelClick() {
-    if (hasDirty && !window.confirm("Annuler les modifications ?")) return;
-    onCancel();
-  }
-
-  // Bloque la fermeture par Esc / backdrop si dirty (le parent gère via onClose
-  // — ici on contrôle juste l'annulation explicite). La protection backdrop est
-  // gérée au niveau wrapper modale (parent).
 
   return (
     <form
@@ -1111,7 +1151,7 @@ function EditView({
         )}
         <button
           type="button"
-          onClick={handleCancelClick}
+          onClick={onCancel}
           style={{
             padding: "10px 20px",
             borderRadius: 10,
