@@ -1902,15 +1902,16 @@ function CardHeaderBien({
         </div>
       </div>
 
-      {/* Modale Caractéristiques détaillées (lecture seule en PR-A11.A.1.b ;
-          mode édition arrive en PR-A11.A.3). Unique instance de la modale
-          dans la page depuis le retrait de SectionCaracteristiques. */}
-      {showCaracModal && (
-        <CaracteristiquesModal
-          bien={bien}
-          onClose={() => setShowCaracModal(false)}
-        />
-      )}
+      {/* Modale Caractéristiques (PR-A11.A.3) — signature controlled, dual-mode.
+          Ici on ouvre toujours en mode lecture depuis le lien header. Le mode
+          édition est ouvert depuis le bouton "Modifier" lifted up dans
+          BienOverview (cf commit suivant). */}
+      <CaracteristiquesModal
+        bienId={bienId}
+        open={showCaracModal}
+        onClose={() => setShowCaracModal(false)}
+        initialMode="read"
+      />
     </div>
   );
 }
@@ -2088,9 +2089,12 @@ function SectionCaracteristiques({ bienId }: { bienId: string }) {
         </button>
       </div>
 
-      {showModal && (
-        <CaracteristiquesModal bien={bien} onClose={() => setShowModal(false)} />
-      )}
+      <CaracteristiquesModal
+        bienId={bienId}
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        initialMode="read"
+      />
     </>
   );
 }
