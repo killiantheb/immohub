@@ -16,7 +16,7 @@
  *   - initialMode : 'read' (défaut) | 'edit'
  */
 
-import { CheckCircle2, Pencil, X } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, Pencil, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { Bien, BienDetail, BienUpdate } from "@/lib/types";
@@ -285,23 +285,89 @@ function ModalHeader({
   );
 }
 
-// ── Mode Lecture (existant — polish E-24 dans commit suivant) ────────────────
+// ── Mode Lecture (PR-A11.A.3 commit 4 — polish E-24) ─────────────────────────
+//
+// Règle générale : on n'affiche pas les champs vides, sauf pour les champs
+// canoniques structurants (Type, Surface, Pièces, Étage, DPE) où "—" reste
+// explicite. Les sections optionnelles (Règles, Situation, Descriptions,
+// Finances annexes) sont masquees integralement si toutes leurs valeurs
+// sont null.
+
+type EquipementItem = {
+  active: boolean;
+  label: string;
+  icon: string;
+};
+
+function buildEquipements(bien: BienDetail): EquipementItem[] {
+  return [
+    { active: Boolean(bien.has_balcony), label: "Balcon", icon: "🌅" },
+    { active: Boolean(bien.has_terrace), label: "Terrasse", icon: "🌿" },
+    { active: Boolean(bien.has_garden), label: "Jardin", icon: "🌳" },
+    { active: Boolean(bien.has_storage), label: "Cave / Réduit", icon: "📦" },
+    { active: Boolean(bien.has_fireplace), label: "Cheminée", icon: "🔥" },
+    { active: Boolean(bien.has_laundry_private), label: "Buanderie privée", icon: "🧺" },
+    { active: Boolean(bien.has_laundry_building), label: "Buanderie commune", icon: "🧺" },
+    {
+      active: Boolean(bien.parking_type),
+      label: bien.parking_type
+        ? `Parking — ${PARKING_LABELS[bien.parking_type] || bien.parking_type}`
+        : "Parking",
+      icon: "🚗",
+    },
+  ];
+}
 
 function ReadView({ bien }: { bien: BienDetail }) {
+  const [showAbsents, setShowAbsents] = useState(false);
+
+  const equipements = buildEquipements(bien);
+  const presents = equipements.filter((e) => e.active);
+  const absents = equipements.filter((e) => !e.active);
+
+  // Masques de sections optionnelles
+  const showRegles = bien.pets_allowed != null || bien.smoking_allowed != null;
+
+  const distances = [
+    { label: "Distance gare", value: bien.distance_gare_minutes },
+    { label: "Distance arrêt bus", value: bien.distance_arret_bus_minutes },
+    { label: "Distance télécabine", value: bien.distance_telecabine_minutes },
+    { label: "Distance lac", value: bien.distance_lac_minutes },
+    { label: "Distance aéroport", value: bien.distance_aeroport_minutes },
+  ].filter((d) => d.value != null);
+  const showSituation = distances.length > 0 || Boolean(bien.situation_notes);
+
+  const showDescriptions = Boolean(
+    bien.description_lieu || bien.description_logement || bien.remarques,
+  );
+
+  const showFinances =
+    bien.deposit != null || bien.loyer != null || bien.charges != null;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {/* 1. CONFIGURATION */}
+      {/* 1. CONFIGURATION (champs canoniques — toujours affichés) */}
       <Section title="Configuration">
-        <Row label="Type de résidence" value={
-          bien.residence_type ? RESIDENCE_LABELS[bien.residence_type] || bien.residence_type : "—"
-        } />
-        <Row label="Type de location" value={
-          bien.location_type_actuel ? LOCATION_LABELS[bien.location_type_actuel] || bien.location_type_actuel : "—"
-        } />
+        <Row
+          label="Type de résidence"
+          value={
+            bien.residence_type
+              ? RESIDENCE_LABELS[bien.residence_type] || bien.residence_type
+              : "—"
+          }
+        />
+        <Row
+          label="Type de location"
+          value={
+            bien.location_type_actuel
+              ? LOCATION_LABELS[bien.location_type_actuel] || bien.location_type_actuel
+              : "—"
+          }
+        />
         <Row label="Bien meublé" value={fmtBoolYesNo(bien.is_furnished)} />
       </Section>
 
-      {/* 2. TECHNIQUE */}
+      {/* 2. TECHNIQUE (champs canoniques — toujours affichés) */}
       <Section title="Caractéristiques techniques">
         <Row label="Type de bien" value={bien.type ?? "—"} />
         <Row label="Surface" value={bien.surface ? `${bien.surface} m²` : "—"} />
@@ -309,8 +375,14 @@ function ReadView({ bien }: { bien: BienDetail }) {
         <Row label="Chambres" value={bien.bedrooms != null ? String(bien.bedrooms) : "—"} />
         <Row label="Salles de bain" value={bien.bathrooms != null ? String(bien.bathrooms) : "—"} />
         <Row label="Étage" value={bien.etage != null ? String(bien.etage) : "—"} />
-        <Row label="Année construction" value={bien.annee_construction ? String(bien.annee_construction) : "—"} />
-        <Row label="Année rénovation" value={bien.annee_renovation ? String(bien.annee_renovation) : "—"} />
+        <Row
+          label="Année construction"
+          value={bien.annee_construction ? String(bien.annee_construction) : "—"}
+        />
+        <Row
+          label="Année rénovation"
+          value={bien.annee_renovation ? String(bien.annee_renovation) : "—"}
+        />
         <Row
           label="Classe énergétique (DPE)"
           value={
@@ -323,83 +395,145 @@ function ReadView({ bien }: { bien: BienDetail }) {
         />
       </Section>
 
-      {/* 3. ÉQUIPEMENTS */}
+      {/* 3. ÉQUIPEMENTS — Présents / Non renseignés (E-24) */}
       <Section title="Équipements">
-        <div
-          style={{
-            display: "grid",
-            gap: 8,
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          }}
-        >
-          <EquipementBadge active={bien.has_balcony} label="Balcon" icon="🌅" />
-          <EquipementBadge active={bien.has_terrace} label="Terrasse" icon="🌿" />
-          <EquipementBadge active={bien.has_garden} label="Jardin" icon="🌳" />
-          <EquipementBadge active={bien.has_storage} label="Cave / Réduit" icon="📦" />
-          <EquipementBadge active={bien.has_fireplace} label="Cheminée" icon="🔥" />
-          <EquipementBadge active={bien.has_laundry_private} label="Buanderie privée" icon="🧺" />
-          <EquipementBadge active={bien.has_laundry_building} label="Buanderie commune" icon="🧺" />
-          <EquipementBadge
-            active={Boolean(bien.parking_type)}
-            label={
-              bien.parking_type
-                ? `Parking — ${PARKING_LABELS[bien.parking_type] || bien.parking_type}`
-                : "Parking"
-            }
-            icon="🚗"
-          />
-        </div>
-      </Section>
+        {presents.length === 0 ? (
+          <p style={{ fontSize: 13, color: C.text3, fontStyle: "italic", margin: 0 }}>
+            Aucun équipement renseigné
+          </p>
+        ) : (
+          <>
+            <p
+              style={{
+                fontSize: 11,
+                color: C.text3,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                margin: "0 0 8px",
+                fontWeight: 600,
+              }}
+            >
+              Présents
+            </p>
+            <div
+              style={{
+                display: "grid",
+                gap: 8,
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              }}
+            >
+              {presents.map((eq) => (
+                <EquipementBadge
+                  key={eq.label}
+                  active
+                  label={eq.label}
+                  icon={eq.icon}
+                />
+              ))}
+            </div>
+          </>
+        )}
 
-      {/* 4. RÈGLES */}
-      <Section title="Règles">
-        <Row
-          label="Animaux acceptés"
-          value={bien.pets_allowed ? "✅ Oui" : "❌ Non"}
-        />
-        <Row
-          label="Fumeurs acceptés"
-          value={bien.smoking_allowed ? "✅ Oui" : "❌ Non"}
-        />
-      </Section>
-
-      {/* 5. SITUATION */}
-      <Section title="Situation géographique">
-        <Row label="Distance gare" value={
-          bien.distance_gare_minutes != null ? `${bien.distance_gare_minutes} min` : "—"
-        } />
-        <Row label="Distance arrêt bus" value={
-          bien.distance_arret_bus_minutes != null ? `${bien.distance_arret_bus_minutes} min` : "—"
-        } />
-        <Row label="Distance télécabine" value={
-          bien.distance_telecabine_minutes != null ? `${bien.distance_telecabine_minutes} min` : "—"
-        } />
-        <Row label="Distance lac" value={
-          bien.distance_lac_minutes != null ? `${bien.distance_lac_minutes} min` : "—"
-        } />
-        <Row label="Distance aéroport" value={
-          bien.distance_aeroport_minutes != null ? `${bien.distance_aeroport_minutes} min` : "—"
-        } />
-        {bien.situation_notes && (
-          <div
-            style={{
-              marginTop: 8,
-              padding: "10px 12px",
-              background: C.prussianBg,
-              borderRadius: 8,
-              fontSize: 13,
-              color: C.text2,
-              fontStyle: "italic",
-              lineHeight: 1.5,
-            }}
-          >
-            {bien.situation_notes}
+        {absents.length > 0 && (
+          <div style={{ marginTop: presents.length > 0 ? 16 : 8 }}>
+            <button
+              type="button"
+              onClick={() => setShowAbsents((v) => !v)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                padding: 0,
+                border: "none",
+                background: "none",
+                color: C.text3,
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+              aria-expanded={showAbsents || presents.length === 0}
+            >
+              {showAbsents || presents.length === 0 ? (
+                <ChevronDown size={14} />
+              ) : (
+                <ChevronRight size={14} />
+              )}
+              Non renseignés ({absents.length})
+            </button>
+            {(showAbsents || presents.length === 0) && (
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: "8px 0 0",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                }}
+              >
+                {absents.map((eq) => (
+                  <li
+                    key={eq.label}
+                    style={{
+                      fontSize: 13,
+                      color: C.text3,
+                    }}
+                  >
+                    {eq.label} — non renseigné
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
       </Section>
 
-      {/* 6. DESCRIPTIONS */}
-      {(bien.description_lieu || bien.description_logement || bien.remarques) && (
+      {/* 4. RÈGLES — masquée si tout null (E-24) */}
+      {showRegles && (
+        <Section title="Règles">
+          {bien.pets_allowed != null && (
+            <Row
+              label="Animaux acceptés"
+              value={bien.pets_allowed ? "Oui" : "Non"}
+            />
+          )}
+          {bien.smoking_allowed != null && (
+            <Row
+              label="Fumeurs acceptés"
+              value={bien.smoking_allowed ? "Oui" : "Non"}
+            />
+          )}
+        </Section>
+      )}
+
+      {/* 5. SITUATION — masquée si tout null (E-24) */}
+      {showSituation && (
+        <Section title="Situation géographique">
+          {distances.map((d) => (
+            <Row key={d.label} label={d.label} value={`${d.value} min`} />
+          ))}
+          {bien.situation_notes && (
+            <div
+              style={{
+                marginTop: 8,
+                padding: "10px 12px",
+                background: C.prussianBg,
+                borderRadius: 8,
+                fontSize: 13,
+                color: C.text2,
+                fontStyle: "italic",
+                lineHeight: 1.5,
+              }}
+            >
+              {bien.situation_notes}
+            </div>
+          )}
+        </Section>
+      )}
+
+      {/* 6. DESCRIPTIONS — masquée si tout null (E-24) */}
+      {showDescriptions && (
         <Section title="Descriptions">
           {bien.description_lieu && (
             <DescriptionBlock label="Description du lieu" text={bien.description_lieu} />
@@ -413,12 +547,20 @@ function ReadView({ bien }: { bien: BienDetail }) {
         </Section>
       )}
 
-      {/* 7. FINANCES ANNEXES */}
-      <Section title="Finances annexes">
-        <Row label="Caution / Dépôt" value={fmtCHF(bien.deposit)} />
-        <Row label="Loyer mensuel" value={fmtCHF(bien.loyer)} />
-        <Row label="Charges mensuelles" value={fmtCHF(bien.charges)} />
-      </Section>
+      {/* 7. FINANCES ANNEXES — masquée si tout null (E-24) */}
+      {showFinances && (
+        <Section title="Finances annexes">
+          {bien.deposit != null && (
+            <Row label="Caution / Dépôt" value={fmtCHF(bien.deposit)} />
+          )}
+          {bien.loyer != null && (
+            <Row label="Loyer mensuel" value={fmtCHF(bien.loyer)} />
+          )}
+          {bien.charges != null && (
+            <Row label="Charges mensuelles" value={fmtCHF(bien.charges)} />
+          )}
+        </Section>
+      )}
     </div>
   );
 }
