@@ -8,7 +8,7 @@ import { useParams } from "next/navigation";
 import {
   AlertTriangle, Archive, Camera, Car, CheckCircle2, ChevronRight, Cigarette,
   Clock, Dog, Download, ExternalLink, FileText, Flame, Home as HomeIcon,
-  Loader2, Mail, Pencil, Plus, Settings2, Sofa, Sparkles, Trash2, TreePine,
+  Loader2, Mail, Pencil, Plus, Sofa, Sparkles, Trash2, TreePine,
   Trees, User, WashingMachine, Wind, Wrench, XCircle,
   type LucideIcon,
 } from "lucide-react";
