@@ -109,7 +109,12 @@ const ROW: React.CSSProperties = {
 };
 
 // ── SectionInfos ──────────────────────────────────────────────────────────────
+//
+// @deprecated Retire de BienOverview en PR-A11.A.3. Tous ses champs sont
+// desormais editables via la modale Caracteristiques en mode edition. Le
+// composant lui-meme reste ici jusqu'a PR-A11.A.4 (cleanup definitif).
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function SectionInfos({ bienId }: { bienId: string }) {
   const { data: bien, isLoading } = useBien(bienId);
   const update = useUpdateBien(bienId);
@@ -1445,18 +1450,17 @@ function CaracSubtitle({ children }: { children: React.ReactNode }) {
 
 function CardHeaderBien({
   bienId,
-  editing,
-  onToggleEdit,
+  onModifyClick,
+  onSeeAllCaracClick,
   onRequestDelete,
 }: {
   bienId: string;
-  editing: boolean;
-  onToggleEdit: () => void;
+  onModifyClick: () => void;
+  onSeeAllCaracClick: () => void;
   onRequestDelete: () => void;
 }) {
   const { data: bien, isLoading } = useBien(bienId);
   const { data: locataire } = useLocataireActuel(bienId);
-  const [showCaracModal, setShowCaracModal] = useState(false);
 
   if (isLoading || !bien) {
     return (
@@ -1822,7 +1826,7 @@ function CardHeaderBien({
         <div className="card-header-bien-section">
           <button
             type="button"
-            onClick={() => setShowCaracModal(true)}
+            onClick={onSeeAllCaracClick}
             className="card-header-bien-link"
             style={{
               display: "inline-flex",
@@ -1856,27 +1860,24 @@ function CardHeaderBien({
         >
           <button
             type="button"
-            onClick={onToggleEdit}
+            onClick={onModifyClick}
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
               padding: "10px 20px",
               borderRadius: 10,
-              border: editing
-                ? `1px solid var(--althy-prussian-border)`
-                : "1px solid transparent",
-              background: editing ? "transparent" : C.prussian,
-              color: editing ? C.prussian : "#fff",
+              border: "1px solid transparent",
+              background: C.prussian,
+              color: "#fff",
               fontSize: 14,
               fontWeight: 600,
               cursor: "pointer",
               fontFamily: "inherit",
             }}
-            aria-pressed={editing}
           >
             <Pencil size={16} />
-            {editing ? "Fermer" : "Modifier"}
+            Modifier
           </button>
           <button
             type="button"
@@ -1902,16 +1903,9 @@ function CardHeaderBien({
         </div>
       </div>
 
-      {/* Modale Caractéristiques (PR-A11.A.3) — signature controlled, dual-mode.
-          Ici on ouvre toujours en mode lecture depuis le lien header. Le mode
-          édition est ouvert depuis le bouton "Modifier" lifted up dans
-          BienOverview (cf commit suivant). */}
-      <CaracteristiquesModal
-        bienId={bienId}
-        open={showCaracModal}
-        onClose={() => setShowCaracModal(false)}
-        initialMode="read"
-      />
+      {/* Modale Caractéristiques montée au niveau BienOverview — un seul
+          point de mount pour gérer l'ouverture en mode lecture (lien
+          "Voir toutes") OU en mode édition (bouton "Modifier"). */}
     </div>
   );
 }
@@ -2104,8 +2098,11 @@ function SectionCaracteristiques({ bienId }: { bienId: string }) {
 function BienOverview() {
   const { id } = useParams<{ id: string }>();
   const { data: bien } = useBien(id);
-  const [editing, setEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [caracModal, setCaracModal] = useState<{
+    open: boolean;
+    mode: "read" | "edit";
+  }>({ open: false, mode: "read" });
 
   return (
     <div
@@ -2116,16 +2113,17 @@ function BienOverview() {
         padding: "16px 20px 24px",
       }}
     >
-      {/* Header bien — full width hero (Pattern B) */}
+      {/* Header bien — full width hero (Pattern C) */}
       <CardHeaderBien
         bienId={id}
-        editing={editing}
-        onToggleEdit={() => setEditing((e) => !e)}
+        onModifyClick={() => setCaracModal({ open: true, mode: "edit" })}
+        onSeeAllCaracClick={() => setCaracModal({ open: true, mode: "read" })}
         onRequestDelete={() => setShowDeleteModal(true)}
       />
 
-      {/* Édition complète conditionnelle (toggle via bouton "Modifier" du header) */}
-      {editing && <SectionInfos bienId={id} />}
+      {/* SectionInfos retire en PR-A11.A.3 — son contenu est integralement
+          couvert par la modale Caracteristiques en mode edition. Le composant
+          lui-meme reste dans le fichier (cleanup definitif en PR-A11.A.4). */}
 
       {/*
         Grille 7 cards (PR-A10) responsive — colonnes STRICTES :
@@ -2154,6 +2152,16 @@ function BienOverview() {
           onClose={() => setShowDeleteModal(false)}
         />
       )}
+
+      {/* Modale Caractéristiques (PR-A11.A.3) — instance unique au niveau
+          BienOverview. initialMode pilote l'ouverture en lecture (depuis le
+          lien "Voir toutes" du header) ou en édition (bouton "Modifier"). */}
+      <CaracteristiquesModal
+        bienId={id}
+        open={caracModal.open}
+        onClose={() => setCaracModal((s) => ({ ...s, open: false }))}
+        initialMode={caracModal.mode}
+      />
     </div>
   );
 }
