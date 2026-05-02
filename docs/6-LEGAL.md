@@ -1,7 +1,7 @@
 # 6. Légal Althy
 
 > **Source de vérité unique** pour la conformité juridique opérationnelle.
-> Last update : 2026-04-29
+> Last update : 2026-04-30 (v5)
 > Audience : Killian, avocat, futur DPO, Claude Code (alertes).
 > Entité opérationnelle : **HBM Swiss Sàrl** — IDE/TVA **CHE-179.984.757 TVA**.
 
@@ -55,7 +55,7 @@ HBM Swiss Sàrl est la société du fondateur (Killian Thébaud) qui sert de **v
 
 Cette règle permet le transfert futur vers Althy Sàrl sans refacto code (`grep -r "HBM Swiss"` doit ne rien trouver hors des fichiers de source de vérité).
 
-**Backlog code à corriger** (cf §6.14) : 3 occurrences hardcodées « Althy SA » dans le backend (`config.py:104`, `services/qr_facture.py:207`, `services/quittance.py:103`) — **CRITIQUE** à patcher avant le 1er client externe.
+**Backlog code à corriger** (cf §6.16) : 3 occurrences hardcodées « Althy SA » dans le backend (`config.py:104`, `services/qr_facture.py:207`, `services/quittance.py:103`) — **CRITIQUE** à patcher avant le 1er client externe.
 
 ---
 
@@ -74,7 +74,7 @@ Cette règle permet le transfert futur vers Althy Sàrl sans refacto code (`grep
 - Catégories de données (identité, contact, financières, IA).
 - Catégories de personnes concernées (proprios, locataires, candidats).
 - Sous-traitants (cf §6.4).
-- Durées de conservation (cf §6.10).
+- Durées de conservation (cf §6.12).
 - Mesures de sécurité (chiffrement, RLS, audit logs).
 
 ### Délégué à la protection des données — DPD (art. 10)
@@ -120,7 +120,63 @@ Cette règle permet le transfert futur vers Althy Sàrl sans refacto code (`grep
 
 ---
 
-## 6.5 IA et données personnelles
+## 6.5 APIs publiques suisses (sources de données)
+
+Cf [`3-ARCHITECTURE.md`](./3-ARCHITECTURE.md#38-intégrations-externes) §3.8 et [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md) §A1 pour la liste exhaustive et les détails techniques.
+
+| API | Source | Statut juridique |
+|---|---|---|
+| **GeoAdmin Swisstopo** | Confédération | Données ouvertes (LGéo / OGéo) — réutilisation libre, mention « source : swisstopo » obligatoire |
+| **RegBL** | OFS | Données ouvertes — réutilisation libre, mention OFS |
+| **BNS** | Banque nationale suisse | Données publiques (taux hypothécaire) — citation source |
+| **OFS** | Office fédéral de la statistique | Données ouvertes — réutilisation libre, mention OFS |
+| **Zefix** | Confédération | Registre public — accès gratuit limité, conditions générales Zefix applicables |
+| **AFC** | Administration fédérale des contributions | Données publiques (barèmes, taux TVA) — redistribution commerciale automatisée à clarifier |
+| **Cadastre cantonal VS / VD / GE** | Cantons | Variable selon canton (LGéoCH + lois cantonales) — conditions par canton à vérifier |
+
+**Conformité nLPD** : aucune donnée personnelle n'est exposée par ces APIs (RegBL = bâtiment, GeoAdmin = parcelles, BNS = taux, OFS = statistiques agrégées). Elles peuvent être interrogées sans collecte préalable de consentement utilisateur.
+
+**Mentions de source** : tous les outputs Althy reposant sur ces APIs (fiche bien, estimation IA, rapports) doivent porter la mention « source : swisstopo / OFS / BNS » conformément aux conditions de réutilisation des données ouvertes CH.
+
+**Question avocat** : la redistribution des barèmes AFC dans nos PDFs (quittances, fiscalité) constitue-t-elle une « utilisation commerciale » nécessitant une autorisation préalable ? Cf [questions archivées §3.A.5](./archive/legal/dossier-avocat-audit-juridique-2026-04-19.md).
+
+---
+
+## 6.6 DBs propriétaires Althy anonymisées
+
+Althy constitue progressivement des bases de données différenciatrices (prix m² loyer, prix m² vente, démographique locataire, comparables vente, tendances marché 5 ans). Cf [`3-ARCHITECTURE.md`](./3-ARCHITECTURE.md#38-intégrations-externes) §3.8 et [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md) §A2 pour la liste exhaustive et les sources d'alimentation.
+
+### Garantie d'anonymisation k-anonymity ≥ 5
+
+**Toutes** les DBs propriétaires sont alimentées avec des données anonymisées selon le principe **k-anonymity ≥ 5** : chaque enregistrement est indistinguable d'au moins 4 autres sur les attributs quasi-identifiants (zone géographique, surface, type de bien, année de construction). Cela garantit qu'un attaquant ne peut pas remonter à un bien ou un locataire identifiable depuis les statistiques publiées ou commercialisées.
+
+**Procédure technique** :
+- Agrégation par zone NPA (jamais par adresse précise ni EGID).
+- Surface arrondie (tranches de 10 m²).
+- Année construction arrondie (tranches de 5 ans).
+- Suppression de tous les identifiants directs (nom, IDE, EGID, EWID, parcelle).
+- Validation k-anonymity automatisée avant publication.
+
+### Conformité nLPD
+
+L'anonymisation au sens de l'**art. 5 let. a nLPD** doit être **irréversible** pour sortir du champ des données personnelles. Si k-anonymity ≥ 5 réduit fortement la probabilité de ré-identification, un **audit technique formel** est prévu Phase 2 (~CHF 1 500 — cf §6.16 TODO Killian) avant exploitation commerciale, notamment pour l'**indice Althy des loyers romands** prévu Phase 5+ (commercialisation API B2B banques / gérances).
+
+### Sources d'alimentation et risques juridiques
+
+| DB Althy | Sources | Phase | Risque juridique principal |
+|---|---|---|---|
+| Prix m² loyer / vente par zone | Listings + contrats Althy + scraping anonymisé portails | P2-P3 | Conditions scraping portails (LCD art. 5 — actes parasitaires) à valider |
+| Démographique locataire | TenantFile Althy anonymisé | P3 | k-anonymity strict requis (données sensibles) |
+| Risques (zones inondables, bruit) | Couches publiques OFEV + cantonales | P3 | Données publiques — pas de risque |
+| Barème AFC travaux déductibles | AFC + jurisprudence | P2 | Cf §6.5 (redistribution commerciale) |
+| Comparables vente IA enrichis | DB Althy + registre foncier + portails | P3 | Statut registre foncier cantonal à vérifier |
+| Tendances marché 5 ans | Historique Althy + données OFS | P2 | Données OFS = OK ; historique Althy = anonymisation requise |
+
+**Question avocat** : la commercialisation Phase 5+ de l'« indice Althy des loyers romands » via API B2B (banques, gérances, assurances) requiert-elle un cadre contractuel spécifique (CGV API, SLA, garantie anonymisation, clause de non-ré-identification) ? Cf [questions archivées §3.A.6](./archive/legal/dossier-avocat-audit-juridique-2026-04-19.md).
+
+---
+
+## 6.7 IA et données personnelles
 
 ### Pseudonymisation avant envoi
 
@@ -148,7 +204,7 @@ L'IA Anthropic Claude traite des contextes contenant potentiellement des noms de
 
 ---
 
-## 6.6 LCD (RS 241) — Slogans, témoignages, preuves sociales
+## 6.8 LCD (RS 241) — Slogans, témoignages, preuves sociales
 
 ### Témoignages — règles strictes
 
@@ -172,7 +228,7 @@ L'IA Anthropic Claude traite des contextes contenant potentiellement des noms de
 
 ---
 
-## 6.7 CO art. 253ss / 412ss — Gestion locative
+## 6.9 CO art. 253ss / 412ss — Gestion locative
 
 ### Frais dossier locataire
 
@@ -200,7 +256,7 @@ L'IA Anthropic Claude traite des contextes contenant potentiellement des noms de
 
 ---
 
-## 6.8 LSFin / FINMA
+## 6.10 LSFin / FINMA
 
 ### QR direct (paiement loyer) — pas de FINMA
 
@@ -227,7 +283,7 @@ L'IA Anthropic Claude traite des contextes contenant potentiellement des noms de
 
 ---
 
-## 6.9 Communications (LCD art. 3 al. 1 let. o)
+## 6.11 Communications (LCD art. 3 al. 1 let. o)
 
 ### Email transactionnel
 
@@ -256,7 +312,7 @@ L'IA Anthropic Claude traite des contextes contenant potentiellement des noms de
 
 ---
 
-## 6.10 Rétention données
+## 6.12 Rétention données
 
 | Type de donnée | Durée | Base légale |
 |---|---|---|
@@ -274,7 +330,7 @@ L'IA Anthropic Claude traite des contextes contenant potentiellement des noms de
 
 ---
 
-## 6.11 Propriété intellectuelle
+## 6.13 Propriété intellectuelle
 
 ### Logo Althy
 
@@ -300,7 +356,7 @@ L'IA Anthropic Claude traite des contextes contenant potentiellement des noms de
 
 ---
 
-## 6.12 Clauses de non-responsabilité
+## 6.14 Clauses de non-responsabilité
 
 ### Sphère IA
 
@@ -331,7 +387,7 @@ L'IA Anthropic Claude traite des contextes contenant potentiellement des noms de
 
 ---
 
-## 6.13 Contenus légaux par pays (i18n)
+## 6.15 Contenus légaux par pays (i18n)
 
 **Structure** :
 - `frontend/src/legal/{CH,FR,DE,IT}/` (4 dossiers — placeholders FR/DE/IT non remplis).
@@ -359,7 +415,7 @@ Cf [`3-ARCHITECTURE.md`](./3-ARCHITECTURE.md) §3.7.
 
 ---
 
-## 6.14 Backlog juridique
+## 6.16 Backlog juridique
 
 ### Questions encore ouvertes (référence archive)
 
@@ -377,6 +433,21 @@ Cf [`3-ARCHITECTURE.md`](./3-ARCHITECTURE.md) §3.7.
 
 → Action : corriger via la source unique `legal-entity.ts` / `config.py` + appliquer `LEGAL.name` partout.
 
+### Cadre légal du rôle Hunter cross-produit
+
+Le rôle **Hunter** (apporteur de mandat) est ouvert à **tout utilisateur Althy**, pas uniquement aux pros (cf [`1-VISION.md`](./1-VISION.md#15-les-3-acteurs-pros-de-lécosystème) §1.5 et [`2-ROADMAP.md`](./2-ROADMAP.md#26-phase-3--marketplace-3-acteurs) §2.6). Activation Phase 3 sur location, Phase 4 sur vente. Slogan : *« Finance ton réseau »*. Champs `hunter_id` + `hunter_commission_rate` sur `Bien`, split commission à la conclusion via Stripe Connect.
+
+Le rôle pose plusieurs questions juridiques à clarifier avec un avocat spécialisé droit immobilier CH **avant le lancement Phase 3** :
+
+1. **Qualification d'apport d'affaires immobilier** — Un Hunter non-pro qui apporte un mandat de location/vente exerce-t-il une activité réglementée ? Distinction avec courtage (CO art. 412+) et gérance professionnelle (autorisations cantonales).
+2. **Réglementation cantonale** — Plusieurs cantons (VD, GE, NE, FR, VS) imposent des autorisations spécifiques pour activité immobilière professionnelle. Quel seuil de transactions au-delà duquel l'activité Hunter devient « professionnelle » ?
+3. **Statut fiscal du Hunter** — La commission Hunter (versée via Stripe Connect) est-elle un revenu accessoire (impôt sur le revenu) ou une activité indépendante (cotisations AVS dès CHF 2 300/an) ? Obligations déclaratives Althy plateforme ?
+4. **LCD art. 3 — obligations d'information** — Quelle information obligatoire envers le proprio quand un Hunter présente un mandat ? Conflit d'intérêts si Hunter = locataire candidat ou acheteur potentiel ?
+5. **Obligations Althy plateforme** — Responsabilité de la plateforme en cas de mandat illégal apporté par un Hunter (vérification IDE, lutte anti-blanchiment LBA art. 2 et 3, vérification identité du Hunter) ?
+6. **Cadre du split commission** — Le champ `hunter_commission_rate` doit-il être plafonné par la loi (taux usuriers, équité contractuelle CO art. 21) ?
+
+→ Action : consultation avocat spécialisé droit immobilier CH (~CHF 1 500 — cf TODO Killian Phase 3 ci-dessous).
+
 ### TODO Killian (échéances Phase 1)
 
 - [ ] **Consultation avocat** (2h, ~CHF 750) — répondre aux 26 questions archivées.
@@ -388,12 +459,15 @@ Cf [`3-ARCHITECTURE.md`](./3-ARCHITECTURE.md) §3.7.
 - [ ] **AIPD module IA** Phase 2 (~CHF 3 000 - 5 000).
 - [ ] **Avis FINMA formel** sur 3 % commission loyers Phase 2 (~CHF 1 500 - 3 000).
 - [ ] **Statut RC + IDE Althy Sàrl** si constitution future.
+- [ ] **Validation cadre légal Hunter cross-produit** (Phase 3, ~CHF 1 500 — avocat spécialisé droit immobilier CH) — répondre aux 6 questions de la sous-section « Cadre légal du rôle Hunter cross-produit » ci-dessus.
+- [ ] **Audit anonymisation DBs propriétaires** (Phase 2, ~CHF 1 500 — avocat nLPD + test technique de ré-identification) — valider que k-anonymity ≥ 5 est effectivement atteint avant exploitation commerciale (notamment indice Althy des loyers romands Phase 5+).
 
-### Coût juridique total estimé Phase 1 → Phase 2
+### Coût juridique total estimé Phase 1 → Phase 5+
 
-- Phase 1 : ~CHF 1 000 (consultation + patches).
-- Phase 2 : ~CHF 8 000 - 12 000 (AIPD + FINMA + EUIPO + audit sécurité).
-- Phase 5+ : ~CHF 5 000 par pays additionnel (DACH).
+- Phase 1 : ~CHF 1 000 (consultation + patches code).
+- Phase 2 : ~CHF 9 500 - 13 500 (AIPD module IA + FINMA + EUIPO + audit sécurité + audit anonymisation DBs propriétaires).
+- Phase 3 : ~CHF 1 500 (validation cadre Hunter cross-produit).
+- Phase 5+ : ~CHF 5 000 par pays additionnel (DACH) + ~CHF 3 000 cadre commercial revente données API B2B.
 
 ---
 
@@ -404,6 +478,7 @@ Cf [`3-ARCHITECTURE.md`](./3-ARCHITECTURE.md) §3.7.
 - [3-ARCHITECTURE.md](./3-ARCHITECTURE.md) — Stack technique + sécurité
 - [4-PRODUIT.md](./4-PRODUIT.md) — Spec fonctionnelle
 - [5-FINANCES.md](./5-FINANCES.md) — Modèle économique
+- [7-CATALOGUE-DONNEES-ALTHY.md](./7-CATALOGUE-DONNEES-ALTHY.md) — Catalogue données granulaire (sources, anonymisation, ownership)
 - [archive/legal/dossier-avocat-audit-juridique-2026-04-19.md](./archive/legal/dossier-avocat-audit-juridique-2026-04-19.md) — 26 questions avocat (référence)
 - `frontend/src/lib/legal-entity.ts` — source unique entité légale frontend
 - `backend/app/core/config.py` — `ALTHY_CREDITOR_NAME` / `ALTHY_CREDITOR_IDE`
