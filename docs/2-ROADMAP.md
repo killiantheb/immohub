@@ -137,7 +137,7 @@ Ces périmètres sont **figés en exclusion Phase 1**. Toute tentation d'inclusi
 
 **OCR factures** — pré-remplissage des factures depuis scan ou photo mobile. Affectation IA proprio/locataire selon règle OBLF. Workflow validation humaine.
 
-**Signature électronique conforme CH** — fournisseur à arbitrer (DocuSign, Skribble, ou solution Althy native). Valeur juridique de l'EDL signé électroniquement à confirmer avec avocat (cf [`6-LEGAL.md`](./6-LEGAL.md) §6.7).
+**Signature électronique conforme CH** — fournisseur à arbitrer (DocuSign, Skribble, ou solution Althy native). Valeur juridique de l'EDL signé électroniquement à confirmer avec avocat (cf [`6-LEGAL.md`](./6-LEGAL.md) §6.9).
 
 **Critères de sortie Sprint 13** :
 - Bail standard généré automatiquement à partir du bien + locataire + montants.
@@ -224,7 +224,7 @@ Ces périmètres sont **figés en exclusion Phase 1**. Toute tentation d'inclusi
 - **Rate limiting** : 30 interactions/jour pour le plan starter, 100/jour pour proprio_pro.
 - **Validation humaine obligatoire** avant toute action irréversible (envoi email, débit, suppression).
 - **Disclaimer permanent** : la sphère propose, l'humain décide. Pas de mode autonome.
-- **Pseudonymisation** des données personnelles avant envoi à Anthropic Claude (cf [`6-LEGAL.md`](./6-LEGAL.md) §6.5).
+- **Pseudonymisation** des données personnelles avant envoi à Anthropic Claude (cf [`6-LEGAL.md`](./6-LEGAL.md) §6.7).
 
 **Hors scope Phase 1** (reporté Phase 2-3) :
 - Sphère agentique (actions autonomes en chaîne).

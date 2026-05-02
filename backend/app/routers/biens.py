@@ -359,6 +359,6 @@ async def get_bien_potentiel_v2(
     Phase 2-3 : intégration API marché réelle (Comparis, Homegate Open Data).
 
     Disclaimer LSFin : l'estimation est INDICATIVE et ne constitue pas une
-    expertise formelle. Cf docs/6-LEGAL.md §6.8.
+    expertise formelle. Cf docs/6-LEGAL.md §6.10.
     """
     return await BienService(db).get_potentiel_ia_v2(bien_id, current_user)

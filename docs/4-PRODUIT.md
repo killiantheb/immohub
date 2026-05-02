@@ -120,7 +120,7 @@ Doctrine v5 figée (cf [`1-VISION.md`](./1-VISION.md#11-le-concept-en-1-phrase) 
 
 - **Validation humaine obligatoire** avant toute action irréversible (envoi email, débit, suppression, génération document signé).
 - **Disclaimer permanent** : « Réponses IA à titre indicatif, validation utilisateur requise ».
-- **Pseudonymisation** des données personnelles avant envoi à Anthropic Claude (cf [`6-LEGAL.md`](./6-LEGAL.md) §6.5).
+- **Pseudonymisation** des données personnelles avant envoi à Anthropic Claude (cf [`6-LEGAL.md`](./6-LEGAL.md) §6.7).
 - **Rate limiting** : 30 interactions/jour pour `starter`, 100/jour pour `proprio_pro`. Au-delà : réponse simplifiée (fewer tokens).
 - **Audit log** : toute interaction sphère + action proposée + validation user → tracée dans `ai_sessions`.
 
@@ -158,7 +158,7 @@ Source : `frontend/src/app/(landing)/`.
 - "2 847 estimations réalisées" : **RETIRÉ** (non vérifiable).
 - "130 biens gérés" : à clarifier (= biens Sunimmo, séparation marque).
 
-Détail : [`6-LEGAL.md`](./6-LEGAL.md) §6.6.
+Détail : [`6-LEGAL.md`](./6-LEGAL.md) §6.8.
 
 ---
 
@@ -240,7 +240,7 @@ Chaque card affiche un résumé (3-5 lignes), une action principale (1 clic), et
 
 ### Modification / archivage soft delete (sprint 12 étape 5 ⏭️)
 
-- **Pas de hard delete** (préservation audit nLPD — cf [`6-LEGAL.md`](./6-LEGAL.md) §6.10).
+- **Pas de hard delete** (préservation audit nLPD — cf [`6-LEGAL.md`](./6-LEGAL.md) §6.12).
 - `is_active = false` pour archive.
 - Filtre par défaut : `WHERE is_active = true` partout.
 - Bouton « Archiver » 1 clic + écran de confirmation (action irréversible-ish).
@@ -309,7 +309,7 @@ Chaque card affiche un résumé (3-5 lignes), une action principale (1 clic), et
 ### Quittances automatiques
 
 - Générées à la réconciliation du loyer.
-- PDF avec disclaimer IA (cf [`6-LEGAL.md`](./6-LEGAL.md) §6.12).
+- PDF avec disclaimer IA (cf [`6-LEGAL.md`](./6-LEGAL.md) §6.14).
 - Endpoint : `POST /loyers/quittance`.
 - Émetteur : HBM Swiss Sàrl (source `config.py` → `ALTHY_CREDITOR_NAME`).
 
@@ -576,7 +576,7 @@ Détail historique : `docs/plan-communication-roles-phase1.md` (à intégrer ou 
 |---|---|
 | Simple | 1 clic « Archiver » + écran de confirmation. |
 | Complet | `is_active = false`. Conserve historique complet (changements, paiements, documents). Audit conservé indéfiniment. |
-| IA-ready | Query `WHERE is_active = true` partout. État archivé introspectable via `bien.is_active`. Soft delete préserve l'audit nLPD ([`6-LEGAL.md`](./6-LEGAL.md) §6.10). |
+| IA-ready | Query `WHERE is_active = true` partout. État archivé introspectable via `bien.is_active`. Soft delete préserve l'audit nLPD ([`6-LEGAL.md`](./6-LEGAL.md) §6.12). |
 
 ---
 

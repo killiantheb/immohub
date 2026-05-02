@@ -45,7 +45,7 @@
 - Source unique backend : `backend/app/core/config.py` (`ALTHY_CREDITOR_NAME`, `ALTHY_CREDITOR_IDE`).
 - ⚠️ **Jamais hardcoder** `« HBM Swiss Sàrl »` / `« Althy SA »` / `« Althy Sàrl »` dans le code.
 - Permet le transfert futur vers Althy Sàrl sans refacto.
-- Backlog code à corriger : 3 occurrences `« Althy SA »` hardcodées backend (cf [`docs/6-LEGAL.md`](docs/6-LEGAL.md) §6.14).
+- Backlog code à corriger : 3 occurrences `« Althy SA »` hardcodées backend (cf [`docs/6-LEGAL.md`](docs/6-LEGAL.md) §6.16).
 
 ### B.4 Direction Artistique
 
@@ -108,7 +108,7 @@ Si une livraison échoue **un seul** des 3 critères → retour à la planche à
 
 - ⚠️ **Interdit** de fabriquer des données qui se présentent comme réelles (faux loyers, faux KPIs, faux témoignages).
 - Données de démo → marquées `[DEMO]` ou seed explicite.
-- Témoignages : sourçables, datés, vérifiables (cf [`docs/6-LEGAL.md`](docs/6-LEGAL.md) §6.6).
+- Témoignages : sourçables, datés, vérifiables (cf [`docs/6-LEGAL.md`](docs/6-LEGAL.md) §6.8).
 
 ---
 
@@ -159,7 +159,7 @@ Détail : [`docs/3-ARCHITECTURE.md`](docs/3-ARCHITECTURE.md) §3.12 + [`docs/4-P
 Voir [`docs/2-ROADMAP.md`](docs/2-ROADMAP.md) §2.10 (règles transverses) et §2.11 (backlog vision long terme).
 
 Backlog connu :
-- 3 occurrences `« Althy SA »` hardcodées backend → cf [`docs/6-LEGAL.md`](docs/6-LEGAL.md) §6.14.
+- 3 occurrences `« Althy SA »` hardcodées backend → cf [`docs/6-LEGAL.md`](docs/6-LEGAL.md) §6.16.
 - Aliases `--althy-orange*` dans `globals.css` → à supprimer quand plus aucune référence `C.orange` / `var(--althy-orange)`.
 - 4 `const S` résiduels (structurels CSSProperties) → garder tels quels.
 - TODO connus backend (WhatsApp, SMS Twilio, CAMT.054 réel, OCR enrichi, Email sequences) → cf [`docs/4-PRODUIT.md`](docs/4-PRODUIT.md) §4.10 et §4.13.
