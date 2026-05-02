@@ -1,7 +1,7 @@
 # 5. Finances Althy
 
 > **Source de vérité unique** pour le modèle économique + projections.
-> Last update : 2026-04-29
+> Last update : 2026-04-30 (v5)
 > Audience : Killian, futurs investisseurs, futur DAF.
 > Entité opérationnelle : **HBM Swiss Sàrl** (CHE-179.984.757 TVA).
 
@@ -84,7 +84,13 @@
 - + Déménagement (commission ~6 %)
 - + Activation rôle agence : abo **CHF 49/agent/mois** (A5)
 - + Portail proprio agence (A6) : abo **CHF 9/mois**
-- + Canaux diffusion annonce : **CHF 9/mois par canal** (Homegate, ImmoScout24, immobilier.ch, ImmoStreet — Flatfox + althy.ch inclus gratuitement)
+- + **4 packs de diffusion annonce** :
+  - **Découverte** (CHF 0/mois, inclus abo) — Althy + Flatfox.
+  - **Standard** (CHF 9/mois) — + 1 canal au choix (Homegate OU ImmoScout24).
+  - **Pro** (CHF 19/mois) — + Homegate + ImmoScout24 + immobilier.ch.
+  - **Premium** (CHF 29/mois) — tous canaux + boost IA fiche annonce + remontée prioritaire.
+  - Stratégie portails : Althy = distributeur low-cost négocié en volume avec SMG/Homegate, redistribué aux proprios à fraction du prix unitaire portail. Cf [`2-ROADMAP.md`](./2-ROADMAP.md#25-phase-2--lancement-public-payant) §2.5 + [`1-VISION.md`](./1-VISION.md#16-stratégie-agences-et-portails) §1.6.
+- + **Centre comptable** (agrégateur intelligent inclus dans abo agence + module premium proprio_solo CHF 9/mois optionnel) — collecte écritures + catégorisation client/mandat/bien + KPI efficacité + insights IA + export 1 clic Bexio/Banana/AbaWeb. Pas un ERP type SAP : un agrégateur qui prépare le terrain pour le fiduciaire externe. Cf [`2-ROADMAP.md`](./2-ROADMAP.md#25-phase-2--lancement-public-payant) §2.5 + [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md).
 
 ### Phase 3 (marketplace 3 acteurs)
 
@@ -93,6 +99,7 @@
 - + Commission experts **8-15 %** (géomètres, archi, photographes)
 - + Abo `artisan_verified` **CHF 49/mois** (M1 généralisé)
 - + Abo `artisan_free_early` CHF 0 à vie (50 fondateurs / canton, stratégie Uber)
+- + **Centre comptable agence full** — multi-mandat + bilan simplifié + insights IA cross-mandats + détection anomalies + benchmarking anonymisé. Cf [`2-ROADMAP.md`](./2-ROADMAP.md#26-phase-3--marketplace-3-acteurs) §2.6.
 
 ### Phase 4 (Resales — ventes immo)
 
@@ -213,6 +220,18 @@ ARPU annuel proprio_solo ≈ CHF 2 167
 
 À multiplier par la cohorte cible × (1 - churn).
 
+**Hypothèse complémentaire post-Phase 2 (avec packs diffusion)** :
+
+- Pack **Standard** CHF 9/mois × 12 = CHF 108/an (taux adoption ~30 % cible)
+- Pack **Pro** CHF 19/mois × 12 = CHF 228/an (taux adoption ~10 % cible)
+- Pack **Premium** CHF 29/mois × 12 = CHF 348/an (taux adoption ~5 % cible)
+
+Contribution pondérée moyenne : **~CHF 50/an/proprio_solo** en Phase 2.
+
+ARPU annuel proprio_solo Phase 2 ≈ **CHF 2 217**.
+
+À affiner selon retours alpha + benchmarks SMG/Homegate négociés.
+
 ---
 
 ## 5.8 Plan recrutement par phase
@@ -301,5 +320,6 @@ ARPU annuel proprio_solo ≈ CHF 2 167
 - [3-ARCHITECTURE.md](./3-ARCHITECTURE.md) — Stack technique
 - [4-PRODUIT.md](./4-PRODUIT.md) — Spec fonctionnelle
 - [6-LEGAL.md](./6-LEGAL.md) — Conformité juridique
+- [7-CATALOGUE-DONNEES-ALTHY.md](./7-CATALOGUE-DONNEES-ALTHY.md) — Source de vérité granulaire (données, acquisition, phases)
 - `frontend/src/lib/plans.config.ts` — source de vérité tarifs
 - `backend/app/models/subscription.py` — modèle abonnements + grandfathering
