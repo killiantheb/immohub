@@ -1,7 +1,7 @@
 # 4. Produit Althy
 
 > **Source de vérité unique** pour la spec fonctionnelle.
-> Last update : 2026-04-29
+> Last update : 2026-04-30 (v5)
 > Audience : Killian, équipe produit, designers, Claude Code.
 > Entité opérationnelle : **HBM Swiss Sàrl** (CHE-179.984.757 TVA).
 
@@ -21,6 +21,18 @@
 | `expert` | 3 | hardcoded `false` | `DashboardExpert` | 🔮 ComingSoon |
 | `hunter` | post-3 | hardcoded `false` | `DashboardHunter` | 🔮 Phase 4 |
 | `acheteur_premium` | post-5 | hardcoded `false` | `DashboardAcheteur` | 🔮 Phase 5+ |
+
+**Mapping phases narratives** (cf [`1-VISION.md`](./1-VISION.md#111-vision-long-terme) §1.11 + [`2-ROADMAP.md`](./2-ROADMAP.md#22-synthèse-visuelle) §2.2) :
+
+| Phase | Nom narratif | Rôles activés |
+|---|---|---|
+| 1 | L'Assistant | `proprio_solo`, `locataire`, `super_admin` (+ `artisan` partiel M1 GE+VD) |
+| 2 | L'Intelligence | + `agence`, `portail_proprio` |
+| 3 | L'Écosystème | + `opener` (full), `artisan` (généralisé), `expert` |
+| 4 | Le Pilotage Patrimonial | + `hunter` cross-produit (location + vente) |
+| 5+ | L'Agent Autonome | + `acheteur_premium` |
+
+Le rôle `hunter` est **transversal** : tout user Althy (proprio, agence, voisin, ami) peut activer « mode Hunter » sur un bien avec accord du proprio. Slogan : *« Finance ton réseau »*.
 
 > **Note de comptage** : 9 rôles techniques dans le code (10 si on compte `acheteur_premium`) = **8 profils utilisateurs métier** + `super_admin` (rôle technique). Les 8 profils métier reflètent les 8 personas business du BP. Le rôle `super_admin` est technique (Killian + futurs admins ops).
 
@@ -44,6 +56,21 @@ Toute décision design — UI, schéma DB, endpoint, naming — passe un **tripl
 
 Si une livraison échoue **un seul** des trois critères → retour à la planche à dessin.
 
+### Règle 8 — Interaction directe « 1 clic » sur chaque carré
+
+Doctrine architecturale figée v5 (cf [`2-ROADMAP.md`](./2-ROADMAP.md#210-règles-transverses-toute-la-durée-du-projet) §2.10 + [`3-ARCHITECTURE.md`](./3-ARCHITECTURE.md#312-conventions-code) §3.12) :
+
+> Depuis n'importe quelle entité parente (fiche bien, fiche locataire, fiche mandat), l'utilisateur accède et modifie ses entités liées **sans changer de page**.
+
+**Application produit** :
+- Chaque carré (`DCard`) dans une fiche entité expose **3 capacités** : (1) **voir le détail** (clic ligne → modale ou side panel), (2) **créer un nouveau** (bouton `+` dans le header du carré), (3) **modifier l'existant** (clic ligne → mode édition inline ou modale).
+- Les sections globales (`/app/interventions`, `/app/locataires`, `/app/documents`) sont des **vues consolidées multi-biens**, jamais le seul point d'accès à une entité.
+- **3 patterns de modale** :
+  - **Fullscreen** : édition de l'entité elle-même (caractéristiques bien, profil utilisateur).
+  - **Side panel droit 50%** : pilotage sous-entité liée (intervention, devis, paiement, candidature).
+  - **Modale rapide** (max 480px) : actions ponctuelles (confirmation, note rapide).
+- **Source de vérité granulaire** : [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md) — pour chaque carré de chaque rôle, le catalogue liste les données affichées et les actions 1 clic accessibles.
+
 ### Patterns appliqués
 
 - **Création bien express** (sprint 12 ✅) — 8 champs au lieu de 30+. Auto-fill canton depuis NPA. Titre auto-généré « Type, Adresse, Ville ».
@@ -51,11 +78,21 @@ Si une livraison échoue **un seul** des trois critères → retour à la planch
 - **Cards interactives** (sprint 12 étape 4) — pas de menus imbriqués. Click sur la card « Locataire » → navigation directe vers la sous-page (Phase 1) ou le module global filtré (Phase 2-3).
 - **Pas de hard delete** — toute action irréversible nécessite un double clic + confirmation explicite.
 
+### Direction artistique scientifique
+
+Doctrine v5 figée (cf [`1-VISION.md`](./1-VISION.md#11-le-concept-en-1-phrase) §1.1 + [`3-ARCHITECTURE.md`](./3-ARCHITECTURE.md#36-direction-artistique) §3.6) : esthétique scientifique (discipline, rigueur, ordre). Les UI métier suivent le pattern **carrés (cards) avec données majeures + clic pour le détail**. Graphiques (courbes rendement, barres comparatives, donuts répartition), organigrammes (workflows interventions, pipelines candidatures), tableaux structurés (configurables tri/filtre/colonnes), timelines (audit log, historique bien), cartes interactives (vue géographique, cadastre VSGIS).
+
+**Sentiment cible** : *« on a l'impression de jouer quand on gère son bien »* — gamification subtile par la donnée. KPI gros chiffres avec variations colorées. Badges sémantiques (vert/ambre/rouge/or).
+
+**Cible UX double** : grand-père qui gère 1 appartement à Lausanne ↔ Bernard Nicod qui pilote 5000 lots. Le même produit doit servir les deux sans compromis. Toggle vue (cartes/table/carte interactive) selon volume.
+
 ---
 
 ## 4.3 La Sphère IA
 
 **Concept** : interface conversationnelle principale, accessible depuis tout l'app via la sphère flottante (`SphereWidget`). L'utilisateur écrit (ou dit, plus tard) en langage naturel. La sphère comprend l'intent, propose une action, demande validation.
+
+**Implémentation visuelle par phase** : **Phase 1** = gradient CSS sobre (composant `AlthySphere.tsx` actuel). **Phase 2+** = remplacement par asset designer externe premium (Lottie / Three.js / WebGL animation) pour atteindre le niveau de finition cible Anthropic / Apple Siri. Décision figée 30/04/2026 : on ne lance pas l'option designer externe avant que Phase 1 soit fonctionnelle (priorité = produit qui marche, pas wow effect prématuré).
 
 **Source code** : `backend/app/routers/sphere_agent.py` + `backend/app/services/ai_service.py` + `frontend/src/components/sphere/AlthySphere.tsx`.
 
@@ -191,6 +228,8 @@ Détail : [`6-LEGAL.md`](./6-LEGAL.md) §6.6.
 └──────────┘ └──────────┘ └──────────┘ └─────────┘
 ```
 
+**Source de vérité granulaire** : pour chaque carré de la fiche bien, voir [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md) — la rubrique « Rôle 1 — proprio_solo / SECTION UI : Fiche bien » liste exhaustivement (1) les ~30 champs du header (identité, caractéristiques techniques, équipements, distances, conditions location, description publique, fiscalité), (2) les 6 carrés (Locataire, Finances, Estimation IA, Interventions, Documents, Historique) avec les données affichées + actions 1 clic, (3) les modales associées (gestion photos, caractéristiques lecture/édition, side panel intervention), (4) les sous-sections enrichies P2-P4 (Valorisation IA, Maintenance prédictive, Marché local, Optimisation fiscale IA).
+
 Chaque card affiche un résumé (3-5 lignes), une action principale (1 clic), et un lien vers la sous-page complète. Click sur la card → navigation vers la sous-page existante (Phase 1) ou le module global filtré (Phase 2-3 — cf [`3-ARCHITECTURE.md`](./3-ARCHITECTURE.md) §3.11).
 
 ### Édition inline + optimistic update
@@ -223,6 +262,8 @@ Chaque card affiche un résumé (3-5 lignes), une action principale (1 clic), et
 - Cohérence dossier (pièces complètes ou manquantes)
 
 **Disclaimer obligatoire** : le score est une estimation IA, pas une décision. Le propriétaire reste seul juge.
+
+**Source de vérité granulaire TenantFile + scoring IA** : voir [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md) — la rubrique « Rôle 3 — locataire » liste les ~80 champs du dossier locataire (identité OCR pièce d'identité, type contrat, employeur OCR fiche salaire, garant éventuel via `BienContact`, score IA détaillé) + la doctrine d'acquisition (~50 % données acquises automatiquement par OCR + APIs publiques, le locataire ne saisit que le minimum).
 
 ### Candidature gratuite (politique viralité)
 
@@ -285,6 +326,36 @@ Chaque card affiche un résumé (3-5 lignes), une action principale (1 clic), et
 - **Phase 1 basique** : loyer brut annuel - interventions année civile.
 - **Phase 2 dynamique** : enrichi avec commission Althy 3 % + comparaison marché (estim IA) en temps réel.
 
+### 4 packs de diffusion annonce (Phase 2)
+
+Cf [`2-ROADMAP.md`](./2-ROADMAP.md#25-phase-2--lancement-public-payant) §2.5 + [`5-FINANCES.md`](./5-FINANCES.md#53-sources-de-revenus-par-phase) §5.3. Stratégie : Althy = distributeur low-cost négocié en volume avec SMG/Homegate, redistribué aux proprios à fraction du prix unitaire portail (cf [`1-VISION.md`](./1-VISION.md#16-stratégie-agences-et-portails) §1.6).
+
+| Pack | Prix mensuel | Canaux inclus |
+|---|---|---|
+| Découverte | CHF 0 (inclus abo) | Althy + Flatfox |
+| Standard | CHF 9 | + 1 canal au choix (Homegate OU ImmoScout24) |
+| Pro | CHF 19 | + Homegate + ImmoScout24 + immobilier.ch |
+| Premium | CHF 29 | Tous canaux + boost IA fiche annonce + remontée prioritaire |
+
+### Centre comptable (Phase 2-3)
+
+Cf [`2-ROADMAP.md`](./2-ROADMAP.md#25-phase-2--lancement-public-payant) §2.5 + [`5-FINANCES.md`](./5-FINANCES.md#53-sources-de-revenus-par-phase) §5.3. Pas un ERP type SAP — un **agrégateur intelligent** :
+
+- **Phase 2** (proprio_solo + agence) : collecte automatique des écritures (Transaction + Invoice + ChargeLine + WorkOrder.cout + commissions) + catégorisation client/mandat/bien + KPI efficacité (« 94 % sur ce bien, 76 % sur celui-là ») + insights IA d'amélioration. Export 1 clic vers Bexio API / Banana XML / AbaWeb / Excel / PDF récapitulatif.
+- **Phase 3** (agence full) : multi-mandat + bilan simplifié + insights IA cross-mandats + détection anomalies + benchmarking anonymisé.
+- **Phase 4** (agence enterprise) : audit forensique + clôtures + multi-société.
+
+### Nouveaux domaines Phase 1 (sprints 13-14)
+
+Détail exhaustif : [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md) §A3.
+
+- `OwnerStatement` — décompte propriétaire automatique (mensuel/trimestriel/annuel) avec PDF + validation 1 clic.
+- `Caution` (refacto `Contract.deposit`) + `CautionRetenue` — restitution avec retenues motivées (dégâts/impayés/charges/nettoyage/clés).
+- `ChargeLine` + `ChargeStatement` — charges détaillées qui-paie-quoi (proprio/locataire/partagé) + décompte annuel.
+- `IndexationEvent` — workflow indexation IPC structuré (préparée → envoyée → acceptée/contestée) avec formule officielle PDF cantonal.
+- `Reminder` — relances structurées (R1 / R2 / mise en demeure CO art. 257d) avec frais + intérêts moratoires.
+- `BankAccount` (refacto `User.iban`) — multi-comptes par usage (régie / cautions / charges / travaux), IBAN chiffré at-rest.
+
 ---
 
 ## 4.9 Module Documents
@@ -322,6 +393,8 @@ Chaque card affiche un résumé (3-5 lignes), une action principale (1 clic), et
 - Si `generated_by_ai = true` → `disclaimer_included` doit être `true`.
 - Pied de page automatique avec disclaimer.
 - Source texte : `frontend/src/legal/CH/disclaimer-ia.md`.
+
+**Source de vérité granulaire templates** : la liste actuelle des 10 types ci-dessus est l'inventaire Phase 1 minimal. Pour la liste exhaustive des templates générés par IA (incluant Phase 2-4 : décompte propriétaire, décompte de charges, formule officielle indexation par canton, mandat de vente, acte vente, etc.), voir [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md) — rubrique « SECTION UI : Documents » du proprio_solo. Doctrine : tout document généré par Claude porte le flag `documents.disclaimer_included = true`.
 
 ### Templates par canton
 
@@ -507,6 +580,27 @@ Détail historique : `docs/plan-communication-roles-phase1.md` (à intégrer ou 
 
 ---
 
+## 4.16 10 modules IA premium (Phases 2-4)
+
+Différenciateurs majeurs Althy vs concurrents (Garaio, IAZI, ImmoTop). Détails granulaires : [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md). Roadmap : [`2-ROADMAP.md`](./2-ROADMAP.md) §2.5 (Phase 2), §2.6 (Phase 3), §2.7 (Phase 4).
+
+| # | Module | Phase | Différenciateur |
+|---|---|---|---|
+| 1 | Valorisation du bien | P3-4 | Cadastre VSGIS + COS + comparables + projections 2030 + score d'opportunité |
+| 2 | Marché local | P2 | Tension locative + comparables IA + recommandations prix optimal |
+| 3 | Optimisation fiscale IA | P2 | Travaux à déduire + plafonds non utilisés + simulations N+1 |
+| 4 | Maintenance prédictive | P3 | Pannes anticipées + budget 5 ans + subventions cantonales |
+| 5 | Locataire idéal IA | P2 | Profil cible auto-généré + matching candidatures + détection risques |
+| 6 | Communication multi-canaux | P2 | WhatsApp + email centralisé + SMS + traduction auto FR/DE/IT/EN |
+| 7 | Sphère IA mobile / vocal | P3 | Commande vocale + briefing audio + multimodal photo+description |
+| 8 | Intégrations partenaires | P2-3 | Caution / assurance / déménagement / internet / énergie / SOS travaux |
+| 9 | Agent IA autonome | P3-4 | 4 niveaux d'autonomie + limites monétaires + actions autorisées |
+| 10 | Communauté proprios | P3 | Forum + avis artisans communautaires + webinaires + référencement Hunters |
+
+**Doctrine** : Althy n'est pas un logiciel de gestion locative. C'est un **agent intelligent** qui fait à ta place dans les limites définies. Cf [`1-VISION.md`](./1-VISION.md#11-le-concept-en-1-phrase) §1.1.
+
+---
+
 ## Annexes
 
 - [1-VISION.md](./1-VISION.md) — Vision macro Althy
@@ -514,4 +608,5 @@ Détail historique : `docs/plan-communication-roles-phase1.md` (à intégrer ou 
 - [3-ARCHITECTURE.md](./3-ARCHITECTURE.md) — Stack technique, DA, intégrations
 - [5-FINANCES.md](./5-FINANCES.md) — Modèle économique
 - [6-LEGAL.md](./6-LEGAL.md) — Conformité juridique
+- [7-CATALOGUE-DONNEES-ALTHY.md](./7-CATALOGUE-DONNEES-ALTHY.md) — Source de vérité granulaire (données par rôle, acquisition, phases, sections UI)
 - [`docs/session12/SPRINT-bien-complet.md`](./session12/SPRINT-bien-complet.md) — Sprint en cours détaillé
