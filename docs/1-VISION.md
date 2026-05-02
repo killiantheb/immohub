@@ -1,7 +1,7 @@
 # 1. Vision Althy
 
 > **Source de vérité unique** pour la vision macro Althy.
-> Last update : 2026-04-29
+> Last update : 2026-04-30 (v5)
 > Audience : Killian, futurs investisseurs, futurs employés, Claude IA en début de session.
 
 ---
@@ -11,6 +11,12 @@
 **Althy est l'assistant immobilier suisse qui gère la location et la vente sans agence, alimenté par l'IA. Une sphère à qui on parle. Elle comprend, agit, et demande de valider.**
 
 Concrètement : une plateforme SaaS où un propriétaire écrit (ou dit) « relance Dupont qui n'a pas payé son loyer », et la sphère IA construit la relance, l'envoie après validation, met à jour la compta, et journalise l'action. Le propriétaire reste maître. L'IA fait le travail répétitif.
+
+**Direction artistique : scientifique, discipline, rigueur, ordre.**
+
+Pattern carrés (cards) avec données majeures + clic pour le détail. Graphiques, courbes, organigrammes, tableaux structurés. Hiérarchie visuelle forte. L'utilisateur doit avoir l'impression de jouer quand il gère son bien — gamification subtile par la donnée.
+
+Cible UX double : un grand-père qui veut gérer son appartement à Lausanne ↔ Bernard Nicod qui pilote 5000 lots. Le même produit doit servir les deux sans compromis.
 
 ---
 
@@ -53,6 +59,12 @@ Persona cible : **un grand-père qui veut gérer son appartement à Lausanne san
 
 **Pricing Phase 1** : CHF 29/mois ou CHF 290/an (-16 %). Détails dans [5-FINANCES.md](./5-FINANCES.md).
 
+**Cible élargie post-Phase 2** :
+- **Agences PME** (50-500 lots) cherchant outil moderne — Phase 2.
+- **Proprios invités d'agences** (compte CHF 9/mois) — Phase 2.
+- **Grandes régies type Bernard Nicod** (1000+ lots) — Phase 3-4.
+- **DACH proprios + agences** (Zurich, Munich, Berne) — Phase 5+.
+
 ---
 
 ## 1.5 Les 3 acteurs pros de l'écosystème
@@ -69,7 +81,22 @@ Althy n'est pas qu'un outil pour propriétaires. À terme, c'est un écosystème
 
 ---
 
-## 1.6 8 USPs (Unique Selling Propositions)
+## 1.6 Stratégie agences et portails
+
+**Stratégie agences (cheval de Troie)** :
+- Public : *« Althy aide les agences à mieux travailler »*.
+- Réalité interne : chaque proprio invité accumule son historique sur Althy. Le bouton *« Althy Autonomie »* (CHF 39/mois — cf [5-FINANCES.md §5.4](./5-FINANCES.md#54-pivot-stratégique-a6--a4-althy-autonomie)) bascule en 1 clic. À masse critique (~5000 proprios actifs), Althy n'a plus besoin des agences pour scaler.
+
+**Stratégie portails (Homegate / SMG / ImmoScout24 / immobilier.ch)** :
+- Pas concurrent — **distributeur low-cost**. Althy négocie un volume avec SMG/Homegate et redistribue à ses proprios via 4 packs de diffusion (cf [2-ROADMAP.md §2.5](./2-ROADMAP.md) et [5-FINANCES.md §5.3](./5-FINANCES.md#53-sources-de-revenus-par-phase)).
+- Argument SMG : *« je vous apporte des proprios uniques qui n'auraient jamais payé chez vous parce que pour 1 bien c'est trop cher »*.
+- À ~5000 proprios, Althy peut ouvrir un portail public concurrentiel et négocier en position de force.
+
+**Aucune de ces deux stratégies n'apparaît dans la communication publique Althy.** Elles guident les décisions internes de roadmap.
+
+---
+
+## 1.7 8 USPs (Unique Selling Propositions)
 
 | # | USP | Vs concurrence |
 |---|---|---|
@@ -84,9 +111,11 @@ Althy n'est pas qu'un outil pour propriétaires. À terme, c'est un écosystème
 
 L'USP #6 est stratégique : c'est le levier de viralité. Un locataire qui n'a rien à payer recommande Althy à son propriétaire suivant. Un endpoint qui facturerait un locataire est un bug à corriger immédiatement.
 
+**Modules IA premium activables progressivement (P2-P4)** : Valorisation du bien (cadastre VSGIS + COS + comparables), Marché local, Optimisation fiscale IA, Maintenance prédictive, Locataire idéal IA, Communication multi-canaux WhatsApp, Assistant vocal, Intégrations partenaires (caution / assurance / déménagement / SOS), Agent IA autonome (4 niveaux d'autonomie), Communauté proprios. Détails : [4-PRODUIT.md](./4-PRODUIT.md) + [CATALOGUE-DONNEES-ALTHY.md](./7-CATALOGUE-DONNEES-ALTHY.md).
+
 ---
 
-## 1.7 Ce qu'Althy n'est PAS
+## 1.8 Ce qu'Althy n'est PAS
 
 Définir ce qu'on n'est pas vaut autant que définir ce qu'on est. Les non-engagements suivants sont **figés** et n'évolueront pas sans décision explicite documentée.
 
@@ -98,7 +127,7 @@ Définir ce qu'on n'est pas vaut autant que définir ce qu'on est. Les non-engag
 
 ---
 
-## 1.8 Le mot d'ordre « 1 clic »
+## 1.9 Le mot d'ordre « 1 clic »
 
 Toute décision design — UI, schéma DB, endpoint, naming — passe un **triple test obligatoire** :
 
@@ -115,7 +144,7 @@ Si une livraison échoue **un seul** des trois critères, retour à la planche �
 
 ---
 
-## 1.9 Stratégie cible
+## 1.10 Stratégie cible
 
 **Phase 1 = focus proprio_solo.**
 
@@ -132,9 +161,21 @@ Une agence en accélérateur de volume (Phase 2+) apporte d'un coup des dizaines
 
 ---
 
-## 1.10 Vision long terme
+## 1.11 Vision long terme
 
 Au-delà de la location pure (Phase 1) et du lancement public (Phase 2), Althy ambitionne de devenir une plateforme immobilière complète et un hub conversationnel.
+
+**Renommage narratif des phases** (pour la communication interne et future externe) :
+
+| Phase | Nom technique | Nom narratif |
+|---|---|---|
+| 1 | Location pure | **L'Assistant** |
+| 2 | Lancement public | **L'Intelligence** |
+| 3 | Marketplace 3 acteurs | **L'Écosystème** |
+| 4 | Resales | **Le Pilotage Patrimonial** |
+| 5+ | DACH + Hub IA | **L'Agent Autonome** |
+
+Cf [2-ROADMAP.md §2.2](./2-ROADMAP.md#22-synthèse-visuelle).
 
 **Marketplace 3 acteurs (Phase 3)** — Openers, Artisans, Hunters tous activés. Commissions 10-15 % sur missions, devis comparé par IA, audit IA matériaux.
 
@@ -155,4 +196,5 @@ Au-delà de la location pure (Phase 1) et du lancement public (Phase 2), Althy a
 - [4-PRODUIT.md](./4-PRODUIT.md) — Spec fonctionnelle, rôles, modules
 - [5-FINANCES.md](./5-FINANCES.md) — Modèle économique, pricing, projections
 - [6-LEGAL.md](./6-LEGAL.md) — Entité légale, conformité nLPD/RGPD, sous-traitants
+- [7-CATALOGUE-DONNEES-ALTHY.md](./7-CATALOGUE-DONNEES-ALTHY.md) — Source de vérité granulaire (données, acquisition, phases, sections UI)
 - [archive/](./archive/) — Documents historiques (sessions, sprints, BP périmé)
