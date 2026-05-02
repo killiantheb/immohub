@@ -2,7 +2,7 @@
 
 > **Source de vérité unique** pour les phases produit + sprints.
 > Remplace l'ancien `ROADMAP.md` (racine) et `SPRINT_LOG.md` (archivé).
-> Last update : 2026-04-29
+> Last update : 2026-04-30 (v5)
 > Audience : Killian, peer reviewer Claude Code, futurs collaborateurs.
 
 ---
@@ -23,14 +23,14 @@
 
 ## 2.2 Synthèse visuelle
 
-| Phase | Période | Objectif | Gate dur de sortie | i18n | Statut |
-|---|---|---|---|---|---|
-| **0** | M-3 → M0 | Stabilisation fusion | Migration 0029 prod + 1 bien créé via UI | fr-CH | ✅ TERMINÉE 25/04/2026 |
-| **1** | M1 → M6 | Location pure | 3+ testeurs autonomes + Sunimmo migré | fr-CH | 🔄 EN COURS |
-| **2** | M7 → M12 | Lancement public payant | 10+ payants + MRR ≥ CHF 500 + churn < 10 % | + de-CH | 🔮 PRÉVUE |
-| **3** | M13 → M18 | Marketplace 3 acteurs | 10+ Openers + 10+ Artisans + 5+ Hunters actifs | fr-CH + de-CH | 🔮 PRÉVUE |
-| **4** | M19 → M24 | Resales (vente immo) | 5+ ventes via Althy + module = 30 % MRR | fr-CH + de-CH | 🔮 PRÉVUE |
-| **5+** | An 3+ | Expansion DACH + Hub IA | 1er client Zurich payant | + it-CH + en | 🔮 EXPLORATOIRE |
+| Phase | Nom narratif | Période | Objectif | Gate dur de sortie | i18n | Statut |
+|---|---|---|---|---|---|---|
+| **0** | — | M-3 → M0 | Stabilisation fusion | Migration 0029 prod + 1 bien créé via UI | fr-CH | ✅ TERMINÉE 25/04/2026 |
+| **1** | L'Assistant | M1 → M6 | Location pure | 3+ testeurs autonomes + Sunimmo migré | fr-CH | 🔄 EN COURS |
+| **2** | L'Intelligence | M7 → M12 | Lancement public payant | 10+ payants + MRR ≥ CHF 500 + churn < 10 % | + de-CH | 🔮 PRÉVUE |
+| **3** | L'Écosystème | M13 → M18 | Marketplace 3 acteurs | 10+ Openers + 10+ Artisans + 5+ Hunters actifs | fr-CH + de-CH | 🔮 PRÉVUE |
+| **4** | Le Pilotage Patrimonial | M19 → M24 | Resales (vente immo) | 5+ ventes via Althy + module = 30 % MRR | fr-CH + de-CH | 🔮 PRÉVUE |
+| **5+** | L'Agent Autonome | An 3+ | Expansion DACH + Hub IA | 1er client Zurich payant | + it-CH + en | 🔮 EXPLORATOIRE |
 
 ---
 
@@ -276,12 +276,24 @@ Ces périmètres sont **figés en exclusion Phase 1**. Toute tentation d'inclusi
 - **Activation rôles agence + portail_proprio** — flags `true`, ajout à `ALLOWED_SIGNUP_ROLES`. Dashboard agence (Scénario B : comptes agence séparés avec vue multi-propriétaires + permissions + facturation agence).
 - **Compta dynamique** — transactions live mettent à jour le rendement net en temps réel. Comparaison vs marché via estim IA (« vous êtes 8 % en dessous du marché à Lausanne »).
 - **Architecture unifiée** — refactor vers modules globaux filtrés (`/app/locataires?bien_id=…` au lieu de `/app/biens/[id]/locataire`). Cf [`3-ARCHITECTURE.md`](./3-ARCHITECTURE.md) §3.11.
-- **Tunnel Stripe complet** — abo CHF 29 + canaux diffusion CHF 9 (Flatfox d'abord → SMG/Homegate+ImmoScout → immobilier.ch). Trial 14 jours sans carte → CHF 29 au M15.
+- **Tunnel Stripe complet** — abo CHF 29 + 4 packs diffusion (cf [`5-FINANCES.md`](./5-FINANCES.md#53-sources-de-revenus-par-phase) §5.3). Trial 14 jours sans carte → CHF 29 au M15.
+  - **Découverte** (CHF 0, inclus abo) — Althy + Flatfox.
+  - **Standard** (CHF 9/mois) — + 1 canal au choix (Homegate OU ImmoScout24).
+  - **Pro** (CHF 19/mois) — + Homegate + ImmoScout24 + immobilier.ch.
+  - **Premium** (CHF 29/mois) — tous canaux + boost IA fiche annonce + remontée prioritaire.
+  - Stratégie portails : Althy = distributeur low-cost, pas concurrent. Négociation volume avec SMG/Homegate. Cf [`1-VISION.md`](./1-VISION.md#16-stratégie-agences-et-portails) §1.6.
 - **Activation i18n DE** — traduction complète UI + templates emails DE + templates baux/quittances DE. CH alémanique ouverte (`LOCALES_ENABLED += 'de-CH'`).
 - **Email nurturing 5 séquences** — Welcome / Onboarding / Re-engagement / Churn prevention / Upsell.
 - **Programme parrainage** — crédit 1 mois gratuit parrain + filleul.
 - **Juridique pro** — CGU / CGV validés par avocat CH. Dépôt marque EUIPO (CHF 1100). Export RGPD / droit à l'oubli.
 - **Mode démo public `/demo`** — compte démo pré-rempli pour prospect agence.
+- **Centre comptable agrégateur intelligent** — collecte automatique des écritures (Transaction + Invoice + ChargeLine + WorkOrder.cout + commissions) + catégorisation client/mandat/bien + KPI efficacité (« 94% sur ce bien, 76% sur celui-là ») + insights IA d'amélioration. Export 1 clic vers Bexio API / Banana XML / AbaWeb / Excel / PDF récap. Pour proprio_solo et agence. Pas un ERP type SAP — un agrégateur qui prépare le terrain pour le fiduciaire externe.
+- **Module Locataire idéal IA** — profil cible auto-généré pour chaque bien vacant + matching candidatures + détection risques. Cf [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md).
+- **Module Marché local** — tension locative ville/canton + comparables + recommandations IA prix optimal (DB Althy propriétaire en construction).
+- **Module Optimisation fiscale IA** — suggestions travaux à déduire selon barème AFC + plafonds non utilisés + simulations N+1.
+- **Communication multi-canaux** — WhatsApp Business intégré + email centralisé + SMS Twilio + traduction auto FR/DE/IT/EN.
+- **Intégrations partenaires P2** — Caution électronique (FirstCaution / GoCaution / Swisscaution API) + Assurance RC ménage (La Mobilière / Generali API) + Déménagement (Movu / MoveAgain API).
+- **TVA module light** — assujetti / numéro / méthode / fréquence / taux par défaut. Décompte trimestriel auto.
 
 ---
 
@@ -299,6 +311,14 @@ Ces périmètres sont **figés en exclusion Phase 1**. Toute tentation d'inclusi
 - **Fonction Hunters cross-produit** — n'importe quel utilisateur active « mode Hunter » sur un bien avec accord proprio. Champs `hunter_id` + `hunter_commission_rate` sur `Bien`. Split commission à la conclusion. Slogan UX intégré : « finance ton réseau ». Applicable location (Phase 3) + vente (Phase 4).
 - **IA de matching transversal** — Opener / Artisan / agence partenaire le plus pertinent selon bien + localisation + historique + disponibilités.
 - **Conformité légale CH** — cadrer avec avocat spécialisé la conformité de l'activité d'apport d'affaires immobilier (réglementation cantonale).
+- **Module Valorisation du bien** — DB Althy cadastre VSGIS + couches risques + COS restant constructible + comparables vendus + estimation 2030 + score d'opportunité (vendre / garder / valoriser). Cf [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md).
+- **Module Maintenance prédictive** — pannes anticipées (chaudière / toiture) + calendrier entretien + budget travaux 5 ans + subventions cantonales applicables.
+- **Module Assistant vocal** — commande vocale (« Althy, mon locataire Crans n'a pas payé, prépare une relance ») + briefing audio + intégration Siri / Google Assistant + multimodal photo+description.
+- **Agent IA autonome niveau 1** — mode suggérer / agir avec confirmation. 4 niveaux d'autonomie configurables : jamais / suggérer / agir avec confirmation / agir librement. Limites monétaires + actions autorisées.
+- **Communauté proprios** — forum + avis artisans communautaires + bons plans + webinaires (taxes / juridique / IA) + référencement Hunters.
+- **Intégrations partenaires P3** — Internet (Salt / Sunrise / Swisscom API) + Énergie (BKW / Romande Energie) + Travaux d'urgence 24/7 (Easyfix / réseau artisans).
+- **TVA module medium** — prorata + correction préalable + surface commerciale/habitation.
+- **Centre comptable agence version full** — multi-mandat + bilan simplifié + insights IA cross-mandats.
 
 ---
 
@@ -318,6 +338,9 @@ Ces périmètres sont **figés en exclusion Phase 1**. Toute tentation d'inclusi
 - **Accompagnement démarches IA** — notaire / architecte / expert immobilier / banque (partenariats).
 - **Marketplace Openers vente** — visites vente avec pro dédié, pricing différent (engagement plus lourd).
 - **Compta agence complète** (déclenchée Phase 4) — EBITDA live, charges, salaires, audit IA rentabilité par mandat.
+- **Agent IA autonome niveau 2** — limites monétaires élargies + actions complexes + audit complet.
+- **TVA module full** — TVA sur vente + saisonnier + parking commercial + option TVA volontaire.
+- **Centre comptable agence enterprise** — audit forensique + clôtures + multi-société.
 
 ---
 
@@ -334,6 +357,8 @@ Ces périmètres sont **figés en exclusion Phase 1**. Toute tentation d'inclusi
   - Infomaniak kMail API — pour utilisateurs Infomaniak.
   - Pattern unifié `InboxParser` backend + UX conversation dans Althy avec suggestions d'action IA.
 - **App mobile** — PWA installable (couvre 80 % des cas pour 5 % du coût). App native iOS/Android si demande prouvée.
+- **Channel manager Airbnb / Booking nuitée** — uniquement si demande utilisateur prouvée. Module PMS-hôtelier complet (calendrier disponibilités, prix dynamique, codes serrure temporaires, taxe séjour). Saisonnier 4 mois mensualisé (saison hiver Crans/Verbier/Zermatt) reste géré dès Phase 1 via `Contract.type = "seasonal"` — pas de PMS, simple variante de bail.
+- **Agent IA autonome niveau 3** — autonomie quasi totale dans limites définies. Vision long terme.
 - **Extensions exploratoires NON figées** :
   - Gestion de copropriété (PPE).
   - Gestion portefeuille investisseur (ROI, cashflow, benchmarks).
@@ -374,6 +399,8 @@ Détail complet : [`docs/session12/SPRINT-bien-complet.md`](./session12/SPRINT-b
 
 **Règle 7 — i18n-ready dès Phase 1.** Aucune string UI hardcodée en FR. Tout passe par le système i18n. Aucun template backend (email, PDF, bail, quittance) hardcodé en FR. Tout templatisé par locale. Cf [`3-ARCHITECTURE.md`](./3-ARCHITECTURE.md) §3.7.
 
+**Règle 8 — Interaction directe « 1 clic » sur chaque carré.** Depuis n'importe quelle entité parente (fiche bien, fiche locataire, fiche mandat), on accède et modifie ses entités liées sans changer de page. Chaque carré dans une fiche doit permettre 3 capacités minimales : (1) voir le détail (clic ligne → modale ou side panel), (2) créer un nouveau (bouton + dans le carré), (3) modifier l'existant (clic ligne → mode édition). Les sections globales (`/app/interventions`, `/app/locataires`, `/app/documents`) sont des vues consolidées multi-biens, jamais le seul point d'accès à une entité. Cf [`4-PRODUIT.md`](./4-PRODUIT.md) + [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md).
+
 ---
 
 ## 2.11 Backlog vision long terme (post-Phase 5)
@@ -383,7 +410,7 @@ Modules mentionnés ici pour ne pas les oublier — **pas roadmappés** :
 - **Compta agence complète** — EBITDA live, charges, salaires, audit IA rentabilité par mandat.
 - **Sphère IA agentique** — actions autonomes avec validation post-hoc plutôt que pré-action.
 - **Mobile native** — vraie app iOS/Android si demande prouvée.
-- **Channel manager Airbnb / Booking** (court séjour) — uniquement si demande utilisateur prouvée.
+- **Channel manager Airbnb / Booking nuitée** — uniquement si demande utilisateur prouvée. À ne pas confondre avec saisonnier 4 mois mensualisé qui est déjà géré dès Phase 1 via `Contract.type = "seasonal"`.
 - **PPE / copropriété** — gestion charges communes, AG, décisions.
 - **Compta avancée multi-comptes** — multi-IBAN par bien, rapprochement multi-banques.
 - **Accompagnement démarches IA** — notaire, architecte, expert immobilier, banque.
@@ -400,5 +427,6 @@ Ces modules font partie de la vision Althy validée. Ils ne sont **pas abandonn�
 - **v3.1** (25 avril 2026) — MAJ État actuel post-merge fusion + post-migration 0029 prod.
 - **v3.2** (26 avril 2026) — Session 11 clôturée VERT + sprint 12 ouvert.
 - **v4** (29 avril 2026) — **Refonte documentaire complète**. `ROADMAP.md` racine archivé. Nouveau format en 6 docs vivants (1-VISION + 2-ROADMAP + 3-ARCHITECTURE + 4-PRODUIT + 5-FINANCES + 6-LEGAL). Phase 0 marquée terminée. Sprint 12 référencé court avec lien vers détail. Phases 2-5 condensées en Style B.
+- **v5** (30 avril 2026) — MAJ post-sprint refonte stratégique : renommage narratif phases (Assistant/Intelligence/Écosystème/Pilotage Patrimonial/Agent Autonome). Ajout Règle 8 « 1 clic interaction directe ». 4 packs diffusion P2 (au lieu de canaux 9 CHF). Ajout Centre comptable P2-3. Ajout 10 modules IA premium (Valorisation, Marché local, Optimisation fiscale, Maintenance prédictive, Locataire idéal IA, Communication multi-canaux, Assistant vocal, Intégrations partenaires, Agent IA autonome, Communauté proprios) répartis P2-P5+. Précision saisonnier 4 mois P1 vs nuitée P5+. Référence à 7-CATALOGUE-DONNEES-ALTHY.md ajoutée.
 
 **Prochaine révision** : uniquement sur événement concret (clôture sprint 12, fin Phase 1, feedback alpha contradictoire).
