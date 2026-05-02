@@ -1,7 +1,7 @@
 # 3. Architecture Althy
 
 > **Source de vérité unique** technique.
-> Last update : 2026-04-29
+> Last update : 2026-04-30 (v5)
 > Audience : Killian, devs, Claude Code, futur CTO.
 
 ---
@@ -80,6 +80,28 @@
 **Source de vérité** : `backend/alembic/versions/` — 20 migrations actives (004 → 0037).
 
 Le DDL exhaustif n'est **pas dupliqué dans cette doc** car il rotterait. Pour comprendre une table : ouvrir le fichier de migration correspondant ou le modèle SQLAlchemy `backend/app/models/`.
+
+**Source de vérité granulaire des données** : pour la liste exhaustive des champs par rôle utilisateur, leur acquisition (AUTO / DÉDUIT / IA / EXTERNE / USER / ONBOARDING), leur phase d'activation et leur section UI, voir [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md). Le catalogue couvre 8 rôles utilisateurs + 12 domaines transverses + ~250 données distinctes pour `proprio_solo`, ~150 pour `agence`, ~80 pour `locataire`.
+
+**Domaines à créer ou consolider sur les phases à venir** (cf [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md) §A3 pour la liste exhaustive de 40 domaines) :
+
+- **Phase 1** (sprints 12-15) : `BienAnnexe`, `BienCompteur`, `BienContact`, `BankAccount` (refacto `User.iban`), `OwnerStatement`, `Reminder`, `Caution` (refacto `Contract.deposit`), `CautionRetenue`, `ChargeLine`, `ChargeStatement`, `IndexationEvent`, `IABriefing`.
+- **Phase 2** : `TaxStatement`, `Mandate`, `MandateFee`, `VAT`, `VATReport`, `Invoice` (consolidation), `CreditNote`, `BankConnection`, `BankStatement`, `BankTransaction`, `BankMatching`, `PaymentBatch`, `Payment`, `Lead`, `LeadActivity`, `ListingChannel`, `AccountingExport`, `ApprovalWorkflow`, `UserBienAccess`, `UserModuleAccess`.
+- **Phase 3-4** : `SaleMandate`, `SaleOffer`, `HunterReferral`, `HunterContact`, `ProfileOpener`, `ProfileArtisan` (refacto), `ProfileHunter`, `ProfileAgence`.
+
+**Consolidations critiques (résolutions doublons audit data-model 30/04/2026)** :
+
+| Avant | Après (source de vérité unique) | Phase consolidation |
+|---|---|---|
+| 5 sources de loyer dispersées | `Contract.monthly_rent` | P1 |
+| 4 systèmes événements / interventions | `WorkOrder` unifié | P1 |
+| 5 systèmes documents | `Document` polymorphe | P1 |
+| 3 tables devis | `Quote` consolidé | P1 |
+| 2 systèmes openers | `ProfileOpener` | P3 |
+| 2 profils prestataires | `ProfileArtisan` | P2 |
+| `Paiement` + `Transaction` | `Transaction` unifié | P1 |
+
+Doctrine : **Une donnée = une source de vérité unique. Zéro doublon.** Tout endpoint qui modifie un domaine sensible (Bien, Contract, Caution, Transaction, OwnerStatement, Mandate) **doit** écrire dans `audit_logs` (trigger backend automatique).
 
 ### Top 10 tables critiques Phase 1
 
@@ -216,7 +238,9 @@ Les service rôles (backend FastAPI) bypassent RLS via `SUPABASE_SERVICE_KEY`. T
 
 **Logo** : 4 variantes « A althy » dans `frontend/src/components/AlthyLogo.tsx`. SVG inline pour permettre le coloring dynamique (gradient gold → prussian).
 
-**Sphère IA** : gradient radial gold (centre) → bleu profond (extérieur), animation framer-motion sur changement d'état (idle / listening / streaming). Composant : `frontend/src/components/sphere/AlthySphere.tsx`.
+**Sphère IA** : gradient radial gold (centre) → bleu profond (extérieur), animation framer-motion sur changement d'état (idle / listening / streaming). Composant : `frontend/src/components/sphere/AlthySphere.tsx`. **Phase 1** : implémentation CSS gradient sobre. **Phase 2+** : remplacement par asset designer externe premium (Lottie / Three.js / WebGL animation) pour atteindre le niveau de finition cible Anthropic / Apple Siri.
+
+**Direction artistique scientifique** (doctrine v5, 30/04/2026) : Althy adopte une esthétique scientifique (discipline, rigueur, ordre). Les UI métier suivent un pattern **carrés (cards) avec données majeures + clic pour le détail**. Graphiques (courbes, barres, donuts), organigrammes (workflows), tableaux structurés, hiérarchie visuelle forte. L'objectif est que l'utilisateur ait l'impression de **jouer quand il gère son bien** — gamification subtile par la donnée. Cible UX double : grand-père qui gère 1 appartement ↔ Bernard Nicod qui pilote 5000 lots, le même produit servant les deux sans compromis. Cf [`1-VISION.md`](./1-VISION.md#11-le-concept-en-1-phrase) §1.1.
 
 **Aliases legacy** dans `globals.css` (à supprimer post-migration) : `--althy-orange* = var(--althy-prussian*)`. Garder tant que `C.orange` apparaît dans le code.
 
@@ -292,6 +316,42 @@ Les service rôles (backend FastAPI) bypassent RLS via `SUPABASE_SERVICE_KEY`. T
 | **SIX QR-bill** | Génération QR-facture SPC 2.0 | 🔮 Sprint 15 |
 | **GoCaution / Swisscaution / Firstcaution** | Cautions partenaires | 🔮 Sprint 13 |
 | **La Mobilière / Raiffeisen** | Partenariats assurance / hypothèque | 🔮 Phase 2-3 |
+
+### APIs publiques suisses mobilisées
+
+Source de vérité : [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md) §A1.
+
+| API | Usage | Phase | Coût |
+|---|---|---|---|
+| **GeoAdmin Swisstopo** | Géocoding, EGID, EWID, parcelles, couches cadastre | P1 | Gratuit |
+| **RegBL** | Métadonnées bâtiment (surface, année construction, type) | P1 | Gratuit |
+| **BNS** | Taux hypothécaire de référence | P1 | Gratuit |
+| **OFS** | IPC, statistiques démographiques | P1 | Gratuit |
+| **Zefix** | Recherche IDE, raison sociale, registre du commerce CH | P2 | Gratuit (limité) |
+| **AFC** | Barèmes fiscaux, taux TVA | P2 | Gratuit |
+| **Cadastre cantonal VS (VSGIS)** | Couches cadastre Valais (terrain de jeu Crans-Montana) | P3 | Gratuit |
+| **Cadastre cantonal VD / GE** | Couches cadastre Vaud / Genève | P3 | Gratuit |
+
+**Stratégie d'acquisition automatisée** : ~44 % des données d'un bien sont acquises automatiquement (calcul, jointure, géocoding API publique) + ~10 % déduites + ~20 % par IA (OCR, Vision, scraping) + ~10 % via partenaires externes + ~16 % saisie utilisateur (dont ~50 % onboarding une seule fois). Doctrine : *« le proprio fait le minimum, l'IA fait le reste »*. Cf [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md) §A1 + R5.
+
+### DBs propriétaires Althy à constituer
+
+Sources de différenciation défensive d'Althy. Killian alimente progressivement.
+
+| DB | Source d'alimentation | Phase de constitution | Différenciateur |
+|---|---|---|---|
+| Prix m² loyer par zone | Anonymisation Listings + Contract réels Althy | P2 | Précision granulaire vs estimations agrégées concurrents |
+| Prix m² vente par zone | Registre foncier CH + scraping anonymisé portails | P3 | Comparables vente précis |
+| Démographique locataire | Anonymisation TenantFile Althy | P3 | Profil locataire dominant par zone |
+| Risques (zones inondables, glissements, bruit) | Couches publiques OFEV + cantonales | P3 | Affichage automatique sur fiche bien |
+| Barème AFC travaux déductibles | AFC + cantonales + jurisprudence | P2 | IA classifie WorkOrder → déductible/amélioration |
+| Subventions cantonales travaux énergie | Sites cantonaux + OFEN | P3 | Suggestions automatiques |
+| Comparables vente IA enrichis | DB Althy + registre foncier + portails | P3 | Estimation IA premium |
+| Tendances marché 5 ans | Historique Althy + données OFS | P2 | Évolution prix m² fiable |
+
+**Conformité** : toutes les DBs propriétaires sont alimentées avec données anonymisées (k-anonymity ≥ 5 minimum). Cf [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md) §A2.
+
+### Pattern partenaires
 
 **Pattern partenaires** : table `partners` (migration 0035) avec clé API chiffrée via `SECRET_KEY`. Contrats actifs trackés dans `partner_deals` (4 phases : `affiliation` / `exclusive_with_minimum` / `strategic` / `revenue_share`). Leads RGPD-conformes via `partner_leads` (consent obligatoire).
 
@@ -399,6 +459,13 @@ Un seul composant `LocatairesGlobal` qui gère tous les locataires de tous les b
 
 **Commits** : verbe au présent (`feat: add X`, `fix: resolve Y`). Pas d'emoji, pas de mention `[skip ci]`.
 
+**Règle 8 — Interaction directe « 1 clic » sur chaque carré** (cf [`2-ROADMAP.md`](./2-ROADMAP.md#210-règles-transverses-toute-la-durée-du-projet) §2.10) : depuis n'importe quelle entité parente (fiche bien, fiche locataire, fiche mandat), l'utilisateur accède et modifie ses entités liées **sans changer de page**. Implémentation côté code :
+
+- Chaque carré (`DCard`) dans une fiche entité doit exposer 3 capacités : (1) **voir le détail** (clic ligne → modale ou side panel via `Sheet` / `Dialog`), (2) **créer un nouveau** (bouton `+` dans le header du carré), (3) **modifier l'existant** (clic ligne → mode édition inline ou modale).
+- Les sections globales (`/app/interventions`, `/app/locataires`, `/app/documents`) sont des **vues consolidées multi-biens** ; elles ne sont **jamais le seul point d'accès** à une entité.
+- 3 patterns de modale : **fullscreen** (édition de l'entité elle-même : caractéristiques bien, profil utilisateur), **side panel droit 50%** (pilotage sous-entité liée : intervention, devis, paiement, candidature), **modale rapide** (actions ponctuelles, max 480px).
+- Source de vérité produit : [`4-PRODUIT.md`](./4-PRODUIT.md) + [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md) (Règle R6).
+
 **Ajout d'un rôle** = checklist obligatoire :
 - `frontend/src/lib/useRole.ts` → `ROLE_SECTIONS`
 - `frontend/src/components/dashboard/DashboardSidebar.tsx` → items nav
@@ -452,5 +519,6 @@ Un seul composant `LocatairesGlobal` qui gère tous les locataires de tous les b
 - [4-PRODUIT.md](./4-PRODUIT.md) — Spec fonctionnelle, rôles, modules
 - [5-FINANCES.md](./5-FINANCES.md) — Modèle économique
 - [6-LEGAL.md](./6-LEGAL.md) — Conformité juridique
+- [7-CATALOGUE-DONNEES-ALTHY.md](./7-CATALOGUE-DONNEES-ALTHY.md) — Source de vérité granulaire (données par rôle, acquisition, phases, sections UI)
 - [DEPLOYMENT_CHECKLIST.md](../DEPLOYMENT_CHECKLIST.md) — Checklist déploiement (variables d'env, DNS, sécurité)
 - [README.md](../README.md) — Setup dev local (Docker + scripts make)
