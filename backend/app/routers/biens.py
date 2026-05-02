@@ -29,6 +29,8 @@ from app.schemas.bien import (
     BienDetail,
     BienDocumentRead,
     BienImageRead,
+    BienImagesReorderRequest,
+    BienImageUpdate,
     BienRead,
     BienUpdate,
     CatalogueEquipementRead,
@@ -172,6 +174,39 @@ async def upload_image(
     is_cover: bool = Form(False),
 ) -> BienImageRead:
     return await BienService(db).add_image(bien_id, file, is_cover, current_user)
+
+
+# ⚠️ Ordre des routes important : `/reorder` doit être déclaré AVANT
+# `/{image_id}` pour que FastAPI ne tente pas de parser "reorder" comme un
+# UUID (qui rejetterait en 422 avant de matcher l'autre route).
+@router.patch(
+    "/{bien_id}/images/reorder",
+    response_model=list[BienImageRead],
+)
+async def reorder_images(
+    bien_id: uuid.UUID,
+    payload: BienImagesReorderRequest,
+    current_user: AuthDep,
+    db: DbDep,
+) -> list[BienImageRead]:
+    return await BienService(db).reorder_images(bien_id, payload.order, current_user)
+
+
+@router.patch(
+    "/{bien_id}/images/{image_id}",
+    response_model=BienImageRead,
+)
+async def update_image(
+    bien_id: uuid.UUID,
+    image_id: uuid.UUID,
+    payload: BienImageUpdate,
+    current_user: AuthDep,
+    db: DbDep,
+) -> BienImageRead:
+    img = await BienService(db).update_image(bien_id, image_id, payload, current_user)
+    if img is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Image introuvable")
+    return img
 
 
 @router.delete(

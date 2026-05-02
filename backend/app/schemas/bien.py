@@ -244,6 +244,31 @@ class BienImageRead(BaseModel):
     created_at: datetime
 
 
+class BienImageUpdate(BaseModel):
+    """PATCH partiel d'une image attachée à un bien.
+
+    Champs supportés :
+      - is_cover : bascule la couverture (le service force l'unicité par bien)
+      - order    : repositionne une image individuellement (0-based)
+
+    Tous les champs sont optionnels — un body vide est accepté (no-op).
+    """
+
+    is_cover: bool | None = None
+    order: int | None = Field(default=None, ge=0)
+
+
+class BienImagesReorderRequest(BaseModel):
+    """Payload du batch reorder.
+
+    Le tableau doit contenir TOUS les IDs d'images du bien, dans le nouvel
+    ordre désiré. Le service vérifie l'égalité des ensembles
+    (manquants ou inconnus → 400) et écrit `order = idx` séquentiellement.
+    """
+
+    order: list[uuid.UUID] = Field(..., min_length=1)
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Documents
 # ══════════════════════════════════════════════════════════════════════════════

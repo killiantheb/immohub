@@ -40,6 +40,7 @@ from app.schemas.bien import (
     BienDetail,
     BienDocumentRead,
     BienImageRead,
+    BienImageUpdate,
     BienListItem,
     BienRead,
     BienUpdate,
@@ -491,6 +492,126 @@ class BienService:
         await self.db.flush()
         await self.db.refresh(img)
         return BienImageRead.model_validate(img)
+
+    async def update_image(
+        self,
+        bien_id: uuid.UUID | str,
+        image_id: uuid.UUID,
+        payload: BienImageUpdate,
+        current_user: User,
+    ) -> BienImageRead | None:
+        """PATCH partiel d'une image attachée au bien.
+
+        Champs supportés :
+          - is_cover : si True, force l'unicité du flag sur le bien
+            (toutes les autres images repassent à False dans la même
+            transaction).
+          - order    : repositionne une image individuellement.
+
+        Retour : BienImageRead à jour, ou None si l'image n'existe pas
+        (le router lève alors un 404).
+        """
+        bien = await self._get_or_404(bien_id)
+        if not _can_write(bien, current_user):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
+
+        result = await self.db.execute(
+            select(BienImage).where(
+                BienImage.id == image_id,
+                BienImage.bien_id == bien.id,
+            )
+        )
+        img = result.scalar_one_or_none()
+        if img is None:
+            return None
+
+        data = payload.model_dump(exclude_unset=True)
+
+        # Bascule la couverture : on force l'unicité avant d'appliquer
+        # le True sur l'image cible. Si is_cover=False est passé
+        # explicitement, on l'applique tel quel sans toucher aux autres.
+        if data.get("is_cover") is True:
+            other_covers = (
+                await self.db.execute(
+                    select(BienImage).where(
+                        BienImage.bien_id == bien.id,
+                        BienImage.id != image_id,
+                        BienImage.is_cover.is_(True),
+                    )
+                )
+            ).scalars().all()
+            for c in other_covers:
+                c.is_cover = False
+
+        for field, value in data.items():
+            setattr(img, field, value)
+
+        await self.db.flush()
+        await self.db.refresh(img)
+        return BienImageRead.model_validate(img)
+
+    async def reorder_images(
+        self,
+        bien_id: uuid.UUID | str,
+        order: list[uuid.UUID],
+        current_user: User,
+    ) -> list[BienImageRead]:
+        """Reorder atomique des images d'un bien.
+
+        Le payload doit lister TOUS les IDs d'images du bien dans le nouvel
+        ordre. Validation stricte : ensembles `payload` ↔ `existants` doivent
+        être égaux. Toute divergence (manquant, inconnu, doublon) → 400.
+
+        Écriture : `order = idx` séquentiellement (0-based) dans la même
+        transaction.
+        """
+        bien = await self._get_or_404(bien_id)
+        if not _can_write(bien, current_user):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
+
+        if len(order) != len(set(order)):
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "IDs en doublon dans le payload",
+            )
+
+        existing = (
+            await self.db.execute(
+                select(BienImage).where(BienImage.bien_id == bien.id)
+            )
+        ).scalars().all()
+        existing_by_id: dict[uuid.UUID, BienImage] = {img.id: img for img in existing}
+
+        existing_ids: set[uuid.UUID] = set(existing_by_id.keys())
+        payload_ids: set[uuid.UUID] = set(order)
+        if payload_ids != existing_ids:
+            missing = existing_ids - payload_ids
+            unknown = payload_ids - existing_ids
+            details: list[str] = []
+            if missing:
+                details.append(f"manquants : {sorted(str(i) for i in missing)}")
+            if unknown:
+                details.append(f"inconnus : {sorted(str(i) for i in unknown)}")
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "Le payload doit lister exactement toutes les images du bien "
+                f"({'; '.join(details)})",
+            )
+
+        image_id: uuid.UUID
+        for idx, image_id in enumerate(order):
+            existing_by_id[image_id].order = idx
+
+        await self.db.flush()
+
+        rows = (
+            await self.db.execute(
+                select(BienImage)
+                .where(BienImage.bien_id == bien.id)
+                .order_by(BienImage.order)
+            )
+        ).scalars().all()
+        return [BienImageRead.model_validate(r) for r in rows]
 
     async def delete_image(
         self, bien_id: uuid.UUID | str, image_id: uuid.UUID, current_user: User
