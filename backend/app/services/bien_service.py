@@ -372,7 +372,7 @@ class BienService:
           - {"success": False, "blockers": [...]}  → 409 côté router
 
         Soft delete + audit log conservés (pas de hard delete — cf
-        docs/6-LEGAL.md §6.10 : préservation traçabilité).
+        docs/6-LEGAL.md §6.12 : préservation traçabilité).
         """
         bien = await self._get(bien_id)
         if bien is None:

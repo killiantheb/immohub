@@ -43,7 +43,7 @@
 - **Mode dégradé QR direct = 0 %** — si le proprio refuse le passage par Althy pour la réconciliation et utilise le QR-facture sans matching, commission = 0 %.
 - Cette structure incite naturellement à utiliser la réconciliation (rapports + audit + IA + dashboard « économies vs régie »).
 
-**Stratégique** : les loyers ne transitent **jamais** par un compte Althy. Le QR-facture SPC 2.0 envoie directement le loyer sur l'IBAN du propriétaire. Cela évite l'enregistrement FINMA comme prestataire de services de paiement (cf [`6-LEGAL.md`](./6-LEGAL.md) §6.8).
+**Stratégique** : les loyers ne transitent **jamais** par un compte Althy. Le QR-facture SPC 2.0 envoie directement le loyer sur l'IBAN du propriétaire. Cela évite l'enregistrement FINMA comme prestataire de services de paiement (cf [`6-LEGAL.md`](./6-LEGAL.md) §6.10).
 
 ### Commission Althy sur transactions entreprises
 
