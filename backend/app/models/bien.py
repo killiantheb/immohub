@@ -27,12 +27,14 @@ Ce module contient l'ensemble des entités liées aux biens immobiliers Althy :
 from __future__ import annotations
 
 import uuid
+from datetime import date
+from typing import TYPE_CHECKING
 
 from app.models.base import BaseModel
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
-    DateTime,
+    Date,
     Enum,
     Float,
     ForeignKey,
@@ -42,10 +44,14 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
-    func,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from app.models.bien_annexe import BienAnnexe
+    from app.models.bien_compteur import BienCompteur
+    from app.models.bien_contact import BienContact
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -200,6 +206,70 @@ class Bien(BaseModel):
     residence_type: Mapped[str | None] = mapped_column(String(20))
     location_type_actuel: Mapped[str | None] = mapped_column(String(20))
 
+    # ── Identité bâtiment (5) — PR-A11.A.6.a, migration 0035 ─────────────────
+    # Identifiants fédéraux suisses (RegBL/GeoAdmin) + cadastre.
+    egid: Mapped[int | None] = mapped_column(Integer)
+    ewid: Mapped[int | None] = mapped_column(Integer)
+    numero_parcelle: Mapped[str | None] = mapped_column(String(50))
+    numero_lot_ppe: Mapped[str | None] = mapped_column(String(50))
+    commune_ofs: Mapped[int | None] = mapped_column(Integer)
+
+    # ── Caractéristiques techniques avancées (13) — PR-A11.A.6.a ─────────────
+    nb_etages: Mapped[int | None] = mapped_column(Integer)
+    type_chauffage: Mapped[str | None] = mapped_column(String(30))
+    mode_eau_chaude: Mapped[str | None] = mapped_column(String(30))
+    orientation_principale: Mapped[str | None] = mapped_column(String(5))
+    vue: Mapped[str | None] = mapped_column(String(30))
+    bruit_proximite: Mapped[str | None] = mapped_column(String(20))
+    accessibilite_pmr: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    ascenseur: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    cave_m2: Mapped[float | None] = mapped_column(Numeric(6, 2))
+    balcon_m2: Mapped[float | None] = mapped_column(Numeric(6, 2))
+    terrasse_m2: Mapped[float | None] = mapped_column(Numeric(6, 2))
+    jardin_m2: Mapped[float | None] = mapped_column(Numeric(8, 2))
+    terrain_m2: Mapped[float | None] = mapped_column(Numeric(10, 2))
+
+    # ── Conditions location (6) — PR-A11.A.6.a ──────────────────────────────
+    # NB : `caution_montant` du catalogue ≡ `deposit` existant (zéro doublon).
+    loyer_charges_exclus: Mapped[float | None] = mapped_column(Numeric(10, 2))
+    acompte_charges: Mapped[float | None] = mapped_column(Numeric(10, 2))
+    caution_type: Mapped[str | None] = mapped_column(String(30))
+    disponibilite_date: Mapped[date | None] = mapped_column(Date)
+    duree_minimale_mois: Mapped[int | None] = mapped_column(Integer)
+    preavis_mois: Mapped[int | None] = mapped_column(Integer)
+
+    # ── Fiscalité (2) — PR-A11.A.6.a ────────────────────────────────────────
+    valeur_locative_fiscale: Mapped[float | None] = mapped_column(Numeric(10, 2))
+    valeur_assurance_ecab: Mapped[float | None] = mapped_column(Numeric(12, 2))
+
+    # ── Description publique (2) — PR-A11.A.6.a ─────────────────────────────
+    description_publique: Mapped[str | None] = mapped_column(Text)
+    points_forts: Mapped[str | None] = mapped_column(Text)
+
+    # ── Relations sous-tables (PR-A11.A.6.a) ────────────────────────────────
+    annexes: Mapped[list[BienAnnexe]] = relationship(
+        "BienAnnexe",
+        back_populates="bien",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    contacts: Mapped[list[BienContact]] = relationship(
+        "BienContact",
+        back_populates="bien",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    compteurs: Mapped[list[BienCompteur]] = relationship(
+        "BienCompteur",
+        back_populates="bien",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
     __table_args__ = (
         Index("ix_biens_agency_id", "agency_id"),
         Index("ix_biens_created_by_id", "created_by_id"),
@@ -341,5 +411,3 @@ class BienEquipement(BaseModel):
         UniqueConstraint("bien_id", "equipement_id", name="uq_bien_equipement"),
         Index("ix_bien_equipements_bien", "bien_id"),
     )
-
-
