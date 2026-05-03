@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from app.models.base import BaseModel
 from sqlalchemy import Boolean, DateTime, Enum, Index, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from app.models.bank_account import BankAccount
 
 UserRole = Enum(
     "proprio_solo",
@@ -35,6 +39,12 @@ class User(BaseModel):
     supabase_uid: Mapped[str | None] = mapped_column(String(36), unique=True)
 
     # ── Coordonnées bancaires ─────────────────────────────────────────────────
+    # ⚠️ DÉPRÉCIÉ depuis PR-A11.A.6.a (migration 0035) : la nouvelle source
+    # de vérité est `bank_accounts` (multi-comptes par usage). Ces 3 colonnes
+    # restent pour rétrocompatibilité. Migration 0035 a seedé un BankAccount
+    # `usage='general'`, `est_principal=true` pour chaque user qui avait un
+    # iban non vide. Suppression prévue Phase 2 quand tous les call sites
+    # auront migré vers `user.bank_accounts`.
     iban: Mapped[str | None] = mapped_column(String(34))
     bic: Mapped[str | None] = mapped_column(String(11))
     bank_account_holder: Mapped[str | None] = mapped_column(String(200))
@@ -66,6 +76,14 @@ class User(BaseModel):
     notif_rappel_2h:         Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
     notif_facture_impayee:   Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
     notif_paiement_recu:     Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
+
+    # ── Comptes bancaires multi-usage (PR-A11.A.6.a, migration 0035) ─────────
+    bank_accounts: Mapped[list[BankAccount]] = relationship(
+        "BankAccount",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     __table_args__ = (
         Index("ix_users_email", "email"),
