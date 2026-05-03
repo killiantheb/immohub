@@ -4,7 +4,6 @@ from app.core.config import settings
 from app.core.database import AsyncSessionLocal, engine
 from app.core.flags import require_flag
 from app.core.rate_limit import limiter, rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
 from app.routers import (
     admin,
     auth,
@@ -14,49 +13,54 @@ from app.routers import (
     missions,
     rfq,
 )
-from app.routers.ai import router as ai_router
 from app.routers.agency_settings import router as agency_settings_router
+from app.routers.agenda import router as agenda_router
+from app.routers.ai import router as ai_router
+from app.routers.autonomie import router as autonomie_router
+from app.routers.bank_accounts import router as bank_accounts_router
+from app.routers.bien_annexes import router as bien_annexes_router
+from app.routers.bien_compteurs import router as bien_compteurs_router
+from app.routers.bien_contacts import router as bien_contacts_router
 from app.routers.biens import router as biens_router
 from app.routers.catalogue import router as catalogue_router
+from app.routers.changements import router as changements_router
+from app.routers.contact import router as contact_router
 from app.routers.crm import router as crm_router
 from app.routers.documents import router as documents_router
 from app.routers.documents_althy import router as docs_althy_router
-from app.routers.interventions_althy import router as interventions_althy_router
-from app.routers.locataires import router as locataires_router
-from app.routers.notifications import router as notifications_router
-from app.routers.paiements import router as paiements_router
-from app.routers.profiles_artisans import router as profiles_artisans_router
-from app.routers.geocode import router as geocode_router
-from app.routers.matching import router as matching_router
-from app.routers.scoring import router as scoring_router
-from app.routers.favorites import router as favorites_router
-from app.routers.ratings import router as ratings_router
-from app.routers.smart_onboarding import router as smart_onboarding_router
-from app.routers.listings import router as listings_router
-from app.routers.marketplace import router as marketplace_router
-from app.routers.stripe_webhooks import router as stripe_router
-from app.routers.portail import router as portail_router
-from app.routers.integrations import router as integrations_router
-from app.routers.rgpd import router as rgpd_router
-from app.routers.sphere_agent import router as sphere_router
-from app.routers.notations import router as notations_router
-from app.routers.oauth import router as oauth_router
-from app.routers.factures import router as factures_router
-from app.routers.messagerie import router as messagerie_router
-from app.routers.agenda import router as agenda_router
-from app.routers.whatsapp import router as whatsapp_router
-from app.routers.onboarding import router as onboarding_router
-from app.routers.contact import router as contact_router
 from app.routers.estimation import router as estimation_router
-from app.routers.loyers import router as loyers_router
-from app.routers.changements import router as changements_router
-from app.routers.autonomie import router as autonomie_router
-from app.routers.waitlist import router as waitlist_router
-from app.routers.partners import router as partners_router
+from app.routers.factures import router as factures_router
+from app.routers.favorites import router as favorites_router
+from app.routers.geocode import router as geocode_router
+from app.routers.integrations import router as integrations_router
+from app.routers.interventions_althy import router as interventions_althy_router
 from app.routers.landing import router as landing_router
+from app.routers.listings import router as listings_router
+from app.routers.locataires import router as locataires_router
+from app.routers.loyers import router as loyers_router
+from app.routers.marketplace import router as marketplace_router
+from app.routers.matching import router as matching_router
+from app.routers.messagerie import router as messagerie_router
+from app.routers.notations import router as notations_router
+from app.routers.notifications import router as notifications_router
+from app.routers.oauth import router as oauth_router
+from app.routers.onboarding import router as onboarding_router
+from app.routers.paiements import router as paiements_router
+from app.routers.partners import router as partners_router
+from app.routers.portail import router as portail_router
+from app.routers.profiles_artisans import router as profiles_artisans_router
+from app.routers.ratings import router as ratings_router
+from app.routers.rgpd import router as rgpd_router
+from app.routers.scoring import router as scoring_router
+from app.routers.smart_onboarding import router as smart_onboarding_router
+from app.routers.sphere_agent import router as sphere_router
+from app.routers.stripe_webhooks import router as stripe_router
+from app.routers.waitlist import router as waitlist_router
+from app.routers.whatsapp import router as whatsapp_router
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
@@ -122,7 +126,9 @@ _CORS_ORIGINS = {
     "http://localhost:3000",
 }
 import re as _re
+
 _CORS_REGEX = _re.compile(r"https://[a-zA-Z0-9-]+\.vercel\.app$")
+
 
 @app.exception_handler(Exception)
 async def _unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
@@ -134,6 +140,7 @@ async def _unhandled_exception_handler(request: Request, exc: Exception) -> JSON
         response.headers["Vary"] = "Origin"
     return response
 
+
 # ── Security headers ──────────────────────────────────────────────────────────
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
@@ -143,6 +150,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     return response
+
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 
@@ -182,12 +190,22 @@ app.include_router(
 app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
 # ── Althy core routers ────────────────────────────────────────────────────────
 app.include_router(biens_router, prefix="/api/v1/biens", tags=["biens"])
+# ── Sous-tables fiche bien (PR-A11.A.6.b) — nested sous /biens/{bien_id} ─────
+app.include_router(bien_annexes_router, prefix="/api/v1/biens", tags=["bien-annexes"])
+app.include_router(bien_contacts_router, prefix="/api/v1/biens", tags=["bien-contacts"])
+app.include_router(bien_compteurs_router, prefix="/api/v1/biens", tags=["bien-compteurs"])
+# ── Comptes bancaires utilisateur (PR-A11.A.6.b) ─────────────────────────────
+app.include_router(bank_accounts_router, prefix="/api/v1/users", tags=["bank-accounts"])
 app.include_router(catalogue_router, prefix="/api/v1/catalogue", tags=["catalogue"])
 app.include_router(locataires_router, prefix="/api/v1/locataires", tags=["locataires"])
 app.include_router(docs_althy_router, prefix="/api/v1/docs-althy", tags=["docs-althy"])
 app.include_router(paiements_router, prefix="/api/v1/paiements", tags=["paiements"])
-app.include_router(interventions_althy_router, prefix="/api/v1/interventions-althy", tags=["interventions-althy"])
-app.include_router(profiles_artisans_router, prefix="/api/v1/profiles-artisans", tags=["profiles-artisans"])
+app.include_router(
+    interventions_althy_router, prefix="/api/v1/interventions-althy", tags=["interventions-althy"]
+)
+app.include_router(
+    profiles_artisans_router, prefix="/api/v1/profiles-artisans", tags=["profiles-artisans"]
+)
 app.include_router(scoring_router, prefix="/api/v1/scoring", tags=["scoring"])
 app.include_router(notifications_router, prefix="/api/v1/notifications", tags=["notifications"])
 app.include_router(matching_router, prefix="/api/v1/matching", tags=["matching"])
@@ -216,14 +234,14 @@ app.include_router(messagerie_router, prefix="/api/v1", tags=["messagerie"])
 app.include_router(agenda_router, prefix="/api/v1", tags=["agenda"])
 app.include_router(whatsapp_router, prefix="/api/v1", tags=["whatsapp"])
 app.include_router(onboarding_router, prefix="/api/v1", tags=["onboarding"])
-app.include_router(contact_router,    prefix="/api/v1",            tags=["contact"])
-app.include_router(estimation_router, prefix="/api/v1",            tags=["estimation"])
-app.include_router(loyers_router,     prefix="/api/v1/loyers",       tags=["loyers"])
-app.include_router(changements_router, prefix="/api/v1/biens",        tags=["changements"])
-app.include_router(autonomie_router,  prefix="/api/v1/autonomie",    tags=["autonomie"])
-app.include_router(waitlist_router,   prefix="/api/v1",              tags=["waitlist"])
-app.include_router(partners_router,   prefix="/api/v1",              tags=["partners"])
-app.include_router(landing_router,    prefix="/api/v1",              tags=["landing"])
+app.include_router(contact_router, prefix="/api/v1", tags=["contact"])
+app.include_router(estimation_router, prefix="/api/v1", tags=["estimation"])
+app.include_router(loyers_router, prefix="/api/v1/loyers", tags=["loyers"])
+app.include_router(changements_router, prefix="/api/v1/biens", tags=["changements"])
+app.include_router(autonomie_router, prefix="/api/v1/autonomie", tags=["autonomie"])
+app.include_router(waitlist_router, prefix="/api/v1", tags=["waitlist"])
+app.include_router(partners_router, prefix="/api/v1", tags=["partners"])
+app.include_router(landing_router, prefix="/api/v1", tags=["landing"])
 
 
 # ── Health check ──────────────────────────────────────────────────────────────
