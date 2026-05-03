@@ -301,6 +301,16 @@
   transform: scale(1.05);
 }
 
+/* Cover photos cliquable — overlay « Gérer les photos » au survol/focus. */
+.card-header-bien-photos-cover:hover .card-header-bien-photos-overlay,
+.card-header-bien-photos-cover:focus-visible .card-header-bien-photos-overlay {
+  opacity: 1;
+}
+.card-header-bien-photos-cover:focus-visible {
+  outline: 2px solid var(--althy-gold);
+  outline-offset: -4px;
+}
+
 /* Bloc Caractéristiques du header — grille 2 colonnes desktop / 1 col mobile. */
 .card-header-bien-carac-grid {
   display: grid;

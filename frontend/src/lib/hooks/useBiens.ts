@@ -367,6 +367,95 @@ export function useDeleteBienImage(bienId: string) {
   });
 }
 
+// PATCH /biens/{id}/images/{image_id} — set-cover, repositionnement individuel
+// (legend reportée à PR-A11.A.6 avec migration). Optimistic update appliqué
+// uniquement quand `is_cover: true` est passé : on bascule immédiatement le
+// flag dans la cache pour que le badge ⭐ et `<CardHeaderBien />` reflètent
+// le nouveau cover sans attendre l'aller-retour réseau.
+export function useUpdateBienImage(bienId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      imageId,
+      patch,
+    }: {
+      imageId: string;
+      patch: { is_cover?: boolean; order?: number };
+    }) => {
+      const { data } = await api.patch<BienImage>(
+        `/biens/${bienId}/images/${imageId}`,
+        patch,
+      );
+      return data;
+    },
+    onMutate: async ({ imageId, patch }) => {
+      await qc.cancelQueries({ queryKey: bienKeys.detail(bienId) });
+      const prev = qc.getQueryData<BienDetail>(bienKeys.detail(bienId));
+      // Optimistic uniquement sur set-cover (true). On ne touche pas au cache
+      // sur `order` seul ni sur `is_cover: false` : moins de risque de drift,
+      // l'invalidation onSettled resync de toute façon.
+      if (prev?.images && patch.is_cover === true) {
+        qc.setQueryData<BienDetail>(bienKeys.detail(bienId), {
+          ...prev,
+          images: prev.images.map((img) => ({
+            ...img,
+            is_cover: img.id === imageId,
+          })),
+        });
+      }
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(bienKeys.detail(bienId), ctx.prev);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: bienKeys.detail(bienId) });
+    },
+  });
+}
+
+// PATCH /biens/{id}/images/reorder — batch atomique. Le backend exige que
+// `order` liste TOUS les UUIDs d'images du bien (validation stricte set ↔ set
+// → 400 sinon). L'optimistic update reorder l'array `bien.images` selon le
+// nouvel ordre et réécrit `img.order = idx` pour rester cohérent avec ce que
+// le backend va persister.
+export function useReorderBienImages(bienId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ order }: { order: string[] }) => {
+      const { data } = await api.patch<BienImage[]>(
+        `/biens/${bienId}/images/reorder`,
+        { order },
+      );
+      return data;
+    },
+    onMutate: async ({ order }) => {
+      await qc.cancelQueries({ queryKey: bienKeys.detail(bienId) });
+      const prev = qc.getQueryData<BienDetail>(bienKeys.detail(bienId));
+      if (prev?.images) {
+        const byId = new Map(prev.images.map((img) => [img.id, img]));
+        const reordered: BienImage[] = order
+          .map((id, idx) => {
+            const img = byId.get(id);
+            return img ? { ...img, order: idx } : null;
+          })
+          .filter((img): img is BienImage => img !== null);
+        qc.setQueryData<BienDetail>(bienKeys.detail(bienId), {
+          ...prev,
+          images: reordered,
+        });
+      }
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(bienKeys.detail(bienId), ctx.prev);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: bienKeys.detail(bienId) });
+    },
+  });
+}
+
 // ── Documents attachés au bien (table bien_documents) ─────────────────────────
 // NB : distinct de la GED Althy (/docs-althy, voir useDocuments + DocumentAlthy).
 

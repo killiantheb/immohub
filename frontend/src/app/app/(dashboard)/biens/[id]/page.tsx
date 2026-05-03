@@ -30,6 +30,7 @@ import { C } from "@/lib/design-tokens";
 import { bienLinks } from "@/lib/bien-links";
 import { DeleteBienModal } from "@/components/biens/DeleteBienModal";
 import { CaracteristiquesModal } from "@/components/biens/CaracteristiquesModal";
+import { PhotosManagerModal } from "@/components/biens/PhotosManagerModal";
 import type { AuditLogEntry } from "@/lib/types";
 
 // ── Design constants ──────────────────────────────────────────────────────────
@@ -1254,11 +1255,13 @@ function CardHeaderBien({
   onModifyClick,
   onSeeAllCaracClick,
   onRequestDelete,
+  onOpenPhotos,
 }: {
   bienId: string;
   onModifyClick: () => void;
   onSeeAllCaracClick: () => void;
   onRequestDelete: () => void;
+  onOpenPhotos: () => void;
 }) {
   const { data: bien, isLoading } = useBien(bienId);
   const { data: locataire } = useLocataireActuel(bienId);
@@ -1294,68 +1297,77 @@ function CardHeaderBien({
         minHeight: 200,
       }}
     >
-      {/* Colonne 1 — Carrousel photos (PR-A11.A.1)
-          - Cover si bien.images contient une image (carrousel multi-photos
-            arrive en PR-A11.A.2 avec la modale gestion).
-          - Placeholder cliquable sinon (icône Camera + label "Ajouter des
-            photos"). Le placeholder ouvre la modale gestion photos qui sera
-            livrée en PR-A11.A.2 — pour l'instant, console.log TODO.
-          - Bouton overlay "Gérer photos" en bas à droite quand une cover est
-            présente. */}
-      <div
-        className="card-header-bien-photos"
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          minHeight: 200,
-          background: cover ? C.surface2 : "transparent",
-        }}
-      >
-        {cover ? (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={cover.url}
-              alt={bien.adresse}
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => console.log("TODO PR-A11.A.2 — ouvrir modale gestion photos")}
-              aria-label="Gérer les photos du bien"
-              style={{
-                position: "absolute",
-                bottom: 12,
-                right: 12,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "8px 12px",
-                borderRadius: 8,
-                border: "none",
-                background: "rgba(15, 46, 76, 0.85)",
-                color: "#fff",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                backdropFilter: "blur(4px)",
-              }}
-            >
-              <Camera size={14} />
-              Gérer photos
-            </button>
-          </>
-        ) : (
+      {/* Colonne 1 — Zone photos (PR-A11.A.1 → PR-A11.A.5)
+          - Cover : la zone entière est cliquable (button) avec overlay au
+            survol qui révèle « Gérer les photos » + assombrissement subtil.
+          - Placeholder : button vide qui ouvre la même modale, utilise les
+            classes existantes (.card-header-bien-photos-empty) pour conserver
+            le hover or premium. */}
+      {cover ? (
+        <button
+          type="button"
+          onClick={onOpenPhotos}
+          aria-label="Gérer les photos du bien"
+          className="card-header-bien-photos card-header-bien-photos-cover"
+          style={{
+            position: "relative",
+            overflow: "hidden",
+            minHeight: 200,
+            background: C.surface2,
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
+            fontFamily: "inherit",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={cover.url}
+            alt={bien.adresse}
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+          <span
+            aria-hidden
+            className="card-header-bien-photos-overlay"
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              background: "rgba(15, 46, 76, 0.55)",
+              color: "#fff",
+              fontSize: 14,
+              fontWeight: 600,
+              opacity: 0,
+              transition: "opacity 200ms ease",
+              backdropFilter: "blur(2px)",
+            }}
+          >
+            <Camera size={18} />
+            Gérer les photos
+          </span>
+        </button>
+      ) : (
+        <div
+          className="card-header-bien-photos"
+          style={{
+            position: "relative",
+            overflow: "hidden",
+            minHeight: 200,
+            background: "transparent",
+          }}
+        >
           <button
             type="button"
-            onClick={() => console.log("TODO PR-A11.A.2 — ouvrir modale gestion photos")}
+            onClick={onOpenPhotos}
             aria-label="Ajouter des photos au bien"
             className="card-header-bien-photos-empty"
           >
@@ -1382,8 +1394,8 @@ function CardHeaderBien({
               Mettez votre bien en valeur
             </p>
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Colonne 2 — Bloc Informations principales (PR-A11.A.1.b)
           Structure : titre + ville → meta ligne unique → bloc Caractéristiques
@@ -1733,6 +1745,7 @@ function BienOverview() {
   const { id } = useParams<{ id: string }>();
   const { data: bien } = useBien(id);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [photosModalOpen, setPhotosModalOpen] = useState(false);
   const [caracModal, setCaracModal] = useState<{
     open: boolean;
     mode: "read" | "edit";
@@ -1753,6 +1766,7 @@ function BienOverview() {
         onModifyClick={() => setCaracModal({ open: true, mode: "edit" })}
         onSeeAllCaracClick={() => setCaracModal({ open: true, mode: "read" })}
         onRequestDelete={() => setShowDeleteModal(true)}
+        onOpenPhotos={() => setPhotosModalOpen(true)}
       />
 
       {/* SectionInfos retire en PR-A11.A.3 — son contenu est integralement
@@ -1795,6 +1809,14 @@ function BienOverview() {
         open={caracModal.open}
         onClose={() => setCaracModal((s) => ({ ...s, open: false }))}
         initialMode={caracModal.mode}
+      />
+
+      {/* Modale gestion photos (PR-A11.A.5) — déclenchée depuis la zone
+          photos du header (cover cliquable ou placeholder vide). */}
+      <PhotosManagerModal
+        bienId={id}
+        open={photosModalOpen}
+        onClose={() => setPhotosModalOpen(false)}
       />
     </div>
   );
