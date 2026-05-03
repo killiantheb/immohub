@@ -1,616 +1,262 @@
 "use client";
 
 /**
- * Modale détaillée des caractéristiques du bien (PR-A10 + A11.A.3).
+ * Modale fullscreen — Caractéristiques bien (PR-A11.A.6.c).
  *
- * Dual-mode controlled component :
- *   - "read"  : affichage 7 sections (Configuration, Technique, Équipements,
- *               Règles, Situation, Descriptions, Finances annexes).
- *   - "edit"  : formulaire complet PATCHable des 24+ champs caractéristiques
- *               (livré au commit suivant — squelette ici).
+ * Refonte intégrale du composant A11.A.4 :
+ *   - 7 tabs horizontaux (Identité / Localisation / Surface & Annexes /
+ *     Caractéristiques techniques / Conditions location / Contacts /
+ *     Fiscalité & Description)
+ *   - Édition inline pattern Notion (clic champ → input → blur/Enter
+ *     → save auto via PATCH /biens/{id})
+ *   - Optimistic update via `useUpdateBien` existant
+ *   - Indicateur visuel pendant la sauvegarde (spinner) + checkmark fugace
  *
- * Signature controlled (PR-A11.A.3) :
+ * Aligné `docs/4-PRODUIT.md` §4.2 (édition inline pattern Notion) et
+ * `docs/3-ARCHITECTURE.md` §3.6 (DA scientifique) + §3.12 (modale
+ * fullscreen pour entité elle-même).
+ *
+ * Signature controlled (préservée depuis A11.A.3) :
  *   - bienId      : UUID du bien (la modale fetche le BienDetail elle-même)
  *   - open        : visibilité (le parent contrôle l'ouverture/fermeture)
  *   - onClose     : callback de fermeture
- *   - initialMode : 'read' (défaut) | 'edit'
+ *   - initialMode : conservé pour rétrocompat call site (no-op depuis 6.c —
+ *                   la modale n'a plus qu'un mode "lecture interactive
+ *                   inline" ; la prop est ignorée).
  */
 
-import { CheckCircle2, ChevronDown, ChevronRight, Pencil, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
-import type { Bien, BienDetail, BienUpdate } from "@/lib/types";
-import { C } from "@/lib/design-tokens";
+import { Check, Eye, EyeOff, Loader2, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnnexesSection } from "./AnnexesSection";
+import { ContactsSection } from "./ContactsSection";
+import { CompteursSection } from "./CompteursSection";
 import { useBien, useUpdateBien } from "@/lib/hooks/useBiens";
+import type { BienDetail, BienUpdate } from "@/lib/types";
+import { C } from "@/lib/design-tokens";
 
-type CaracMode = "read" | "edit";
+type TabId =
+  | "identite"
+  | "localisation"
+  | "surface"
+  | "technique"
+  | "location"
+  | "contacts"
+  | "fiscalite";
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: "identite", label: "Identité" },
+  { id: "localisation", label: "Localisation" },
+  { id: "surface", label: "Surface & Annexes" },
+  { id: "technique", label: "Caractéristiques techniques" },
+  { id: "location", label: "Conditions location" },
+  { id: "contacts", label: "Contacts" },
+  { id: "fiscalite", label: "Fiscalité & Description" },
+];
 
 interface Props {
   bienId: string;
   open: boolean;
   onClose: () => void;
-  initialMode?: CaracMode;
+  /** No-op depuis A11.A.6.c — préservé pour rétrocompat call site. */
+  initialMode?: "read" | "edit";
 }
 
-const RESIDENCE_LABELS: Record<string, string> = {
-  principale: "Résidence principale",
-  secondaire: "Résidence secondaire",
-  mixte: "Mixte (les deux)",
-};
+// ── Contexte d'édition partagé entre le shell modale et les tabs ────────────
 
-const LOCATION_LABELS: Record<string, string> = {
-  annuelle: "Location annuelle",
-  saisonniere: "Location saisonnière",
-  semaine: "Location à la semaine",
-  vide: "Bien vacant",
-};
-
-const PARKING_LABELS: Record<string, string> = {
-  exterieur: "Extérieur",
-  exterieur_couvert: "Extérieur couvert",
-  interieur: "Intérieur",
-  interieur_box: "Intérieur (box)",
-};
-
-function dpeColor(classe: string | null | undefined): string {
-  if (!classe) return C.text3;
-  const map: Record<string, string> = {
-    A: C.green,
-    B: C.green,
-    C: C.amber,
-    D: C.amber,
-    E: C.warning,
-    F: C.red,
-    G: C.red,
-  };
-  return map[classe.toUpperCase()] || C.text;
+interface EditContext {
+  bien: BienDetail;
+  pendingFields: Set<string>;
+  justSavedFields: Set<string>;
+  errorFields: Map<string, string>;
+  save: (field: string, value: unknown) => Promise<void>;
 }
 
-function fmtCHF(n: number | null | undefined): string {
-  if (n == null) return "—";
-  return `CHF ${Number(n).toLocaleString("fr-CH")}`;
-}
-
-function fmtBoolYesNo(v: boolean | null | undefined): string {
-  if (v === true) return "Oui";
-  if (v === false) return "Non";
-  return "—";
-}
-
-export function CaracteristiquesModal({
-  bienId,
-  open,
-  onClose,
-  initialMode = "read",
-}: Props) {
+export function CaracteristiquesModal({ bienId, open, onClose }: Props) {
   const { data: bien, isLoading } = useBien(bienId);
-  const [mode, setMode] = useState<CaracMode>(initialMode);
-  // dirty est lifted up depuis EditView pour qu'attemptClose puisse savoir
-  // s'il faut demander confirmation, quel que soit le chemin de fermeture
-  // (X, backdrop, Esc, bouton Annuler).
-  const [editDirty, setEditDirty] = useState(false);
+  const update = useUpdateBien(bienId);
 
-  // Lorsque la modale (re)s'ouvre, on resync le mode demandé par le parent
-  // et on reset le suivi dirty.
+  const [activeTab, setActiveTab] = useState<TabId>("identite");
+  const [pending, setPending] = useState<Set<string>>(new Set());
+  const [justSaved, setJustSaved] = useState<Set<string>>(new Set());
+  const [errors, setErrors] = useState<Map<string, string>>(new Map());
+
+  // Reset transient state à chaque ouverture.
   useEffect(() => {
     if (open) {
-      setMode(initialMode);
-      setEditDirty(false);
+      setPending(new Set());
+      setJustSaved(new Set());
+      setErrors(new Map());
     }
-  }, [open, initialMode]);
+  }, [open]);
 
-  // Fonction unifiée de fermeture (tous les chemins passent par ici).
-  // - mode lecture : ferme directement.
-  // - mode édition + form non dirty : ferme directement.
-  // - mode édition + form dirty : confirmation native.
+  const save = useCallback(
+    async (field: string, value: unknown) => {
+      setPending((s) => new Set(s).add(field));
+      setErrors((m) => {
+        const next = new Map(m);
+        next.delete(field);
+        return next;
+      });
+      try {
+        await update.mutateAsync({ [field]: value } as BienUpdate);
+        setJustSaved((s) => new Set(s).add(field));
+        setTimeout(() => {
+          setJustSaved((s) => {
+            const next = new Set(s);
+            next.delete(field);
+            return next;
+          });
+        }, 1200);
+      } catch (err) {
+        const detail =
+          (err as { response?: { data?: { detail?: string } } })?.response?.data
+            ?.detail ?? "Erreur lors de la sauvegarde";
+        setErrors((m) => new Map(m).set(field, detail));
+      } finally {
+        setPending((s) => {
+          const next = new Set(s);
+          next.delete(field);
+          return next;
+        });
+      }
+    },
+    [update],
+  );
+
   const attemptClose = useCallback(() => {
-    if (mode === "edit" && editDirty) {
-      if (!window.confirm("Annuler les modifications en cours ?")) return;
+    if (pending.size > 0) {
+      const ok = window.confirm(
+        "Une sauvegarde est en cours. Fermer quand même ?",
+      );
+      if (!ok) return;
     }
-    setEditDirty(false);
     onClose();
-  }, [mode, editDirty, onClose]);
+  }, [pending.size, onClose]);
 
-  // Listener Escape global tant que la modale est ouverte.
+  // ESC + scroll lock body
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") attemptClose();
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
   }, [open, attemptClose]);
 
   if (!open) return null;
+
+  const ctx: EditContext | null = bien
+    ? {
+        bien,
+        pendingFields: pending,
+        justSavedFields: justSaved,
+        errorFields: errors,
+        save,
+      }
+    : null;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(15, 23, 42, 0.55)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 100,
-        padding: 16,
-      }}
+      aria-label="Caractéristiques du bien"
+      style={backdropStyle}
       onClick={(e) => {
-        // On ne déclenche que si le clic est sur le backdrop lui-même,
-        // pas un enfant qui aurait bubblé jusqu'ici.
         if (e.target === e.currentTarget) attemptClose();
       }}
     >
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: 16,
-          maxWidth: 760,
-          width: "100%",
-          maxHeight: "90vh",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          boxShadow: "0 24px 48px rgba(0,0,0,0.18)",
-        }}
-      >
-        <ModalHeader
-          mode={mode}
-          adresse={bien?.adresse}
-          onSwitchToEdit={() => setMode("edit")}
-          onClose={attemptClose}
-        />
-
-        <div style={{ overflowY: "auto", padding: "20px 24px", flex: 1 }}>
-          {isLoading || !bien ? (
-            <p style={{ fontSize: 13, color: C.text3, textAlign: "center", padding: 32 }}>
-              Chargement…
-            </p>
-          ) : mode === "read" ? (
-            <ReadView bien={bien} />
-          ) : (
-            <EditView
-              bien={bien}
-              onCancel={attemptClose}
-              onSaved={() => {
-                setEditDirty(false);
-                setMode("read");
-              }}
-              onDirtyChange={setEditDirty}
-            />
-          )}
-        </div>
-
-        {mode === "read" && (
-          <div
-            style={{
-              borderTop: `1px solid ${C.border}`,
-              padding: "12px 24px",
-              display: "flex",
-              justifyContent: "flex-end",
-              background: "#fff",
-            }}
-          >
-            <button
-              type="button"
-              onClick={attemptClose}
-              style={{
-                padding: "8px 18px",
-                borderRadius: 10,
-                border: `1px solid ${C.border}`,
-                background: C.surface,
-                color: C.text2,
-                fontSize: 14,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-            >
-              Fermer
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Header dual-mode ─────────────────────────────────────────────────────────
-
-function ModalHeader({
-  mode,
-  adresse,
-  onSwitchToEdit,
-  onClose,
-}: {
-  mode: CaracMode;
-  adresse: string | undefined;
-  onSwitchToEdit: () => void;
-  onClose: () => void;
-}) {
-  return (
-    <div
-      style={{
-        position: "sticky",
-        top: 0,
-        background: "#fff",
-        borderBottom: `1px solid ${C.border}`,
-        padding: "16px 24px",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        gap: 16,
-      }}
-    >
-      <div style={{ minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: C.text, margin: 0 }}>
-            {mode === "edit" ? "Modifier les caractéristiques" : "Caractéristiques détaillées"}
-          </h2>
-          {mode === "edit" && (
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                padding: "2px 10px",
-                borderRadius: 999,
-                background: "var(--althy-gold-bg)",
-                color: "var(--althy-gold-hover)",
-                border: "1px solid var(--althy-gold-border)",
-                whiteSpace: "nowrap",
-              }}
-            >
-              En édition
-            </span>
-          )}
-        </div>
-        {adresse && (
-          <p
-            style={{
-              fontSize: 13,
-              color: C.text3,
-              margin: "2px 0 0",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {adresse}
-          </p>
-        )}
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        {mode === "read" && (
-          <button
-            type="button"
-            onClick={onSwitchToEdit}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "8px 14px",
-              borderRadius: 9,
-              border: "none",
-              background: C.prussian,
-              color: "#fff",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-              fontFamily: "inherit",
-            }}
-          >
-            <Pencil size={14} />
-            Modifier
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Fermer"
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: C.text3,
-            padding: 4,
-            lineHeight: 0,
-            flexShrink: 0,
-          }}
-        >
-          <X size={22} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ── Mode Lecture (PR-A11.A.3 commit 4 — polish E-24) ─────────────────────────
-//
-// Règle générale : on n'affiche pas les champs vides, sauf pour les champs
-// canoniques structurants (Type, Surface, Pièces, Étage, DPE) où "—" reste
-// explicite. Les sections optionnelles (Règles, Situation, Descriptions,
-// Finances annexes) sont masquees integralement si toutes leurs valeurs
-// sont null.
-
-type EquipementItem = {
-  active: boolean;
-  label: string;
-  icon: string;
-};
-
-function buildEquipements(bien: BienDetail): EquipementItem[] {
-  return [
-    { active: Boolean(bien.has_balcony), label: "Balcon", icon: "🌅" },
-    { active: Boolean(bien.has_terrace), label: "Terrasse", icon: "🌿" },
-    { active: Boolean(bien.has_garden), label: "Jardin", icon: "🌳" },
-    { active: Boolean(bien.has_storage), label: "Cave / Réduit", icon: "📦" },
-    { active: Boolean(bien.has_fireplace), label: "Cheminée", icon: "🔥" },
-    { active: Boolean(bien.has_laundry_private), label: "Buanderie privée", icon: "🧺" },
-    { active: Boolean(bien.has_laundry_building), label: "Buanderie commune", icon: "🧺" },
-    {
-      active: Boolean(bien.parking_type),
-      label: bien.parking_type
-        ? `Parking — ${PARKING_LABELS[bien.parking_type] || bien.parking_type}`
-        : "Parking",
-      icon: "🚗",
-    },
-  ];
-}
-
-function ReadView({ bien }: { bien: BienDetail }) {
-  const [showAbsents, setShowAbsents] = useState(false);
-
-  const equipements = buildEquipements(bien);
-  const presents = equipements.filter((e) => e.active);
-  const absents = equipements.filter((e) => !e.active);
-
-  // Masques de sections optionnelles
-  const showRegles = bien.pets_allowed != null || bien.smoking_allowed != null;
-
-  const distances = [
-    { label: "Distance gare", value: bien.distance_gare_minutes },
-    { label: "Distance arrêt bus", value: bien.distance_arret_bus_minutes },
-    { label: "Distance télécabine", value: bien.distance_telecabine_minutes },
-    { label: "Distance lac", value: bien.distance_lac_minutes },
-    { label: "Distance aéroport", value: bien.distance_aeroport_minutes },
-  ].filter((d) => d.value != null);
-  const showSituation = distances.length > 0 || Boolean(bien.situation_notes);
-
-  const showDescriptions = Boolean(
-    bien.description_lieu || bien.description_logement || bien.remarques,
-  );
-
-  const showFinances =
-    bien.deposit != null || bien.loyer != null || bien.charges != null;
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {/* 1. CONFIGURATION (champs canoniques — toujours affichés) */}
-      <Section title="Configuration">
-        <Row
-          label="Type de résidence"
-          value={
-            bien.residence_type
-              ? RESIDENCE_LABELS[bien.residence_type] || bien.residence_type
-              : "—"
-          }
-        />
-        <Row
-          label="Type de location"
-          value={
-            bien.location_type_actuel
-              ? LOCATION_LABELS[bien.location_type_actuel] || bien.location_type_actuel
-              : "—"
-          }
-        />
-        <Row label="Bien meublé" value={fmtBoolYesNo(bien.is_furnished)} />
-      </Section>
-
-      {/* 2. TECHNIQUE (champs canoniques — toujours affichés) */}
-      <Section title="Caractéristiques techniques">
-        <Row label="Type de bien" value={bien.type ?? "—"} />
-        <Row label="Surface" value={bien.surface ? `${bien.surface} m²` : "—"} />
-        <Row label="Pièces" value={bien.rooms != null ? String(bien.rooms) : "—"} />
-        <Row label="Chambres" value={bien.bedrooms != null ? String(bien.bedrooms) : "—"} />
-        <Row label="Salles de bain" value={bien.bathrooms != null ? String(bien.bathrooms) : "—"} />
-        <Row label="Étage" value={bien.etage != null ? String(bien.etage) : "—"} />
-        <Row
-          label="Année construction"
-          value={bien.annee_construction ? String(bien.annee_construction) : "—"}
-        />
-        <Row
-          label="Année rénovation"
-          value={bien.annee_renovation ? String(bien.annee_renovation) : "—"}
-        />
-        <Row
-          label="Classe énergétique (DPE)"
-          value={
-            bien.classe_energetique ? (
-              <span style={{ color: dpeColor(bien.classe_energetique), fontWeight: 700 }}>
-                {bien.classe_energetique}
-              </span>
-            ) : "—"
-          }
-        />
-      </Section>
-
-      {/* 3. ÉQUIPEMENTS — Présents / Non renseignés (E-24) */}
-      <Section title="Équipements">
-        {presents.length === 0 ? (
-          <p style={{ fontSize: 13, color: C.text3, fontStyle: "italic", margin: 0 }}>
-            Aucun équipement renseigné
-          </p>
-        ) : (
-          <>
-            <p
-              style={{
-                fontSize: 11,
-                color: C.text3,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                margin: "0 0 8px",
-                fontWeight: 600,
-              }}
-            >
-              Présents
-            </p>
-            <div
-              style={{
-                display: "grid",
-                gap: 8,
-                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-              }}
-            >
-              {presents.map((eq) => (
-                <EquipementBadge
-                  key={eq.label}
-                  active
-                  label={eq.label}
-                  icon={eq.icon}
-                />
-              ))}
-            </div>
-          </>
-        )}
-
-        {absents.length > 0 && (
-          <div style={{ marginTop: presents.length > 0 ? 16 : 8 }}>
-            <button
-              type="button"
-              onClick={() => setShowAbsents((v) => !v)}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                padding: 0,
-                border: "none",
-                background: "none",
-                color: C.text3,
-                fontSize: 12,
-                fontWeight: 500,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-              aria-expanded={showAbsents || presents.length === 0}
-            >
-              {showAbsents || presents.length === 0 ? (
-                <ChevronDown size={14} />
-              ) : (
-                <ChevronRight size={14} />
-              )}
-              Non renseignés ({absents.length})
-            </button>
-            {(showAbsents || presents.length === 0) && (
-              <ul
-                style={{
-                  listStyle: "none",
-                  padding: 0,
-                  margin: "8px 0 0",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 4,
-                }}
-              >
-                {absents.map((eq) => (
-                  <li
-                    key={eq.label}
-                    style={{
-                      fontSize: 13,
-                      color: C.text3,
-                    }}
-                  >
-                    {eq.label} — non renseigné
-                  </li>
-                ))}
-              </ul>
+      <div style={shellStyle} onClick={(e) => e.stopPropagation()}>
+        <div style={headerStyle}>
+          <div style={{ minWidth: 0 }}>
+            <h2 style={titleStyle}>Caractéristiques détaillées</h2>
+            {bien && (
+              <p style={subtitleStyle}>
+                {bien.adresse}, {bien.cp} {bien.ville}
+              </p>
             )}
           </div>
-        )}
-      </Section>
+          <button
+            type="button"
+            onClick={attemptClose}
+            aria-label="Fermer"
+            style={closeBtnStyle}
+          >
+            <X size={22} />
+          </button>
+        </div>
 
-      {/* 4. RÈGLES — masquée si tout null (E-24) */}
-      {showRegles && (
-        <Section title="Règles">
-          {bien.pets_allowed != null && (
-            <Row
-              label="Animaux acceptés"
-              value={bien.pets_allowed ? "Oui" : "Non"}
-            />
-          )}
-          {bien.smoking_allowed != null && (
-            <Row
-              label="Fumeurs acceptés"
-              value={bien.smoking_allowed ? "Oui" : "Non"}
-            />
-          )}
-        </Section>
-      )}
+        {/* Tabs nav */}
+        <nav style={tabsNavStyle} role="tablist" aria-label="Sections">
+          {TABS.map((tab) => {
+            const active = tab.id === activeTab;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setActiveTab(tab.id)}
+                className={active ? "carac-tab-active" : undefined}
+                style={{
+                  ...tabBtnStyle,
+                  color: active ? C.prussian : C.text3,
+                  fontWeight: active ? 600 : 500,
+                  borderBottom: `2px solid ${active ? C.gold : "transparent"}`,
+                }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
 
-      {/* 5. SITUATION — masquée si tout null (E-24) */}
-      {showSituation && (
-        <Section title="Situation géographique">
-          {distances.map((d) => (
-            <Row key={d.label} label={d.label} value={`${d.value} min`} />
-          ))}
-          {bien.situation_notes && (
-            <div
-              style={{
-                marginTop: 8,
-                padding: "10px 12px",
-                background: C.prussianBg,
-                borderRadius: 8,
-                fontSize: 13,
-                color: C.text2,
-                fontStyle: "italic",
-                lineHeight: 1.5,
-              }}
-            >
-              {bien.situation_notes}
-            </div>
+        <div style={bodyStyle}>
+          {isLoading || !ctx ? (
+            <p style={loadingStyle}>Chargement…</p>
+          ) : (
+            <TabContent tabId={activeTab} ctx={ctx} bienId={bienId} />
           )}
-        </Section>
-      )}
-
-      {/* 6. DESCRIPTIONS — masquée si tout null (E-24) */}
-      {showDescriptions && (
-        <Section title="Descriptions">
-          {bien.description_lieu && (
-            <DescriptionBlock label="Description du lieu" text={bien.description_lieu} />
-          )}
-          {bien.description_logement && (
-            <DescriptionBlock label="Description du logement" text={bien.description_logement} />
-          )}
-          {bien.remarques && (
-            <DescriptionBlock label="Remarques" text={bien.remarques} />
-          )}
-        </Section>
-      )}
-
-      {/* 7. FINANCES ANNEXES — masquée si tout null (E-24) */}
-      {showFinances && (
-        <Section title="Finances annexes">
-          {bien.deposit != null && (
-            <Row label="Caution / Dépôt" value={fmtCHF(bien.deposit)} />
-          )}
-          {bien.loyer != null && (
-            <Row label="Loyer mensuel" value={fmtCHF(bien.loyer)} />
-          )}
-          {bien.charges != null && (
-            <Row label="Charges mensuelles" value={fmtCHF(bien.charges)} />
-          )}
-        </Section>
-      )}
+        </div>
+      </div>
     </div>
   );
 }
 
-// ── Mode Édition — formulaire complet 24+ champs (PR-A11.A.3) ────────────────
+// ── Tab dispatcher ──────────────────────────────────────────────────────────
 
-const MAX_TEXT_LENGTH = 5000;
-const ANNEE_MIN = 1800;
-const ANNEE_MAX = new Date().getFullYear();
+function TabContent({
+  tabId,
+  ctx,
+  bienId,
+}: {
+  tabId: TabId;
+  ctx: EditContext;
+  bienId: string;
+}) {
+  switch (tabId) {
+    case "identite":
+      return <TabIdentite ctx={ctx} />;
+    case "localisation":
+      return <TabLocalisation ctx={ctx} />;
+    case "surface":
+      return <TabSurface ctx={ctx} bienId={bienId} />;
+    case "technique":
+      return <TabTechnique ctx={ctx} bienId={bienId} />;
+    case "location":
+      return <TabLocation ctx={ctx} />;
+    case "contacts":
+      return <ContactsSection bienId={bienId} />;
+    case "fiscalite":
+      return <TabFiscalite ctx={ctx} />;
+  }
+}
+
+// ── Tab 1 : Identité ────────────────────────────────────────────────────────
 
 const TYPE_OPTIONS = [
   { value: "appartement", label: "Appartement" },
@@ -625,19 +271,276 @@ const TYPE_OPTIONS = [
   { value: "autre", label: "Autre" },
 ];
 
-const RESIDENCE_OPTIONS = [
-  { value: "", label: "Non renseigné" },
-  { value: "principale", label: "Résidence principale" },
-  { value: "secondaire", label: "Résidence secondaire" },
-  { value: "mixte", label: "Mixte (les deux)" },
+function TabIdentite({ ctx }: { ctx: EditContext }) {
+  const { bien } = ctx;
+  return (
+    <div style={tabContentStyle}>
+      <Section title="Identité du bien">
+        <Grid>
+          <Field label="Nom de l'immeuble" name="building_name" value={bien.building_name} ctx={ctx} />
+          <Field label="N° appartement" name="unit_number" value={bien.unit_number} ctx={ctx} />
+          <Field
+            label="Référence interne (régie)"
+            name="reference_number"
+            value={bien.reference_number}
+            ctx={ctx}
+          />
+          <SelectField
+            label="Type de bien"
+            name="type"
+            value={bien.type}
+            options={TYPE_OPTIONS}
+            ctx={ctx}
+          />
+        </Grid>
+      </Section>
+
+      <Section title="Identifiants fédéraux suisses">
+        <Grid>
+          <Field label="EGID (n° fédéral bâtiment)" name="egid" value={bien.egid} type="number" ctx={ctx} />
+          <Field label="EWID (n° fédéral logement)" name="ewid" value={bien.ewid} type="number" ctx={ctx} />
+          <Field
+            label="N° parcelle cadastrale"
+            name="numero_parcelle"
+            value={bien.numero_parcelle}
+            ctx={ctx}
+          />
+          <Field
+            label="N° lot PPE"
+            name="numero_lot_ppe"
+            value={bien.numero_lot_ppe}
+            ctx={ctx}
+          />
+          <Field
+            label="N° OFS commune"
+            name="commune_ofs"
+            value={bien.commune_ofs}
+            type="number"
+            ctx={ctx}
+          />
+        </Grid>
+      </Section>
+
+      <Section title="Sécurité opérationnelle">
+        <Grid>
+          <Field
+            label="Nombre de clés"
+            name="keys_count"
+            value={bien.keys_count}
+            type="number"
+            ctx={ctx}
+          />
+          {/* keys_description, numero_badge, code_digicode reportés sprint
+              compléments (champs absents du modèle DB en 6.a). */}
+        </Grid>
+      </Section>
+    </div>
+  );
+}
+
+// ── Tab 2 : Localisation ────────────────────────────────────────────────────
+
+const ORIENTATION_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "N", label: "Nord" },
+  { value: "S", label: "Sud" },
+  { value: "E", label: "Est" },
+  { value: "O", label: "Ouest" },
+  { value: "NE", label: "Nord-Est" },
+  { value: "NO", label: "Nord-Ouest" },
+  { value: "SE", label: "Sud-Est" },
+  { value: "SO", label: "Sud-Ouest" },
 ];
 
-const LOCATION_OPTIONS = [
-  { value: "", label: "Non renseigné" },
-  { value: "annuelle", label: "Annuelle (bail traditionnel)" },
-  { value: "saisonniere", label: "Saisonnière (Airbnb, été/hiver)" },
-  { value: "semaine", label: "À la semaine (vacances)" },
-  { value: "vide", label: "Bien vacant" },
+const VUE_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "lac", label: "Lac" },
+  { value: "montagne", label: "Montagne" },
+  { value: "campagne", label: "Campagne" },
+  { value: "ville", label: "Ville" },
+  { value: "cour", label: "Cour" },
+  { value: "rue", label: "Rue" },
+  { value: "aucune", label: "Aucune particulière" },
+];
+
+const BRUIT_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "calme", label: "Calme" },
+  { value: "passable", label: "Passable" },
+  { value: "bruyant", label: "Bruyant" },
+];
+
+function TabLocalisation({ ctx }: { ctx: EditContext }) {
+  const { bien } = ctx;
+  return (
+    <div style={tabContentStyle}>
+      <Section title="Adresse">
+        <Grid>
+          <Field label="Rue + n°" name="adresse" value={bien.adresse} ctx={ctx} />
+          <Field label="NPA" name="cp" value={bien.cp} ctx={ctx} />
+          <Field label="Ville" name="ville" value={bien.ville} ctx={ctx} />
+          <Field label="Canton" name="canton" value={bien.canton} ctx={ctx} />
+        </Grid>
+      </Section>
+
+      <Section title="Coordonnées géographiques">
+        <Grid>
+          <Field label="Latitude" name="lat" value={bien.lat} type="number" ctx={ctx} />
+          <Field label="Longitude" name="lng" value={bien.lng} type="number" ctx={ctx} />
+        </Grid>
+      </Section>
+
+      <Section title="Position dans l'immeuble">
+        <Grid>
+          <Field label="Étage du logement" name="etage" value={bien.etage} type="number" ctx={ctx} />
+          <Field
+            label="Nombre d'étages immeuble"
+            name="nb_etages"
+            value={bien.nb_etages}
+            type="number"
+            ctx={ctx}
+          />
+        </Grid>
+      </Section>
+
+      <Section title="Environnement">
+        <Grid>
+          <SelectField
+            label="Orientation principale"
+            name="orientation_principale"
+            value={bien.orientation_principale}
+            options={ORIENTATION_OPTIONS}
+            ctx={ctx}
+          />
+          <SelectField label="Vue" name="vue" value={bien.vue} options={VUE_OPTIONS} ctx={ctx} />
+          <SelectField
+            label="Niveau bruit"
+            name="bruit_proximite"
+            value={bien.bruit_proximite}
+            options={BRUIT_OPTIONS}
+            ctx={ctx}
+          />
+        </Grid>
+        <ToggleRow
+          label="Accessibilité PMR"
+          name="accessibilite_pmr"
+          value={bien.accessibilite_pmr}
+          ctx={ctx}
+        />
+        <ToggleRow label="Ascenseur" name="ascenseur" value={bien.ascenseur} ctx={ctx} />
+      </Section>
+    </div>
+  );
+}
+
+// ── Tab 3 : Surface & Annexes ───────────────────────────────────────────────
+
+function TabSurface({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
+  const { bien } = ctx;
+  return (
+    <div style={tabContentStyle}>
+      <Section title="Surface & pièces">
+        <Grid>
+          <Field
+            label="Surface habitable (m²)"
+            name="surface"
+            value={bien.surface}
+            type="number"
+            ctx={ctx}
+          />
+          <Field label="Pièces" name="rooms" value={bien.rooms} type="number" step={0.5} ctx={ctx} />
+          <Field
+            label="Chambres"
+            name="bedrooms"
+            value={bien.bedrooms}
+            type="number"
+            ctx={ctx}
+          />
+          <Field
+            label="Salles de bain"
+            name="bathrooms"
+            value={bien.bathrooms}
+            type="number"
+            ctx={ctx}
+          />
+        </Grid>
+      </Section>
+
+      <Section title="Surfaces annexes (m²)">
+        <Grid>
+          <Field
+            label="Cave"
+            name="cave_m2"
+            value={bien.cave_m2}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+          <Field
+            label="Balcon"
+            name="balcon_m2"
+            value={bien.balcon_m2}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+          <Field
+            label="Terrasse"
+            name="terrasse_m2"
+            value={bien.terrasse_m2}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+          <Field
+            label="Jardin"
+            name="jardin_m2"
+            value={bien.jardin_m2}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+          <Field
+            label="Terrain (maisons)"
+            name="terrain_m2"
+            value={bien.terrain_m2}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+        </Grid>
+      </Section>
+
+      <AnnexesSection bienId={bienId} />
+    </div>
+  );
+}
+
+// ── Tab 4 : Caractéristiques techniques ─────────────────────────────────────
+
+const DPE_OPTIONS = [
+  { value: "", label: "—" },
+  ...["A", "B", "C", "D", "E", "F", "G"].map((c) => ({ value: c, label: c })),
+];
+
+const CHAUFFAGE_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "gaz", label: "Gaz" },
+  { value: "mazout", label: "Mazout" },
+  { value: "pompe_chaleur", label: "Pompe à chaleur" },
+  { value: "electrique", label: "Électrique" },
+  { value: "bois", label: "Bois" },
+  { value: "pellets", label: "Pellets" },
+  { value: "district", label: "Chauffage à distance" },
+  { value: "autre", label: "Autre" },
+];
+
+const EAU_CHAUDE_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "boiler", label: "Boiler" },
+  { value: "chaudiere_commune", label: "Chaudière commune" },
+  { value: "panneaux_solaires", label: "Panneaux solaires" },
+  { value: "autre", label: "Autre" },
 ];
 
 const PARKING_OPTIONS = [
@@ -648,895 +551,903 @@ const PARKING_OPTIONS = [
   { value: "interieur_box", label: "Intérieur (box)" },
 ];
 
-const DPE_OPTIONS = [
-  { value: "", label: "Non renseigné" },
-  ...["A", "B", "C", "D", "E", "F", "G"].map((c) => ({ value: c, label: c })),
-];
-
-/** Forme du form interne — strings pour les inputs numériques afin de
- *  préserver le distinction "vide" vs "0", convertis au submit. */
-type EditFormValues = {
-  type: string;
-  residence_type: string;
-  location_type_actuel: string;
-  is_furnished: boolean;
-  surface: string;
-  rooms: string;
-  bedrooms: string;
-  bathrooms: string;
-  etage: string;
-  annee_construction: string;
-  annee_renovation: string;
-  classe_energetique: string;
-  has_balcony: boolean;
-  has_terrace: boolean;
-  has_garden: boolean;
-  has_storage: boolean;
-  has_fireplace: boolean;
-  has_laundry_private: boolean;
-  has_laundry_building: boolean;
-  parking_type: string;
-  pets_allowed: "null" | "true" | "false";
-  smoking_allowed: "null" | "true" | "false";
-  distance_gare_minutes: string;
-  distance_arret_bus_minutes: string;
-  distance_telecabine_minutes: string;
-  distance_lac_minutes: string;
-  distance_aeroport_minutes: string;
-  situation_notes: string;
-  description_lieu: string;
-  description_logement: string;
-  remarques: string;
-  deposit: string;
-  loyer: string;
-  charges: string;
-};
-
-function bienToForm(bien: Bien): EditFormValues {
-  const numStr = (v: number | null | undefined) =>
-    v == null ? "" : String(v);
-  const triState = (v: boolean | null | undefined): "null" | "true" | "false" =>
-    v == null ? "null" : v ? "true" : "false";
-
-  return {
-    type: bien.type ?? "appartement",
-    residence_type: bien.residence_type ?? "",
-    location_type_actuel: bien.location_type_actuel ?? "",
-    is_furnished: bien.is_furnished ?? false,
-    surface: numStr(bien.surface),
-    rooms: numStr(bien.rooms),
-    bedrooms: numStr(bien.bedrooms),
-    bathrooms: numStr(bien.bathrooms),
-    etage: numStr(bien.etage),
-    annee_construction: numStr(bien.annee_construction),
-    annee_renovation: numStr(bien.annee_renovation),
-    classe_energetique: bien.classe_energetique ?? "",
-    has_balcony: Boolean(bien.has_balcony),
-    has_terrace: Boolean(bien.has_terrace),
-    has_garden: Boolean(bien.has_garden),
-    has_storage: Boolean(bien.has_storage),
-    has_fireplace: Boolean(bien.has_fireplace),
-    has_laundry_private: Boolean(bien.has_laundry_private),
-    has_laundry_building: Boolean(bien.has_laundry_building),
-    parking_type: bien.parking_type ?? "",
-    pets_allowed: triState(bien.pets_allowed),
-    smoking_allowed: triState(bien.smoking_allowed),
-    distance_gare_minutes: numStr(bien.distance_gare_minutes),
-    distance_arret_bus_minutes: numStr(bien.distance_arret_bus_minutes),
-    distance_telecabine_minutes: numStr(bien.distance_telecabine_minutes),
-    distance_lac_minutes: numStr(bien.distance_lac_minutes),
-    distance_aeroport_minutes: numStr(bien.distance_aeroport_minutes),
-    situation_notes: bien.situation_notes ?? "",
-    description_lieu: bien.description_lieu ?? "",
-    description_logement: bien.description_logement ?? "",
-    remarques: bien.remarques ?? "",
-    deposit: numStr(bien.deposit),
-    loyer: numStr(bien.loyer),
-    charges: numStr(bien.charges),
-  };
-}
-
-/** Transforme la valeur form en valeur DB type-safe (null si vide). */
-function formValueToDb(
-  field: keyof EditFormValues,
-  value: EditFormValues[keyof EditFormValues],
-): unknown {
-  // Tri-state booléen
-  if (field === "pets_allowed" || field === "smoking_allowed") {
-    if (value === "null" || value === "") return null;
-    return value === "true";
-  }
-  // Booléens
-  if (typeof value === "boolean") return value;
-  // Strings vides → null pour les selects optionnels et descriptions
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (trimmed === "") return null;
-    // Champs numériques
-    const numericFields: (keyof EditFormValues)[] = [
-      "surface", "rooms", "bedrooms", "bathrooms", "etage",
-      "annee_construction", "annee_renovation",
-      "distance_gare_minutes", "distance_arret_bus_minutes",
-      "distance_telecabine_minutes", "distance_lac_minutes",
-      "distance_aeroport_minutes",
-      "deposit", "loyer", "charges",
-    ];
-    if (numericFields.includes(field)) {
-      const n = Number(trimmed);
-      return Number.isFinite(n) ? n : null;
-    }
-    return trimmed;
-  }
-  return value;
-}
-
-/** Calcule le diff entre les valeurs courantes et initiales. Ne retourne
- *  que les champs réellement modifiés (évite B-07 par construction). */
-function computeDirty(
-  current: EditFormValues,
-  initial: EditFormValues,
-): BienUpdate {
-  const dirty: Record<string, unknown> = {};
-  (Object.keys(current) as (keyof EditFormValues)[]).forEach((key) => {
-    if (current[key] !== initial[key]) {
-      dirty[key] = formValueToDb(key, current[key]);
-    }
-  });
-  return dirty as BienUpdate;
-}
-
-function EditView({
-  bien,
-  onCancel,
-  onSaved,
-  onDirtyChange,
-}: {
-  bien: BienDetail;
-  onCancel: () => void;
-  onSaved: () => void;
-  onDirtyChange: (dirty: boolean) => void;
-}) {
-  const update = useUpdateBien(bien.id);
-  const initial = useMemo(() => bienToForm(bien), [bien]);
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [savedToast, setSavedToast] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm<EditFormValues>({
-    defaultValues: initial,
-    mode: "onBlur",
-  });
-
-  const current = watch();
-  const dirty = useMemo(() => computeDirty(current, initial), [current, initial]);
-  const hasDirty = Object.keys(dirty).length > 0;
-
-  // Remonte le suivi dirty au composant racine pour que tous les chemins de
-  // fermeture (backdrop, X, Esc, Annuler) passent par la confirmation unifiée.
-  useEffect(() => {
-    onDirtyChange(hasDirty);
-  }, [hasDirty, onDirtyChange]);
-
-  const onSubmit = handleSubmit(async () => {
-    setServerError(null);
-    try {
-      await update.mutateAsync(dirty);
-      setSavedToast(true);
-      setTimeout(() => setSavedToast(false), 2500);
-      onSaved();
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })
-        ?.response?.data?.detail;
-      setServerError(msg ?? "Erreur lors de l'enregistrement. Réessayez.");
-    }
-  });
-
+function TabTechnique({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
+  const { bien } = ctx;
   return (
-    <form
-      onSubmit={onSubmit}
-      style={{ display: "flex", flexDirection: "column", gap: 24 }}
-      noValidate
-    >
-      {serverError && (
-        <div
-          role="alert"
-          style={{
-            padding: "10px 14px",
-            borderRadius: 10,
-            background: C.redBg,
-            border: `1px solid ${C.red}55`,
-            color: C.red,
-            fontSize: 13,
-          }}
-        >
-          {serverError}
-        </div>
-      )}
+    <div style={tabContentStyle}>
+      <Section title="Construction & énergie">
+        <Grid>
+          <Field
+            label="Année construction"
+            name="annee_construction"
+            value={bien.annee_construction}
+            type="number"
+            ctx={ctx}
+          />
+          <Field
+            label="Année rénovation"
+            name="annee_renovation"
+            value={bien.annee_renovation}
+            type="number"
+            ctx={ctx}
+          />
+          <SelectField
+            label="Classe énergétique (DPE)"
+            name="classe_energetique"
+            value={bien.classe_energetique}
+            options={DPE_OPTIONS}
+            ctx={ctx}
+          />
+          <SelectField
+            label="Type de chauffage"
+            name="type_chauffage"
+            value={bien.type_chauffage}
+            options={CHAUFFAGE_OPTIONS}
+            ctx={ctx}
+          />
+          <SelectField
+            label="Mode eau chaude"
+            name="mode_eau_chaude"
+            value={bien.mode_eau_chaude}
+            options={EAU_CHAUDE_OPTIONS}
+            ctx={ctx}
+          />
+        </Grid>
+      </Section>
 
-      {/* 1. Configuration */}
-      <FormSection title="Configuration">
-        <FormSelectField
-          label="Type de résidence"
-          options={RESIDENCE_OPTIONS}
-          {...register("residence_type")}
-        />
-        <FormSelectField
-          label="Type de location actuel"
-          options={LOCATION_OPTIONS}
-          {...register("location_type_actuel")}
-        />
-        <FormToggleField label="Bien meublé" {...register("is_furnished")} />
-      </FormSection>
-
-      {/* 2. Technique */}
-      <FormSection title="Caractéristiques techniques">
-        <FormSelectField
-          label="Type de bien"
-          options={TYPE_OPTIONS}
-          {...register("type")}
-        />
-        <FormNumberField
-          label="Surface"
-          suffix="m²"
-          step={1}
-          min={0}
-          error={errors.surface?.message}
-          {...register("surface", {
-            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
-          })}
-        />
-        <FormNumberField
-          label="Pièces"
-          step={0.5}
-          min={0}
-          error={errors.rooms?.message}
-          {...register("rooms", {
-            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
-          })}
-        />
-        <FormNumberField
-          label="Chambres"
-          step={1}
-          min={0}
-          error={errors.bedrooms?.message}
-          {...register("bedrooms", {
-            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
-          })}
-        />
-        <FormNumberField
-          label="Salles de bain"
-          step={1}
-          min={0}
-          error={errors.bathrooms?.message}
-          {...register("bathrooms", {
-            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
-          })}
-        />
-        <FormNumberField
-          label="Étage"
-          step={1}
-          {...register("etage")}
-        />
-        <FormNumberField
-          label="Année construction"
-          step={1}
-          min={ANNEE_MIN}
-          max={ANNEE_MAX}
-          error={errors.annee_construction?.message}
-          {...register("annee_construction", {
-            validate: (v) => {
-              if (v === "") return true;
-              const n = Number(v);
-              if (n < ANNEE_MIN || n > ANNEE_MAX) {
-                return `Entre ${ANNEE_MIN} et ${ANNEE_MAX}`;
-              }
-              return true;
-            },
-          })}
-        />
-        <FormNumberField
-          label="Année rénovation"
-          step={1}
-          min={ANNEE_MIN}
-          max={ANNEE_MAX}
-          error={errors.annee_renovation?.message}
-          {...register("annee_renovation", {
-            validate: (v) => {
-              if (v === "") return true;
-              const n = Number(v);
-              if (n < ANNEE_MIN || n > ANNEE_MAX) {
-                return `Entre ${ANNEE_MIN} et ${ANNEE_MAX}`;
-              }
-              return true;
-            },
-          })}
-        />
-        <FormSelectField
-          label="Classe énergétique (DPE)"
-          options={DPE_OPTIONS}
-          {...register("classe_energetique")}
-        />
-      </FormSection>
-
-      {/* 3. Équipements */}
-      <FormSection title="Équipements">
-        <div
-          style={{
-            display: "grid",
-            gap: 8,
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          }}
-        >
-          <FormToggleField label="Balcon" {...register("has_balcony")} />
-          <FormToggleField label="Terrasse" {...register("has_terrace")} />
-          <FormToggleField label="Jardin" {...register("has_garden")} />
-          <FormToggleField label="Cave / Réduit" {...register("has_storage")} />
-          <FormToggleField label="Cheminée" {...register("has_fireplace")} />
-          <FormToggleField label="Buanderie privée" {...register("has_laundry_private")} />
-          <FormToggleField label="Buanderie commune" {...register("has_laundry_building")} />
-        </div>
-        <FormSelectField
+      <Section title="Équipements">
+        <ToggleGrid>
+          <ToggleRow label="Meublé" name="is_furnished" value={bien.is_furnished} ctx={ctx} />
+          <ToggleRow label="Balcon" name="has_balcony" value={bien.has_balcony} ctx={ctx} />
+          <ToggleRow label="Terrasse" name="has_terrace" value={bien.has_terrace} ctx={ctx} />
+          <ToggleRow label="Jardin" name="has_garden" value={bien.has_garden} ctx={ctx} />
+          <ToggleRow label="Cave / Réduit" name="has_storage" value={bien.has_storage} ctx={ctx} />
+          <ToggleRow label="Cheminée" name="has_fireplace" value={bien.has_fireplace} ctx={ctx} />
+          <ToggleRow
+            label="Buanderie privée"
+            name="has_laundry_private"
+            value={bien.has_laundry_private}
+            ctx={ctx}
+          />
+          <ToggleRow
+            label="Buanderie commune"
+            name="has_laundry_building"
+            value={bien.has_laundry_building}
+            ctx={ctx}
+          />
+        </ToggleGrid>
+        <SelectField
           label="Parking"
+          name="parking_type"
+          value={bien.parking_type}
           options={PARKING_OPTIONS}
-          {...register("parking_type")}
+          ctx={ctx}
         />
-      </FormSection>
+      </Section>
 
-      {/* 4. Règles — tri-state */}
-      <FormSection title="Règles">
-        <FormTriStateField
-          label="Animaux acceptés"
-          {...register("pets_allowed")}
-        />
-        <FormTriStateField
-          label="Fumeurs acceptés"
-          {...register("smoking_allowed")}
-        />
-      </FormSection>
+      <Section title="Règles de location">
+        <ToggleGrid>
+          <ToggleRow label="Animaux acceptés" name="pets_allowed" value={bien.pets_allowed} ctx={ctx} />
+          <ToggleRow
+            label="Fumeurs acceptés"
+            name="smoking_allowed"
+            value={bien.smoking_allowed}
+            ctx={ctx}
+          />
+        </ToggleGrid>
+      </Section>
 
-      {/* 5. Situation */}
-      <FormSection title="Situation géographique">
-        <FormNumberField
-          label="Distance gare"
-          suffix="min"
-          step={1}
-          min={0}
-          {...register("distance_gare_minutes", {
-            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
-          })}
-          error={errors.distance_gare_minutes?.message}
-        />
-        <FormNumberField
-          label="Distance arrêt bus"
-          suffix="min"
-          step={1}
-          min={0}
-          {...register("distance_arret_bus_minutes", {
-            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
-          })}
-          error={errors.distance_arret_bus_minutes?.message}
-        />
-        <FormNumberField
-          label="Distance télécabine"
-          suffix="min"
-          step={1}
-          min={0}
-          {...register("distance_telecabine_minutes", {
-            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
-          })}
-          error={errors.distance_telecabine_minutes?.message}
-        />
-        <FormNumberField
-          label="Distance lac"
-          suffix="min"
-          step={1}
-          min={0}
-          {...register("distance_lac_minutes", {
-            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
-          })}
-          error={errors.distance_lac_minutes?.message}
-        />
-        <FormNumberField
-          label="Distance aéroport"
-          suffix="min"
-          step={1}
-          min={0}
-          {...register("distance_aeroport_minutes", {
-            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
-          })}
-          error={errors.distance_aeroport_minutes?.message}
-        />
-        <FormTextareaField
+      <Section title="Distances utiles (minutes)">
+        <Grid>
+          <Field
+            label="Gare"
+            name="distance_gare_minutes"
+            value={bien.distance_gare_minutes}
+            type="number"
+            ctx={ctx}
+          />
+          <Field
+            label="Arrêt bus"
+            name="distance_arret_bus_minutes"
+            value={bien.distance_arret_bus_minutes}
+            type="number"
+            ctx={ctx}
+          />
+          <Field
+            label="Télécabine"
+            name="distance_telecabine_minutes"
+            value={bien.distance_telecabine_minutes}
+            type="number"
+            ctx={ctx}
+          />
+          <Field
+            label="Lac"
+            name="distance_lac_minutes"
+            value={bien.distance_lac_minutes}
+            type="number"
+            ctx={ctx}
+          />
+          <Field
+            label="Aéroport"
+            name="distance_aeroport_minutes"
+            value={bien.distance_aeroport_minutes}
+            type="number"
+            ctx={ctx}
+          />
+        </Grid>
+        <TextareaField
           label="Notes situation"
-          rows={3}
-          maxLength={MAX_TEXT_LENGTH}
-          watchValue={current.situation_notes}
-          {...register("situation_notes", {
-            maxLength: { value: MAX_TEXT_LENGTH, message: `Max ${MAX_TEXT_LENGTH} caractères` },
-          })}
-          error={errors.situation_notes?.message}
+          name="situation_notes"
+          value={bien.situation_notes}
+          ctx={ctx}
         />
-      </FormSection>
+      </Section>
 
-      {/* 6. Descriptions */}
-      <FormSection title="Descriptions">
-        <FormTextareaField
-          label="Description du lieu"
-          rows={4}
-          maxLength={MAX_TEXT_LENGTH}
-          watchValue={current.description_lieu}
-          {...register("description_lieu", {
-            maxLength: { value: MAX_TEXT_LENGTH, message: `Max ${MAX_TEXT_LENGTH} caractères` },
-          })}
-          error={errors.description_lieu?.message}
-        />
-        <FormTextareaField
-          label="Description du logement"
-          rows={4}
-          maxLength={MAX_TEXT_LENGTH}
-          watchValue={current.description_logement}
-          {...register("description_logement", {
-            maxLength: { value: MAX_TEXT_LENGTH, message: `Max ${MAX_TEXT_LENGTH} caractères` },
-          })}
-          error={errors.description_logement?.message}
-        />
-        <FormTextareaField
-          label="Remarques"
-          rows={3}
-          maxLength={MAX_TEXT_LENGTH}
-          watchValue={current.remarques}
-          {...register("remarques", {
-            maxLength: { value: MAX_TEXT_LENGTH, message: `Max ${MAX_TEXT_LENGTH} caractères` },
-          })}
-          error={errors.remarques?.message}
-        />
-      </FormSection>
-
-      {/* 7. Finances annexes */}
-      <FormSection title="Finances annexes">
-        <FormNumberField
-          label="Caution / Dépôt"
-          suffix="CHF"
-          step={10}
-          min={0}
-          {...register("deposit", {
-            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
-          })}
-          error={errors.deposit?.message}
-        />
-        <FormNumberField
-          label="Loyer mensuel"
-          suffix="CHF"
-          step={10}
-          min={0}
-          {...register("loyer", {
-            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
-          })}
-          error={errors.loyer?.message}
-        />
-        <FormNumberField
-          label="Charges mensuelles"
-          suffix="CHF"
-          step={10}
-          min={0}
-          {...register("charges", {
-            validate: (v) => v === "" || Number(v) >= 0 || "Doit être positif",
-          })}
-          error={errors.charges?.message}
-        />
-      </FormSection>
-
-      {/* Footer édition */}
-      <div
-        style={{
-          position: "sticky",
-          bottom: 0,
-          background: "#fff",
-          borderTop: `1px solid ${C.border}`,
-          padding: "12px 0 4px",
-          display: "flex",
-          gap: 12,
-          justifyContent: "flex-end",
-          alignItems: "center",
-        }}
-      >
-        {!hasDirty && (
-          <span style={{ fontSize: 12, color: C.text3, marginRight: "auto" }}>
-            Aucune modification à enregistrer
-          </span>
-        )}
-        <button
-          type="button"
-          onClick={onCancel}
-          style={{
-            padding: "10px 20px",
-            borderRadius: 10,
-            border: `1px solid ${C.border}`,
-            background: C.surface,
-            color: C.text2,
-            fontSize: 14,
-            fontWeight: 500,
-            cursor: "pointer",
-            fontFamily: "inherit",
-          }}
-        >
-          Annuler
-        </button>
-        <button
-          type="submit"
-          disabled={!hasDirty || update.isPending}
-          style={{
-            padding: "10px 20px",
-            borderRadius: 10,
-            border: "none",
-            background: C.prussian,
-            color: "#fff",
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: !hasDirty || update.isPending ? "not-allowed" : "pointer",
-            fontFamily: "inherit",
-            opacity: !hasDirty || update.isPending ? 0.5 : 1,
-          }}
-        >
-          {update.isPending ? "Enregistrement…" : "Enregistrer"}
-        </button>
-      </div>
-
-      {savedToast && <SavedToast />}
-    </form>
+      <CompteursSection bienId={bienId} />
+    </div>
   );
 }
 
-// ── Form sub-components ──────────────────────────────────────────────────────
+// ── Tab 5 : Conditions location ─────────────────────────────────────────────
 
-function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
+const RESIDENCE_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "principale", label: "Résidence principale" },
+  { value: "secondaire", label: "Résidence secondaire" },
+  { value: "mixte", label: "Mixte" },
+];
+
+const LOCATION_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "annuelle", label: "Annuelle" },
+  { value: "saisonniere", label: "Saisonnière" },
+  { value: "semaine", label: "À la semaine" },
+  { value: "vide", label: "Vacant" },
+];
+
+const CAUTION_TYPE_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "especes", label: "Espèces / virement direct" },
+  { value: "compte_bloque", label: "Compte bancaire bloqué (CO 257e)" },
+  { value: "swisscaution", label: "SwissCaution / GoCaution / Firstcaution" },
+  { value: "autre", label: "Autre" },
+];
+
+function TabLocation({ ctx }: { ctx: EditContext }) {
+  const { bien } = ctx;
+  return (
+    <div style={tabContentStyle}>
+      <Section title="Loyer & charges (référence — source légale = Contract)">
+        <Grid>
+          <Field
+            label="Loyer charges incluses (CHF)"
+            name="loyer"
+            value={bien.loyer}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+          <Field
+            label="Loyer charges exclues (CHF)"
+            name="loyer_charges_exclus"
+            value={bien.loyer_charges_exclus}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+          <Field
+            label="Charges mensuelles (CHF)"
+            name="charges"
+            value={bien.charges}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+          <Field
+            label="Acompte charges (CHF)"
+            name="acompte_charges"
+            value={bien.acompte_charges}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+        </Grid>
+      </Section>
+
+      <Section title="Caution">
+        <Grid>
+          <Field
+            label="Montant caution (CHF)"
+            name="deposit"
+            value={bien.deposit}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+          <SelectField
+            label="Type de caution"
+            name="caution_type"
+            value={bien.caution_type}
+            options={CAUTION_TYPE_OPTIONS}
+            ctx={ctx}
+          />
+        </Grid>
+      </Section>
+
+      <Section title="Conditions du bail">
+        <Grid>
+          <Field
+            label="Disponibilité"
+            name="disponibilite_date"
+            value={bien.disponibilite_date}
+            type="date"
+            ctx={ctx}
+          />
+          <Field
+            label="Durée minimale (mois)"
+            name="duree_minimale_mois"
+            value={bien.duree_minimale_mois}
+            type="number"
+            ctx={ctx}
+          />
+          <Field
+            label="Préavis (mois)"
+            name="preavis_mois"
+            value={bien.preavis_mois}
+            type="number"
+            ctx={ctx}
+          />
+          <SelectField
+            label="Type de résidence"
+            name="residence_type"
+            value={bien.residence_type}
+            options={RESIDENCE_OPTIONS}
+            ctx={ctx}
+          />
+          <SelectField
+            label="Type de location actuel"
+            name="location_type_actuel"
+            value={bien.location_type_actuel}
+            options={LOCATION_OPTIONS}
+            ctx={ctx}
+          />
+        </Grid>
+      </Section>
+    </div>
+  );
+}
+
+// ── Tab 7 : Fiscalité & Description ─────────────────────────────────────────
+
+function TabFiscalite({ ctx }: { ctx: EditContext }) {
+  const { bien } = ctx;
+  return (
+    <div style={tabContentStyle}>
+      <Section title="Fiscalité">
+        <Grid>
+          <Field
+            label="Valeur locative fiscale (CHF)"
+            name="valeur_locative_fiscale"
+            value={bien.valeur_locative_fiscale}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+          <Field
+            label="Valeur ECAB / assurance bâtiment (CHF)"
+            name="valeur_assurance_ecab"
+            value={bien.valeur_assurance_ecab}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+          {/* prix_acquisition, date_acquisition, taux_hypothecaire,
+              hypotheque_montant reportés sprint compléments (champs
+              absents du modèle DB en 6.a). */}
+        </Grid>
+      </Section>
+
+      <Section title="Description publique">
+        <TextareaField
+          label="Description publique (annonce)"
+          name="description_publique"
+          value={bien.description_publique}
+          rows={4}
+          ctx={ctx}
+        />
+        <TextareaField
+          label="Points forts"
+          name="points_forts"
+          value={bien.points_forts}
+          rows={3}
+          ctx={ctx}
+        />
+      </Section>
+
+      <Section title="Descriptions internes">
+        <TextareaField
+          label="Description du lieu"
+          name="description_lieu"
+          value={bien.description_lieu}
+          rows={3}
+          ctx={ctx}
+        />
+        <TextareaField
+          label="Description du logement"
+          name="description_logement"
+          value={bien.description_logement}
+          rows={3}
+          ctx={ctx}
+        />
+        <TextareaField
+          label="Remarques internes"
+          name="remarques"
+          value={bien.remarques}
+          rows={2}
+          ctx={ctx}
+        />
+      </Section>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Composants génériques d'édition inline
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface FieldCommonProps {
+  label: string;
+  name: string;
+  ctx: EditContext;
+}
+
+function Field({
+  label,
+  name,
+  value,
+  ctx,
+  type = "text",
+  step,
+}: FieldCommonProps & {
+  value: string | number | null | undefined;
+  type?: "text" | "number" | "date" | "password";
+  step?: number;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<string>(value == null ? "" : String(value));
+  const [showPwd, setShowPwd] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Resync draft quand la valeur cache change.
+  useEffect(() => {
+    setDraft(value == null ? "" : String(value));
+  }, [value]);
+
+  const isPending = ctx.pendingFields.has(name);
+  const justSaved = ctx.justSavedFields.has(name);
+  const errorMsg = ctx.errorFields.get(name);
+
+  const startEdit = () => {
+    setEditing(true);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const commit = () => {
+    setEditing(false);
+    const trimmed = draft.trim();
+    if (trimmed === (value == null ? "" : String(value))) return; // no change
+    let nextValue: string | number | null = trimmed === "" ? null : trimmed;
+    if (type === "number" && nextValue !== null) {
+      const n = Number(nextValue);
+      if (Number.isNaN(n)) return;
+      nextValue = n;
+    }
+    ctx.save(name, nextValue);
+  };
+
+  const cancel = () => {
+    setDraft(value == null ? "" : String(value));
+    setEditing(false);
+  };
+
+  const inputType =
+    type === "password" ? (showPwd ? "text" : "password") : type;
+
   return (
     <div>
-      <h3
-        style={{
-          fontFamily: "var(--font-serif)",
-          fontSize: 15,
-          color: C.text,
-          margin: "0 0 12px",
-          paddingBottom: 8,
-          borderBottom: `1px solid ${C.border}`,
-        }}
-      >
-        {title}
-      </h3>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <label style={fieldLabelStyle}>{label}</label>
+      {editing ? (
+        <div className="bien-field--editing" style={fieldEditingWrapStyle}>
+          <input
+            ref={inputRef}
+            type={inputType}
+            step={step}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                e.currentTarget.blur();
+              }
+              if (e.key === "Escape") cancel();
+            }}
+            style={inlineInputStyle}
+          />
+          {type === "password" && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setShowPwd((s) => !s)}
+              aria-label={showPwd ? "Masquer" : "Afficher"}
+              style={iconBtnInlineStyle}
+            >
+              {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
+            </button>
+          )}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={startEdit}
+          style={fieldReadButtonStyle}
+          aria-label={`Modifier ${label}`}
+        >
+          <span style={fieldReadValueStyle}>
+            {type === "password" && value
+              ? "••••••"
+              : type === "date" && value
+              ? new Date(value as string).toLocaleDateString("fr-CH")
+              : value === null || value === undefined || value === ""
+              ? <em style={{ color: C.text3 }}>Cliquer pour saisir</em>
+              : String(value)}
+          </span>
+          <SaveIndicator pending={isPending} justSaved={justSaved} />
+        </button>
+      )}
+      {errorMsg && <p style={errorMsgStyle}>{errorMsg}</p>}
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  name,
+  value,
+  options,
+  ctx,
+}: FieldCommonProps & {
+  value: string | null | undefined;
+  options: { value: string; label: string }[];
+}) {
+  const isPending = ctx.pendingFields.has(name);
+  const justSaved = ctx.justSavedFields.has(name);
+  const errorMsg = ctx.errorFields.get(name);
+  const [editing, setEditing] = useState(false);
+  const selectRef = useRef<HTMLSelectElement>(null);
+
+  const currentLabel = useMemo(
+    () => options.find((o) => o.value === (value ?? ""))?.label ?? "—",
+    [options, value],
+  );
+
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newVal = e.target.value;
+    setEditing(false);
+    if (newVal === (value ?? "")) return;
+    ctx.save(name, newVal === "" ? null : newVal);
+  };
+
+  return (
+    <div>
+      <label style={fieldLabelStyle}>{label}</label>
+      {editing ? (
+        <div className="bien-field--editing" style={fieldEditingWrapStyle}>
+          <select
+            ref={selectRef}
+            autoFocus
+            value={value ?? ""}
+            onChange={handleChange}
+            onBlur={() => setEditing(false)}
+            style={inlineInputStyle}
+          >
+            {options.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          style={fieldReadButtonStyle}
+          aria-label={`Modifier ${label}`}
+        >
+          <span style={fieldReadValueStyle}>{currentLabel}</span>
+          <SaveIndicator pending={isPending} justSaved={justSaved} />
+        </button>
+      )}
+      {errorMsg && <p style={errorMsgStyle}>{errorMsg}</p>}
+    </div>
+  );
+}
+
+function TextareaField({
+  label,
+  name,
+  value,
+  ctx,
+  rows = 3,
+}: FieldCommonProps & { value: string | null | undefined; rows?: number }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<string>(value ?? "");
+  const taRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => setDraft(value ?? ""), [value]);
+
+  const isPending = ctx.pendingFields.has(name);
+  const justSaved = ctx.justSavedFields.has(name);
+  const errorMsg = ctx.errorFields.get(name);
+
+  const commit = () => {
+    setEditing(false);
+    const trimmed = draft.trim();
+    if (trimmed === (value ?? "")) return;
+    ctx.save(name, trimmed === "" ? null : trimmed);
+  };
+
+  return (
+    <div>
+      <label style={fieldLabelStyle}>{label}</label>
+      {editing ? (
+        <div className="bien-field--editing" style={{ padding: 4 }}>
+          <textarea
+            ref={taRef}
+            autoFocus
+            rows={rows}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setDraft(value ?? "");
+                setEditing(false);
+              }
+            }}
+            style={{ ...inlineInputStyle, resize: "vertical" }}
+          />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setEditing(true);
+            setTimeout(() => taRef.current?.focus(), 0);
+          }}
+          style={{ ...fieldReadButtonStyle, alignItems: "flex-start" }}
+          aria-label={`Modifier ${label}`}
+        >
+          <span
+            style={{
+              ...fieldReadValueStyle,
+              whiteSpace: "pre-wrap",
+              textAlign: "left",
+            }}
+          >
+            {value && value.trim() !== "" ? (
+              value
+            ) : (
+              <em style={{ color: C.text3 }}>Cliquer pour saisir</em>
+            )}
+          </span>
+          <SaveIndicator pending={isPending} justSaved={justSaved} />
+        </button>
+      )}
+      {errorMsg && <p style={errorMsgStyle}>{errorMsg}</p>}
+    </div>
+  );
+}
+
+function ToggleRow({
+  label,
+  name,
+  value,
+  ctx,
+}: FieldCommonProps & { value: boolean | null | undefined }) {
+  const isPending = ctx.pendingFields.has(name);
+  const justSaved = ctx.justSavedFields.has(name);
+  const errorMsg = ctx.errorFields.get(name);
+
+  const toggle = () => ctx.save(name, !Boolean(value));
+
+  return (
+    <div>
+      <label style={toggleLabelStyle}>
+        <span>{label}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <SaveIndicator pending={isPending} justSaved={justSaved} />
+          <button
+            type="button"
+            role="switch"
+            aria-checked={Boolean(value)}
+            onClick={toggle}
+            style={{
+              width: 40,
+              height: 22,
+              borderRadius: 11,
+              border: "none",
+              background: value ? C.prussian : C.border,
+              position: "relative",
+              cursor: "pointer",
+              transition: "background 200ms ease",
+            }}
+          >
+            <span
+              style={{
+                position: "absolute",
+                top: 2,
+                left: value ? 20 : 2,
+                width: 18,
+                height: 18,
+                borderRadius: "50%",
+                background: "#fff",
+                transition: "left 200ms ease",
+              }}
+            />
+          </button>
+        </span>
+      </label>
+      {errorMsg && <p style={errorMsgStyle}>{errorMsg}</p>}
+    </div>
+  );
+}
+
+function SaveIndicator({
+  pending,
+  justSaved,
+}: {
+  pending: boolean;
+  justSaved: boolean;
+}) {
+  if (pending) {
+    return <Loader2 size={14} className="animate-spin" style={{ color: C.text3 }} />;
+  }
+  if (justSaved) {
+    return <Check size={14} style={{ color: C.green }} />;
+  }
+  return null;
+}
+
+// ── Layout helpers ──────────────────────────────────────────────────────────
+
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <h3 style={sectionTitleStyle}>{title}</h3>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {children}
       </div>
     </div>
   );
 }
 
+function Grid({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+        gap: 14,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function ToggleGrid({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+        gap: 8,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ── Styles ──────────────────────────────────────────────────────────────────
+
+const backdropStyle: React.CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(15, 23, 42, 0.55)",
+  display: "flex",
+  alignItems: "stretch",
+  justifyContent: "center",
+  zIndex: 100,
+};
+
+const shellStyle: React.CSSProperties = {
+  background: "#fff",
+  width: "100%",
+  maxWidth: "100%",
+  height: "100vh",
+  display: "flex",
+  flexDirection: "column",
+  overflow: "hidden",
+};
+
+const headerStyle: React.CSSProperties = {
+  flexShrink: 0,
+  padding: "18px 28px",
+  borderBottom: "1px solid var(--border-subtle)",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: 16,
+  background: "#fff",
+};
+
+const titleStyle: React.CSSProperties = {
+  fontFamily: "var(--font-serif)",
+  fontSize: 22,
+  color: C.prussian,
+  margin: 0,
+};
+
+const subtitleStyle: React.CSSProperties = {
+  fontSize: 13,
+  color: C.text3,
+  margin: "2px 0 0",
+};
+
+const closeBtnStyle: React.CSSProperties = {
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  color: C.text3,
+  padding: 4,
+  lineHeight: 0,
+  flexShrink: 0,
+};
+
+const tabsNavStyle: React.CSSProperties = {
+  flexShrink: 0,
+  display: "flex",
+  overflowX: "auto",
+  borderBottom: "1px solid var(--border-subtle)",
+  padding: "0 28px",
+  background: "#fff",
+};
+
+const tabBtnStyle: React.CSSProperties = {
+  flexShrink: 0,
+  padding: "12px 16px",
+  background: "transparent",
+  border: "none",
+  borderBottom: "2px solid transparent",
+  fontSize: 13,
+  fontFamily: "inherit",
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+};
+
+const bodyStyle: React.CSSProperties = {
+  flex: 1,
+  overflowY: "auto",
+  padding: "24px 28px",
+  background: "#fff",
+};
+
+const tabContentStyle: React.CSSProperties = {
+  maxWidth: 880,
+  margin: "0 auto",
+};
+
+const sectionTitleStyle: React.CSSProperties = {
+  fontFamily: "var(--font-serif)",
+  fontSize: 18,
+  color: C.text,
+  margin: "0 0 12px",
+  paddingBottom: 8,
+  borderBottom: `1px solid ${C.border}`,
+  fontWeight: 400,
+};
+
 const fieldLabelStyle: React.CSSProperties = {
   display: "block",
-  fontSize: 12,
+  fontSize: 11,
   fontWeight: 500,
   color: C.text3,
   marginBottom: 6,
+  textTransform: "uppercase",
+  letterSpacing: "0.04em",
 };
 
-const fieldInputStyle: React.CSSProperties = {
+const fieldReadButtonStyle: React.CSSProperties = {
   width: "100%",
-  boxSizing: "border-box",
+  textAlign: "left",
+  background: "transparent",
+  border: `1px solid transparent`,
+  borderRadius: 6,
+  padding: "8px 10px",
+  cursor: "pointer",
+  fontFamily: "inherit",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 8,
+  minHeight: 36,
+  transition: "background 150ms ease, border-color 150ms ease",
+};
+
+const fieldReadValueStyle: React.CSSProperties = {
+  fontSize: 14,
+  color: C.text,
+  flex: 1,
+};
+
+const fieldEditingWrapStyle: React.CSSProperties = {
+  padding: 4,
+  display: "flex",
+  alignItems: "center",
+  gap: 4,
+};
+
+const inlineInputStyle: React.CSSProperties = {
+  flex: 1,
+  width: "100%",
   background: "#fff",
-  border: `1px solid ${C.border}`,
-  borderRadius: 9,
-  padding: "9px 12px",
+  border: `1px solid ${C.prussian}`,
+  borderRadius: 6,
+  padding: "7px 10px",
   fontSize: 14,
   color: C.text,
   fontFamily: "inherit",
   outline: "none",
 };
 
-const fieldErrorStyle: React.CSSProperties = {
-  fontSize: 11,
+const iconBtnInlineStyle: React.CSSProperties = {
+  background: "transparent",
+  border: "none",
+  cursor: "pointer",
+  color: C.text3,
+  padding: 4,
+  display: "inline-flex",
+  alignItems: "center",
+};
+
+const toggleLabelStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  fontSize: 14,
+  color: C.text2,
+  padding: "6px 10px",
+};
+
+const errorMsgStyle: React.CSSProperties = {
+  fontSize: 12,
   color: C.red,
-  marginTop: 4,
+  margin: "4px 10px 0",
 };
 
-type RegisterReturn = ReturnType<ReturnType<typeof useForm>["register"]>;
-
-const FormNumberField = ({
-  label,
-  suffix,
-  step,
-  min,
-  max,
-  error,
-  ...rest
-}: {
-  label: string;
-  suffix?: string;
-  step?: number | string;
-  min?: number | string;
-  max?: number | string;
-  error?: string;
-} & Partial<RegisterReturn>) => (
-  <div>
-    <label style={fieldLabelStyle}>{label}</label>
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <input
-        type="number"
-        step={step}
-        min={min}
-        max={max}
-        style={{
-          ...fieldInputStyle,
-          flex: 1,
-          borderColor: error ? C.red : C.border,
-        }}
-        {...(rest as Record<string, unknown>)}
-      />
-      {suffix && (
-        <span style={{ fontSize: 12, color: C.text3, whiteSpace: "nowrap" }}>
-          {suffix}
-        </span>
-      )}
-    </div>
-    {error && <p style={fieldErrorStyle}>{error}</p>}
-  </div>
-);
-
-const FormSelectField = ({
-  label,
-  options,
-  ...rest
-}: {
-  label: string;
-  options: { value: string; label: string }[];
-} & Partial<RegisterReturn>) => (
-  <div>
-    <label style={fieldLabelStyle}>{label}</label>
-    <select
-      style={{ ...fieldInputStyle, cursor: "pointer" }}
-      {...(rest as Record<string, unknown>)}
-    >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>{opt.label}</option>
-      ))}
-    </select>
-  </div>
-);
-
-const FormToggleField = ({
-  label,
-  ...rest
-}: {
-  label: string;
-} & Partial<RegisterReturn>) => (
-  <label
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-      padding: "8px 12px",
-      borderRadius: 9,
-      border: `1px solid ${C.border}`,
-      background: C.surface,
-      cursor: "pointer",
-      fontSize: 14,
-      color: C.text,
-    }}
-  >
-    <input
-      type="checkbox"
-      style={{
-        width: 16,
-        height: 16,
-        accentColor: C.prussian,
-        cursor: "pointer",
-      }}
-      {...(rest as Record<string, unknown>)}
-    />
-    {label}
-  </label>
-);
-
-const FormTriStateField = ({
-  label,
-  name,
-  onChange,
-  onBlur,
-  ref,
-}: {
-  label: string;
-} & Partial<RegisterReturn>) => (
-  <div>
-    <label style={fieldLabelStyle}>{label}</label>
-    <div style={{ display: "flex", gap: 16, fontSize: 14, color: C.text }}>
-      {[
-        { v: "null", l: "Non renseigné" },
-        { v: "true", l: "Autorisés" },
-        { v: "false", l: "Interdits" },
-      ].map((opt) => (
-        <label
-          key={opt.v}
-          style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
-        >
-          <input
-            type="radio"
-            name={name}
-            value={opt.v}
-            onChange={onChange}
-            onBlur={onBlur}
-            ref={ref}
-            style={{ accentColor: C.prussian, cursor: "pointer" }}
-          />
-          {opt.l}
-        </label>
-      ))}
-    </div>
-  </div>
-);
-
-const FormTextareaField = ({
-  label,
-  rows,
-  maxLength,
-  watchValue,
-  error,
-  ...rest
-}: {
-  label: string;
-  rows: number;
-  maxLength: number;
-  watchValue: string;
-  error?: string;
-} & Partial<RegisterReturn>) => {
-  const len = (watchValue ?? "").length;
-  const overLimit = len > maxLength;
-  return (
-    <div>
-      <label style={fieldLabelStyle}>{label}</label>
-      <textarea
-        rows={rows}
-        style={{
-          ...fieldInputStyle,
-          resize: "vertical",
-          fontFamily: "inherit",
-          borderColor: error || overLimit ? C.red : C.border,
-        }}
-        {...(rest as Record<string, unknown>)}
-      />
-      <p
-        style={{
-          fontSize: 11,
-          color: overLimit ? C.red : C.text3,
-          marginTop: 4,
-          textAlign: "right",
-        }}
-      >
-        {len} / {maxLength}
-      </p>
-      {error && <p style={fieldErrorStyle}>{error}</p>}
-    </div>
-  );
+const loadingStyle: React.CSSProperties = {
+  fontSize: 13,
+  color: C.text3,
+  textAlign: "center",
+  padding: 32,
+  margin: 0,
 };
-
-function SavedToast() {
-  return (
-    <div
-      role="status"
-      style={{
-        position: "fixed",
-        bottom: 24,
-        left: "50%",
-        transform: "translateX(-50%)",
-        background: C.text,
-        color: "#fff",
-        padding: "10px 20px",
-        borderRadius: 12,
-        fontSize: 13,
-        fontWeight: 600,
-        zIndex: 9999,
-        boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-      }}
-    >
-      <CheckCircle2 size={16} />
-      Modifications enregistrées
-    </div>
-  );
-}
-
-// ── Composants helpers ────────────────────────────────────────────────────────
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <h3
-        style={{
-          fontFamily: "var(--font-serif)",
-          fontSize: 15,
-          color: C.text,
-          margin: "0 0 12px",
-          paddingBottom: 8,
-          borderBottom: `1px solid ${C.border}`,
-        }}
-      >
-        {title}
-      </h3>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{children}</div>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        gap: 16,
-        fontSize: 13,
-      }}
-    >
-      <span style={{ color: C.text3 }}>{label}</span>
-      <span style={{ color: C.text, fontWeight: 500, textAlign: "right" }}>{value}</span>
-    </div>
-  );
-}
-
-function EquipementBadge({
-  active,
-  label,
-  icon,
-}: {
-  active: boolean | null | undefined;
-  label: string;
-  icon: string;
-}) {
-  const isActive = Boolean(active);
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        padding: "8px 10px",
-        borderRadius: 8,
-        fontSize: 13,
-        background: isActive ? C.greenBg : C.surface2,
-        border: `1px solid ${isActive ? C.green + "55" : C.border}`,
-        color: isActive ? C.text : C.text3,
-        opacity: isActive ? 1 : 0.6,
-      }}
-    >
-      <span style={{ opacity: isActive ? 1 : 0.4 }}>{icon}</span>
-      <span style={{ flex: 1 }}>{label}</span>
-      {isActive && <span style={{ color: C.green, fontWeight: 700 }}>✓</span>}
-    </div>
-  );
-}
-
-function DescriptionBlock({ label, text }: { label: string; text: string }) {
-  return (
-    <div>
-      <p
-        style={{
-          fontSize: 11,
-          color: C.text3,
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-          margin: "0 0 6px",
-        }}
-      >
-        {label}
-      </p>
-      <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>
-        {text}
-      </p>
-    </div>
-  );
-}

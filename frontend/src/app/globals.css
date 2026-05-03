@@ -311,6 +311,26 @@
   outline-offset: -4px;
 }
 
+/* Sub-entité cards (PR-A11.A.6.c) — révèle boutons edit/delete au hover. */
+.annexe-card:hover .annexe-card-actions,
+.contact-card:hover .contact-card-actions,
+.compteur-card:hover .compteur-card-actions,
+.bank-account-card:hover .bank-account-card-actions {
+  opacity: 1;
+}
+
+/* Mode édition inline d'un champ Caractéristiques — fond bleu pâle subtil. */
+.bien-field--editing {
+  background: var(--althy-prussian-bg);
+  border-radius: 6px;
+}
+
+/* Tabs nav modale Caractéristiques — soulignement Or sur tab actif. */
+.carac-tab-active {
+  color: var(--althy-prussian);
+  border-bottom-color: var(--althy-gold);
+}
+
 /* Bloc Caractéristiques du header — grille 2 colonnes desktop / 1 col mobile. */
 .card-header-bien-carac-grid {
   display: grid;
