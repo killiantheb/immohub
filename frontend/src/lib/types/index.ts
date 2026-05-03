@@ -217,6 +217,44 @@ export interface Bien {
   // Estimation IA enrichie (PR-A9.1 sprint 12) — nullable rétro-compat
   residence_type?: ResidenceType | null;
   location_type_actuel?: LocationTypeActuel | null;
+
+  // ── PR-A11.A.6.a — Identité bâtiment ────────────────────────────────────
+  egid?: number | null;
+  ewid?: number | null;
+  numero_parcelle?: string | null;
+  numero_lot_ppe?: string | null;
+  commune_ofs?: number | null;
+
+  // ── PR-A11.A.6.a — Caractéristiques techniques avancées ─────────────────
+  nb_etages?: number | null;
+  type_chauffage?: string | null;
+  mode_eau_chaude?: string | null;
+  orientation_principale?: string | null;
+  vue?: string | null;
+  bruit_proximite?: string | null;
+  accessibilite_pmr?: boolean;
+  ascenseur?: boolean;
+  cave_m2?: number | null;
+  balcon_m2?: number | null;
+  terrasse_m2?: number | null;
+  jardin_m2?: number | null;
+  terrain_m2?: number | null;
+
+  // ── PR-A11.A.6.a — Conditions location ──────────────────────────────────
+  loyer_charges_exclus?: number | null;
+  acompte_charges?: number | null;
+  caution_type?: string | null;
+  disponibilite_date?: string | null;
+  duree_minimale_mois?: number | null;
+  preavis_mois?: number | null;
+
+  // ── PR-A11.A.6.a — Fiscalité ────────────────────────────────────────────
+  valeur_locative_fiscale?: number | null;
+  valeur_assurance_ecab?: number | null;
+
+  // ── PR-A11.A.6.a — Description publique ─────────────────────────────────
+  description_publique?: string | null;
+  points_forts?: string | null;
 }
 
 /** Liste paginée lightweight — ajoute l'image de couverture. */

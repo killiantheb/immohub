@@ -1744,7 +1744,7 @@ function CardHeaderBien({
             }}
           >
             <Pencil size={16} />
-            Modifier
+            Voir / éditer les caractéristiques
           </button>
           <button
             type="button"
