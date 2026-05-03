@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     SUPABASE_ANON_KEY: str = ""
     SUPABASE_SERVICE_KEY: str
     SUPABASE_JWT_SECRET: str
+    # Supabase Storage — buckets bien (legacy `property-*` préservé en prod
+    # depuis la migration 0029 non finalisée côté Storage). Variabilisé pour
+    # permettre une bascule future sans redeploy code.
+    SUPABASE_BUCKET_BIEN_IMAGES: str = "property-images"
+    SUPABASE_BUCKET_BIEN_DOCUMENTS: str = "property-documents"
 
     # Redis / Celery
     REDIS_URL: str = "redis://localhost:6379/0"

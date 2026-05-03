@@ -6,8 +6,10 @@ Refonte 2026-04-23 : porté depuis property_service.py, adapté à la nouvelle t
     - Gestion des équipements (catalogue global + jonction bien_equipements)
 
 Storage Supabase :
-    Bucket : bien-images    → {bien_id}/{image_id}.{ext}
-    Bucket : bien-documents → {bien_id}/{doc_id}.{ext}
+    Bucket bien-images    : configurable via SUPABASE_BUCKET_BIEN_IMAGES
+                            (défaut: property-images) → {bien_id}/{image_id}.{ext}
+    Bucket bien-documents : configurable via SUPABASE_BUCKET_BIEN_DOCUMENTS
+                            (défaut: property-documents) → {bien_id}/{doc_id}.{ext}
 """
 
 from __future__ import annotations
@@ -462,7 +464,9 @@ class BienService:
         ext = mimetypes.guess_extension(content_type) or ".jpg"
         image_id = uuid.uuid4()
         path = f"{bien_id}/{image_id}{ext}"
-        url = await _upload_to_storage("bien-images", path, data, content_type)
+        url = await _upload_to_storage(
+            settings.SUPABASE_BUCKET_BIEN_IMAGES, path, data, content_type
+        )
 
         count = (
             await self.db.execute(
@@ -630,9 +634,11 @@ class BienService:
         if img is None:
             return False
 
-        path = img.url.split("/bien-images/")[-1] if "/bien-images/" in img.url else None
+        bucket = settings.SUPABASE_BUCKET_BIEN_IMAGES
+        marker = f"/{bucket}/"
+        path = img.url.split(marker)[-1] if marker in img.url else None
         if path:
-            await _delete_from_storage("bien-images", path)
+            await _delete_from_storage(bucket, path)
 
         await self.db.delete(img)
         await self.db.flush()
@@ -670,7 +676,9 @@ class BienService:
         ext = mimetypes.guess_extension(content_type) or ".pdf"
         doc_id = uuid.uuid4()
         path = f"{bien_id}/{doc_id}{ext}"
-        url = await _upload_to_storage("bien-documents", path, data, content_type)
+        url = await _upload_to_storage(
+            settings.SUPABASE_BUCKET_BIEN_DOCUMENTS, path, data, content_type
+        )
 
         doc = BienDocument(
             id=doc_id,
