@@ -495,6 +495,129 @@ class BankAccountRead(BaseModel):
     updated_at: datetime
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# Sous-tables Create/Update (PR-A11.A.6.b)
+# Validation Pydantic légère — pas d'enum strict (cohérent décision A11.A.5).
+# Les valeurs admises sont documentées en commentaire à côté de chaque champ.
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+class BienAnnexeCreate(BaseModel):
+    """Création d'une annexe (cave, parking, garage, place, box, grenier).
+
+    `type` : possibles → cave / parking_couvert / parking_exterieur / box /
+                          garage / grenier / autre
+    """
+
+    type: str = Field(min_length=1, max_length=30)
+    numero: str | None = Field(default=None, max_length=50)
+    surface_m2: Decimal | None = Field(default=None, ge=0)
+    inclus_dans_loyer: bool = True
+    loyer_supplement: Decimal | None = Field(default=None, ge=0)
+
+
+class BienAnnexeUpdate(BaseModel):
+    """PATCH partiel d'une annexe."""
+
+    type: str | None = Field(default=None, min_length=1, max_length=30)
+    numero: str | None = Field(default=None, max_length=50)
+    surface_m2: Decimal | None = Field(default=None, ge=0)
+    inclus_dans_loyer: bool | None = None
+    loyer_supplement: Decimal | None = Field(default=None, ge=0)
+
+
+class BienContactCreate(BaseModel):
+    """Création d'un contact externe lié à un bien.
+
+    `role` : possibles → regie_tierce / concierge / syndic / garant /
+                          voisin_cle / proprietaire_voisin / autre
+    """
+
+    role: str = Field(min_length=1, max_length=30)
+    nom: str = Field(min_length=1, max_length=200)
+    prenom: str | None = Field(default=None, max_length=100)
+    societe: str | None = Field(default=None, max_length=200)
+    email: str | None = Field(default=None, max_length=255)
+    telephone: str | None = Field(default=None, max_length=30)
+    adresse: str | None = Field(default=None, max_length=300)
+    notes: str | None = Field(default=None, max_length=10000)
+
+
+class BienContactUpdate(BaseModel):
+    """PATCH partiel d'un contact externe."""
+
+    role: str | None = Field(default=None, min_length=1, max_length=30)
+    nom: str | None = Field(default=None, min_length=1, max_length=200)
+    prenom: str | None = Field(default=None, max_length=100)
+    societe: str | None = Field(default=None, max_length=200)
+    email: str | None = Field(default=None, max_length=255)
+    telephone: str | None = Field(default=None, max_length=30)
+    adresse: str | None = Field(default=None, max_length=300)
+    notes: str | None = Field(default=None, max_length=10000)
+
+
+class BienCompteurCreate(BaseModel):
+    """Création d'un compteur de consommation lié à un bien.
+
+    `type`    : possibles → eau_froide / eau_chaude / electricite / gaz /
+                            mazout / chauffage / autre
+    `partage` : possibles → proprietaire / locataire / divise
+    `unite`   : possibles → m3 / kwh / litres / autre
+    """
+
+    type: str = Field(min_length=1, max_length=30)
+    numero_compteur: str | None = Field(default=None, max_length=100)
+    emplacement: str | None = Field(default=None, max_length=100)
+    unite: str | None = Field(default=None, max_length=20)
+    releve_initial: Decimal | None = Field(default=None, ge=0)
+    date_releve_initial: date | None = None
+    partage: str | None = Field(default=None, max_length=20)
+    notes: str | None = Field(default=None, max_length=10000)
+
+
+class BienCompteurUpdate(BaseModel):
+    """PATCH partiel d'un compteur."""
+
+    type: str | None = Field(default=None, min_length=1, max_length=30)
+    numero_compteur: str | None = Field(default=None, max_length=100)
+    emplacement: str | None = Field(default=None, max_length=100)
+    unite: str | None = Field(default=None, max_length=20)
+    releve_initial: Decimal | None = Field(default=None, ge=0)
+    date_releve_initial: date | None = None
+    partage: str | None = Field(default=None, max_length=20)
+    notes: str | None = Field(default=None, max_length=10000)
+
+
+class BankAccountCreate(BaseModel):
+    """Création d'un compte bancaire utilisateur.
+
+    `usage` : possibles → regie / cautions / charges / travaux / general
+
+    Validation IBAN format non strict ici (politique backend permissif —
+    sprint sécurité financière dédié à venir avec `python-stdnum`).
+    """
+
+    usage: str = Field(default="general", min_length=1, max_length=30)
+    iban: str = Field(min_length=4, max_length=34)
+    bic: str | None = Field(default=None, max_length=11)
+    titulaire: str = Field(min_length=1, max_length=200)
+    banque_nom: str | None = Field(default=None, max_length=150)
+    banque_pays: str = Field(default="CH", min_length=2, max_length=2)
+    est_principal: bool = False
+
+
+class BankAccountUpdate(BaseModel):
+    """PATCH partiel d'un compte bancaire utilisateur."""
+
+    usage: str | None = Field(default=None, min_length=1, max_length=30)
+    iban: str | None = Field(default=None, min_length=4, max_length=34)
+    bic: str | None = Field(default=None, max_length=11)
+    titulaire: str | None = Field(default=None, min_length=1, max_length=200)
+    banque_nom: str | None = Field(default=None, max_length=150)
+    banque_pays: str | None = Field(default=None, min_length=2, max_length=2)
+    est_principal: bool | None = None
+
+
 class PaginatedBiens(BaseModel):
     items: list[BienListItem]
     total: int
