@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  Bell, Building2, Calculator, CreditCard, Download, Eye, EyeOff,
+  Banknote, Bell, Building2, Calculator, CreditCard, Download, Eye, EyeOff,
   Globe, Link2, Loader2, Lock, MapPin, Plus, Shield, Trash2, User, Users, X,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -12,6 +12,7 @@ import { useRole } from "@/lib/hooks/useRole";
 import { ZoneMap } from "@/components/map";
 import type { ZoneMapData } from "@/components/map";
 import { C } from "@/lib/design-tokens";
+import { BankAccountsSection } from "@/components/settings/BankAccountsSection";
 
 // ── Atoms ──────────────────────────────────────────────────────────────────────
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
@@ -1344,7 +1345,7 @@ function TabComptabilite() {
 // ──────────────────────────────────────────────────────────────────────────────
 // TABS CONFIG
 // ──────────────────────────────────────────────────────────────────────────────
-type TabId = "identite" | "zone" | "paiement" | "notifications" | "securite" | "equipe" | "integrations" | "comptabilite";
+type TabId = "identite" | "zone" | "paiement" | "bancaire" | "notifications" | "securite" | "equipe" | "integrations" | "comptabilite";
 
 interface TabDef {
   id: TabId;
@@ -1357,6 +1358,7 @@ const ALL_TABS: TabDef[] = [
   { id: "identite",      label: "Identité",        icon: User },
   { id: "zone",          label: "Zone",             icon: MapPin,     condition: r => r.isMarketplace || r.isHunter },
   { id: "paiement",      label: "Paiement",         icon: CreditCard },
+  { id: "bancaire",      label: "Bancaire",         icon: Banknote },
   { id: "notifications", label: "Notifications",    icon: Bell },
   { id: "securite",      label: "Sécurité",         icon: Shield },
   { id: "equipe",        label: "Équipe",           icon: Users,      condition: r => r.isAgence },
@@ -1383,6 +1385,7 @@ export default function SettingsPage() {
       case "identite":      return <TabIdentite />;
       case "zone":          return <TabZone />;
       case "paiement":      return <TabPaiement />;
+      case "bancaire":      return <BankAccountsSection />;
       case "notifications": return <TabNotifications />;
       case "securite":      return <TabSecurite />;
       case "equipe":        return <TabEquipe />;
