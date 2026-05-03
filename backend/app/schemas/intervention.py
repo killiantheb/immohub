@@ -9,6 +9,17 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+# ── Intervention photos (relation) ────────────────────────────────────────────
+
+class InterventionPhotoRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    intervention_id: uuid.UUID
+    url: str
+    order: int
+    created_at: datetime
+
 
 # ── Intervention ──────────────────────────────────────────────────────────────
 
@@ -28,6 +39,8 @@ class InterventionBase(BaseModel):
     cout: Optional[Decimal] = None
     photos: Optional[list[str]] = None
     artisan_id: Optional[uuid.UUID] = None
+    note_cloture: Optional[str] = None
+    closed_at: Optional[datetime] = None
 
 
 class InterventionCreate(InterventionBase):
@@ -45,6 +58,7 @@ class InterventionUpdate(BaseModel):
     cout: Optional[Decimal] = None
     photos: Optional[list[str]] = None
     artisan_id: Optional[uuid.UUID] = None
+    note_cloture: Optional[str] = None
 
 
 class InterventionRead(InterventionBase):
@@ -53,6 +67,7 @@ class InterventionRead(InterventionBase):
     id: uuid.UUID
     signale_par_id: uuid.UUID
     created_at: datetime
+    images: list[InterventionPhotoRead] = []
 
 
 # ── Devis ─────────────────────────────────────────────────────────────────────

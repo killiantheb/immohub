@@ -1,14 +1,14 @@
-"""Modèles SQLAlchemy — tables interventions + devis."""
+"""Modèles SQLAlchemy — tables interventions + devis + intervention_photos."""
 
 from __future__ import annotations
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 
 from app.models.base import BaseModel
-from sqlalchemy import Date, Enum, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Date, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 InterventionCategorie = Enum(
     "plomberie",
@@ -68,7 +68,41 @@ class Intervention(BaseModel):
     date_signalement: Mapped[date | None] = mapped_column(Date)
     date_intervention: Mapped[date | None] = mapped_column(Date)
     cout: Mapped[float | None] = mapped_column(Numeric(10, 2))
+    # Legacy ARRAY de URLs — conservé pour compat. La nouvelle UI utilise
+    # la relation `images` (intervention_photos) qui expose des IDs stables.
     photos: Mapped[list[str] | None] = mapped_column(ARRAY(Text))
+    # Champs de clôture (PR-A11.A.5).
+    note_cloture: Mapped[str | None] = mapped_column(Text)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    images: Mapped[list[InterventionPhoto]] = relationship(
+        "InterventionPhoto",
+        cascade="all, delete-orphan",
+        order_by="InterventionPhoto.order",
+        lazy="selectin",
+    )
+
+
+class InterventionPhoto(BaseModel):
+    """Photo jointe à une intervention — table relation, ID stable.
+
+    URL = lien public Supabase Storage (bucket
+    `settings.SUPABASE_BUCKET_BIEN_IMAGES`, chemin
+    `{bien_id}/interventions/{intervention_id}/{photo_id}{ext}`).
+    """
+
+    __tablename__ = "intervention_photos"
+
+    intervention_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("interventions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    order: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
 
 
 class Devis(BaseModel):
