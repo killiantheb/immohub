@@ -18,11 +18,21 @@ from app.schemas.intervention import (
     DevisRead,
     DevisUpdate,
     InterventionCreate,
+    InterventionPhotoRead,
     InterventionRead,
     InterventionUpdate,
 )
 from app.services.intervention_service import InterventionService
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -182,6 +192,45 @@ async def delete_intervention(
     db: DbDep,
 ) -> None:
     await InterventionService(db).delete_intervention(current_user, intervention_id)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Photos (sous-ressource d'intervention — table intervention_photos)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.post(
+    "/{intervention_id}/photos",
+    response_model=InterventionPhotoRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_intervention_photo(
+    intervention_id: uuid.UUID,
+    current_user: AuthDep,
+    db: DbDep,
+    file: UploadFile = File(...),
+) -> InterventionPhotoRead:
+    photo = await InterventionService(db).add_photo(
+        current_user, intervention_id, file
+    )
+    return InterventionPhotoRead.model_validate(photo)
+
+
+@router.delete(
+    "/{intervention_id}/photos/{photo_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
+async def delete_intervention_photo(
+    intervention_id: uuid.UUID,
+    photo_id: uuid.UUID,
+    current_user: AuthDep,
+    db: DbDep,
+) -> None:
+    ok = await InterventionService(db).delete_photo(
+        current_user, intervention_id, photo_id
+    )
+    if not ok:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Photo introuvable")
 
 
 # ══════════════════════════════════════════════════════════════════════════════

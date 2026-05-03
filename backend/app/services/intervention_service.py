@@ -22,11 +22,15 @@ Anti-énumération :
 
 from __future__ import annotations
 
+import logging
+import mimetypes
 import uuid
-from typing import Literal, Optional
+from datetime import UTC, datetime
+from typing import Literal
 
+from app.core.config import settings
 from app.models.bien import Bien
-from app.models.intervention import Devis, Intervention
+from app.models.intervention import Devis, Intervention, InterventionPhoto
 from app.models.locataire import Locataire
 from app.models.user import User
 from app.schemas.intervention import (
@@ -35,9 +39,15 @@ from app.schemas.intervention import (
     InterventionCreate,
     InterventionUpdate,
 )
-from fastapi import HTTPException, status
+from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
+
+# Constantes alignées sur bien_service.add_image (PR-A11.A.2).
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
 AccessMode = Literal["read", "write", "delete"]
@@ -55,9 +65,9 @@ class InterventionService:
         self,
         current_user: User,
         *,
-        bien_id: Optional[uuid.UUID] = None,
-        statut: Optional[str] = None,
-        urgence: Optional[str] = None,
+        bien_id: uuid.UUID | None = None,
+        statut: str | None = None,
+        urgence: str | None = None,
         page: int = 1,
         size: int = 20,
     ) -> list[Intervention]:
@@ -132,7 +142,19 @@ class InterventionService:
         inter, _ = await self._load_or_404(
             intervention_id, current_user, mode="write"
         )
-        for field, value in payload.model_dump(exclude_unset=True).items():
+        data = payload.model_dump(exclude_unset=True)
+
+        # Auto-stamp `closed_at` à la transition vers `resolu` (et reset
+        # si on rebascule vers un statut ouvert — utile en cas d'erreur
+        # de saisie utilisateur, pas un workflow business critique).
+        new_statut = data.get("statut")
+        if new_statut is not None and new_statut != inter.statut:
+            if new_statut == "resolu" and inter.closed_at is None:
+                inter.closed_at = datetime.now(UTC)
+            elif new_statut != "resolu":
+                inter.closed_at = None
+
+        for field, value in data.items():
             setattr(inter, field, value)
         await self.db.flush()
         await self.db.refresh(inter)
@@ -162,6 +184,105 @@ class InterventionService:
             )
 
         await self.db.delete(inter)
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # Photos (sous-ressource — table intervention_photos)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    async def add_photo(
+        self,
+        current_user: User,
+        intervention_id: uuid.UUID,
+        file: UploadFile,
+    ) -> InterventionPhoto:
+        """Upload une photo et la lie à l'intervention.
+
+        Bucket : `settings.SUPABASE_BUCKET_BIEN_IMAGES` (legacy
+        `property-images`). Path : `{bien_id}/interventions/{intervention_id}/{photo_id}{ext}`.
+        Le `order` est calculé séquentiellement (0-based, append en queue).
+        """
+        # Import local pour éviter import circulaire (bien_service utilise déjà
+        # ces helpers Storage). Pattern aligné sur bien_service.add_image.
+        from app.services.bien_service import _upload_to_storage
+
+        inter, bien = await self._load_or_404(
+            intervention_id, current_user, mode="write"
+        )
+
+        content_type = file.content_type or "image/jpeg"
+        if content_type not in ALLOWED_IMAGE_TYPES:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                f"Format image non supporté : {content_type}",
+            )
+
+        data = await file.read()
+        if len(data) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                "Fichier trop gros (max 10 MB)",
+            )
+
+        ext = mimetypes.guess_extension(content_type) or ".jpg"
+        photo_id = uuid.uuid4()
+        path = f"{bien.id}/interventions/{intervention_id}/{photo_id}{ext}"
+        url = await _upload_to_storage(
+            settings.SUPABASE_BUCKET_BIEN_IMAGES, path, data, content_type
+        )
+
+        count = (
+            await self.db.execute(
+                select(InterventionPhoto).where(
+                    InterventionPhoto.intervention_id == inter.id
+                )
+            )
+        ).scalars().all()
+        order = len(count)
+
+        photo = InterventionPhoto(
+            id=photo_id,
+            intervention_id=inter.id,
+            url=url,
+            order=order,
+        )
+        self.db.add(photo)
+        await self.db.flush()
+        await self.db.refresh(photo)
+        return photo
+
+    async def delete_photo(
+        self,
+        current_user: User,
+        intervention_id: uuid.UUID,
+        photo_id: uuid.UUID,
+    ) -> bool:
+        """Supprime une photo (DB + Supabase Storage best-effort)."""
+        from app.services.bien_service import _delete_from_storage
+
+        await self._load_or_404(intervention_id, current_user, mode="write")
+
+        photo = (
+            await self.db.execute(
+                select(InterventionPhoto).where(
+                    InterventionPhoto.id == photo_id,
+                    InterventionPhoto.intervention_id == intervention_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if photo is None:
+            return False
+
+        bucket = settings.SUPABASE_BUCKET_BIEN_IMAGES
+        marker = f"/{bucket}/"
+        path = (
+            photo.url.split(marker)[-1] if marker in photo.url else None
+        )
+        if path:
+            await _delete_from_storage(bucket, path)
+
+        await self.db.delete(photo)
+        await self.db.flush()
+        return True
 
     # ─────────────────────────────────────────────────────────────────────────
     # Devis (sous-ressource)

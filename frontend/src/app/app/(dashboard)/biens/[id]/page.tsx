@@ -31,6 +31,7 @@ import { bienLinks } from "@/lib/bien-links";
 import { DeleteBienModal } from "@/components/biens/DeleteBienModal";
 import { CaracteristiquesModal } from "@/components/biens/CaracteristiquesModal";
 import { PhotosManagerModal } from "@/components/biens/PhotosManagerModal";
+import { InterventionsSidePanel } from "@/components/biens/InterventionsSidePanel";
 import type { AuditLogEntry } from "@/lib/types";
 
 // ── Design constants ──────────────────────────────────────────────────────────
@@ -750,7 +751,17 @@ function SectionLocataire({ bienId }: { bienId: string }) {
 
 // ── SectionInterventions ──────────────────────────────────────────────────────
 
-function SectionInterventions({ bienId }: { bienId: string }) {
+function SectionInterventions({
+  bienId,
+  onOpenList,
+  onCreate,
+  onSelect,
+}: {
+  bienId: string;
+  onOpenList: () => void;
+  onCreate: () => void;
+  onSelect: (interventionId: string) => void;
+}) {
   const { data: interventions, isLoading } = useInterventions(bienId);
   const dernieres = interventions?.slice(0, 3) ?? [];
 
@@ -766,17 +777,39 @@ function SectionInterventions({ bienId }: { bienId: string }) {
   }
 
   const total = interventions?.length ?? 0;
+  const actives = interventions?.filter(i => i.statut !== "resolu").length ?? 0;
 
   return (
     <div style={{ ...CARD, display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <p style={{ ...SEC_TITLE, marginBottom: 0 }}>Interventions</p>
-        <Link
-          href={bienLinks.interventions(bienId)}
-          style={{ fontSize: 12, color: C.prussian, textDecoration: "none", fontWeight: 500 }}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, gap: 8 }}>
+        <p style={{ ...SEC_TITLE, marginBottom: 0 }}>
+          Interventions
+          {actives > 0 && (
+            <span style={{
+              marginLeft: 8, fontSize: 11, fontWeight: 600,
+              padding: "2px 8px", borderRadius: 999,
+              color: C.amber, background: C.amberBg,
+              fontFamily: "var(--font-sans, 'DM Sans', system-ui, sans-serif)",
+              verticalAlign: "middle",
+            }}>
+              {actives} active{actives > 1 ? "s" : ""}
+            </span>
+          )}
+        </p>
+        <button
+          type="button"
+          onClick={onCreate}
+          aria-label="Signaler une nouvelle intervention"
+          title="Signaler une intervention"
+          style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            width: 28, height: 28, borderRadius: 8,
+            border: `1px solid ${C.border}`, background: "transparent",
+            color: C.prussian, cursor: "pointer", fontFamily: "inherit",
+          }}
         >
-          {total > 0 ? `Voir tout (${total}) →` : "Voir tout →"}
-        </Link>
+          <Plus size={15} />
+        </button>
       </div>
 
       {dernieres.length === 0 ? (
@@ -805,55 +838,76 @@ function SectionInterventions({ bienId }: { bienId: string }) {
               Signalez un problème pour qu&apos;un artisan intervienne.
             </p>
           </div>
-          {/* P1.7 fix : ?action=new ouvre le form auto dans TabInterventions
-              (cf _shared.tsx — useSearchParams initialise showForm). */}
-          <Link
-            href={`${bienLinks.interventions(bienId)}?action=new`}
+          <button
+            type="button"
+            onClick={onCreate}
             style={{
               display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
               padding: "9px 14px", borderRadius: 10,
               border: `1px solid var(--border-subtle)`,
-              color: C.text2, fontSize: 13, fontWeight: 500, textDecoration: "none",
-              marginTop: 12,
+              background: "transparent",
+              color: C.text2, fontSize: 13, fontWeight: 500,
+              marginTop: 12, fontFamily: "inherit", cursor: "pointer",
             }}
           >
             <Plus size={13} /> Nouvelle intervention
-          </Link>
+          </button>
         </>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {dernieres.map(inter => {
-            const is = INTER_STATUT[inter.statut] ?? { label: inter.statut, color: C.text2, bg: C.border };
-            return (
-              <div
-                key={inter.id}
-                style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "10px 12px", borderRadius: 10,
-                  border: `1px solid var(--border-subtle)`,
-                }}
-              >
-                <Wrench size={14} style={{ color: C.amber, flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{
-                    fontSize: 13, fontWeight: 600, color: C.text,
-                    margin: "0 0 3px",
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  }}>
-                    {inter.titre}
-                  </p>
-                  <span style={{
-                    fontSize: 11, fontWeight: 600,
-                    padding: "2px 8px", borderRadius: 20,
-                    color: is.color, background: is.bg,
-                  }}>
-                    {is.label}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {dernieres.map(inter => {
+              const is = INTER_STATUT[inter.statut] ?? { label: inter.statut, color: C.text2, bg: C.border };
+              return (
+                <button
+                  key={inter.id}
+                  type="button"
+                  onClick={() => onSelect(inter.id)}
+                  style={{
+                    width: "100%",
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "10px 12px", borderRadius: 10,
+                    border: `1px solid var(--border-subtle)`,
+                    background: "transparent",
+                    cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+                  }}
+                >
+                  <Wrench size={14} style={{ color: C.amber, flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{
+                      fontSize: 13, fontWeight: 600, color: C.text,
+                      margin: "0 0 3px",
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}>
+                      {inter.titre}
+                    </p>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600,
+                      padding: "2px 8px", borderRadius: 20,
+                      color: is.color, background: is.bg,
+                    }}>
+                      {is.label}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={onOpenList}
+            style={{
+              marginTop: 12,
+              fontSize: 12, color: C.prussian,
+              textAlign: "center",
+              border: "none", background: "transparent",
+              fontWeight: 500, cursor: "pointer", fontFamily: "inherit",
+              padding: "6px 0",
+            }}
+          >
+            {total > 0 ? `Voir toutes (${total}) →` : "Voir toutes →"}
+          </button>
+        </>
       )}
     </div>
   );
@@ -1750,6 +1804,30 @@ function BienOverview() {
     open: boolean;
     mode: "read" | "edit";
   }>({ open: false, mode: "read" });
+  const [interventionsPanelOpen, setInterventionsPanelOpen] = useState(false);
+  const [selectedInterventionId, setSelectedInterventionId] = useState<string | null>(null);
+  const [interventionsCreating, setInterventionsCreating] = useState(false);
+
+  const openInterventionsList = () => {
+    setSelectedInterventionId(null);
+    setInterventionsCreating(false);
+    setInterventionsPanelOpen(true);
+  };
+  const openInterventionCreate = () => {
+    setSelectedInterventionId(null);
+    setInterventionsCreating(true);
+    setInterventionsPanelOpen(true);
+  };
+  const openInterventionDetail = (id: string) => {
+    setSelectedInterventionId(id);
+    setInterventionsCreating(false);
+    setInterventionsPanelOpen(true);
+  };
+  const closeInterventionsPanel = () => {
+    setInterventionsPanelOpen(false);
+    setInterventionsCreating(false);
+    setSelectedInterventionId(null);
+  };
 
   return (
     <div
@@ -1787,7 +1865,12 @@ function BienOverview() {
         <SectionLocataire bienId={id} />
         <SectionFinances bienId={id} />
         <SectionEstimationIA bienId={id} />
-        <SectionInterventions bienId={id} />
+        <SectionInterventions
+          bienId={id}
+          onOpenList={openInterventionsList}
+          onCreate={openInterventionCreate}
+          onSelect={openInterventionDetail}
+        />
         <SectionDocuments bienId={id} />
         <SectionHistorique bienId={id} />
       </div>
@@ -1817,6 +1900,19 @@ function BienOverview() {
         bienId={id}
         open={photosModalOpen}
         onClose={() => setPhotosModalOpen(false)}
+      />
+
+      {/* Side panel interventions (PR-A11.A.5 — partie 2) — déclenché
+          depuis la card SectionInterventions (bouton +, clic ligne, lien
+          « Voir toutes »). Le panel gère lui-même la bascule liste/détail
+          via `selectedId` + `initialCreate`. */}
+      <InterventionsSidePanel
+        bienId={id}
+        open={interventionsPanelOpen}
+        onClose={closeInterventionsPanel}
+        selectedId={selectedInterventionId}
+        onSelect={(id) => setSelectedInterventionId(id)}
+        initialCreate={interventionsCreating}
       />
     </div>
   );

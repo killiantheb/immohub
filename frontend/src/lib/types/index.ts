@@ -749,3 +749,80 @@ export interface EstimationIAEnrichie {
   score_locatif: number;
   score_revente: number;
 }
+
+// ─── Interventions ──────────────────────────────────────────────────────────
+
+export type InterventionCategorie =
+  | "plomberie"
+  | "electricite"
+  | "menuiserie"
+  | "peinture"
+  | "serrurerie"
+  | "chauffage"
+  | "autre";
+
+export type InterventionUrgence =
+  | "faible"
+  | "moderee"
+  | "urgente"
+  | "tres_urgente";
+
+export type InterventionStatut =
+  | "nouveau"
+  | "en_cours"
+  | "planifie"
+  | "resolu";
+
+export interface InterventionPhoto {
+  id: string;
+  intervention_id: string;
+  url: string;
+  order: number;
+  created_at: string;
+}
+
+export interface Intervention {
+  id: string;
+  bien_id: string;
+  signale_par_id: string;
+  artisan_id?: string | null;
+  titre: string;
+  description?: string | null;
+  categorie: InterventionCategorie;
+  urgence: InterventionUrgence;
+  statut: InterventionStatut;
+  avancement: number;
+  date_signalement?: string | null;
+  date_intervention?: string | null;
+  cout?: number | null;
+  note_cloture?: string | null;
+  closed_at?: string | null;
+  images?: InterventionPhoto[];
+  created_at: string;
+}
+
+export interface InterventionCreate {
+  bien_id: string;
+  titre: string;
+  description?: string | null;
+  categorie: InterventionCategorie;
+  urgence: InterventionUrgence;
+  statut?: InterventionStatut;
+  avancement?: number;
+  date_signalement?: string | null;
+  date_intervention?: string | null;
+  cout?: number | null;
+}
+
+export interface InterventionUpdate {
+  titre?: string;
+  description?: string | null;
+  categorie?: InterventionCategorie;
+  urgence?: InterventionUrgence;
+  statut?: InterventionStatut;
+  avancement?: number;
+  date_intervention?: string | null;
+  cout?: number | null;
+  note_cloture?: string | null;
+  artisan_id?: string | null;
+}
