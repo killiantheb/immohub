@@ -115,6 +115,11 @@ NEW_BIEN_COLUMNS: list[tuple[str, sa.Column]] = [
 
 
 def upgrade() -> None:
+    # Garde-fou : pgcrypto requis pour gen_random_uuid() dans la migration
+    # de données User.iban → bank_accounts plus bas. Idempotent — l'extension
+    # est normalement déjà installée depuis la migration 0001.
+    op.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
+
     # ──────────────────────────────────────────────────────────────────────
     # 1. Étendre `biens` avec 28 colonnes
     # ──────────────────────────────────────────────────────────────────────
@@ -290,6 +295,16 @@ def upgrade() -> None:
         "bank_accounts",
         ["user_id", "est_principal"],
     )
+    # Garantit qu'un utilisateur ne peut avoir qu'un seul compte bancaire
+    # principal (unique partial index Postgres). Permet plusieurs lignes
+    # `est_principal=false` mais une seule `est_principal=true` par user.
+    op.create_index(
+        "ix_bank_accounts_user_principal_unique",
+        "bank_accounts",
+        ["user_id"],
+        unique=True,
+        postgresql_where=sa.text("est_principal = true"),
+    )
 
     # ──────────────────────────────────────────────────────────────────────
     # 5. Table `bien_compteurs` — compteurs consommation par bien
@@ -386,6 +401,7 @@ def downgrade() -> None:
     op.drop_index("ix_bien_compteurs_bien_id", table_name="bien_compteurs")
     op.drop_table("bien_compteurs")
 
+    op.drop_index("ix_bank_accounts_user_principal_unique", table_name="bank_accounts")
     op.drop_index("ix_bank_accounts_user_principal", table_name="bank_accounts")
     op.drop_index("ix_bank_accounts_user_usage", table_name="bank_accounts")
     op.drop_index("ix_bank_accounts_user_id", table_name="bank_accounts")
