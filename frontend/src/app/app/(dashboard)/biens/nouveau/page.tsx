@@ -9,6 +9,7 @@ import { ArrowLeft, Loader2, ChevronRight, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { C } from "@/lib/design-tokens";
+import { RequiredMarker } from "@/components/biens/FieldLabel";
 import { getCantonFromNpa, CANTON_LABELS } from "@/lib/swiss-postal-codes";
 
 
@@ -87,10 +88,6 @@ const readOnlyInputStyle: React.CSSProperties = {
   cursor: "not-allowed",
   color: C.text2,
 };
-
-const RequiredStar = () => (
-  <span style={{ color: "#DC2626", marginLeft: 4 }} aria-hidden="true">*</span>
-);
 
 function useToast() {
   const [msg, setMsg] = useState<string | null>(null);
@@ -231,9 +228,7 @@ export default function NouveauBienPage() {
             Titre du bien
           </h2>
           <div>
-            <label style={labelStyle}>
-              Titre<RequiredStar />
-            </label>
+            <label style={labelStyle}>Titre</label>
             <input
               {...titreRegister}
               onChange={(e) => {
@@ -255,7 +250,7 @@ export default function NouveauBienPage() {
 
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>
-              Adresse<RequiredStar />
+              Adresse<RequiredMarker />
             </label>
             <input {...register("adresse")} placeholder="Rue de la Gare 12" style={inputStyle} />
             {errors.adresse && <p style={{ color: C.red, fontSize: 12, marginTop: 4 }}>{errors.adresse.message}</p>}
@@ -264,14 +259,14 @@ export default function NouveauBienPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
             <div>
               <label style={labelStyle}>
-                Ville<RequiredStar />
+                Ville<RequiredMarker />
               </label>
               <input {...register("ville")} placeholder="Lausanne" style={inputStyle} />
               {errors.ville && <p style={{ color: C.red, fontSize: 12, marginTop: 4 }}>{errors.ville.message}</p>}
             </div>
             <div>
               <label style={labelStyle}>
-                Code postal<RequiredStar />
+                Code postal<RequiredMarker />
               </label>
               <input {...register("cp")} placeholder="1003" style={inputStyle} />
               {errors.cp && <p style={{ color: C.red, fontSize: 12, marginTop: 4 }}>{errors.cp.message}</p>}
@@ -301,9 +296,7 @@ export default function NouveauBienPage() {
           </h2>
 
           <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>
-              Type de bien<RequiredStar />
-            </label>
+            <label style={labelStyle}>Type de bien</label>
             <select {...register("type")} style={{ ...inputStyle, cursor: "pointer" }}>
               {TYPES_BIEN.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
@@ -313,9 +306,7 @@ export default function NouveauBienPage() {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
             <div>
-              <label style={labelStyle}>
-                Surface m²<RequiredStar />
-              </label>
+              <label style={labelStyle}>Surface m²</label>
               <input {...register("surface")} type="number" step="1" placeholder="75" style={inputStyle} />
               {errors.surface && <p style={{ color: C.red, fontSize: 12, marginTop: 4 }}>{errors.surface.message}</p>}
             </div>

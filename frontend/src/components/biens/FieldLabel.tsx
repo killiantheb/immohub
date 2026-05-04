@@ -28,26 +28,48 @@ import { C } from "@/lib/design-tokens";
 interface Props {
   label: string;
   tooltip?: string;
+  /** Affiche un astérisque rouge « * » (PR-A11.A.6.f) pour les champs
+   *  obligatoires backend (BienCreate Pydantic : adresse / ville / cp).
+   *  Utilise C.red du design-tokens, pas de hex direct. */
+  required?: boolean;
 }
 
-export function FieldLabel({ label, tooltip }: Props) {
-  if (!tooltip) {
+export function FieldLabel({ label, tooltip, required }: Props) {
+  if (!tooltip && !required) {
     return <span style={labelStyle}>{label}</span>;
   }
   return (
     <span className="althy-field-label" style={labelWithTooltipStyle}>
       <span style={labelStyle}>{label}</span>
-      <span
-        className="althy-field-label__icon"
-        aria-label={tooltip}
-        tabIndex={0}
-        style={iconWrapStyle}
-      >
-        <Info size={12} />
-        <span className="althy-field-label__tooltip" style={tooltipStyle}>
-          {tooltip}
+      {required && <RequiredMarker />}
+      {tooltip && (
+        <span
+          className="althy-field-label__icon"
+          aria-label={tooltip}
+          tabIndex={0}
+          style={iconWrapStyle}
+        >
+          <Info size={12} />
+          <span className="althy-field-label__tooltip" style={tooltipStyle}>
+            {tooltip}
+          </span>
         </span>
-      </span>
+      )}
+    </span>
+  );
+}
+
+/** Marker « * » rouge pour champs obligatoires. Tooltip natif via title. */
+export function RequiredMarker() {
+  return (
+    <span
+      className="althy-field-label__required"
+      role="img"
+      aria-label="Champ obligatoire"
+      title="Champ obligatoire"
+      style={requiredMarkerStyle}
+    >
+      *
     </span>
   );
 }
@@ -75,6 +97,16 @@ const iconWrapStyle: React.CSSProperties = {
   cursor: "help",
   position: "relative",
   outline: "none",
+};
+
+const requiredMarkerStyle: React.CSSProperties = {
+  color: C.red,
+  fontSize: 13,
+  fontWeight: 600,
+  marginLeft: 2,
+  cursor: "help",
+  letterSpacing: 0,
+  textTransform: "none",
 };
 
 const tooltipStyle: React.CSSProperties = {
