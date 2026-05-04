@@ -521,7 +521,7 @@ class BienCompteurRead(BaseModel):
 
 
 class BienKeyRead(BaseModel):
-    """Clé / badge / cadenas physique lié à un bien (PR-A11.A.6.d)."""
+    """Clé / badge / cadenas physique lié à un bien (PR-A11.A.6.d + .h)."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -530,6 +530,10 @@ class BienKeyRead(BaseModel):
     type: str
     numero_badge: str | None = None
     description: str | None = None
+    # PR-A11.A.6.h — innovation métier
+    code_grave: str | None = None
+    carte_securite: bool = False
+    numero_carte_securite: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -650,15 +654,22 @@ class BienCompteurUpdate(BaseModel):
 
 
 class BienKeyCreate(BaseModel):
-    """Création d'une clé / badge / cadenas (PR-A11.A.6.d).
+    """Création d'une clé / badge / cadenas (PR-A11.A.6.d + .h).
 
-    `type` : possibles → entree / cave / boite_aux_lettres / parking /
-                          garage / cadenas / autre
+    `type` : str libre — liste métier 14 valeurs côté frontend
+    (appartement / immeuble / boite_aux_lettres / cave_acces /
+    cave_personnelle / buanderie / machine_laver_badge / garage_bippeur /
+    garage_porte / ski_room / ski_room_acces / chaufferie /
+    carte_securite_protegee / autre).
     """
 
     type: str = Field(min_length=1, max_length=30)
     numero_badge: str | None = Field(default=None, max_length=50)
     description: str | None = Field(default=None, max_length=300)
+    # PR-A11.A.6.h — innovation métier
+    code_grave: str | None = Field(default=None, max_length=100)
+    carte_securite: bool = False
+    numero_carte_securite: str | None = Field(default=None, max_length=100)
 
 
 class BienKeyUpdate(BaseModel):
@@ -667,6 +678,10 @@ class BienKeyUpdate(BaseModel):
     type: str | None = Field(default=None, min_length=1, max_length=30)
     numero_badge: str | None = Field(default=None, max_length=50)
     description: str | None = Field(default=None, max_length=300)
+    # PR-A11.A.6.h — innovation métier
+    code_grave: str | None = Field(default=None, max_length=100)
+    carte_securite: bool | None = None
+    numero_carte_securite: str | None = Field(default=None, max_length=100)
 
 
 class BankAccountCreate(BaseModel):

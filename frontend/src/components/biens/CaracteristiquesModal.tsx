@@ -32,28 +32,26 @@ import { ContactsSection } from "./ContactsSection";
 import { CompteursSection } from "./CompteursSection";
 import { FieldLabel } from "./FieldLabel";
 import { KeysSection } from "./KeysSection";
+import { TabSection } from "./TabSection";
 import { useBien, useUpdateBien } from "@/lib/hooks/useBiens";
 import type { BienDetail, BienUpdate } from "@/lib/types";
 import { C } from "@/lib/design-tokens";
 
+// PR-A11.A.6.h — restructuration 8 → 5 tabs sémantiques cohérents.
+// Politique scroll-zero (extension Règle 8) : pas de scroll pour passer
+// d'une catégorie à une autre. Scroll DANS une liste autorisé.
 type TabId =
-  | "identite"
-  | "localisation"
-  | "surface"
-  | "technique"
-  | "location"
-  | "contacts"
-  | "fiscalite"
+  | "bien"
+  | "surfaces"
+  | "argent"
+  | "acces"
   | "description";
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: "identite", label: "Identité" },
-  { id: "localisation", label: "Localisation" },
-  { id: "surface", label: "Surface & Annexes" },
-  { id: "technique", label: "Caractéristiques techniques" },
-  { id: "location", label: "Conditions location" },
-  { id: "contacts", label: "Contacts" },
-  { id: "fiscalite", label: "Fiscalité" },
+  { id: "bien", label: "Le bien" },
+  { id: "surfaces", label: "Surfaces & espaces" },
+  { id: "argent", label: "Argent & charges" },
+  { id: "acces", label: "Accès & contacts" },
   { id: "description", label: "Description publique" },
 ];
 
@@ -79,7 +77,7 @@ export function CaracteristiquesModal({ bienId, open, onClose }: Props) {
   const { data: bien, isLoading } = useBien(bienId);
   const update = useUpdateBien(bienId);
 
-  const [activeTab, setActiveTab] = useState<TabId>("identite");
+  const [activeTab, setActiveTab] = useState<TabId>("bien");
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [justSaved, setJustSaved] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Map<string, string>>(new Map());
@@ -243,26 +241,20 @@ function TabContent({
   bienId: string;
 }) {
   switch (tabId) {
-    case "identite":
-      return <TabIdentite ctx={ctx} bienId={bienId} />;
-    case "localisation":
-      return <TabLocalisation ctx={ctx} />;
-    case "surface":
-      return <TabSurface ctx={ctx} bienId={bienId} />;
-    case "technique":
-      return <TabTechnique ctx={ctx} bienId={bienId} />;
-    case "location":
-      return <TabLocation ctx={ctx} />;
-    case "contacts":
-      return <ContactsSection bienId={bienId} />;
-    case "fiscalite":
-      return <TabFiscalite ctx={ctx} />;
+    case "bien":
+      return <TabBien ctx={ctx} />;
+    case "surfaces":
+      return <TabSurfaces ctx={ctx} bienId={bienId} />;
+    case "argent":
+      return <TabArgent ctx={ctx} bienId={bienId} />;
+    case "acces":
+      return <TabAcces ctx={ctx} bienId={bienId} />;
     case "description":
       return <TabDescription ctx={ctx} />;
   }
 }
 
-// ── Tab 1 : Identité ────────────────────────────────────────────────────────
+// ── Constantes options (partagées entre tabs) ───────────────────────────────
 
 const TYPE_OPTIONS = [
   { value: "appartement", label: "Appartement" },
@@ -277,11 +269,100 @@ const TYPE_OPTIONS = [
   { value: "autre", label: "Autre" },
 ];
 
-function TabIdentite({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
+const ORIENTATION_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "N", label: "Nord" },
+  { value: "S", label: "Sud" },
+  { value: "E", label: "Est" },
+  { value: "O", label: "Ouest" },
+  { value: "NE", label: "Nord-Est" },
+  { value: "NO", label: "Nord-Ouest" },
+  { value: "SE", label: "Sud-Est" },
+  { value: "SO", label: "Sud-Ouest" },
+];
+
+const VUE_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "lac", label: "Lac" },
+  { value: "montagne", label: "Montagne" },
+  { value: "campagne", label: "Campagne" },
+  { value: "ville", label: "Ville" },
+  { value: "cour", label: "Cour" },
+  { value: "rue", label: "Rue" },
+  { value: "aucune", label: "Aucune particulière" },
+];
+
+const BRUIT_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "calme", label: "Calme" },
+  { value: "passable", label: "Passable" },
+  { value: "bruyant", label: "Bruyant" },
+];
+
+const DPE_OPTIONS = [
+  { value: "", label: "—" },
+  ...["A", "B", "C", "D", "E", "F", "G"].map((c) => ({ value: c, label: c })),
+];
+
+const CHAUFFAGE_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "gaz", label: "Gaz" },
+  { value: "mazout", label: "Mazout" },
+  { value: "pompe_chaleur", label: "Pompe à chaleur" },
+  { value: "electrique", label: "Électrique" },
+  { value: "bois", label: "Bois" },
+  { value: "pellets", label: "Pellets" },
+  { value: "district", label: "Chauffage à distance" },
+  { value: "autre", label: "Autre" },
+];
+
+const EAU_CHAUDE_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "boiler", label: "Boiler" },
+  { value: "chaudiere_commune", label: "Chaudière commune" },
+  { value: "panneaux_solaires", label: "Panneaux solaires" },
+  { value: "autre", label: "Autre" },
+];
+
+const PARKING_OPTIONS = [
+  { value: "", label: "Aucun" },
+  { value: "exterieur", label: "Extérieur" },
+  { value: "exterieur_couvert", label: "Extérieur couvert" },
+  { value: "interieur", label: "Intérieur" },
+  { value: "interieur_box", label: "Intérieur (box)" },
+];
+
+const RESIDENCE_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "principale", label: "Résidence principale" },
+  { value: "secondaire", label: "Résidence secondaire" },
+  { value: "mixte", label: "Mixte" },
+];
+
+const LOCATION_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "annuelle", label: "Annuelle" },
+  { value: "saisonniere", label: "Saisonnière" },
+  { value: "semaine", label: "À la semaine" },
+  { value: "vide", label: "Vacant" },
+];
+
+const CAUTION_TYPE_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "especes", label: "Espèces / virement direct" },
+  { value: "compte_bloque", label: "Compte bancaire bloqué (CO 257e)" },
+  { value: "swisscaution", label: "SwissCaution / GoCaution / Firstcaution" },
+  { value: "autre", label: "Autre" },
+];
+
+// ── Tab 1 : Le bien (identité + identifiants suisses + localisation +
+//            caractéristiques techniques) ──────────────────────────────────
+
+function TabBien({ ctx }: { ctx: EditContext }) {
   const { bien } = ctx;
   return (
     <div style={tabContentStyle}>
-      <Section title="Identité du bien">
+      <TabSection title="Identité du bien">
         <Grid>
           <Field label="Nom de l'immeuble" name="building_name" value={bien.building_name} ctx={ctx} />
           <Field label="N° appartement" name="unit_number" value={bien.unit_number} ctx={ctx} />
@@ -299,9 +380,9 @@ function TabIdentite({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
             ctx={ctx}
           />
         </Grid>
-      </Section>
+      </TabSection>
 
-      <Section title="Identifiants officiels">
+      <TabSection title="Identifiants suisses officiels">
         <Grid>
           <Field
             label="Identifiant du bâtiment"
@@ -342,81 +423,14 @@ function TabIdentite({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
             tooltip="Numéro OFS — chaque commune suisse a un numéro unique attribué par l'Office fédéral de la statistique."
           />
         </Grid>
-      </Section>
+      </TabSection>
 
-      <Section title="Sécurité opérationnelle">
-        <KeysSection bienId={bienId} />
-        <div style={{ marginTop: 18 }}>
-          <Grid>
-            <Field
-              label="Code digicode immeuble"
-              name="code_digicode"
-              value={bien.code_digicode}
-              type="password"
-              ctx={ctx}
-              tooltip="Code d'accès à l'immeuble (interphone, digicode portail). Stocké de manière sécurisée et chiffrée — visible uniquement par les personnes autorisées sur le bien."
-            />
-          </Grid>
-        </div>
-      </Section>
-    </div>
-  );
-}
-
-// ── Tab 2 : Localisation ────────────────────────────────────────────────────
-
-const ORIENTATION_OPTIONS = [
-  { value: "", label: "—" },
-  { value: "N", label: "Nord" },
-  { value: "S", label: "Sud" },
-  { value: "E", label: "Est" },
-  { value: "O", label: "Ouest" },
-  { value: "NE", label: "Nord-Est" },
-  { value: "NO", label: "Nord-Ouest" },
-  { value: "SE", label: "Sud-Est" },
-  { value: "SO", label: "Sud-Ouest" },
-];
-
-const VUE_OPTIONS = [
-  { value: "", label: "—" },
-  { value: "lac", label: "Lac" },
-  { value: "montagne", label: "Montagne" },
-  { value: "campagne", label: "Campagne" },
-  { value: "ville", label: "Ville" },
-  { value: "cour", label: "Cour" },
-  { value: "rue", label: "Rue" },
-  { value: "aucune", label: "Aucune particulière" },
-];
-
-const BRUIT_OPTIONS = [
-  { value: "", label: "—" },
-  { value: "calme", label: "Calme" },
-  { value: "passable", label: "Passable" },
-  { value: "bruyant", label: "Bruyant" },
-];
-
-function TabLocalisation({ ctx }: { ctx: EditContext }) {
-  const { bien } = ctx;
-  return (
-    <div style={tabContentStyle}>
-      <Section title="Adresse">
+      <TabSection title="Localisation">
         <Grid>
           <Field label="Rue + n°" name="adresse" value={bien.adresse} ctx={ctx} />
           <Field label="NPA" name="cp" value={bien.cp} ctx={ctx} />
           <Field label="Ville" name="ville" value={bien.ville} ctx={ctx} />
           <Field label="Canton" name="canton" value={bien.canton} ctx={ctx} />
-        </Grid>
-      </Section>
-
-      <Section title="Coordonnées géographiques">
-        <Grid>
-          <Field label="Latitude" name="lat" value={bien.lat} type="number" ctx={ctx} />
-          <Field label="Longitude" name="lng" value={bien.lng} type="number" ctx={ctx} />
-        </Grid>
-      </Section>
-
-      <Section title="Position dans l'immeuble">
-        <Grid>
           <Field label="Étage du logement" name="etage" value={bien.etage} type="number" ctx={ctx} />
           <Field
             label="Nombre d'étages immeuble"
@@ -425,11 +439,6 @@ function TabLocalisation({ ctx }: { ctx: EditContext }) {
             type="number"
             ctx={ctx}
           />
-        </Grid>
-      </Section>
-
-      <Section title="Environnement">
-        <Grid>
           <SelectField
             label="Orientation principale"
             name="orientation_principale"
@@ -446,150 +455,18 @@ function TabLocalisation({ ctx }: { ctx: EditContext }) {
             ctx={ctx}
           />
         </Grid>
-        <ToggleRow
-          label="Accessibilité PMR"
-          name="accessibilite_pmr"
-          value={bien.accessibilite_pmr}
-          ctx={ctx}
-        />
-        <ToggleRow label="Ascenseur" name="ascenseur" value={bien.ascenseur} ctx={ctx} />
-      </Section>
-    </div>
-  );
-}
-
-// ── Tab 3 : Surface & Annexes ───────────────────────────────────────────────
-
-function TabSurface({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
-  const { bien } = ctx;
-  return (
-    <div style={tabContentStyle}>
-      <Section title="Surface & pièces">
-        <Grid>
-          <Field
-            label="Surface habitable (m²)"
-            name="surface"
-            value={bien.surface}
-            type="number"
-            ctx={ctx}
-            tooltip="Surface du logement réellement utilisable. Exclut les caves, balcons, combles non aménagés et terrasses extérieures."
-          />
-          <Field
-            label="Nombre de pièces"
-            name="rooms"
-            value={bien.rooms}
-            type="number"
-            step={0.5}
-            ctx={ctx}
-            tooltip="En Suisse romande, la cuisine compte comme une demi-pièce. Exemple : 3.5 pièces = 3 chambres + cuisine."
-          />
-          <Field
-            label="Chambres"
-            name="bedrooms"
-            value={bien.bedrooms}
-            type="number"
+        <ToggleGrid>
+          <ToggleRow
+            label="Accessibilité PMR"
+            name="accessibilite_pmr"
+            value={bien.accessibilite_pmr}
             ctx={ctx}
           />
-          <Field
-            label="Salles de bain"
-            name="bathrooms"
-            value={bien.bathrooms}
-            type="number"
-            ctx={ctx}
-          />
-        </Grid>
-      </Section>
+          <ToggleRow label="Ascenseur" name="ascenseur" value={bien.ascenseur} ctx={ctx} />
+        </ToggleGrid>
+      </TabSection>
 
-      <Section title="Surfaces annexes (m²)">
-        <Grid>
-          <Field
-            label="Cave"
-            name="cave_m2"
-            value={bien.cave_m2}
-            type="number"
-            step={0.01}
-            ctx={ctx}
-          />
-          <Field
-            label="Balcon"
-            name="balcon_m2"
-            value={bien.balcon_m2}
-            type="number"
-            step={0.01}
-            ctx={ctx}
-          />
-          <Field
-            label="Terrasse"
-            name="terrasse_m2"
-            value={bien.terrasse_m2}
-            type="number"
-            step={0.01}
-            ctx={ctx}
-          />
-          <Field
-            label="Jardin"
-            name="jardin_m2"
-            value={bien.jardin_m2}
-            type="number"
-            step={0.01}
-            ctx={ctx}
-          />
-          <Field
-            label="Terrain (maisons)"
-            name="terrain_m2"
-            value={bien.terrain_m2}
-            type="number"
-            step={0.01}
-            ctx={ctx}
-          />
-        </Grid>
-      </Section>
-
-      <AnnexesSection bienId={bienId} />
-    </div>
-  );
-}
-
-// ── Tab 4 : Caractéristiques techniques ─────────────────────────────────────
-
-const DPE_OPTIONS = [
-  { value: "", label: "—" },
-  ...["A", "B", "C", "D", "E", "F", "G"].map((c) => ({ value: c, label: c })),
-];
-
-const CHAUFFAGE_OPTIONS = [
-  { value: "", label: "—" },
-  { value: "gaz", label: "Gaz" },
-  { value: "mazout", label: "Mazout" },
-  { value: "pompe_chaleur", label: "Pompe à chaleur" },
-  { value: "electrique", label: "Électrique" },
-  { value: "bois", label: "Bois" },
-  { value: "pellets", label: "Pellets" },
-  { value: "district", label: "Chauffage à distance" },
-  { value: "autre", label: "Autre" },
-];
-
-const EAU_CHAUDE_OPTIONS = [
-  { value: "", label: "—" },
-  { value: "boiler", label: "Boiler" },
-  { value: "chaudiere_commune", label: "Chaudière commune" },
-  { value: "panneaux_solaires", label: "Panneaux solaires" },
-  { value: "autre", label: "Autre" },
-];
-
-const PARKING_OPTIONS = [
-  { value: "", label: "Aucun" },
-  { value: "exterieur", label: "Extérieur" },
-  { value: "exterieur_couvert", label: "Extérieur couvert" },
-  { value: "interieur", label: "Intérieur" },
-  { value: "interieur_box", label: "Intérieur (box)" },
-];
-
-function TabTechnique({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
-  const { bien } = ctx;
-  return (
-    <div style={tabContentStyle}>
-      <Section title="Construction & énergie">
+      <TabSection title="Caractéristiques techniques">
         <Grid>
           <Field
             label="Année construction"
@@ -611,7 +488,7 @@ function TabTechnique({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
             value={bien.classe_energetique}
             options={DPE_OPTIONS}
             ctx={ctx}
-            tooltip="DPE / CECB — classe d'efficacité énergétique du bâtiment, de A (très efficace) à G (peu efficace). Information de plus en plus demandée pour les annonces de location."
+            tooltip="DPE / CECB — classe d'efficacité énergétique du bâtiment, de A (très efficace) à G (peu efficace)."
           />
           <SelectField
             label="Type de chauffage"
@@ -627,10 +504,14 @@ function TabTechnique({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
             options={EAU_CHAUDE_OPTIONS}
             ctx={ctx}
           />
+          <SelectField
+            label="Parking"
+            name="parking_type"
+            value={bien.parking_type}
+            options={PARKING_OPTIONS}
+            ctx={ctx}
+          />
         </Grid>
-      </Section>
-
-      <Section title="Équipements">
         <ToggleGrid>
           <ToggleRow label="Meublé" name="is_furnished" value={bien.is_furnished} ctx={ctx} />
           <ToggleRow label="Balcon" name="has_balcony" value={bien.has_balcony} ctx={ctx} />
@@ -650,18 +531,6 @@ function TabTechnique({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
             value={bien.has_laundry_building}
             ctx={ctx}
           />
-        </ToggleGrid>
-        <SelectField
-          label="Parking"
-          name="parking_type"
-          value={bien.parking_type}
-          options={PARKING_OPTIONS}
-          ctx={ctx}
-        />
-      </Section>
-
-      <Section title="Règles de location">
-        <ToggleGrid>
           <ToggleRow label="Animaux acceptés" name="pets_allowed" value={bien.pets_allowed} ctx={ctx} />
           <ToggleRow
             label="Fumeurs acceptés"
@@ -670,40 +539,37 @@ function TabTechnique({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
             ctx={ctx}
           />
         </ToggleGrid>
-      </Section>
-
-      <Section title="Distances utiles (minutes)">
         <Grid>
           <Field
-            label="Gare"
+            label="Distance gare (min)"
             name="distance_gare_minutes"
             value={bien.distance_gare_minutes}
             type="number"
             ctx={ctx}
           />
           <Field
-            label="Arrêt bus"
+            label="Distance arrêt bus (min)"
             name="distance_arret_bus_minutes"
             value={bien.distance_arret_bus_minutes}
             type="number"
             ctx={ctx}
           />
           <Field
-            label="Télécabine"
+            label="Distance télécabine (min)"
             name="distance_telecabine_minutes"
             value={bien.distance_telecabine_minutes}
             type="number"
             ctx={ctx}
           />
           <Field
-            label="Lac"
+            label="Distance lac (min)"
             name="distance_lac_minutes"
             value={bien.distance_lac_minutes}
             type="number"
             ctx={ctx}
           />
           <Field
-            label="Aéroport"
+            label="Distance aéroport (min)"
             name="distance_aeroport_minutes"
             value={bien.distance_aeroport_minutes}
             type="number"
@@ -716,43 +582,98 @@ function TabTechnique({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
           value={bien.situation_notes}
           ctx={ctx}
         />
-      </Section>
-
-      <CompteursSection bienId={bienId} />
+      </TabSection>
     </div>
   );
 }
 
-// ── Tab 5 : Conditions location ─────────────────────────────────────────────
+// ── Tab 2 : Surfaces & espaces ──────────────────────────────────────────────
 
-const RESIDENCE_OPTIONS = [
-  { value: "", label: "—" },
-  { value: "principale", label: "Résidence principale" },
-  { value: "secondaire", label: "Résidence secondaire" },
-  { value: "mixte", label: "Mixte" },
-];
-
-const LOCATION_OPTIONS = [
-  { value: "", label: "—" },
-  { value: "annuelle", label: "Annuelle" },
-  { value: "saisonniere", label: "Saisonnière" },
-  { value: "semaine", label: "À la semaine" },
-  { value: "vide", label: "Vacant" },
-];
-
-const CAUTION_TYPE_OPTIONS = [
-  { value: "", label: "—" },
-  { value: "especes", label: "Espèces / virement direct" },
-  { value: "compte_bloque", label: "Compte bancaire bloqué (CO 257e)" },
-  { value: "swisscaution", label: "SwissCaution / GoCaution / Firstcaution" },
-  { value: "autre", label: "Autre" },
-];
-
-function TabLocation({ ctx }: { ctx: EditContext }) {
+function TabSurfaces({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
   const { bien } = ctx;
   return (
     <div style={tabContentStyle}>
-      <Section title="Loyer & charges (référence — source légale = Contract)">
+      <TabSection title="Surfaces & pièces">
+        <Grid>
+          <Field
+            label="Surface habitable (m²)"
+            name="surface"
+            value={bien.surface}
+            type="number"
+            ctx={ctx}
+            tooltip="Surface du logement réellement utilisable. Exclut les caves, balcons, combles non aménagés et terrasses extérieures."
+          />
+          <Field
+            label="Nombre de pièces"
+            name="rooms"
+            value={bien.rooms}
+            type="number"
+            step={0.5}
+            ctx={ctx}
+            tooltip="En Suisse romande, la cuisine compte comme une demi-pièce. Exemple : 3.5 pièces = 3 chambres + cuisine."
+          />
+          <Field label="Chambres" name="bedrooms" value={bien.bedrooms} type="number" ctx={ctx} />
+          <Field label="Salles de bain" name="bathrooms" value={bien.bathrooms} type="number" ctx={ctx} />
+          <Field
+            label="Cave (m²)"
+            name="cave_m2"
+            value={bien.cave_m2}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+          <Field
+            label="Balcon (m²)"
+            name="balcon_m2"
+            value={bien.balcon_m2}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+          <Field
+            label="Terrasse (m²)"
+            name="terrasse_m2"
+            value={bien.terrasse_m2}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+          <Field
+            label="Jardin (m²)"
+            name="jardin_m2"
+            value={bien.jardin_m2}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+          <Field
+            label="Terrain (maisons, m²)"
+            name="terrain_m2"
+            value={bien.terrain_m2}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+          />
+        </Grid>
+      </TabSection>
+
+      <TabSection title="Annexes du bien">
+        <AnnexesSection bienId={bienId} />
+      </TabSection>
+    </div>
+  );
+}
+
+// ── Tab 3 : Argent & charges ────────────────────────────────────────────────
+
+function TabArgent({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
+  const { bien } = ctx;
+  return (
+    <div style={tabContentStyle}>
+      <TabSection
+        title="Loyer & charges"
+        description="Référence — la source légale est le contrat de bail (Contract.monthly_rent)."
+      >
         <Grid>
           <Field
             label="Loyer charges incluses (CHF)"
@@ -785,12 +706,12 @@ function TabLocation({ ctx }: { ctx: EditContext }) {
             type="number"
             step={0.01}
             ctx={ctx}
-            tooltip="Montant que le locataire verse chaque mois pour les charges, régularisé en fin d'année selon les frais réels (chauffage, conciergerie, ascenseur, etc.)."
+            tooltip="Montant que le locataire verse chaque mois pour les charges, régularisé en fin d'année selon les frais réels."
           />
         </Grid>
-      </Section>
+      </TabSection>
 
-      <Section title="Garantie de loyer">
+      <TabSection title="Garantie de loyer">
         <Grid>
           <Field
             label="Garantie de loyer (CHF)"
@@ -807,12 +728,12 @@ function TabLocation({ ctx }: { ctx: EditContext }) {
             value={bien.caution_type}
             options={CAUTION_TYPE_OPTIONS}
             ctx={ctx}
-            tooltip="Espèces (bloquées sur compte bancaire au nom du locataire, CO art. 257e), garantie bancaire (assurance type SwissCaution / GoCaution / Firstcaution), ou cautionnement (garant)."
+            tooltip="Espèces (compte bloqué CO 257e), garantie bancaire (SwissCaution / GoCaution / Firstcaution), ou cautionnement (garant)."
           />
         </Grid>
-      </Section>
+      </TabSection>
 
-      <Section title="Conditions du bail">
+      <TabSection title="Conditions du bail">
         <Grid>
           <Field
             label="Disponible à partir du"
@@ -820,7 +741,6 @@ function TabLocation({ ctx }: { ctx: EditContext }) {
             value={bien.disponibilite_date}
             type="date"
             ctx={ctx}
-            tooltip="Date à partir de laquelle le bien est louable (libre, fin du bail précédent, fin des travaux, etc.)."
           />
           <Field
             label="Durée minimale du bail (mois)"
@@ -836,7 +756,7 @@ function TabLocation({ ctx }: { ctx: EditContext }) {
             value={bien.preavis_mois}
             type="number"
             ctx={ctx}
-            tooltip="Délai que le locataire doit respecter pour résilier son bail. Souvent 3 mois en Suisse, à donner par lettre signée pour la fin d'un terme contractuel."
+            tooltip="Délai que le locataire doit respecter pour résilier son bail. Souvent 3 mois en Suisse."
           />
           <SelectField
             label="Type de résidence"
@@ -853,15 +773,12 @@ function TabLocation({ ctx }: { ctx: EditContext }) {
             ctx={ctx}
           />
         </Grid>
-      </Section>
+      </TabSection>
 
-      <Section title="Charges incluses dans le forfait">
-        <p style={chargesHelpStyle}>
-          Cochez les postes de charges compris dans le forfait mensuel facturé
-          au locataire. Cette liste correspond aux clauses contractuelles du
-          bail — distincte du décompte annuel des charges réelles.
-        </p>
-
+      <TabSection
+        title="Charges incluses dans le forfait"
+        description="Cochez les postes de charges compris dans le forfait mensuel facturé au locataire. Cette liste correspond aux clauses contractuelles du bail — distincte du décompte annuel des charges réelles."
+      >
         <ChargesGroup title="Chauffage et eau chaude">
           <ToggleRow
             label="Chauffage"
@@ -971,7 +888,66 @@ function TabLocation({ ctx }: { ctx: EditContext }) {
             tooltip="Câble, fibre commune ou redevance Serafe — uniquement si l'abonnement est inclus dans le bail (rare en location pure)."
           />
         </ChargesGroup>
-      </Section>
+      </TabSection>
+
+      <TabSection title="Compteurs">
+        <CompteursSection bienId={bienId} />
+      </TabSection>
+
+      <TabSection title="Fiscalité">
+        <Grid>
+          <Field
+            label="Valeur locative (impôts)"
+            name="valeur_locative_fiscale"
+            value={bien.valeur_locative_fiscale}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+            tooltip="Valeur locative imposable utilisée pour le calcul de l'impôt sur le revenu si vous occupez le bien. Communiquée par l'administration fiscale cantonale."
+          />
+          <Field
+            label="Valeur assurance bâtiment (ECAB)"
+            name="valeur_assurance_ecab"
+            value={bien.valeur_assurance_ecab}
+            type="number"
+            step={0.01}
+            ctx={ctx}
+            tooltip="ECAB — Établissement Cantonal d'Assurance des Bâtiments. Valeur officielle d'assurance du bâtiment, indispensable en cas de sinistre."
+          />
+        </Grid>
+      </TabSection>
+    </div>
+  );
+}
+
+// ── Tab 4 : Accès & contacts (Clés en PREMIÈRE position du tab) ─────────────
+
+function TabAcces({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
+  const { bien } = ctx;
+  return (
+    <div style={tabContentStyle}>
+      <TabSection
+        title="Clés et badges"
+        description="Liste des clés et badges physiques du bien (appartement, immeuble, cave, garage, etc.) avec leur code gravé pour refabrication chez serrurier en cas de perte."
+      >
+        <KeysSection bienId={bienId} />
+        <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.border}` }}>
+          <Grid>
+            <Field
+              label="Code digicode immeuble"
+              name="code_digicode"
+              value={bien.code_digicode}
+              type="text"
+              ctx={ctx}
+              tooltip="Code d'accès à l'entrée de l'immeuble (interphone, digicode portail). Stocké de manière sécurisée mais affiché en clair pour usage quotidien — ce n'est pas un mot de passe au sens nLPD."
+            />
+          </Grid>
+        </div>
+      </TabSection>
+
+      <TabSection title="Contacts du bien">
+        <ContactsSection bienId={bienId} />
+      </TabSection>
     </div>
   );
 }
@@ -1001,56 +977,22 @@ function ChargesGroup({
   );
 }
 
-// ── Tab 7 : Fiscalité & Description ─────────────────────────────────────────
-
-function TabFiscalite({ ctx }: { ctx: EditContext }) {
-  const { bien } = ctx;
-  return (
-    <div style={tabContentStyle}>
-      <Section title="Fiscalité">
-        <Grid>
-          <Field
-            label="Valeur locative (impôts)"
-            name="valeur_locative_fiscale"
-            value={bien.valeur_locative_fiscale}
-            type="number"
-            step={0.01}
-            ctx={ctx}
-            tooltip="Valeur locative imposable utilisée pour le calcul de l'impôt sur le revenu si vous occupez le bien. Communiquée par l'administration fiscale cantonale."
-          />
-          <Field
-            label="Valeur assurance bâtiment (ECAB)"
-            name="valeur_assurance_ecab"
-            value={bien.valeur_assurance_ecab}
-            type="number"
-            step={0.01}
-            ctx={ctx}
-            tooltip="ECAB — Établissement Cantonal d'Assurance des Bâtiments. Valeur officielle d'assurance du bâtiment, indispensable en cas de sinistre."
-          />
-          {/* prix_acquisition, date_acquisition, taux_hypothecaire,
-              hypotheque_montant, valeur_fiscale, impot_foncier,
-              date_derniers_travaux, etat reportés sprint compléments
-              (champs absents du modèle DB Phase 1). */}
-        </Grid>
-      </Section>
-    </div>
-  );
-}
-
-// ── Tab 8 : Description publique ────────────────────────────────────────────
+// ── Tab 5 : Description publique ────────────────────────────────────────────
 
 function TabDescription({ ctx }: { ctx: EditContext }) {
   const { bien } = ctx;
   return (
     <div style={tabContentStyle}>
-      <Section title="Description publique">
+      <TabSection
+        title="Description publique"
+        description="Texte affiché sur l'annonce publique du bien. L'IA peut le générer depuis les caractéristiques."
+      >
         <TextareaField
           label="Description publique (annonce)"
           name="description_publique"
           value={bien.description_publique}
           rows={4}
           ctx={ctx}
-          tooltip="Texte affiché sur l'annonce publique du bien. Doit séduire les locataires potentiels — l'IA peut le générer depuis les caractéristiques."
         />
         <TextareaField
           label="Points forts"
@@ -1060,16 +1002,18 @@ function TabDescription({ ctx }: { ctx: EditContext }) {
           ctx={ctx}
           tooltip="Liste à puces des atouts du bien (vue, calme, équipements, etc.) mise en avant dans les annonces."
         />
-      </Section>
+      </TabSection>
 
-      <Section title="Descriptions internes">
+      <TabSection
+        title="Descriptions internes"
+        description="Notes pour vous-même ou votre régie. Non publiées."
+      >
         <TextareaField
           label="Description du lieu"
           name="description_lieu"
           value={bien.description_lieu}
           rows={3}
           ctx={ctx}
-          tooltip="Notes internes sur le quartier, le voisinage, l'environnement. Non publié."
         />
         <TextareaField
           label="Description du logement"
@@ -1077,7 +1021,6 @@ function TabDescription({ ctx }: { ctx: EditContext }) {
           value={bien.description_logement}
           rows={3}
           ctx={ctx}
-          tooltip="Notes internes sur l'état réel du logement, particularités. Non publié."
         />
         <TextareaField
           label="Remarques internes"
@@ -1085,9 +1028,8 @@ function TabDescription({ ctx }: { ctx: EditContext }) {
           value={bien.remarques}
           rows={2}
           ctx={ctx}
-          tooltip="Notes libres pour vous-même ou votre régie. Non publié."
         />
-      </Section>
+      </TabSection>
     </div>
   );
 }
@@ -1437,25 +1379,8 @@ function SaveIndicator({
 }
 
 // ── Layout helpers ──────────────────────────────────────────────────────────
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  // Pas de marginBottom : le tabContentStyle gère l'espacement (gap: 32px)
-  // entre sections, conformément à la doctrine DA scientifique.
-  return (
-    <div>
-      <h3 style={sectionTitleStyle}>{title}</h3>
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        {children}
-      </div>
-    </div>
-  );
-}
+// PR-A11.A.6.h : `Section` legacy supprimée au profit de `<TabSection>` qui
+// rend une vraie card autonome (background bleu pâle, border, padding).
 
 function Grid({ children }: { children: React.ReactNode }) {
   return (
@@ -1585,27 +1510,9 @@ const tabContentStyle: React.CSSProperties = {
   gap: 32,
 };
 
-const sectionTitleStyle: React.CSSProperties = {
-  fontFamily: "var(--font-serif)",
-  fontSize: 20,
-  color: C.text,
-  margin: "0 0 20px",
-  paddingBottom: 10,
-  borderBottom: `1px solid ${C.border}`,
-  fontWeight: 400,
-  lineHeight: 1.35,
-};
-
 const fieldLabelWrapStyle: React.CSSProperties = {
   display: "block",
   marginBottom: 6,
-};
-
-const chargesHelpStyle: React.CSSProperties = {
-  fontSize: 14,
-  color: C.text2,
-  margin: "0 0 20px",
-  lineHeight: 1.55,
 };
 
 const chargesGroupStyle: React.CSSProperties = {
