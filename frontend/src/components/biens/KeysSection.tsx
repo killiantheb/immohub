@@ -29,7 +29,10 @@ interface Props {
 }
 
 const TYPE_OPTIONS: { value: string; label: string }[] = [
-  { value: "entree", label: "Entrée" },
+  // PR-A11.A.6.f : appartement ajouté en première position (default le plus
+  // courant — la clé du logement lui-même).
+  { value: "appartement", label: "Appartement" },
+  { value: "entree", label: "Entrée immeuble" },
   { value: "cave", label: "Cave" },
   { value: "boite_aux_lettres", label: "Boîte aux lettres" },
   { value: "parking", label: "Parking" },
@@ -39,7 +42,8 @@ const TYPE_OPTIONS: { value: string; label: string }[] = [
 ];
 
 const TYPE_BADGE: Record<string, { color: string; bg: string }> = {
-  entree: { color: C.prussian, bg: C.prussianBg },
+  appartement: { color: C.prussian, bg: C.prussianBg },
+  entree: { color: C.signature, bg: C.prussianBg },
   cave: { color: "#7c5a3a", bg: "#f5edd9" },
   boite_aux_lettres: { color: C.purple, bg: C.purpleBg },
   parking: { color: C.text2, bg: C.surface2 },
@@ -226,7 +230,7 @@ function KeyCreateForm({
   pending: boolean;
 }) {
   const [form, setForm] = useState<BienKeyCreate>({
-    type: "entree",
+    type: "appartement",
     numero_badge: "",
     description: "",
   });
@@ -450,14 +454,17 @@ const cardValueStyle: React.CSSProperties = {
   fontWeight: 500,
 };
 
+// PR-A11.A.6.f — actions toujours visibles (D6 fix). Avant : opacity 0 +
+// révélé au :hover, ce qui les rendait inaccessibles sur tactile (mobile/
+// tablette n'ont pas de hover) et peu découvrables sur desktop. Les actions
+// sont maintenant rendues en permanence avec un fond semi-opaque.
 const cardActionsStyle: React.CSSProperties = {
   position: "absolute",
   top: 8,
   right: 8,
   display: "flex",
   gap: 4,
-  opacity: 0,
-  transition: "opacity 150ms ease",
+  opacity: 1,
 };
 
 const iconBtnStyle: React.CSSProperties = {
