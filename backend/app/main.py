@@ -21,6 +21,7 @@ from app.routers.bank_accounts import router as bank_accounts_router
 from app.routers.bien_annexes import router as bien_annexes_router
 from app.routers.bien_compteurs import router as bien_compteurs_router
 from app.routers.bien_contacts import router as bien_contacts_router
+from app.routers.bien_keys import router as bien_keys_router
 from app.routers.biens import router as biens_router
 from app.routers.catalogue import router as catalogue_router
 from app.routers.changements import router as changements_router
@@ -194,6 +195,7 @@ app.include_router(biens_router, prefix="/api/v1/biens", tags=["biens"])
 app.include_router(bien_annexes_router, prefix="/api/v1/biens", tags=["bien-annexes"])
 app.include_router(bien_contacts_router, prefix="/api/v1/biens", tags=["bien-contacts"])
 app.include_router(bien_compteurs_router, prefix="/api/v1/biens", tags=["bien-compteurs"])
+app.include_router(bien_keys_router, prefix="/api/v1/biens", tags=["bien-keys"])
 # ── Comptes bancaires utilisateur (PR-A11.A.6.b) ─────────────────────────────
 app.include_router(bank_accounts_router, prefix="/api/v1/users", tags=["bank-accounts"])
 app.include_router(catalogue_router, prefix="/api/v1/catalogue", tags=["catalogue"])
