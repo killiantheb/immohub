@@ -43,7 +43,8 @@ type TabId =
   | "technique"
   | "location"
   | "contacts"
-  | "fiscalite";
+  | "fiscalite"
+  | "description";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "identite", label: "Identité" },
@@ -52,7 +53,8 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "technique", label: "Caractéristiques techniques" },
   { id: "location", label: "Conditions location" },
   { id: "contacts", label: "Contacts" },
-  { id: "fiscalite", label: "Fiscalité & Description" },
+  { id: "fiscalite", label: "Fiscalité" },
+  { id: "description", label: "Description publique" },
 ];
 
 interface Props {
@@ -255,6 +257,8 @@ function TabContent({
       return <ContactsSection bienId={bienId} />;
     case "fiscalite":
       return <TabFiscalite ctx={ctx} />;
+    case "description":
+      return <TabDescription ctx={ctx} />;
   }
 }
 
@@ -1024,11 +1028,21 @@ function TabFiscalite({ ctx }: { ctx: EditContext }) {
             tooltip="ECAB — Établissement Cantonal d'Assurance des Bâtiments. Valeur officielle d'assurance du bâtiment, indispensable en cas de sinistre."
           />
           {/* prix_acquisition, date_acquisition, taux_hypothecaire,
-              hypotheque_montant reportés sprint compléments (champs
-              absents du modèle DB en 6.a). */}
+              hypotheque_montant, valeur_fiscale, impot_foncier,
+              date_derniers_travaux, etat reportés sprint compléments
+              (champs absents du modèle DB Phase 1). */}
         </Grid>
       </Section>
+    </div>
+  );
+}
 
+// ── Tab 8 : Description publique ────────────────────────────────────────────
+
+function TabDescription({ ctx }: { ctx: EditContext }) {
+  const { bien } = ctx;
+  return (
+    <div style={tabContentStyle}>
       <Section title="Description publique">
         <TextareaField
           label="Description publique (annonce)"
@@ -1036,6 +1050,7 @@ function TabFiscalite({ ctx }: { ctx: EditContext }) {
           value={bien.description_publique}
           rows={4}
           ctx={ctx}
+          tooltip="Texte affiché sur l'annonce publique du bien. Doit séduire les locataires potentiels — l'IA peut le générer depuis les caractéristiques."
         />
         <TextareaField
           label="Points forts"
@@ -1043,6 +1058,7 @@ function TabFiscalite({ ctx }: { ctx: EditContext }) {
           value={bien.points_forts}
           rows={3}
           ctx={ctx}
+          tooltip="Liste à puces des atouts du bien (vue, calme, équipements, etc.) mise en avant dans les annonces."
         />
       </Section>
 
@@ -1053,6 +1069,7 @@ function TabFiscalite({ ctx }: { ctx: EditContext }) {
           value={bien.description_lieu}
           rows={3}
           ctx={ctx}
+          tooltip="Notes internes sur le quartier, le voisinage, l'environnement. Non publié."
         />
         <TextareaField
           label="Description du logement"
@@ -1060,6 +1077,7 @@ function TabFiscalite({ ctx }: { ctx: EditContext }) {
           value={bien.description_logement}
           rows={3}
           ctx={ctx}
+          tooltip="Notes internes sur l'état réel du logement, particularités. Non publié."
         />
         <TextareaField
           label="Remarques internes"
@@ -1067,6 +1085,7 @@ function TabFiscalite({ ctx }: { ctx: EditContext }) {
           value={bien.remarques}
           rows={2}
           ctx={ctx}
+          tooltip="Notes libres pour vous-même ou votre régie. Non publié."
         />
       </Section>
     </div>
@@ -1426,10 +1445,12 @@ function Section({
   title: string;
   children: React.ReactNode;
 }) {
+  // Pas de marginBottom : le tabContentStyle gère l'espacement (gap: 32px)
+  // entre sections, conformément à la doctrine DA scientifique.
   return (
-    <div style={{ marginBottom: 28 }}>
+    <div>
       <h3 style={sectionTitleStyle}>{title}</h3>
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         {children}
       </div>
     </div>
@@ -1441,8 +1462,8 @@ function Grid({ children }: { children: React.ReactNode }) {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: 14,
+        gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+        gap: 20,
       }}
     >
       {children}
@@ -1455,8 +1476,8 @@ function ToggleGrid({ children }: { children: React.ReactNode }) {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: 8,
+        gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+        gap: 10,
       }}
     >
       {children}
@@ -1486,9 +1507,15 @@ const shellStyle: React.CSSProperties = {
   overflow: "hidden",
 };
 
+// ── Spacing & typo (PR-A11.A.6.f) ──────────────────────────────────────────
+// Doctrine 3-ARCHITECTURE §3.6 : base 15px html. Cible UX double grand-père
+// ↔ Bernard Nicod : lisibilité prioritaire sur densité. Padding modale
+// 32px desktop / 20px mobile, sections espacées de 32px, line-height 1.5
+// sur le body (cohérent doctrine DA scientifique).
+
 const headerStyle: React.CSSProperties = {
   flexShrink: 0,
-  padding: "18px 28px",
+  padding: "20px 32px",
   borderBottom: "1px solid var(--border-subtle)",
   display: "flex",
   justifyContent: "space-between",
@@ -1499,15 +1526,17 @@ const headerStyle: React.CSSProperties = {
 
 const titleStyle: React.CSSProperties = {
   fontFamily: "var(--font-serif)",
-  fontSize: 22,
+  fontSize: 24,
   color: C.prussian,
   margin: 0,
+  lineHeight: 1.3,
 };
 
 const subtitleStyle: React.CSSProperties = {
-  fontSize: 13,
+  fontSize: 14,
   color: C.text3,
-  margin: "2px 0 0",
+  margin: "4px 0 0",
+  lineHeight: 1.5,
 };
 
 const closeBtnStyle: React.CSSProperties = {
@@ -1525,17 +1554,17 @@ const tabsNavStyle: React.CSSProperties = {
   display: "flex",
   overflowX: "auto",
   borderBottom: "1px solid var(--border-subtle)",
-  padding: "0 28px",
+  padding: "0 32px",
   background: "#fff",
 };
 
 const tabBtnStyle: React.CSSProperties = {
   flexShrink: 0,
-  padding: "12px 16px",
+  padding: "14px 18px",
   background: "transparent",
   border: "none",
   borderBottom: "2px solid transparent",
-  fontSize: 13,
+  fontSize: 14,
   fontFamily: "inherit",
   cursor: "pointer",
   whiteSpace: "nowrap",
@@ -1544,23 +1573,27 @@ const tabBtnStyle: React.CSSProperties = {
 const bodyStyle: React.CSSProperties = {
   flex: 1,
   overflowY: "auto",
-  padding: "24px 28px",
+  padding: "32px",
   background: "#fff",
 };
 
 const tabContentStyle: React.CSSProperties = {
-  maxWidth: 880,
+  maxWidth: 920,
   margin: "0 auto",
+  display: "flex",
+  flexDirection: "column",
+  gap: 32,
 };
 
 const sectionTitleStyle: React.CSSProperties = {
   fontFamily: "var(--font-serif)",
-  fontSize: 18,
+  fontSize: 20,
   color: C.text,
-  margin: "0 0 12px",
-  paddingBottom: 8,
+  margin: "0 0 20px",
+  paddingBottom: 10,
   borderBottom: `1px solid ${C.border}`,
   fontWeight: 400,
+  lineHeight: 1.35,
 };
 
 const fieldLabelWrapStyle: React.CSSProperties = {
@@ -1569,14 +1602,14 @@ const fieldLabelWrapStyle: React.CSSProperties = {
 };
 
 const chargesHelpStyle: React.CSSProperties = {
-  fontSize: 13,
+  fontSize: 14,
   color: C.text2,
-  margin: "0 0 14px",
-  lineHeight: 1.5,
+  margin: "0 0 20px",
+  lineHeight: 1.55,
 };
 
 const chargesGroupStyle: React.CSSProperties = {
-  marginTop: 12,
+  marginTop: 18,
 };
 
 const chargesGroupTitleStyle: React.CSSProperties = {
@@ -1585,7 +1618,7 @@ const chargesGroupTitleStyle: React.CSSProperties = {
   color: C.prussian,
   textTransform: "uppercase",
   letterSpacing: "0.05em",
-  margin: "0 0 8px",
+  margin: "0 0 10px",
 };
 
 const fieldReadButtonStyle: React.CSSProperties = {
@@ -1593,22 +1626,23 @@ const fieldReadButtonStyle: React.CSSProperties = {
   textAlign: "left",
   background: "transparent",
   border: `1px solid transparent`,
-  borderRadius: 6,
-  padding: "8px 10px",
+  borderRadius: 8,
+  padding: "10px 12px",
   cursor: "pointer",
   fontFamily: "inherit",
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
   gap: 8,
-  minHeight: 36,
+  minHeight: 42,
   transition: "background 150ms ease, border-color 150ms ease",
 };
 
 const fieldReadValueStyle: React.CSSProperties = {
-  fontSize: 14,
+  fontSize: 15,
   color: C.text,
   flex: 1,
+  lineHeight: 1.5,
 };
 
 const fieldEditingWrapStyle: React.CSSProperties = {
@@ -1623,12 +1657,13 @@ const inlineInputStyle: React.CSSProperties = {
   width: "100%",
   background: "#fff",
   border: `1px solid ${C.prussian}`,
-  borderRadius: 6,
-  padding: "7px 10px",
-  fontSize: 14,
+  borderRadius: 8,
+  padding: "9px 12px",
+  fontSize: 15,
   color: C.text,
   fontFamily: "inherit",
   outline: "none",
+  lineHeight: 1.5,
 };
 
 const iconBtnInlineStyle: React.CSSProperties = {
@@ -1645,21 +1680,23 @@ const toggleLabelStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  fontSize: 14,
+  fontSize: 15,
   color: C.text2,
-  padding: "6px 10px",
+  padding: "10px 12px",
+  lineHeight: 1.5,
 };
 
 const errorMsgStyle: React.CSSProperties = {
   fontSize: 12,
   color: C.red,
   margin: "4px 10px 0",
+  lineHeight: 1.4,
 };
 
 const loadingStyle: React.CSSProperties = {
-  fontSize: 13,
+  fontSize: 14,
   color: C.text3,
   textAlign: "center",
-  padding: 32,
+  padding: 40,
   margin: 0,
 };
