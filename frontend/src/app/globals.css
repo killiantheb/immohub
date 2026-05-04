@@ -315,8 +315,17 @@
 .annexe-card:hover .annexe-card-actions,
 .contact-card:hover .contact-card-actions,
 .compteur-card:hover .compteur-card-actions,
+.key-card:hover .key-card-actions,
 .bank-account-card:hover .bank-account-card-actions {
   opacity: 1;
+}
+
+/* FieldLabel tooltip (PR-A11.A.6.d) — hover/focus révèle l'explication. */
+.althy-field-label__icon:hover .althy-field-label__tooltip,
+.althy-field-label__icon:focus-visible .althy-field-label__tooltip {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 140ms ease, visibility 0s linear 0s;
 }
 
 /* Mode édition inline d'un champ Caractéristiques — fond bleu pâle subtil. */
