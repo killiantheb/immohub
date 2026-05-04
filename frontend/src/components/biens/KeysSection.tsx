@@ -13,7 +13,7 @@
  */
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { useState } from "react";
 import {
   useBienKeys,
@@ -28,27 +28,40 @@ interface Props {
   bienId: string;
 }
 
+// PR-A11.A.6.h — 14 types métier (retour terrain agence immobilière suisse).
 const TYPE_OPTIONS: { value: string; label: string }[] = [
-  // PR-A11.A.6.f : appartement ajouté en première position (default le plus
-  // courant — la clé du logement lui-même).
   { value: "appartement", label: "Appartement" },
-  { value: "entree", label: "Entrée immeuble" },
-  { value: "cave", label: "Cave" },
+  { value: "immeuble", label: "Immeuble (entrée principale)" },
   { value: "boite_aux_lettres", label: "Boîte aux lettres" },
-  { value: "parking", label: "Parking" },
-  { value: "garage", label: "Garage" },
-  { value: "cadenas", label: "Cadenas" },
+  { value: "cave_acces", label: "Porte d'accès cave" },
+  { value: "cave_personnelle", label: "Cave personnelle" },
+  { value: "buanderie", label: "Buanderie" },
+  { value: "machine_laver_badge", label: "Badge machine à laver" },
+  { value: "garage_bippeur", label: "Bippeur garage" },
+  { value: "garage_porte", label: "Porte garage manuelle" },
+  { value: "ski_room", label: "Ski room / casier à ski" },
+  { value: "ski_room_acces", label: "Porte d'accès ski room" },
+  { value: "chaufferie", label: "Chaufferie / local technique" },
+  { value: "carte_securite_protegee", label: "Carte de sécurité (protégée)" },
   { value: "autre", label: "Autre" },
 ];
 
+// 5 catégories visuelles : appartement (Bleu de Prusse) / immeuble (Or) /
+// cave-buanderie (brun) / garage (violet) / ski (bleu clair) / autre (gris).
 const TYPE_BADGE: Record<string, { color: string; bg: string }> = {
   appartement: { color: C.prussian, bg: C.prussianBg },
-  entree: { color: C.signature, bg: C.prussianBg },
-  cave: { color: "#7c5a3a", bg: "#f5edd9" },
-  boite_aux_lettres: { color: C.purple, bg: C.purpleBg },
-  parking: { color: C.text2, bg: C.surface2 },
-  garage: { color: C.text2, bg: C.surface2 },
-  cadenas: { color: C.amber, bg: C.amberBg },
+  immeuble: { color: C.gold, bg: C.goldBg },
+  boite_aux_lettres: { color: C.text2, bg: C.surface2 },
+  cave_acces: { color: "#7c5a3a", bg: "#f5edd9" },
+  cave_personnelle: { color: "#7c5a3a", bg: "#f5edd9" },
+  buanderie: { color: "#7c5a3a", bg: "#f5edd9" },
+  machine_laver_badge: { color: "#7c5a3a", bg: "#f5edd9" },
+  garage_bippeur: { color: C.purple, bg: C.purpleBg },
+  garage_porte: { color: C.purple, bg: C.purpleBg },
+  ski_room: { color: C.blue, bg: C.blueBg },
+  ski_room_acces: { color: C.blue, bg: C.blueBg },
+  chaufferie: { color: C.amber, bg: C.amberBg },
+  carte_securite_protegee: { color: C.red, bg: C.redBg },
   autre: { color: C.text3, bg: C.surface2 },
 };
 
@@ -188,9 +201,36 @@ function KeyCard({
           N° badge <span style={cardValueStyle}>{bienKey.numero_badge}</span>
         </p>
       )}
+      {bienKey.code_grave && (
+        <p style={{ ...cardLabelStyle, fontStyle: "italic" }}>
+          Code gravé <span style={cardValueStyle}>{bienKey.code_grave}</span>
+        </p>
+      )}
       {bienKey.description && (
         <p style={{ ...cardLabelStyle, color: C.text2 }}>
           {bienKey.description}
+        </p>
+      )}
+      {bienKey.carte_securite && (
+        <p
+          style={{
+            ...cardLabelStyle,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            color: C.green,
+          }}
+          title={
+            bienKey.numero_carte_securite
+              ? `Carte de sécurité N° ${bienKey.numero_carte_securite}`
+              : "Carte de sécurité fournie"
+          }
+        >
+          <ShieldCheck size={12} />
+          <span>
+            Carte sécu
+            {bienKey.numero_carte_securite ? ` · ${bienKey.numero_carte_securite}` : ""}
+          </span>
         </p>
       )}
 
@@ -233,6 +273,9 @@ function KeyCreateForm({
     type: "appartement",
     numero_badge: "",
     description: "",
+    code_grave: "",
+    carte_securite: false,
+    numero_carte_securite: "",
   });
 
   return (
@@ -244,6 +287,11 @@ function KeyCreateForm({
           type: form.type,
           numero_badge: form.numero_badge?.trim() || null,
           description: form.description?.trim() || null,
+          code_grave: form.code_grave?.trim() || null,
+          carte_securite: !!form.carte_securite,
+          numero_carte_securite: form.carte_securite
+            ? form.numero_carte_securite?.trim() || null
+            : null,
         });
       }}
       pending={pending}
@@ -270,6 +318,9 @@ function KeyEditForm({
     type: bienKey.type,
     numero_badge: bienKey.numero_badge ?? "",
     description: bienKey.description ?? "",
+    code_grave: bienKey.code_grave ?? "",
+    carte_securite: bienKey.carte_securite ?? false,
+    numero_carte_securite: bienKey.numero_carte_securite ?? "",
   });
 
   return (
@@ -283,6 +334,11 @@ function KeyEditForm({
             type: form.type,
             numero_badge: form.numero_badge?.trim() || null,
             description: form.description?.trim() || null,
+            code_grave: form.code_grave?.trim() || null,
+            carte_securite: !!form.carte_securite,
+            numero_carte_securite: form.carte_securite
+              ? form.numero_carte_securite?.trim() || null
+              : null,
           },
         });
         onSaved();
@@ -383,6 +439,16 @@ function FormFields({
         </div>
       </div>
       <div>
+        <label style={fieldLabelStyle}>Code gravé sur la clé (optionnel)</label>
+        <input
+          type="text"
+          value={form.code_grave ?? ""}
+          onChange={(e) => set("code_grave", e.target.value)}
+          placeholder="Ex : ABC123 — pour refabrication chez serrurier"
+          style={inputStyle}
+        />
+      </div>
+      <div>
         <label style={fieldLabelStyle}>Description (optionnel)</label>
         <input
           type="text"
@@ -392,6 +458,27 @@ function FormFields({
           style={inputStyle}
         />
       </div>
+      <label style={toggleRowStyle}>
+        <input
+          type="checkbox"
+          checked={!!form.carte_securite}
+          onChange={(e) => set("carte_securite", e.target.checked)}
+          style={{ marginRight: 8, accentColor: C.prussian }}
+        />
+        <span>Carte de sécurité fournie (Mul-T-Lock / Kaba / Assa)</span>
+      </label>
+      {form.carte_securite && (
+        <div>
+          <label style={fieldLabelStyle}>Numéro de la carte de sécurité</label>
+          <input
+            type="text"
+            value={form.numero_carte_securite ?? ""}
+            onChange={(e) => set("numero_carte_securite", e.target.value)}
+            placeholder="N° officiel inscrit sur la carte"
+            style={inputStyle}
+          />
+        </div>
+      )}
     </>
   );
 }
@@ -437,10 +524,23 @@ const emptyStyle: React.CSSProperties = {
   fontStyle: "italic",
 };
 
+// PR-A11.A.6.h — Layout grille 3 colonnes desktop / 2 tablette / 1 mobile.
+// Si > 9 clés, scroll vertical DANS la grille (max-height 500px) — extension
+// de la Règle 8 (scroll OK dans une liste, KO entre catégories).
 const gridStyle: React.CSSProperties = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-  gap: 10,
+  gap: 12,
+  maxHeight: 540,
+  overflowY: "auto",
+};
+
+const toggleRowStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  fontSize: 13,
+  color: C.text2,
+  cursor: "pointer",
 };
 
 const cardLabelStyle: React.CSSProperties = {

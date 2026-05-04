@@ -293,14 +293,22 @@ export interface BienDetail extends Bien {
   keys?: BienKey[];
 }
 
-// ── PR-A11.A.6.d — Clés / badges / cadenas physiques ──────────────────────
+// ── PR-A11.A.6.d / .h — Clés / badges / cadenas physiques ─────────────────
+// 14 types métier (sprint 6.h, retour terrain agence immobilière suisse).
 export type BienKeyType =
-  | "entree"
-  | "cave"
+  | "appartement"
+  | "immeuble"
   | "boite_aux_lettres"
-  | "parking"
-  | "garage"
-  | "cadenas"
+  | "cave_acces"
+  | "cave_personnelle"
+  | "buanderie"
+  | "machine_laver_badge"
+  | "garage_bippeur"
+  | "garage_porte"
+  | "ski_room"
+  | "ski_room_acces"
+  | "chaufferie"
+  | "carte_securite_protegee"
   | "autre";
 
 export interface BienKey {
@@ -309,6 +317,12 @@ export interface BienKey {
   type: BienKeyType | string;
   numero_badge?: string | null;
   description?: string | null;
+  /** PR-A11.A.6.h — code gravé sur la clé pour refabrication chez serrurier. */
+  code_grave?: string | null;
+  /** PR-A11.A.6.h — présence d'une carte de sécurité brevetée (Mul-T-Lock / Kaba / Assa). */
+  carte_securite?: boolean;
+  /** PR-A11.A.6.h — n° de la carte de sécurité (visible si carte_securite=true). */
+  numero_carte_securite?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -317,6 +331,9 @@ export interface BienKeyCreate {
   type: BienKeyType | string;
   numero_badge?: string | null;
   description?: string | null;
+  code_grave?: string | null;
+  carte_securite?: boolean;
+  numero_carte_securite?: string | null;
 }
 
 export type BienKeyUpdate = Partial<BienKeyCreate>;
