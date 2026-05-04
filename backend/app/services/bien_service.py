@@ -22,9 +22,8 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 import httpx
-
-logger = logging.getLogger(__name__)
 from app.core.config import settings
+from app.core.crypto import decrypt_field, encrypt_field
 from app.models.audit_log import AuditLog
 from app.models.bien import (
     Bien,
@@ -33,6 +32,7 @@ from app.models.bien import (
     BienImage,
     CatalogueEquipement,
 )
+from app.models.bien_key import BienKey
 from app.models.intervention import Intervention
 from app.models.locataire import Locataire
 from app.models.paiement import Paiement
@@ -43,6 +43,7 @@ from app.schemas.bien import (
     BienDocumentRead,
     BienImageRead,
     BienImageUpdate,
+    BienKeyRead,
     BienListItem,
     BienRead,
     BienUpdate,
@@ -59,6 +60,8 @@ from app.schemas.bien import (
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import extract, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from app.models.user import User
@@ -211,12 +214,16 @@ class BienService:
         if rows:
             bien_ids = [r.id for r in rows]
             img_rows = (
-                await self.db.execute(
-                    select(BienImage)
-                    .where(BienImage.bien_id.in_(bien_ids))
-                    .order_by(BienImage.bien_id, BienImage.order)
+                (
+                    await self.db.execute(
+                        select(BienImage)
+                        .where(BienImage.bien_id.in_(bien_ids))
+                        .order_by(BienImage.bien_id, BienImage.order)
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             for img in img_rows:
                 imgs_by_bien[img.bien_id].append(BienImageRead.model_validate(img))
 
@@ -241,7 +248,8 @@ class BienService:
     async def create(self, payload: BienCreate, current_user: User) -> Bien:
         if current_user.role not in MANAGER_ROLES:
             raise HTTPException(
-                status.HTTP_403_FORBIDDEN, "Seuls les propriétaires et agences peuvent créer un bien"
+                status.HTTP_403_FORBIDDEN,
+                "Seuls les propriétaires et agences peuvent créer un bien",
             )
 
         uid = current_user.id
@@ -252,6 +260,13 @@ class BienService:
             detected = await get_canton_from_cp(self.db, data["cp"])
             if detected:
                 data["canton"] = detected
+
+        # Code digicode : chiffré at-rest avant persistance (PR-A11.A.6.d).
+        # Le schema expose `code_digicode` clair côté API ; le modèle stocke
+        # `code_digicode_encrypted` côté DB.
+        plain_digicode = data.pop("code_digicode", None)
+        if plain_digicode:
+            data["code_digicode_encrypted"] = encrypt_field(plain_digicode)
 
         bien = Bien(
             **data,
@@ -278,50 +293,72 @@ class BienService:
 
         # Images
         img_rows = (
-            await self.db.execute(
-                select(BienImage)
-                .where(BienImage.bien_id == bien.id)
-                .order_by(BienImage.order)
+            (
+                await self.db.execute(
+                    select(BienImage).where(BienImage.bien_id == bien.id).order_by(BienImage.order)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         # Documents
         doc_rows = (
-            await self.db.execute(
-                select(BienDocument).where(BienDocument.bien_id == bien.id)
-            )
-        ).scalars().all()
+            (await self.db.execute(select(BienDocument).where(BienDocument.bien_id == bien.id)))
+            .scalars()
+            .all()
+        )
 
         # Équipements (via jonction + catalogue)
         eq_rows = (
-            await self.db.execute(
-                select(CatalogueEquipement)
-                .join(BienEquipement, BienEquipement.equipement_id == CatalogueEquipement.id)
-                .where(BienEquipement.bien_id == bien.id)
-                .order_by(CatalogueEquipement.ordre_affichage)
+            (
+                await self.db.execute(
+                    select(CatalogueEquipement)
+                    .join(BienEquipement, BienEquipement.equipement_id == CatalogueEquipement.id)
+                    .where(BienEquipement.bien_id == bien.id)
+                    .order_by(CatalogueEquipement.ordre_affichage)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
+
+        # Clés / badges actifs (PR-A11.A.6.d) — table 1:N avec soft delete
+        key_rows = (
+            (
+                await self.db.execute(
+                    select(BienKey)
+                    .where(BienKey.bien_id == bien.id, BienKey.is_active.is_(True))
+                    .order_by(BienKey.created_at)
+                )
+            )
+            .scalars()
+            .all()
+        )
 
         detail = BienDetail.model_validate(bien)
         detail.images = [BienImageRead.model_validate(r) for r in img_rows]
         detail.documents = [BienDocumentRead.model_validate(r) for r in doc_rows]
         detail.equipements = [CatalogueEquipementRead.model_validate(r) for r in eq_rows]
+        detail.keys = [BienKeyRead.model_validate(k) for k in key_rows]
+        # Déchiffrement à la lecture détail (pas exposé en liste paginée).
+        detail.code_digicode = decrypt_field(bien.code_digicode_encrypted)
         return detail
 
     # ─────────────────────────────────────────────────────────────────────────
     # Update
     # ─────────────────────────────────────────────────────────────────────────
 
-    async def update(
-        self, bien_id: str, payload: BienUpdate, current_user: User
-    ) -> Bien | None:
+    async def update(self, bien_id: str, payload: BienUpdate, current_user: User) -> Bien | None:
         bien = await self._get(bien_id)
         if bien is None:
             return None
         if not _can_write(bien, current_user):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Modification refusée")
 
-        old = {k: getattr(bien, k) for k in payload.model_fields}
+        # Snapshot avant — exclut `code_digicode` (champ schema-only, pas
+        # un attribut SQLAlchemy ; valeur en clair non loggée pour nLPD).
+        old = {k: getattr(bien, k) for k in payload.model_fields if k != "code_digicode"}
         data = payload.model_dump(exclude_unset=True)
 
         # Si on change le CP et pas le canton explicitement → re-derive canton
@@ -330,13 +367,21 @@ class BienService:
             if detected:
                 data["canton"] = detected
 
+        # Code digicode : chiffrement at-rest. Une valeur vide ("" ou None)
+        # explicite efface le digicode stocké.
+        if "code_digicode" in data:
+            plain_digicode = data.pop("code_digicode")
+            bien.code_digicode_encrypted = encrypt_field(plain_digicode)
+
         for field, value in data.items():
             setattr(bien, field, value)
 
         await self.db.flush()
         await self.db.refresh(bien)
         await self._log(
-            current_user, "update", str(bien.id),
+            current_user,
+            "update",
+            str(bien.id),
             old_values={k: _serializable(v) for k, v in old.items()},
             new_values={k: _serializable(v) for k, v in data.items()},
         )
@@ -469,19 +514,21 @@ class BienService:
         )
 
         count = (
-            await self.db.execute(
-                select(func.count()).where(BienImage.bien_id == bien.id)
-            )
+            await self.db.execute(select(func.count()).where(BienImage.bien_id == bien.id))
         ).scalar_one()
 
         if is_cover:
             covers = (
-                await self.db.execute(
-                    select(BienImage).where(
-                        BienImage.bien_id == bien.id, BienImage.is_cover.is_(True)
+                (
+                    await self.db.execute(
+                        select(BienImage).where(
+                            BienImage.bien_id == bien.id, BienImage.is_cover.is_(True)
+                        )
                     )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             for c in covers:
                 c.is_cover = False
 
@@ -536,14 +583,18 @@ class BienService:
         # explicitement, on l'applique tel quel sans toucher aux autres.
         if data.get("is_cover") is True:
             other_covers = (
-                await self.db.execute(
-                    select(BienImage).where(
-                        BienImage.bien_id == bien.id,
-                        BienImage.id != image_id,
-                        BienImage.is_cover.is_(True),
+                (
+                    await self.db.execute(
+                        select(BienImage).where(
+                            BienImage.bien_id == bien.id,
+                            BienImage.id != image_id,
+                            BienImage.is_cover.is_(True),
+                        )
                     )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             for c in other_covers:
                 c.is_cover = False
 
@@ -580,10 +631,10 @@ class BienService:
             )
 
         existing = (
-            await self.db.execute(
-                select(BienImage).where(BienImage.bien_id == bien.id)
-            )
-        ).scalars().all()
+            (await self.db.execute(select(BienImage).where(BienImage.bien_id == bien.id)))
+            .scalars()
+            .all()
+        )
         existing_by_id: dict[uuid.UUID, BienImage] = {img.id: img for img in existing}
 
         existing_ids: set[uuid.UUID] = set(existing_by_id.keys())
@@ -609,12 +660,14 @@ class BienService:
         await self.db.flush()
 
         rows = (
-            await self.db.execute(
-                select(BienImage)
-                .where(BienImage.bien_id == bien.id)
-                .order_by(BienImage.order)
+            (
+                await self.db.execute(
+                    select(BienImage).where(BienImage.bien_id == bien.id).order_by(BienImage.order)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return [BienImageRead.model_validate(r) for r in rows]
 
     async def delete_image(
@@ -707,12 +760,16 @@ class BienService:
         # Valider que tous les equipement_ids existent
         if equipement_ids:
             existing = (
-                await self.db.execute(
-                    select(CatalogueEquipement.id).where(
-                        CatalogueEquipement.id.in_(equipement_ids)
+                (
+                    await self.db.execute(
+                        select(CatalogueEquipement.id).where(
+                            CatalogueEquipement.id.in_(equipement_ids)
+                        )
                     )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
             existing_set = set(existing)
             unknown = [str(eid) for eid in equipement_ids if eid not in existing_set]
             if unknown:
@@ -735,13 +792,17 @@ class BienService:
 
         # Relire la liste triée
         rows = (
-            await self.db.execute(
-                select(CatalogueEquipement)
-                .join(BienEquipement, BienEquipement.equipement_id == CatalogueEquipement.id)
-                .where(BienEquipement.bien_id == bien.id)
-                .order_by(CatalogueEquipement.ordre_affichage)
+            (
+                await self.db.execute(
+                    select(CatalogueEquipement)
+                    .join(BienEquipement, BienEquipement.equipement_id == CatalogueEquipement.id)
+                    .where(BienEquipement.bien_id == bien.id)
+                    .order_by(CatalogueEquipement.ordre_affichage)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         return [CatalogueEquipementRead.model_validate(r) for r in rows]
 
@@ -769,13 +830,17 @@ class BienService:
         if not self._can_read(bien, current_user):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
         rows = (
-            await self.db.execute(
-                select(CatalogueEquipement)
-                .join(BienEquipement, BienEquipement.equipement_id == CatalogueEquipement.id)
-                .where(BienEquipement.bien_id == bien.id)
-                .order_by(CatalogueEquipement.ordre_affichage)
+            (
+                await self.db.execute(
+                    select(CatalogueEquipement)
+                    .join(BienEquipement, BienEquipement.equipement_id == CatalogueEquipement.id)
+                    .where(BienEquipement.bien_id == bien.id)
+                    .order_by(CatalogueEquipement.ordre_affichage)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return [CatalogueEquipementRead.model_validate(r) for r in rows]
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -789,16 +854,20 @@ class BienService:
         # Cast to str unconditionally to keep both call sites (UUID + str) working.
         bien_id_str = str(bien_id)
         rows = (
-            await self.db.execute(
-                select(AuditLog)
-                .where(
-                    AuditLog.resource_type == "bien",
-                    AuditLog.resource_id == bien_id_str,
+            (
+                await self.db.execute(
+                    select(AuditLog)
+                    .where(
+                        AuditLog.resource_type == "bien",
+                        AuditLog.resource_id == bien_id_str,
+                    )
+                    .order_by(AuditLog.created_at.desc())
+                    .limit(limit)
                 )
-                .order_by(AuditLog.created_at.desc())
-                .limit(limit)
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         return [AuditLogResponse.model_validate(r) for r in rows]
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -807,9 +876,7 @@ class BienService:
 
     async def generate_description(self, bien_id: str, current_user: User) -> str:
         if not settings.ANTHROPIC_API_KEY:
-            raise HTTPException(
-                status.HTTP_503_SERVICE_UNAVAILABLE, "Claude API non configurée"
-            )
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Claude API non configurée")
 
         bien = await self._get_or_404(bien_id)
         if not _can_write(bien, current_user):
@@ -862,7 +929,9 @@ class BienService:
         bien.description_logement = description
         await self.db.flush()
         await self._log(
-            current_user, "ai_description", str(bien.id),
+            current_user,
+            "ai_description",
+            str(bien.id),
             new_values={"description_logement": description},
         )
         return description
@@ -875,9 +944,7 @@ class BienService:
         if user.role == "super_admin":
             return True
         return (
-            bien.owner_id == user.id
-            or bien.created_by_id == user.id
-            or bien.agency_id == user.id
+            bien.owner_id == user.id or bien.created_by_id == user.id or bien.agency_id == user.id
         )
 
     async def _get(self, bien_id: uuid.UUID | str) -> Bien | None:
@@ -886,9 +953,7 @@ class BienService:
             bid = bien_id if isinstance(bien_id, uuid.UUID) else uuid.UUID(bien_id)
         except (ValueError, TypeError):
             return None
-        result = await self.db.execute(
-            select(Bien).where(Bien.id == bid, Bien.is_active.is_(True))
-        )
+        result = await self.db.execute(select(Bien).where(Bien.id == bid, Bien.is_active.is_(True)))
         return result.scalar_one_or_none()
 
     async def _get_or_404(self, bien_id: uuid.UUID | str) -> Bien:
@@ -902,9 +967,7 @@ class BienService:
     # n'ont pas besoin de load les relations lourdes comme images / documents)
     # ─────────────────────────────────────────────────────────────────────────
 
-    async def get_for_access_check(
-        self, bien_id: uuid.UUID | str, current_user: User
-    ) -> Bien:
+    async def get_for_access_check(self, bien_id: uuid.UUID | str, current_user: User) -> Bien:
         """SELECT minimal + check accès en une seule requête.
 
         Raise HTTPException 404 si introuvable, 403 si pas d'accès.
@@ -944,17 +1007,11 @@ class BienService:
         loyer_net_annuel = (loyer - charges) * 12
         valeur_mid = (valeur_min + valeur_max) / 2 if valeur_max > 0 else 1
 
-        rendement_brut = (
-            round((loyer * 12 / valeur_mid * 100), 2) if valeur_mid > 0 else 0.0
-        )
-        rendement_net = (
-            round((loyer_net_annuel / valeur_mid * 100), 2) if valeur_mid > 0 else 0.0
-        )
+        rendement_brut = round((loyer * 12 / valeur_mid * 100), 2) if valeur_mid > 0 else 0.0
+        rendement_net = round((loyer_net_annuel / valeur_mid * 100), 2) if valeur_mid > 0 else 0.0
 
         loyer_marche = round(loyer * 1.04, 0) if loyer > 0 else 0.0
-        ecart_marche_pct = (
-            round(((loyer_marche - loyer) / loyer * 100), 1) if loyer > 0 else 0.0
-        )
+        ecart_marche_pct = round(((loyer_marche - loyer) / loyer * 100), 1) if loyer > 0 else 0.0
 
         # Score investissement (0–10)
         score = 5.0
@@ -1054,9 +1111,7 @@ class BienService:
         loyer_brut_annuel = loyer_mensuel * 12
 
         # Coût total interventions année civile (somme cout, ignore NULL)
-        cout_query = select(
-            func.coalesce(func.sum(Intervention.cout), 0)
-        ).where(
+        cout_query = select(func.coalesce(func.sum(Intervention.cout), 0)).where(
             Intervention.bien_id == bien.id,
             extract("year", Intervention.created_at) == annee,
         )
@@ -1146,8 +1201,7 @@ class BienService:
         except Exception as exc:
             # Validation Pydantic échoue (champs manquants, types invalides, etc.).
             logger.error(
-                "Estim IA v2 — Pydantic validation failed for bien %s: %s: %s "
-                "| keys received: %s",
+                "Estim IA v2 — Pydantic validation failed for bien %s: %s: %s | keys received: %s",
                 bien.id,
                 type(exc).__name__,
                 exc,
@@ -1297,9 +1351,9 @@ class BienService:
         # aussi les ` du milieu si présents — pattern fragile).
         cleaned = raw.strip()
         if cleaned.startswith("```json"):
-            cleaned = cleaned[len("```json"):].lstrip()
+            cleaned = cleaned[len("```json") :].lstrip()
         elif cleaned.startswith("```"):
-            cleaned = cleaned[len("```"):].lstrip()
+            cleaned = cleaned[len("```") :].lstrip()
         if cleaned.endswith("```"):
             cleaned = cleaned[: -len("```")].rstrip()
         cleaned = cleaned.strip()
@@ -1337,9 +1391,7 @@ class BienService:
         valeur_m2 = (valeur_mid / surface) if surface > 0 else 0
         rendement_brut = round(loyer_an / valeur_mid * 100, 2) if valeur_mid > 0 else 0
         rendement_net = (
-            round((loyer_an - charges * 12) / valeur_mid * 100, 2)
-            if valeur_mid > 0
-            else 0
+            round((loyer_an - charges * 12) / valeur_mid * 100, 2) if valeur_mid > 0 else 0
         )
 
         location_neutre = lambda type_: EstimationLocation(  # noqa: E731
@@ -1357,8 +1409,7 @@ class BienService:
                 "permis communal) avant toute décision."
             ],
             recommandation=(
-                "Estimation indisponible — réessayer plus tard ou consulter "
-                "un expert local."
+                "Estimation indisponible — réessayer plus tard ou consulter un expert local."
             ),
         )
 
@@ -1412,12 +1463,9 @@ class BienService:
             ),
             points_forts=[],
             points_amelioration=[],
-            actions_recommandees=[
-                "Réessayer l'estimation IA dans quelques minutes."
-            ],
+            actions_recommandees=["Réessayer l'estimation IA dans quelques minutes."],
             prochaine_action_prioritaire=(
-                "Vérifier la disponibilité de l'API Anthropic et relancer "
-                "l'estimation."
+                "Vérifier la disponibilité de l'API Anthropic et relancer l'estimation."
             ),
             score_investissement=5,
             score_locatif=5,

@@ -178,6 +178,30 @@ class BienBase(BaseModel):
     description_publique: str | None = Field(default=None, max_length=10000)
     points_forts: str | None = Field(default=None, max_length=5000)
 
+    # ── Charges incluses dans le forfait (PR-A11.A.6.d) ──────────────────────
+    # Clauses contractuelles déclaratives par bien — distinct de ChargeLine
+    # (lignes comptables réelles, sprint 13-14).
+    charges_chauffage: bool = False
+    charges_eau_chaude: bool = False
+    charges_entretien_chaudiere: bool = False
+    charges_releves_compteurs: bool = False
+    charges_conciergerie: bool = False
+    charges_nettoyage_communs: bool = False
+    charges_produits_entretien: bool = False
+    charges_ascenseur: bool = False
+    charges_eclairage_communs: bool = False
+    charges_espaces_verts: bool = False
+    charges_deneigement: bool = False
+    charges_taxe_egouts: bool = False
+    charges_ordures: bool = False
+    charges_redevance_tv: bool = False
+
+    # ── Sécurité opérationnelle (PR-A11.A.6.d) ───────────────────────────────
+    # Code digicode immeuble : transmis EN CLAIR via API (Pydantic), chiffré
+    # at-rest par le service avant persistance dans `code_digicode_encrypted`
+    # côté Bien. La lecture déchiffre côté service.
+    code_digicode: str | None = Field(default=None, max_length=200)
+
 
 class BienCreate(BienBase):
     """Payload création — les champs obligatoires sont ceux de BienBase."""
@@ -295,6 +319,25 @@ class BienUpdate(BaseModel):
     description_publique: str | None = Field(default=None, max_length=10000)
     points_forts: str | None = Field(default=None, max_length=5000)
 
+    # ── Charges incluses dans le forfait (PR-A11.A.6.d) ──────────────────────
+    charges_chauffage: bool | None = None
+    charges_eau_chaude: bool | None = None
+    charges_entretien_chaudiere: bool | None = None
+    charges_releves_compteurs: bool | None = None
+    charges_conciergerie: bool | None = None
+    charges_nettoyage_communs: bool | None = None
+    charges_produits_entretien: bool | None = None
+    charges_ascenseur: bool | None = None
+    charges_eclairage_communs: bool | None = None
+    charges_espaces_verts: bool | None = None
+    charges_deneigement: bool | None = None
+    charges_taxe_egouts: bool | None = None
+    charges_ordures: bool | None = None
+    charges_redevance_tv: bool | None = None
+
+    # ── Sécurité opérationnelle (PR-A11.A.6.d) ───────────────────────────────
+    code_digicode: str | None = Field(default=None, max_length=200)
+
 
 class BienRead(BienBase):
     """Lecture d'un bien, avec champs systèmes."""
@@ -409,7 +452,7 @@ class BienListItem(BienRead):
 
 
 class BienDetail(BienRead):
-    """Détail complet : images + documents + équipements + sous-tables A11.A.6.a."""
+    """Détail complet : images + documents + équipements + sous-tables A11.A.6.a/d."""
 
     images: list[BienImageRead] = Field(default_factory=list)
     documents: list[BienDocumentRead] = Field(default_factory=list)
@@ -417,6 +460,7 @@ class BienDetail(BienRead):
     annexes: list[BienAnnexeRead] = Field(default_factory=list)
     contacts: list[BienContactRead] = Field(default_factory=list)
     compteurs: list[BienCompteurRead] = Field(default_factory=list)
+    keys: list[BienKeyRead] = Field(default_factory=list)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -469,6 +513,20 @@ class BienCompteurRead(BaseModel):
     date_releve_initial: date | None = None
     partage: str | None = None
     notes: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class BienKeyRead(BaseModel):
+    """Clé / badge / cadenas physique lié à un bien (PR-A11.A.6.d)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    bien_id: uuid.UUID
+    type: str
+    numero_badge: str | None = None
+    description: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -586,6 +644,26 @@ class BienCompteurUpdate(BaseModel):
     date_releve_initial: date | None = None
     partage: str | None = Field(default=None, max_length=20)
     notes: str | None = Field(default=None, max_length=10000)
+
+
+class BienKeyCreate(BaseModel):
+    """Création d'une clé / badge / cadenas (PR-A11.A.6.d).
+
+    `type` : possibles → entree / cave / boite_aux_lettres / parking /
+                          garage / cadenas / autre
+    """
+
+    type: str = Field(min_length=1, max_length=30)
+    numero_badge: str | None = Field(default=None, max_length=50)
+    description: str | None = Field(default=None, max_length=300)
+
+
+class BienKeyUpdate(BaseModel):
+    """PATCH partiel d'une clé / badge."""
+
+    type: str | None = Field(default=None, min_length=1, max_length=30)
+    numero_badge: str | None = Field(default=None, max_length=50)
+    description: str | None = Field(default=None, max_length=300)
 
 
 class BankAccountCreate(BaseModel):

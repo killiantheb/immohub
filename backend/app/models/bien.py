@@ -52,6 +52,7 @@ if TYPE_CHECKING:
     from app.models.bien_annexe import BienAnnexe
     from app.models.bien_compteur import BienCompteur
     from app.models.bien_contact import BienContact
+    from app.models.bien_key import BienKey
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -250,6 +251,57 @@ class Bien(BaseModel):
     description_publique: Mapped[str | None] = mapped_column(Text)
     points_forts: Mapped[str | None] = mapped_column(Text)
 
+    # ── Charges incluses dans le forfait (13) — PR-A11.A.6.d ────────────────
+    # Clauses contractuelles déclaratives par bien. Distinct de ChargeLine
+    # (lignes comptables réelles, sprint 13-14). Default false côté DB.
+    charges_chauffage: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    charges_eau_chaude: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    charges_entretien_chaudiere: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    charges_releves_compteurs: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    charges_conciergerie: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    charges_nettoyage_communs: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    charges_produits_entretien: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    charges_ascenseur: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    charges_eclairage_communs: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    charges_espaces_verts: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    charges_deneigement: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    charges_taxe_egouts: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    charges_ordures: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    charges_redevance_tv: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+
+    # ── Sécurité opérationnelle (1) — PR-A11.A.6.d ──────────────────────────
+    # Code digicode immeuble, chiffré at-rest via app.core.crypto (Fernet).
+    # nLPD §6.2 — donnée sensible (accès physique au bâtiment).
+    code_digicode_encrypted: Mapped[str | None] = mapped_column(Text)
+
     # ── Relations sous-tables (PR-A11.A.6.a) ────────────────────────────────
     annexes: Mapped[list[BienAnnexe]] = relationship(
         "BienAnnexe",
@@ -265,6 +317,12 @@ class Bien(BaseModel):
     )
     compteurs: Mapped[list[BienCompteur]] = relationship(
         "BienCompteur",
+        back_populates="bien",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    keys: Mapped[list[BienKey]] = relationship(
+        "BienKey",
         back_populates="bien",
         cascade="all, delete-orphan",
         lazy="selectin",

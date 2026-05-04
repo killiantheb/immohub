@@ -15,6 +15,7 @@ from app.models.bien import (
 from app.models.bien_annexe import BienAnnexe
 from app.models.bien_compteur import BienCompteur
 from app.models.bien_contact import BienContact
+from app.models.bien_key import BienKey
 from app.models.candidature import Candidature
 from app.models.company import Company, Quote
 from app.models.contract import Contract
@@ -51,6 +52,7 @@ __all__ = [
     "BienAnnexe",
     "BienContact",
     "BienCompteur",
+    "BienKey",
     "BankAccount",
     "Locataire",
     "DossierLocataire",

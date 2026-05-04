@@ -30,6 +30,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnnexesSection } from "./AnnexesSection";
 import { ContactsSection } from "./ContactsSection";
 import { CompteursSection } from "./CompteursSection";
+import { FieldLabel } from "./FieldLabel";
+import { KeysSection } from "./KeysSection";
 import { useBien, useUpdateBien } from "@/lib/hooks/useBiens";
 import type { BienDetail, BienUpdate } from "@/lib/types";
 import { C } from "@/lib/design-tokens";
@@ -240,7 +242,7 @@ function TabContent({
 }) {
   switch (tabId) {
     case "identite":
-      return <TabIdentite ctx={ctx} />;
+      return <TabIdentite ctx={ctx} bienId={bienId} />;
     case "localisation":
       return <TabLocalisation ctx={ctx} />;
     case "surface":
@@ -271,7 +273,7 @@ const TYPE_OPTIONS = [
   { value: "autre", label: "Autre" },
 ];
 
-function TabIdentite({ ctx }: { ctx: EditContext }) {
+function TabIdentite({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
   const { bien } = ctx;
   return (
     <div style={tabContentStyle}>
@@ -295,44 +297,63 @@ function TabIdentite({ ctx }: { ctx: EditContext }) {
         </Grid>
       </Section>
 
-      <Section title="Identifiants fédéraux suisses">
+      <Section title="Identifiants officiels">
         <Grid>
-          <Field label="EGID (n° fédéral bâtiment)" name="egid" value={bien.egid} type="number" ctx={ctx} />
-          <Field label="EWID (n° fédéral logement)" name="ewid" value={bien.ewid} type="number" ctx={ctx} />
           <Field
-            label="N° parcelle cadastrale"
+            label="Identifiant du bâtiment"
+            name="egid"
+            value={bien.egid}
+            type="number"
+            ctx={ctx}
+            tooltip="EGID — numéro officiel du bâtiment au Registre fédéral des bâtiments et logements (RegBL). Attribué par l'Office fédéral de la statistique."
+          />
+          <Field
+            label="Identifiant du logement"
+            name="ewid"
+            value={bien.ewid}
+            type="number"
+            ctx={ctx}
+            tooltip="EWID — numéro officiel du logement au Registre fédéral des bâtiments et logements (RegBL). Identifie un logement précis dans un bâtiment."
+          />
+          <Field
+            label="N° de parcelle (cadastre)"
             name="numero_parcelle"
             value={bien.numero_parcelle}
             ctx={ctx}
+            tooltip="Identifiant de la parcelle au cadastre cantonal. Visible sur les actes notariés et sur le portail cantonal du registre foncier."
           />
           <Field
-            label="N° lot PPE"
+            label="N° de lot copropriété"
             name="numero_lot_ppe"
             value={bien.numero_lot_ppe}
             ctx={ctx}
+            tooltip="PPE — Propriété Par Étages. Le lot identifie votre appartement à l'intérieur de la copropriété (visible sur l'acte de PPE)."
           />
           <Field
-            label="N° OFS commune"
+            label="N° de commune (officiel)"
             name="commune_ofs"
             value={bien.commune_ofs}
             type="number"
             ctx={ctx}
+            tooltip="Numéro OFS — chaque commune suisse a un numéro unique attribué par l'Office fédéral de la statistique."
           />
         </Grid>
       </Section>
 
       <Section title="Sécurité opérationnelle">
-        <Grid>
-          <Field
-            label="Nombre de clés"
-            name="keys_count"
-            value={bien.keys_count}
-            type="number"
-            ctx={ctx}
-          />
-          {/* keys_description, numero_badge, code_digicode reportés sprint
-              compléments (champs absents du modèle DB en 6.a). */}
-        </Grid>
+        <KeysSection bienId={bienId} />
+        <div style={{ marginTop: 18 }}>
+          <Grid>
+            <Field
+              label="Code digicode immeuble"
+              name="code_digicode"
+              value={bien.code_digicode}
+              type="password"
+              ctx={ctx}
+              tooltip="Code d'accès à l'immeuble (interphone, digicode portail). Stocké de manière sécurisée et chiffrée — visible uniquement par les personnes autorisées sur le bien."
+            />
+          </Grid>
+        </div>
       </Section>
     </div>
   );
@@ -447,8 +468,17 @@ function TabSurface({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
             value={bien.surface}
             type="number"
             ctx={ctx}
+            tooltip="Surface du logement réellement utilisable. Exclut les caves, balcons, combles non aménagés et terrasses extérieures."
           />
-          <Field label="Pièces" name="rooms" value={bien.rooms} type="number" step={0.5} ctx={ctx} />
+          <Field
+            label="Nombre de pièces"
+            name="rooms"
+            value={bien.rooms}
+            type="number"
+            step={0.5}
+            ctx={ctx}
+            tooltip="En Suisse romande, la cuisine compte comme une demi-pièce. Exemple : 3.5 pièces = 3 chambres + cuisine."
+          />
           <Field
             label="Chambres"
             name="bedrooms"
@@ -572,11 +602,12 @@ function TabTechnique({ ctx, bienId }: { ctx: EditContext; bienId: string }) {
             ctx={ctx}
           />
           <SelectField
-            label="Classe énergétique (DPE)"
+            label="Étiquette énergie"
             name="classe_energetique"
             value={bien.classe_energetique}
             options={DPE_OPTIONS}
             ctx={ctx}
+            tooltip="DPE / CECB — classe d'efficacité énergétique du bâtiment, de A (très efficace) à G (peu efficace). Information de plus en plus demandée pour les annonces de location."
           />
           <SelectField
             label="Type de chauffage"
@@ -744,32 +775,35 @@ function TabLocation({ ctx }: { ctx: EditContext }) {
             ctx={ctx}
           />
           <Field
-            label="Acompte charges (CHF)"
+            label="Provision charges mensuelle (CHF)"
             name="acompte_charges"
             value={bien.acompte_charges}
             type="number"
             step={0.01}
             ctx={ctx}
+            tooltip="Montant que le locataire verse chaque mois pour les charges, régularisé en fin d'année selon les frais réels (chauffage, conciergerie, ascenseur, etc.)."
           />
         </Grid>
       </Section>
 
-      <Section title="Caution">
+      <Section title="Garantie de loyer">
         <Grid>
           <Field
-            label="Montant caution (CHF)"
+            label="Garantie de loyer (CHF)"
             name="deposit"
             value={bien.deposit}
             type="number"
             step={0.01}
             ctx={ctx}
+            tooltip="Montant de la garantie de loyer déposée par le locataire. En Suisse, plafonné à 3 mois de loyer net (CO art. 257e)."
           />
           <SelectField
-            label="Type de caution"
+            label="Type de garantie"
             name="caution_type"
             value={bien.caution_type}
             options={CAUTION_TYPE_OPTIONS}
             ctx={ctx}
+            tooltip="Espèces (bloquées sur compte bancaire au nom du locataire, CO art. 257e), garantie bancaire (assurance type SwissCaution / GoCaution / Firstcaution), ou cautionnement (garant)."
           />
         </Grid>
       </Section>
@@ -777,25 +811,28 @@ function TabLocation({ ctx }: { ctx: EditContext }) {
       <Section title="Conditions du bail">
         <Grid>
           <Field
-            label="Disponibilité"
+            label="Disponible à partir du"
             name="disponibilite_date"
             value={bien.disponibilite_date}
             type="date"
             ctx={ctx}
+            tooltip="Date à partir de laquelle le bien est louable (libre, fin du bail précédent, fin des travaux, etc.)."
           />
           <Field
-            label="Durée minimale (mois)"
+            label="Durée minimale du bail (mois)"
             name="duree_minimale_mois"
             value={bien.duree_minimale_mois}
             type="number"
             ctx={ctx}
+            tooltip="Durée minimum d'engagement du locataire. Souvent 12 mois en Suisse romande."
           />
           <Field
-            label="Préavis (mois)"
+            label="Préavis de résiliation (mois)"
             name="preavis_mois"
             value={bien.preavis_mois}
             type="number"
             ctx={ctx}
+            tooltip="Délai que le locataire doit respecter pour résilier son bail. Souvent 3 mois en Suisse, à donner par lettre signée pour la fin d'un terme contractuel."
           />
           <SelectField
             label="Type de résidence"
@@ -813,6 +850,149 @@ function TabLocation({ ctx }: { ctx: EditContext }) {
           />
         </Grid>
       </Section>
+
+      <Section title="Charges incluses dans le forfait">
+        <p style={chargesHelpStyle}>
+          Cochez les postes de charges compris dans le forfait mensuel facturé
+          au locataire. Cette liste correspond aux clauses contractuelles du
+          bail — distincte du décompte annuel des charges réelles.
+        </p>
+
+        <ChargesGroup title="Chauffage et eau chaude">
+          <ToggleRow
+            label="Chauffage"
+            name="charges_chauffage"
+            value={bien.charges_chauffage}
+            ctx={ctx}
+            tooltip="Combustible : mazout, gaz, bois, pellets ou chauffage à distance. Inclut aussi l'énergie nécessaire aux pompes, brûleurs et ventilateurs."
+          />
+          <ToggleRow
+            label="Eau chaude sanitaire"
+            name="charges_eau_chaude"
+            value={bien.charges_eau_chaude}
+            ctx={ctx}
+            tooltip="Production d'eau chaude pour la cuisine et la salle de bain (boiler, chaudière commune, panneaux solaires)."
+          />
+          <ToggleRow
+            label="Entretien chaudière"
+            name="charges_entretien_chaudiere"
+            value={bien.charges_entretien_chaudiere}
+            ctx={ctx}
+            tooltip="Ramonage, contrôle du brûleur, analyses obligatoires, remplacement filtres et pièces d'usure."
+          />
+          <ToggleRow
+            label="Relevés des compteurs"
+            name="charges_releves_compteurs"
+            value={bien.charges_releves_compteurs}
+            ctx={ctx}
+            tooltip="Têtes thermostatiques, compteurs individuels de chaleur ou d'eau chaude, télérelève."
+          />
+        </ChargesGroup>
+
+        <ChargesGroup title="Conciergerie et entretien">
+          <ToggleRow
+            label="Conciergerie"
+            name="charges_conciergerie"
+            value={bien.charges_conciergerie}
+            ctx={ctx}
+            tooltip="Salaire du concierge (ou société de conciergerie) y compris charges sociales et assurances obligatoires."
+          />
+          <ToggleRow
+            label="Nettoyage des communs"
+            name="charges_nettoyage_communs"
+            value={bien.charges_nettoyage_communs}
+            ctx={ctx}
+            tooltip="Nettoyage des escaliers, du hall d'entrée, des vitres communes, ascenseur intérieur."
+          />
+          <ToggleRow
+            label="Produits d'entretien"
+            name="charges_produits_entretien"
+            value={bien.charges_produits_entretien}
+            ctx={ctx}
+            tooltip="Produits ménagers (savons, désinfectants, sacs), petit matériel, ampoules des communs."
+          />
+        </ChargesGroup>
+
+        <ChargesGroup title="Immeuble et espaces communs">
+          <ToggleRow
+            label="Ascenseur"
+            name="charges_ascenseur"
+            value={bien.charges_ascenseur}
+            ctx={ctx}
+            tooltip="Électricité de l'ascenseur + contrat d'entretien et de contrôles techniques périodiques."
+          />
+          <ToggleRow
+            label="Éclairage des communs"
+            name="charges_eclairage_communs"
+            value={bien.charges_eclairage_communs}
+            ctx={ctx}
+            tooltip="Couloirs, escaliers, caves, parking commun, abords immédiats de l'immeuble."
+          />
+          <ToggleRow
+            label="Espaces verts"
+            name="charges_espaces_verts"
+            value={bien.charges_espaces_verts}
+            ctx={ctx}
+            tooltip="Entretien du jardin, taille des haies, tonte de la pelouse, plantations saisonnières."
+          />
+          <ToggleRow
+            label="Déneigement"
+            name="charges_deneigement"
+            value={bien.charges_deneigement}
+            ctx={ctx}
+            tooltip="Déneigement des accès, salage en hiver, location éventuelle d'engin ou contrat saisonnier."
+          />
+        </ChargesGroup>
+
+        <ChargesGroup title="Taxes publiques et exploitation">
+          <ToggleRow
+            label="Taxe d'égouts (assainissement)"
+            name="charges_taxe_egouts"
+            value={bien.charges_taxe_egouts}
+            ctx={ctx}
+            tooltip="Taxe communale d'assainissement des eaux usées et eaux claires. Souvent calculée sur la consommation d'eau ou la surface du bien."
+          />
+          <ToggleRow
+            label="Ordures ménagères"
+            name="charges_ordures"
+            value={bien.charges_ordures}
+            ctx={ctx}
+            tooltip="Taxe communale de base sur les ordures + collecte / vidange (sacs taxés en sus selon la commune)."
+          />
+          <ToggleRow
+            label="Redevance TV / internet"
+            name="charges_redevance_tv"
+            value={bien.charges_redevance_tv}
+            ctx={ctx}
+            tooltip="Câble, fibre commune ou redevance Serafe — uniquement si l'abonnement est inclus dans le bail (rare en location pure)."
+          />
+        </ChargesGroup>
+      </Section>
+    </div>
+  );
+}
+
+// ── Helpers Charges incluses ────────────────────────────────────────────────
+
+function ChargesGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={chargesGroupStyle}>
+      <p style={chargesGroupTitleStyle}>{title}</p>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: 6,
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -826,20 +1006,22 @@ function TabFiscalite({ ctx }: { ctx: EditContext }) {
       <Section title="Fiscalité">
         <Grid>
           <Field
-            label="Valeur locative fiscale (CHF)"
+            label="Valeur locative (impôts)"
             name="valeur_locative_fiscale"
             value={bien.valeur_locative_fiscale}
             type="number"
             step={0.01}
             ctx={ctx}
+            tooltip="Valeur locative imposable utilisée pour le calcul de l'impôt sur le revenu si vous occupez le bien. Communiquée par l'administration fiscale cantonale."
           />
           <Field
-            label="Valeur ECAB / assurance bâtiment (CHF)"
+            label="Valeur assurance bâtiment (ECAB)"
             name="valeur_assurance_ecab"
             value={bien.valeur_assurance_ecab}
             type="number"
             step={0.01}
             ctx={ctx}
+            tooltip="ECAB — Établissement Cantonal d'Assurance des Bâtiments. Valeur officielle d'assurance du bâtiment, indispensable en cas de sinistre."
           />
           {/* prix_acquisition, date_acquisition, taux_hypothecaire,
               hypotheque_montant reportés sprint compléments (champs
@@ -899,6 +1081,8 @@ interface FieldCommonProps {
   label: string;
   name: string;
   ctx: EditContext;
+  /** Tooltip explicatif (pattern grand-père friendly — PR-A11.A.6.d). */
+  tooltip?: string;
 }
 
 function Field({
@@ -908,6 +1092,7 @@ function Field({
   ctx,
   type = "text",
   step,
+  tooltip,
 }: FieldCommonProps & {
   value: string | number | null | undefined;
   type?: "text" | "number" | "date" | "password";
@@ -955,7 +1140,9 @@ function Field({
 
   return (
     <div>
-      <label style={fieldLabelStyle}>{label}</label>
+      <div style={fieldLabelWrapStyle}>
+        <FieldLabel label={label} tooltip={tooltip} />
+      </div>
       {editing ? (
         <div className="bien-field--editing" style={fieldEditingWrapStyle}>
           <input
@@ -1016,6 +1203,7 @@ function SelectField({
   value,
   options,
   ctx,
+  tooltip,
 }: FieldCommonProps & {
   value: string | null | undefined;
   options: { value: string; label: string }[];
@@ -1040,7 +1228,9 @@ function SelectField({
 
   return (
     <div>
-      <label style={fieldLabelStyle}>{label}</label>
+      <div style={fieldLabelWrapStyle}>
+        <FieldLabel label={label} tooltip={tooltip} />
+      </div>
       {editing ? (
         <div className="bien-field--editing" style={fieldEditingWrapStyle}>
           <select
@@ -1080,6 +1270,7 @@ function TextareaField({
   value,
   ctx,
   rows = 3,
+  tooltip,
 }: FieldCommonProps & { value: string | null | undefined; rows?: number }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<string>(value ?? "");
@@ -1100,7 +1291,9 @@ function TextareaField({
 
   return (
     <div>
-      <label style={fieldLabelStyle}>{label}</label>
+      <div style={fieldLabelWrapStyle}>
+        <FieldLabel label={label} tooltip={tooltip} />
+      </div>
       {editing ? (
         <div className="bien-field--editing" style={{ padding: 4 }}>
           <textarea
@@ -1155,6 +1348,7 @@ function ToggleRow({
   name,
   value,
   ctx,
+  tooltip,
 }: FieldCommonProps & { value: boolean | null | undefined }) {
   const isPending = ctx.pendingFields.has(name);
   const justSaved = ctx.justSavedFields.has(name);
@@ -1165,7 +1359,10 @@ function ToggleRow({
   return (
     <div>
       <label style={toggleLabelStyle}>
-        <span>{label}</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 14, color: C.text2 }}>{label}</span>
+          {tooltip && <FieldLabel label="" tooltip={tooltip} />}
+        </span>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <SaveIndicator pending={isPending} justSaved={justSaved} />
           <button
@@ -1366,14 +1563,29 @@ const sectionTitleStyle: React.CSSProperties = {
   fontWeight: 400,
 };
 
-const fieldLabelStyle: React.CSSProperties = {
+const fieldLabelWrapStyle: React.CSSProperties = {
   display: "block",
-  fontSize: 11,
-  fontWeight: 500,
-  color: C.text3,
   marginBottom: 6,
+};
+
+const chargesHelpStyle: React.CSSProperties = {
+  fontSize: 13,
+  color: C.text2,
+  margin: "0 0 14px",
+  lineHeight: 1.5,
+};
+
+const chargesGroupStyle: React.CSSProperties = {
+  marginTop: 12,
+};
+
+const chargesGroupTitleStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 600,
+  color: C.prussian,
   textTransform: "uppercase",
-  letterSpacing: "0.04em",
+  letterSpacing: "0.05em",
+  margin: "0 0 8px",
 };
 
 const fieldReadButtonStyle: React.CSSProperties = {

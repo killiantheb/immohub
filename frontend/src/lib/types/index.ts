@@ -255,6 +255,29 @@ export interface Bien {
   // ── PR-A11.A.6.a — Description publique ─────────────────────────────────
   description_publique?: string | null;
   points_forts?: string | null;
+
+  // ── PR-A11.A.6.d — Charges incluses dans le forfait du bail ─────────────
+  // Clauses contractuelles déclaratives (par bien). Distinct de ChargeLine
+  // (lignes comptables réelles, sprint 13-14).
+  charges_chauffage?: boolean;
+  charges_eau_chaude?: boolean;
+  charges_entretien_chaudiere?: boolean;
+  charges_releves_compteurs?: boolean;
+  charges_conciergerie?: boolean;
+  charges_nettoyage_communs?: boolean;
+  charges_produits_entretien?: boolean;
+  charges_ascenseur?: boolean;
+  charges_eclairage_communs?: boolean;
+  charges_espaces_verts?: boolean;
+  charges_deneigement?: boolean;
+  charges_taxe_egouts?: boolean;
+  charges_ordures?: boolean;
+  charges_redevance_tv?: boolean;
+
+  // ── PR-A11.A.6.d — Sécurité opérationnelle ──────────────────────────────
+  // Code en clair côté API (le backend chiffre at-rest). Exposé seulement
+  // via GET /biens/{id} (détail), jamais en liste paginée.
+  code_digicode?: string | null;
 }
 
 /** Liste paginée lightweight — ajoute l'image de couverture. */
@@ -262,12 +285,41 @@ export interface BienListItem extends Bien {
   images: BienImage[];
 }
 
-/** Détail complet — images + documents + équipements. */
+/** Détail complet — images + documents + équipements + clés (PR-A11.A.6.d). */
 export interface BienDetail extends Bien {
   images: BienImage[];
   documents: BienDocument[];
   equipements: CatalogueEquipement[];
+  keys?: BienKey[];
 }
+
+// ── PR-A11.A.6.d — Clés / badges / cadenas physiques ──────────────────────
+export type BienKeyType =
+  | "entree"
+  | "cave"
+  | "boite_aux_lettres"
+  | "parking"
+  | "garage"
+  | "cadenas"
+  | "autre";
+
+export interface BienKey {
+  id: string;
+  bien_id: string;
+  type: BienKeyType | string;
+  numero_badge?: string | null;
+  description?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BienKeyCreate {
+  type: BienKeyType | string;
+  numero_badge?: string | null;
+  description?: string | null;
+}
+
+export type BienKeyUpdate = Partial<BienKeyCreate>;
 
 /**
  * Payload de création d'un bien.
