@@ -15,13 +15,16 @@ en multipart/form-data (file + form), pas en JSON.
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
 from app.common.enums import BienStatutLiteral, BienTypeLiteral
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+_logger = logging.getLogger(__name__)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Literals
@@ -806,6 +809,46 @@ class RendementNetResponse(BaseModel):
 # ══════════════════════════════════════════════════════════════════════════════
 
 
+# ── Helpers normalisation Literal LLM (PR-A11.A.6.d hotfix) ─────────────────
+# Le LLM Claude renvoie parfois des nuances ("stable à légère hausse...",
+# "annuelle voire saisonnière") au lieu des valeurs canoniques. Ces
+# normalisateurs absorbent les variations textuelles via mots-clés et
+# loggent un warning quand une transformation est appliquée. Pas de fix
+# côté prompt LLM (sprint dédié plus tard).
+
+
+def _normalize_literal(
+    value: object,
+    field: str,
+    keyword_map: tuple[tuple[tuple[str, ...], str], ...],
+    fallback: str,
+) -> object:
+    """Normalise une chaîne LLM vers une valeur canonique via mots-clés.
+
+    `keyword_map` : tuple ordonné de (mots_clés, valeur_canonique). Premier
+    match gagne. Si aucun match → `fallback`. Préserve les non-strings (laisse
+    Pydantic lever l'erreur classique sur les types vraiment invalides).
+    """
+    if not isinstance(value, str):
+        return value
+    v_lower = value.lower()
+    result: str | None = None
+    for keywords, canonical in keyword_map:
+        if any(kw in v_lower for kw in keywords):
+            result = canonical
+            break
+    if result is None:
+        result = fallback
+    if result != value.strip().lower():
+        _logger.warning(
+            "EstimationIA Pydantic normalisation %s: %r → %r",
+            field,
+            value,
+            result,
+        )
+    return result
+
+
 class EstimationLocalite(BaseModel):
     """Analyse du marché local (canton / ville / quartier)."""
 
@@ -818,6 +861,25 @@ class EstimationLocalite(BaseModel):
     delai_vente_moyen_jours: int = Field(..., ge=0)
     note_attractivite: int = Field(..., ge=1, le=10)
     notes_locales: str = Field(..., max_length=2000)
+
+    @field_validator("tendance_12_mois", mode="before")
+    @classmethod
+    def _normalize_tendance(cls, v: object) -> object:
+        return _normalize_literal(
+            v,
+            "tendance_12_mois",
+            (
+                (
+                    ("baisse", "diminution", "recul", "décroissance", "decroissance", "chute"),
+                    "baisse",
+                ),
+                (
+                    ("hausse", "augmentation", "croissance", "progression", "montée", "montee"),
+                    "hausse",
+                ),
+            ),
+            fallback="stable",
+        )
 
 
 class EstimationLocation(BaseModel):
@@ -836,6 +898,20 @@ class EstimationLocation(BaseModel):
         description="Avertissements légaux (LRA Valais, Lex Weber, permis communal).",
     )
     recommandation: str = Field(..., max_length=2000)
+
+    @field_validator("type", mode="before")
+    @classmethod
+    def _normalize_type(cls, v: object) -> object:
+        return _normalize_literal(
+            v,
+            "EstimationLocation.type",
+            (
+                (("saisonni",), "saisonniere"),
+                (("semaine", "hebdo"), "semaine"),
+                (("annuel", "longue durée", "longue duree", "long terme"), "annuelle"),
+            ),
+            fallback="annuelle",
+        )
 
 
 class EstimationFiscalite(BaseModel):
@@ -901,3 +977,55 @@ class EstimationIAEnrichie(BaseModel):
     score_investissement: int = Field(..., ge=0, le=10)
     score_locatif: int = Field(..., ge=0, le=10)
     score_revente: int = Field(..., ge=0, le=10)
+
+    # ── Normalisation defensive Literals LLM ─────────────────────────────────
+    # Mêmes mots-clés que EstimationLocation.type (location_recommandee est
+    # produit par le LLM dans le même JSON structuré).
+
+    @field_validator("location_recommandee", mode="before")
+    @classmethod
+    def _normalize_location_recommandee(cls, v: object) -> object:
+        return _normalize_literal(
+            v,
+            "location_recommandee",
+            (
+                (("saisonni",), "saisonniere"),
+                (("semaine", "hebdo"), "semaine"),
+                (("annuel", "longue durée", "longue duree", "long terme"), "annuelle"),
+            ),
+            fallback="annuelle",
+        )
+
+    @field_validator("residence_type", mode="before")
+    @classmethod
+    def _normalize_residence_type(cls, v: object) -> object:
+        return _normalize_literal(
+            v,
+            "residence_type",
+            (
+                (("principal",), "principale"),
+                (
+                    ("secondaire", "secondary", "résidence secondaire", "residence secondaire"),
+                    "secondaire",
+                ),
+                (("mixte", "hybride", "double", "mixed"), "mixte"),
+            ),
+            fallback="mixte",
+        )
+
+    @field_validator("location_type_actuel", mode="before")
+    @classmethod
+    def _normalize_location_type_actuel(cls, v: object) -> object:
+        if v is None:
+            return v
+        return _normalize_literal(
+            v,
+            "location_type_actuel",
+            (
+                (("vide", "vacant", "libre", "inoccupé", "inoccupe"), "vide"),
+                (("saisonni",), "saisonniere"),
+                (("semaine", "hebdo"), "semaine"),
+                (("annuel", "longue durée", "longue duree", "long terme"), "annuelle"),
+            ),
+            fallback="vide",
+        )
