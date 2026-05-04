@@ -849,6 +849,48 @@ def _normalize_literal(
     return result
 
 
+def _normalize_int_score(v: object, field_name: str = "score") -> object:
+    """Normalise un score numérique potentiellement renvoyé en float par un LLM.
+
+    Le LLM Claude renvoie parfois `note_attractivite=7.5` (float) alors que
+    le schema exige un `int` strict. On convertit en int par arrondi (round
+    half to even, comportement natif Python). Les ints sont passés tels
+    quels. Les strings numériques sont aussi tolérées.
+
+    Logge un warning si une normalisation est appliquée pour traçabilité
+    prod (sprint dédié plus tard côté prompt LLM).
+    """
+    if v is None:
+        return None
+    # bool est subclass de int en Python — on l'exclut explicitement.
+    if isinstance(v, bool):
+        return v
+    if isinstance(v, int):
+        return v
+    if isinstance(v, float):
+        normalized = round(v)
+        _logger.warning(
+            "EstimationIA Pydantic normalisation %s: %r (float) → %r (int)",
+            field_name,
+            v,
+            normalized,
+        )
+        return normalized
+    if isinstance(v, str):
+        try:
+            normalized = round(float(v.strip()))
+        except (ValueError, AttributeError):
+            return v  # laisse Pydantic lever l'erreur classique
+        _logger.warning(
+            "EstimationIA Pydantic normalisation %s: %r (str) → %r (int)",
+            field_name,
+            v,
+            normalized,
+        )
+        return normalized
+    return v
+
+
 class EstimationLocalite(BaseModel):
     """Analyse du marché local (canton / ville / quartier)."""
 
@@ -880,6 +922,11 @@ class EstimationLocalite(BaseModel):
             ),
             fallback="stable",
         )
+
+    @field_validator("delai_vente_moyen_jours", "note_attractivite", mode="before")
+    @classmethod
+    def _normalize_localite_int_scores(cls, v: object, info) -> object:  # type: ignore[no-untyped-def]
+        return _normalize_int_score(v, field_name=info.field_name)
 
 
 class EstimationLocation(BaseModel):
@@ -1029,3 +1076,13 @@ class EstimationIAEnrichie(BaseModel):
             ),
             fallback="vide",
         )
+
+    @field_validator(
+        "score_investissement",
+        "score_locatif",
+        "score_revente",
+        mode="before",
+    )
+    @classmethod
+    def _normalize_top_scores(cls, v: object, info) -> object:  # type: ignore[no-untyped-def]
+        return _normalize_int_score(v, field_name=info.field_name)
