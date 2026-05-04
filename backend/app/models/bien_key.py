@@ -15,7 +15,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 from app.models.base import BaseModel
-from sqlalchemy import ForeignKey, Index, String
+from sqlalchemy import Boolean, ForeignKey, Index, String, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -33,11 +33,22 @@ class BienKey(BaseModel):
         ForeignKey("biens.id", ondelete="CASCADE"),
         nullable=False,
     )
-    # type : entree / cave / boite_aux_lettres / parking / garage / cadenas /
-    # autre  (validation Pydantic au Create/Update)
+    # type : str libre — liste métier 14 valeurs côté frontend (PR-A11.A.6.h) :
+    # appartement / immeuble / boite_aux_lettres / cave_acces / cave_personnelle /
+    # buanderie / machine_laver_badge / garage_bippeur / garage_porte / ski_room /
+    # ski_room_acces / chaufferie / carte_securite_protegee / autre
     type: Mapped[str] = mapped_column(String(30), nullable=False)
     numero_badge: Mapped[str | None] = mapped_column(String(50))
     description: Mapped[str | None] = mapped_column(String(300))
+
+    # ── Innovation métier sprint 6.h ────────────────────────────────────────
+    # Code gravé : pour refabrication chez serrurier en cas de perte.
+    code_grave: Mapped[str | None] = mapped_column(String(100))
+    # Carte de sécurité brevetée (Mul-T-Lock / Kaba / Assa) :
+    carte_securite: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    numero_carte_securite: Mapped[str | None] = mapped_column(String(100))
 
     bien: Mapped[Bien] = relationship("Bien", back_populates="keys")
 
