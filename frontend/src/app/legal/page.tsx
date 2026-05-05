@@ -35,9 +35,6 @@ export default function MentionsLegalesPage() {
       <P><strong>Email :</strong> <a href={`mailto:${LEGAL.email}`} style={{ color: "var(--althy-orange)" }}>{LEGAL.email}</a></P>
       <P><strong>Protection des données :</strong> <a href={`mailto:${LEGAL.emailPrivacy}`} style={{ color: "var(--althy-orange)" }}>{LEGAL.emailPrivacy}</a></P>
       <P><strong>Site web :</strong> <a href={LEGAL.url} style={{ color: "var(--althy-orange)" }}>{LEGAL.url}</a></P>
-      <p style={{ marginTop: "0.75rem", padding: "0.75rem 1rem", background: "var(--althy-orange-light)", borderRadius: 8, border: "1px solid #F0C4A8", fontSize: 13, color: "#5C2E0E", lineHeight: 1.65 }}>
-        Althy est un service en phase de lancement. La société Sàrl est en cours de constitution au Registre du commerce de Genève. Les présentes mentions légales seront mises à jour dès l&apos;immatriculation officielle.
-      </p>
 
       <H2>2. Responsable de la publication</H2>
       <P>{LEGAL.representant}, joignable à l&apos;adresse <a href={`mailto:${LEGAL.email}`} style={{ color: "var(--althy-orange)" }}>{LEGAL.email}</a>.</P>
