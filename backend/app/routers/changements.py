@@ -1,27 +1,43 @@
-"""Router FastAPI — /api/v1/biens/{bien_id}/changement.
+"""Router FastAPI — /api/v1/biens/{bien_id}/changement et /api/v1/changements/{id}.
 
 Gestion du cycle complet de changement de locataire :
   Phase 1 – Départ annoncé   (depart_annonce)
   Phase 2 – Recherche        (recherche)
   Phase 3 – Check-out / EDL  (checkout)
   Phase 4 – Check-in         (checkin)
+
+Deux APIRouter distincts dans ce module :
+  - `router`             monté à `/api/v1/biens` → routes nestées par bien_id.
+  - `edl_photos_router`  monté à `/api/v1/changements` → photos EDL adressées
+    par changement_id (le bien_id est résolu côté serveur via jointure).
 """
 
 from __future__ import annotations
 
+import mimetypes
 import uuid
 from datetime import date
 from typing import Annotated, Any
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from fastapi import APIRouter, Depends, HTTPException, status
+from app.schemas.changement_locataire import EdlPiece
+from app.services.bien_service import (
+    ALLOWED_IMAGE_TYPES,
+    MAX_FILE_SIZE,
+    _delete_from_storage,
+    _upload_to_storage,
+    create_signed_url,
+)
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
+edl_photos_router = APIRouter()
 
 DbDep = Annotated[AsyncSession, Depends(get_db)]
 AuthDep = Annotated[User, Depends(get_current_user)]
@@ -71,7 +87,7 @@ class ChangementCreer(BaseModel):
 
 class EdlUpdate(BaseModel):
     type: str                               # "sortie" | "entree"
-    pieces: list[dict[str, Any]]            # [{ nom, etat, commentaire, photos }]
+    pieces: list[EdlPiece]                  # validé via schemas/changement_locataire.py
     inventaire: dict[str, Any] | None = None
     caution_retenue: float | None = None
     caution_motif: str | None = None
@@ -231,7 +247,10 @@ async def update_edl(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Changement déjà terminé")
 
     import json
-    edl_data = json.dumps({"pieces": payload.pieces, "inventaire": payload.inventaire or {}})
+    edl_data = json.dumps({
+        "pieces": [p.model_dump() for p in payload.pieces],
+        "inventaire": payload.inventaire or {},
+    })
 
     if payload.type == "sortie":
         await db.execute(
@@ -332,3 +351,140 @@ async def finaliser_entree(
     )
     await db.commit()
     return await _get_changement(changement_id, bien_id, db)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# EDL Photos — bucket privé `edl-photos`, signed URLs
+# ════════════════════════════════════════════════════════════════════════════
+#
+# Routes adressées par changement_id (pas par bien_id) → router séparé monté
+# sur /api/v1/changements/. Le bien_id est résolu côté serveur via jointure
+# pour vérifier l'ownership.
+#
+# Path Storage : {changement_id}/{edl_type}/piece_{piece_idx}/{uuid}.jpg
+# Le path retourné par POST est exactement celui à persister dans le JSONB
+# `edl_sortie.pieces[i].photos[]` (et passé tel quel à DELETE).
+
+EDL_TYPES = {"entree", "sortie"}
+
+
+class DeleteEdlPhotoBody(BaseModel):
+    path: str
+
+
+class UploadEdlPhotoResponse(BaseModel):
+    url: str   # signed URL TTL 1h, à utiliser pour <img src="..." />
+    path: str  # path relatif dans le bucket — à persister dans le JSONB
+
+
+async def _get_changement_for_user(
+    changement_id: str, user: User, db: AsyncSession
+) -> dict:
+    """Charge un changement et vérifie l'ownership du bien rattaché.
+
+    Lève 404 si le changement n'existe pas, 403 si l'utilisateur n'est pas
+    propriétaire du bien (ni super_admin).
+    """
+    row = await db.execute(
+        text("""
+            SELECT cl.id, cl.bien_id, b.owner_id
+            FROM changements_locataire cl
+            JOIN biens b ON b.id = cl.bien_id
+            WHERE cl.id = :id
+        """),
+        {"id": changement_id},
+    )
+    ch = row.fetchone()
+    if not ch:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Changement introuvable")
+    if user.role not in ("admin", "super_admin") and str(ch.owner_id) != str(user.id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
+    return {"id": str(ch.id), "bien_id": str(ch.bien_id)}
+
+
+@edl_photos_router.post(
+    "/{changement_id}/edl-photos",
+    response_model=UploadEdlPhotoResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_edl_photo(
+    changement_id: str,
+    user: AuthDep,
+    db: DbDep,
+    file: UploadFile = File(...),
+    piece_idx: int = Form(...),
+    edl_type: str = Form(...),
+) -> UploadEdlPhotoResponse:
+    """Upload une photo d'EDL pour une pièce donnée.
+
+    Renvoie un `path` (à persister dans le JSONB) et une `url` signée 1h
+    (à utiliser immédiatement côté UI pour afficher la miniature).
+    """
+    if edl_type not in EDL_TYPES:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "edl_type doit être 'entree' ou 'sortie'",
+        )
+    if piece_idx < 0:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "piece_idx doit être >= 0",
+        )
+
+    await _get_changement_for_user(changement_id, user, db)
+
+    content_type = file.content_type or "image/jpeg"
+    if content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            f"Format image non supporté : {content_type}",
+        )
+
+    data = await file.read()
+    if len(data) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            "Fichier trop gros (max 10 MB)",
+        )
+
+    ext = mimetypes.guess_extension(content_type) or ".jpg"
+    photo_id = uuid.uuid4()
+    path = f"{changement_id}/{edl_type}/piece_{piece_idx}/{photo_id}{ext}"
+
+    # _upload_to_storage retourne une URL publique — on l'ignore (bucket privé,
+    # cette URL serait inutilisable). On signe le path à la place.
+    await _upload_to_storage(
+        settings.SUPABASE_BUCKET_EDL_PHOTOS, path, data, content_type
+    )
+    signed = await create_signed_url(settings.SUPABASE_BUCKET_EDL_PHOTOS, path)
+
+    return UploadEdlPhotoResponse(url=signed, path=path)
+
+
+@edl_photos_router.delete(
+    "/{changement_id}/edl-photos",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
+async def delete_edl_photo(
+    changement_id: str,
+    payload: DeleteEdlPhotoBody,
+    user: AuthDep,
+    db: DbDep,
+) -> None:
+    """Supprime une photo EDL du bucket Supabase Storage.
+
+    Le path doit appartenir au changement courant : on rejette toute tentative
+    de suppression cross-changement (bypass RLS si signed-URL leak).
+    """
+    await _get_changement_for_user(changement_id, user, db)
+
+    expected_prefix = f"{changement_id}/"
+    if not payload.path.startswith(expected_prefix) or ".." in payload.path:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "path n'appartient pas à ce changement",
+        )
+
+    await _delete_from_storage(settings.SUPABASE_BUCKET_EDL_PHOTOS, payload.path)
+    return None

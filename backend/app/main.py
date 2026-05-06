@@ -24,7 +24,10 @@ from app.routers.bien_contacts import router as bien_contacts_router
 from app.routers.bien_keys import router as bien_keys_router
 from app.routers.biens import router as biens_router
 from app.routers.catalogue import router as catalogue_router
-from app.routers.changements import router as changements_router
+from app.routers.changements import (
+    edl_photos_router as changements_edl_photos_router,
+    router as changements_router,
+)
 from app.routers.contact import router as contact_router
 from app.routers.crm import router as crm_router
 from app.routers.documents import router as documents_router
@@ -240,6 +243,9 @@ app.include_router(contact_router, prefix="/api/v1", tags=["contact"])
 app.include_router(estimation_router, prefix="/api/v1", tags=["estimation"])
 app.include_router(loyers_router, prefix="/api/v1/loyers", tags=["loyers"])
 app.include_router(changements_router, prefix="/api/v1/biens", tags=["changements"])
+app.include_router(
+    changements_edl_photos_router, prefix="/api/v1/changements", tags=["changements"]
+)
 app.include_router(autonomie_router, prefix="/api/v1/autonomie", tags=["autonomie"])
 app.include_router(waitlist_router, prefix="/api/v1", tags=["waitlist"])
 app.include_router(partners_router, prefix="/api/v1", tags=["partners"])
