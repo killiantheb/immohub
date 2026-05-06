@@ -455,15 +455,16 @@ class BienListItem(BienRead):
 
 
 class BienDetail(BienRead):
-    """Détail complet : images + documents + équipements + sous-tables A11.A.6.a/d."""
+    """Détail complet : images + documents + équipements.
+
+    Sous-tables (annexes / contacts / compteurs / keys) : endpoints dédiés
+    GET /biens/{id}/<slice> — doctrine "slices canoniques"
+    (cf 3-ARCHITECTURE.md §3.3).
+    """
 
     images: list[BienImageRead] = Field(default_factory=list)
     documents: list[BienDocumentRead] = Field(default_factory=list)
     equipements: list[CatalogueEquipementRead] = Field(default_factory=list)
-    annexes: list[BienAnnexeRead] = Field(default_factory=list)
-    contacts: list[BienContactRead] = Field(default_factory=list)
-    compteurs: list[BienCompteurRead] = Field(default_factory=list)
-    keys: list[BienKeyRead] = Field(default_factory=list)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

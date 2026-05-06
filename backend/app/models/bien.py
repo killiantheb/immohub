@@ -303,29 +303,29 @@ class Bien(BaseModel):
     code_digicode_encrypted: Mapped[str | None] = mapped_column(Text)
 
     # ── Relations sous-tables (PR-A11.A.6.a) ────────────────────────────────
+    # Doctrine "slices canoniques" (cf 3-ARCHITECTURE.md §3.3) : pas de
+    # lazy="selectin". Source de vérité = endpoint REST dédié
+    # GET /biens/{id}/<slice>. Les relations restent déclarées pour permettre
+    # cascade="all, delete-orphan" et l'introspection ORM.
     annexes: Mapped[list[BienAnnexe]] = relationship(
         "BienAnnexe",
         back_populates="bien",
         cascade="all, delete-orphan",
-        lazy="selectin",
     )
     contacts: Mapped[list[BienContact]] = relationship(
         "BienContact",
         back_populates="bien",
         cascade="all, delete-orphan",
-        lazy="selectin",
     )
     compteurs: Mapped[list[BienCompteur]] = relationship(
         "BienCompteur",
         back_populates="bien",
         cascade="all, delete-orphan",
-        lazy="selectin",
     )
     keys: Mapped[list[BienKey]] = relationship(
         "BienKey",
         back_populates="bien",
         cascade="all, delete-orphan",
-        lazy="selectin",
     )
 
     __table_args__ = (

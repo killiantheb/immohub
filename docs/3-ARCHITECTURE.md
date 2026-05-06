@@ -130,6 +130,21 @@ Doctrine : **Une donnée = une source de vérité unique. Zéro doublon.** Tout 
 
 **Diagramme ER** : non maintenu en Phase 1 (rotterait trop vite). À régénérer via `pgmodeler` ou `dbdiagram.io` au gate Phase 2.
 
+### Doctrine « Slices canoniques » (Sprint Perf v2 — 2026-05-06)
+
+Pour toute sous-table 1:N attachée à `Bien` (et par extension à toute entité agrégat — `Locataire`, `Mandat`, etc.) :
+
+1. **Source de vérité unique** = endpoint REST dédié `GET /biens/{id}/<slice>` (ex. `/biens/{id}/annexes`, `/biens/{id}/contacts`, `/biens/{id}/compteurs`, `/biens/{id}/keys`).
+2. **Pas de chargement dans `BienDetail`** — ni `lazy="selectin"` sur la relation ORM, ni SELECT explicite dans `bien_service.get_detail`. Les relations restent déclarées en ORM uniquement pour `cascade="all, delete-orphan"` et l'introspection.
+3. **Hook frontend dédié** `useBien<Slice>(bienId)` avec `queryKey` indépendant (ex. `["bien-annexes", "bien", id]`) — distinct de `bienKeys.detail(id)`.
+4. **Mutations** invalident le `queryKey` granulaire de la slice (ex. `annexeKeys.byBien(id)`), **pas** l'agrégat `bienKeys.detail(id)`.
+
+**Exceptions tolérées dans `BienDetail`** : champs scalaires natifs du bien + relations consommées par plusieurs surfaces sans hook dédié. État au sprint Perf v2 : `images`, `documents`, `equipements`, `code_digicode` (déchiffré à la lecture).
+
+**Pourquoi** : un audit GET /biens/{id} a révélé 9 SELECTs SQL séquentiels par fiche bien dont 4 strictement redondants — les sous-tables étaient chargées 2× (1× via `lazy="selectin"` dans `BienDetail` + 1× via les `Section` frontend dédiées qui re-fetchent leur endpoint). Le payload `BienDetail` transportait des collections que personne ne lisait côté frontend.
+
+**Comment l'appliquer** : avant d'ajouter une nouvelle relation 1:N sur `Bien` (ou autre agrégat), créer (a) le router dédié `/biens/{id}/<slice>` avec son CRUD, (b) le hook frontend `useBien<Slice>` avec son `queryKey`, (c) **ne pas** ajouter le champ dans `BienDetail` schema sauf si une surface frontend lit la slice via `useBien(id).data.<slice>` (cas `images`, `documents`).
+
 ---
 
 ## 3.4 Authentification + RBAC
