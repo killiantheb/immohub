@@ -285,12 +285,15 @@ export interface BienListItem extends Bien {
   images: BienImage[];
 }
 
-/** Détail complet — images + documents + équipements + clés (PR-A11.A.6.d). */
+/** Détail complet — images + documents + équipements.
+ *
+ * Sous-tables (annexes / contacts / compteurs / keys) : endpoints dédiés
+ * `/biens/{id}/<slice>` — doctrine "slices canoniques"
+ * (cf docs/3-ARCHITECTURE.md §3.3). */
 export interface BienDetail extends Bien {
   images: BienImage[];
   documents: BienDocument[];
   equipements: CatalogueEquipement[];
-  keys?: BienKey[];
 }
 
 // ── PR-A11.A.6.d / .h — Clés / badges / cadenas physiques ─────────────────

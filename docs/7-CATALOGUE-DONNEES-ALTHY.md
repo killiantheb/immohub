@@ -391,12 +391,27 @@ URL : sous-section dédiée dans la modale Caractéristiques + accessible depuis
 
 ### Sous-section : Sécurité opérationnelle
 
+#### Clés / badges (BienKey — table 1:N, PR-A11.A.6.d/h)
+
+URL : sous-section dédiée dans la modale Caractéristiques + accessible depuis sphère IA. **14 types** métier issus du retour terrain agence immobilière suisse (sprint 6.h).
+
+| Donnée par clé / badge | Acquisition | Phase | Source | État | Stratégie |
+|---|---|---|---|---|---|
+| Type clé / badge (14 valeurs : `appartement`, `immeuble`, `boite_aux_lettres`, `cave_acces`, `cave_personnelle`, `buanderie`, `machine_laver_badge`, `garage_bippeur`, `garage_porte`, `ski_room`, `ski_room_acces`, `chaufferie`, `carte_securite_protegee`, `autre`) | 👤 USER | P1 | 🏠 BienKey.type | ✅ | Sélection visuelle (icônes) |
+| Numéro badge | 👤 USER | P1 | 🏠 BienKey.numero_badge | ✅ | Optionnel |
+| Description | 👤 USER | P1 | 🏠 BienKey.description | ➕ | Texte court ex « clé Bramah palier 4ème » |
+| Code gravé | 👤 USER | P1 | 🏠 BienKey.code_grave | ➕ | Pour refabrication chez serrurier en cas de perte |
+| Carte de sécurité brevetée | 👤 USER | P1 | 🏠 BienKey.carte_securite | ✅ | Toggle (Mul-T-Lock / Kaba / Assa) |
+| N° carte de sécurité | 👤 USER | P1 | 🏠 BienKey.numero_carte_securite | ➕ | Visible si `carte_securite=true` |
+| Compteur total | 🤖 AUTO | P1 | 🏠 Bien.keys_count | ✅ | Recalculé à chaque CRUD `BienKey` (compat affichage rapide) |
+
+Doctrine « slices canoniques » (cf [`3-ARCHITECTURE.md`](./3-ARCHITECTURE.md) §3.3) : source de vérité unique = endpoint dédié `GET /biens/{id}/keys`. Pas de chargement dans `BienDetail`.
+
+#### Codes accès immeuble (champs scalaires sur Bien)
+
 | Donnée | Acquisition | Phase | Source | État | Stratégie |
 |---|---|---|---|---|---|
-| Nombre de clés totales | 👤 USER | P1 | 🏠 Bien.keys_count | ✅ | Default 3, +/- |
-| Description clés | 👤 USER | P1 | 🏠 Bien.keys_description | ➕ | Texte court ex « 2 portes + 1 BAL + 1 cave » |
-| Numéro badge immeuble | 👤 USER | P1 | 🏠 Bien.numero_badge | ➕ | Optionnel |
-| Code digicode immeuble | 👤 USER | P1 | 🏠 Bien.code_digicode | ➕ | **Sensible : masqué + chiffré** |
+| Code digicode immeuble | 👤 USER | P1 | 🏠 Bien.code_digicode_encrypted | ➕ | **Sensible : chiffré at-rest (Fernet) + masqué UI** ; déchiffré uniquement à la lecture détail (jamais en liste paginée) |
 | Code serrure temporaire | 🤖 AUTO | P5+ | 🏠 Bien.code_serrure_temp | ➕ | Saisonnier nuitée uniquement |
 
 ### Sous-section : Compteurs (BienCompteur — table 1:N)

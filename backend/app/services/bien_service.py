@@ -32,7 +32,6 @@ from app.models.bien import (
     BienImage,
     CatalogueEquipement,
 )
-from app.models.bien_key import BienKey
 from app.models.intervention import Intervention
 from app.models.locataire import Locataire
 from app.models.paiement import Paiement
@@ -43,7 +42,6 @@ from app.schemas.bien import (
     BienDocumentRead,
     BienImageRead,
     BienImageUpdate,
-    BienKeyRead,
     BienListItem,
     BienRead,
     BienUpdate,
@@ -323,24 +321,10 @@ class BienService:
             .all()
         )
 
-        # Clés / badges actifs (PR-A11.A.6.d) — table 1:N avec soft delete
-        key_rows = (
-            (
-                await self.db.execute(
-                    select(BienKey)
-                    .where(BienKey.bien_id == bien.id, BienKey.is_active.is_(True))
-                    .order_by(BienKey.created_at)
-                )
-            )
-            .scalars()
-            .all()
-        )
-
         detail = BienDetail.model_validate(bien)
         detail.images = [BienImageRead.model_validate(r) for r in img_rows]
         detail.documents = [BienDocumentRead.model_validate(r) for r in doc_rows]
         detail.equipements = [CatalogueEquipementRead.model_validate(r) for r in eq_rows]
-        detail.keys = [BienKeyRead.model_validate(k) for k in key_rows]
         # Déchiffrement à la lecture détail (pas exposé en liste paginée).
         detail.code_digicode = decrypt_field(bien.code_digicode_encrypted)
         return detail
