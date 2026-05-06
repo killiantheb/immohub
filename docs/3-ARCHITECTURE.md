@@ -370,6 +370,32 @@ Sources de différenciation défensive d'Althy. Killian alimente progressivement
 
 **Pattern partenaires** : table `partners` (migration 0035) avec clé API chiffrée via `SECRET_KEY`. Contrats actifs trackés dans `partner_deals` (4 phases : `affiliation` / `exclusive_with_minimum` / `strategic` / `revenue_share`). Leads RGPD-conformes via `partner_leads` (consent obligatoire).
 
+### Pipeline upload — buckets Supabase Storage
+
+Sources : `backend/app/services/bien_service.py`, `backend/app/routers/changements.py`, `backend/app/services/storage.py`.
+
+| Bucket | Visibilité | Usage | Path | Variabilisé via |
+|---|---|---|---|---|
+| `property-images` | Publique | Photos commerciales fiche bien (PR-A11.A.5) | `{bien_id}/{image_id}.{ext}` | `SUPABASE_BUCKET_BIEN_IMAGES` |
+| `property-documents` | Publique | Documents annexes bien (DPE, baux, etc.) | `{bien_id}/{doc_id}.{ext}` | `SUPABASE_BUCKET_BIEN_DOCUMENTS` |
+| `documents` | Privée | Quittances + QR-factures générées par Althy (PDF) | `{user_id}/{bien_id}/{type}_{mois}.pdf` | hardcodé (`storage.py`) |
+| `althy-docs` | Publique | Documents générés via `/ai/generer-document` (bail, EDL, relance) | `documents/{type}/{bien_id}/{ts}.pdf` | hardcodé (`routers/ai/documents.py`) |
+| `edl-photos` | **Privée** | Photos EDL pièce-par-pièce (PR-EDL-1, 2026-05-06) | `{changement_id}/{edl_type}/piece_{piece_idx}/{uuid}.jpg` | `SUPABASE_BUCKET_EDL_PHOTOS` |
+
+**Pattern d'upload** (toutes routes images/photos) : le frontend POST en `multipart/form-data` au backend FastAPI, qui upload via `service-role key` à Supabase Storage. Pas d'upload direct client → Supabase. Compression côté client : canvas 1920 px max / JPEG 0.82 (helper `compressImage` partagé entre `useBiens.ts`, `useInterventions.ts` et `useChangements.ts`).
+
+#### Bucket privé `edl-photos` — choix architecturaux (PR-EDL-1)
+
+Photos d'État Des Lieux = pièces sensibles (état dégradé, dommages opposables au locataire). Trois choix structurants :
+
+1. **Bucket privé + signed URLs (TTL 1 h)**. Pas d'URL publique permanente. Le backend signe à chaque upload (helper réutilisable `bien_service.create_signed_url(bucket, path, expires_in)`). Le JSONB `edl_sortie.pieces[i].photos[]` stocke des **paths**, jamais des URLs (sinon expiration → JSONB pourri).
+2. **Path préfixé par `changement_id`**. Permet une RLS Postgres élégante (cf migration `supabase/migrations/0039_storage_edl_photos_bucket.sql`) qui autorise SELECT/DELETE uniquement si `auth.uid()` est propriétaire du bien rattaché au changement. Bypass RLS impossible côté DELETE backend : double check via `_get_changement_for_user()` + path-prefix validation (`startswith("{changement_id}/")` + rejet `..`).
+3. **EXIF rotation côté client**. `compressEdlImage` (dans `useChangements.ts`) utilise `createImageBitmap(file, { imageOrientation: "from-image" })` qui applique automatiquement l'orientation EXIF — fix standard pour photos portrait iPhone (sinon rendues tournées 90° via canvas). Fallback canvas standard si `createImageBitmap` indisponible (anciens Safari).
+
+**Limitation Phase 1** : la signed URL est renvoyée à l'upload et cachée localement (Map `path → url`) pendant la session. Après reload de page, les paths du JSONB ne sont plus signés → miniatures non affichables (le bouton supprimer reste fonctionnel via le path). Le câblage de re-signature au load (GET `/changement/actif`) est planifié PR-EDL-2.
+
+**Endpoints** : `POST /api/v1/changements/{id}/edl-photos` (multipart : file + piece_idx + edl_type ∈ {entree,sortie}) → `{ url, path }`. `DELETE /api/v1/changements/{id}/edl-photos` (body : `{ path }`) → 204.
+
 ---
 
 ## 3.9 Déploiement
