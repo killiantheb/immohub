@@ -112,6 +112,31 @@ async def _delete_from_storage(bucket: str, path: str) -> None:
         )
 
 
+async def create_signed_url(bucket: str, path: str, expires_in: int = 3600) -> str:
+    """Génère une URL pré-signée pour un objet d'un bucket privé.
+
+    Réutilisable pour tout bucket Supabase privé (EDL photos, documents bien,
+    etc.). TTL par défaut 1 h.
+
+    Lève HTTPException 502 si Supabase rejette la signature (objet inexistant,
+    bucket mal configuré, etc.).
+    """
+    url = f"{settings.SUPABASE_URL}/storage/v1/object/sign/{bucket}/{path}"
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.post(
+            url,
+            headers={**_STORAGE_HEADERS, "Content-Type": "application/json"},
+            json={"expiresIn": expires_in},
+        )
+    if resp.status_code not in (200, 201):
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            f"Storage sign failed: {resp.text}",
+        )
+    signed_path = resp.json().get("signedURL", "")
+    return f"{settings.SUPABASE_URL}/storage/v1{signed_path}"
+
+
 # ── Access helpers ────────────────────────────────────────────────────────────
 
 

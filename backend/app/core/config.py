@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # permettre une bascule future sans redeploy code.
     SUPABASE_BUCKET_BIEN_IMAGES: str = "property-images"
     SUPABASE_BUCKET_BIEN_DOCUMENTS: str = "property-documents"
+    # Bucket privé pour les photos d'État Des Lieux (changements_locataire).
+    # Photos sensibles (dégradations) → signed URLs uniquement, pas d'URL publique.
+    SUPABASE_BUCKET_EDL_PHOTOS: str = "edl-photos"
 
     # Redis / Celery
     REDIS_URL: str = "redis://localhost:6379/0"
