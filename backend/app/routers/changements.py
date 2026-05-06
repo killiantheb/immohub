@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import mimetypes
 import uuid
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from typing import Annotated, Any
 
 from app.core.config import settings
@@ -31,7 +31,7 @@ from app.services.bien_service import (
     _upload_to_storage,
     create_signed_url,
 )
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -377,6 +377,17 @@ class UploadEdlPhotoResponse(BaseModel):
     path: str  # path relatif dans le bucket — à persister dans le JSONB
 
 
+# TTL aligné sur create_signed_url (1 h) — exposé en constante pour que
+# l'`expires_at` retourné côté GET /sign reste cohérent avec la signature
+# effective côté Supabase.
+_SIGNED_URL_TTL_SECONDS = 3600
+
+
+class SignEdlPhotoResponse(BaseModel):
+    url: str
+    expires_at: str  # ISO 8601 UTC — now + 1 h
+
+
 async def _get_changement_for_user(
     changement_id: str, user: User, db: AsyncSession
 ) -> dict:
@@ -488,3 +499,42 @@ async def delete_edl_photo(
 
     await _delete_from_storage(settings.SUPABASE_BUCKET_EDL_PHOTOS, payload.path)
     return None
+
+
+@edl_photos_router.get(
+    "/{changement_id}/edl-photos/sign",
+    response_model=SignEdlPhotoResponse,
+)
+async def sign_edl_photo(
+    changement_id: str,
+    user: AuthDep,
+    db: DbDep,
+    path: str = Query(..., description="Path relatif stocké dans le JSONB"),
+) -> SignEdlPhotoResponse:
+    """Resigne une URL pour un path EDL persisté en JSONB.
+
+    PR-EDL-1bis — résout la limitation : les paths du JSONB ne sont pas signés,
+    et la signed URL renvoyée à l'upload expire après 1 h. Au reload de page,
+    le frontend appelle cet endpoint pour chaque path à afficher.
+
+    Sécurité : on rejette toute path hors prefix `{changement_id}/` ou
+    contenant `..` (anti-traversal + anti-cross-changement même si la RLS
+    Supabase le bloquerait déjà côté SELECT).
+    """
+    await _get_changement_for_user(changement_id, user, db)
+
+    expected_prefix = f"{changement_id}/"
+    if not path.startswith(expected_prefix) or ".." in path:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "path n'appartient pas à ce changement",
+        )
+
+    signed = await create_signed_url(
+        settings.SUPABASE_BUCKET_EDL_PHOTOS, path, expires_in=_SIGNED_URL_TTL_SECONDS
+    )
+    expires_at = (
+        datetime.now(timezone.utc) + timedelta(seconds=_SIGNED_URL_TTL_SECONDS)
+    ).isoformat()
+
+    return SignEdlPhotoResponse(url=signed, expires_at=expires_at)
