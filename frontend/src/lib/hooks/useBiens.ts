@@ -487,20 +487,10 @@ export function useUploadBienDocument(bienId: string) {
 }
 
 // ── Équipements du bien ──────────────────────────────────────────────────────
-
-export function useBienEquipements(bienId: string) {
-  return useQuery({
-    queryKey: bienKeys.equipements(bienId),
-    queryFn: async () => {
-      const { data } = await api.get<CatalogueEquipement[]>(
-        `/biens/${bienId}/equipements`,
-      );
-      return data;
-    },
-    enabled: Boolean(bienId),
-    staleTime: 60_000,
-  });
-}
+// useBienEquipements (GET /biens/{id}/equipements) supprimé : 0 caller.
+// La donnée est lue via BienDetail.equipements (cf useBien). Les mutations
+// ci-dessous écrivent encore le cache bienKeys.equipements(bienId) — dette
+// dormante à traiter en sprint cleanup dédié (cf doctrine slices canoniques).
 
 export function useSetBienEquipements(bienId: string) {
   const qc = useQueryClient();
