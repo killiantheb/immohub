@@ -1,3 +1,19 @@
+"""Inspection — modèle DORMANT, Phase 2 EDL standalone (signatures électroniques).
+
+Aucune migration Alembic ne crée la table `inspections` : ce modèle est
+réservé pour la Phase 2 où l'EDL deviendra un objet de premier ordre
+indépendant du cycle changement_locataire (signature électronique
+opposable, EDL sans changement de locataire, EDL réguliers, etc.).
+
+Phase 1 (PR-EDL-1, 2026-05-06) : l'EDL est embarqué dans le JSONB
+`changements_locataire.edl_sortie` / `edl_entree` et les photos vont dans
+le bucket privé `edl-photos`. Pas de signature, pas de table dédiée.
+
+Tant que ce modèle reste dormant, NE PAS le réveiller pour des chantiers
+Phase 1 — créer un schéma JSONB inline sur `changements_locataire` ou un
+nouveau modèle scope-Phase-1 plutôt que d'étendre celui-ci.
+"""
+
 import uuid
 from datetime import datetime
 
