@@ -19,11 +19,12 @@
  *     /changement/actif pour résoudre ça.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Home, Loader2, Plus, Trash2, Upload } from "lucide-react";
 import { C } from "@/lib/design-tokens";
 import { Card } from "@/app/app/(dashboard)/biens/[id]/_shared";
 import {
+  signEdlPhotoPath,
   useUploadEdlPhoto,
   useDeleteEdlPhoto,
 } from "@/lib/hooks/useChangements";
@@ -64,14 +65,59 @@ export function EdlCard({
   edlRef,
 }: EdlCardProps) {
   const [open, setOpen] = useState<number | null>(0);
-  // path -> signed URL en cache local (durée de vie : la session). Permet
-  // d'afficher les miniatures juste après upload sans re-fetch.
+  // path -> signed URL en cache local. Peuplé : (a) à l'upload, (b) au mount
+  // / changement de pieces via re-signature pour les paths déjà persistés.
   const [pathToUrl, setPathToUrl] = useState<Record<string, string>>({});
   // tempId interne pour les uploads en vol (per-piece) — affiche un spinner.
   const [pendingByPiece, setPendingByPiece] = useState<Record<number, number>>({});
+  // Paths actuellement en cours de re-signature : affichage spinner mini.
+  const [signingPaths, setSigningPaths] = useState<Record<string, true>>({});
 
   const uploadMut = useUploadEdlPhoto(changementId);
   const deleteMut = useDeleteEdlPhoto(changementId);
+
+  // Dédup des appels de re-signature (évite double request si re-render
+  // intervient entre déclenchement et résolution de la promise).
+  const inFlightRef = useRef<Set<string>>(new Set());
+
+  // Re-signe les paths apparaissant dans `pieces` qui ne sont ni dans le
+  // cache ni en vol. Effet refire à chaque mutation de `pieces` (post-save
+  // EDL recharge un nouveau set de paths) ou de `pathToUrl` (résolution
+  // d'une signature précédente). Skip les URLs http(s) absolues — utiles
+  // tant que le state contient des URLs fraîches injectées à l'upload.
+  useEffect(() => {
+    const allPaths = pieces.flatMap((p) => p.photos);
+    const toSign = allPaths.filter(
+      (p) =>
+        p &&
+        !p.startsWith("http://") &&
+        !p.startsWith("https://") &&
+        !pathToUrl[p] &&
+        !inFlightRef.current.has(p),
+    );
+    if (toSign.length === 0) return;
+
+    for (const path of toSign) {
+      inFlightRef.current.add(path);
+      setSigningPaths((s) => ({ ...s, [path]: true }));
+      signEdlPhotoPath(changementId, path)
+        .then(({ url }) => {
+          setPathToUrl((m) => ({ ...m, [path]: url }));
+        })
+        .catch(() => {
+          // Échec de signature : on ne tente pas de retry. La miniature
+          // restera cassée pour ce path jusqu'au prochain mount.
+        })
+        .finally(() => {
+          inFlightRef.current.delete(path);
+          setSigningPaths((s) => {
+            const next = { ...s };
+            delete next[path];
+            return next;
+          });
+        });
+    }
+  }, [pieces, pathToUrl, changementId]);
 
   function setPiece(idx: number, update: Partial<Piece>) {
     const next = pieces.map((p, i) => (i === idx ? { ...p, ...update } : p));
@@ -216,24 +262,41 @@ export function EdlCard({
 
                 {/* Photos — upload via Supabase bucket privé `edl-photos` */}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {piece.photos.map((path, pi) => (
-                    <div key={`${path}-${pi}`} style={{ position: "relative" }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={srcFor(path)}
-                        alt=""
-                        style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 6, background: C.surface }}
-                      />
-                      <button
-                        onClick={() => handleDelete(idx, pi)}
-                        aria-label="Supprimer la photo"
-                        disabled={deleteMut.isPending}
-                        style={{ position: "absolute", top: -4, right: -4, background: C.red, border: "none", borderRadius: "50%", width: 18, height: 18, cursor: deleteMut.isPending ? "not-allowed" : "pointer", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, opacity: deleteMut.isPending ? 0.6 : 1 }}
-                      >
-                        <Trash2 size={10} />
-                      </button>
-                    </div>
-                  ))}
+                  {piece.photos.map((path, pi) => {
+                    const isSigning = !pathToUrl[path] && !!signingPaths[path];
+                    return (
+                      <div key={`${path}-${pi}`} style={{ position: "relative" }}>
+                        {isSigning ? (
+                          <div
+                            style={{
+                              width: 64, height: 64, borderRadius: 6,
+                              border: `1px solid ${C.border}`,
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              background: C.surface,
+                            }}
+                            aria-label="Chargement de la miniature"
+                          >
+                            <Loader2 size={16} className="animate-spin" style={{ color: C.text3 }} />
+                          </div>
+                        ) : (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={srcFor(path)}
+                            alt=""
+                            style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 6, background: C.surface }}
+                          />
+                        )}
+                        <button
+                          onClick={() => handleDelete(idx, pi)}
+                          aria-label="Supprimer la photo"
+                          disabled={deleteMut.isPending}
+                          style={{ position: "absolute", top: -4, right: -4, background: C.red, border: "none", borderRadius: "50%", width: 18, height: 18, cursor: deleteMut.isPending ? "not-allowed" : "pointer", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, opacity: deleteMut.isPending ? 0.6 : 1 }}
+                        >
+                          <Trash2 size={10} />
+                        </button>
+                      </div>
+                    );
+                  })}
 
                   {/* Spinner placeholders pendant les uploads en vol */}
                   {Array.from({ length: pendingCount }, (_, i) => (

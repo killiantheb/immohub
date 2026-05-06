@@ -28,6 +28,32 @@ export interface EdlPhotoUploadResponse {
   path: string;
 }
 
+export interface EdlPhotoSignResponse {
+  url: string;
+  expires_at: string;
+}
+
+/**
+ * Re-signe un path persisté dans le JSONB. Utilisé au mount d'EdlCard
+ * (PR-EDL-1bis) pour reconstituer les miniatures après reload de page —
+ * les paths ne sont pas des URLs et les signed URLs renvoyées à l'upload
+ * expirent au bout d'1 h.
+ *
+ * Pas de wrapping useMutation : la signature est read-only, sans effet sur
+ * les caches React Query, et l'appelant gère sa propre logique de
+ * dédup/loading via une ref locale.
+ */
+export async function signEdlPhotoPath(
+  changementId: string,
+  path: string,
+): Promise<EdlPhotoSignResponse> {
+  const { data } = await api.get<EdlPhotoSignResponse>(
+    `/changements/${changementId}/edl-photos/sign`,
+    { params: { path } },
+  );
+  return data;
+}
+
 // ── Compression + EXIF rotation ─────────────────────────────────────────────
 // Cible : 1920 px côté max, JPEG 0.82 — aligné useBiens.ts pour cohérence
 // pipeline upload Althy.
