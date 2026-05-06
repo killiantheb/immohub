@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité — Althy",
-  description: "Politique de confidentialité d'Althy — conforme LPD suisse et RGPD européen. Données collectées, finalités, durées de conservation, droits des utilisateurs.",
+  description: "Politique de confidentialité d'Althy — conforme nLPD suisse et RGPD européen. Données collectées, finalités, durées de conservation, droits des utilisateurs.",
 };
 
 const LAST_UPDATE = "Avril 2026";
@@ -49,7 +49,7 @@ export default function ConfidentialitePage() {
         <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.75rem,4vw,2.5rem)", fontWeight: 300, color: "var(--althy-text)", marginBottom: "0.5rem" }}>
           Politique de confidentialité
         </h1>
-        <p style={{ fontSize: 12, color: "var(--althy-text-3)" }}>Dernière mise à jour : {LAST_UPDATE} · Conforme LPD suisse (2023) et RGPD</p>
+        <p style={{ fontSize: 12, color: "var(--althy-text-3)" }}>Dernière mise à jour : {LAST_UPDATE} · Conforme nLPD suisse (2023) et RGPD européen</p>
       </div>
 
       <div style={{ padding: "1rem", background: "var(--althy-green-bg)", borderRadius: 10, border: "1px solid #A8C9A4", marginBottom: "2rem", fontSize: 13 }}>
@@ -60,7 +60,7 @@ export default function ConfidentialitePage() {
       <H2>1. Responsable du traitement</H2>
       <P><strong>HBM Swiss Sàrl</strong>, Genève, Suisse</P>
       <P><strong>DPO (Délégué à la Protection des Données) :</strong> <a href="mailto:privacy@althy.ch" style={{ color: "var(--althy-orange)" }}>privacy@althy.ch</a></P>
-      <P>Base légale principale : LPD suisse (RS 235.1, en vigueur depuis le 1er septembre 2023) et RGPD européen (Règlement 2016/679) pour les utilisateurs résidant dans l'UE.</P>
+      <P>Base légale principale : nouvelle Loi suisse sur la Protection des Données (nLPD, RS 235.1, en vigueur depuis le 1er septembre 2023) et RGPD européen (Règlement 2016/679) pour les utilisateurs résidant dans l'UE.</P>
 
       <H2>2. Données collectées</H2>
       <Table rows={[
@@ -76,12 +76,26 @@ export default function ConfidentialitePage() {
         ["Consentements", "Acceptation CGU, consentement marketing, frais dossier", "Preuve de consentement", "Durée abonnement + 5 ans"],
       ]} />
 
-      <H2>3. Base légale du traitement (art. 6 RGPD / LPD)</H2>
+      <H2>3. Base légale du traitement</H2>
+
+      <H3>3.1 Pour les utilisateurs résidant en Suisse (nLPD)</H3>
+      <P>La nouvelle Loi suisse sur la Protection des Données (nLPD), en vigueur depuis le 1er septembre 2023, autorise par défaut le traitement des données personnelles par les personnes privées (art. 30 nLPD), sauf atteinte illicite à la personnalité de la personne concernée.</P>
+      <P>Lorsque le traitement pourrait constituer une atteinte, il est justifié par l'un des motifs suivants (art. 31 nLPD) :</P>
       <ul style={{ paddingLeft: "1.5rem", margin: "0.5rem 0" }}>
-        <Li><strong>Exécution du contrat (art. 6.1.b RGPD) :</strong> Toutes les données nécessaires à la fourniture du service (gestion des biens, paiements, matching)</Li>
-        <Li><strong>Obligation légale (art. 6.1.c RGPD) :</strong> Données financières (conservation 10 ans selon CO et LT)</Li>
-        <Li><strong>Intérêt légitime (art. 6.1.f RGPD) :</strong> Sécurité, prévention des fraudes, amélioration du service (données anonymisées)</Li>
-        <Li><strong>Consentement (art. 6.1.a RGPD) :</strong> Cookies analytiques, communications marketing, PostHog</Li>
+        <Li><strong>Consentement</strong> de la personne concernée</Li>
+        <Li><strong>Exécution d&apos;un contrat</strong> ou mesures précontractuelles</Li>
+        <Li><strong>Loi</strong> (obligation légale)</Li>
+        <Li><strong>Intérêt prépondérant</strong> d&apos;Althy / HBM Swiss Sàrl</Li>
+      </ul>
+
+      <H3>3.2 Pour les utilisateurs résidant dans l&apos;Union Européenne (RGPD)</H3>
+      <P>Si vous résidez dans un État membre de l&apos;Union Européenne, le Règlement Général sur la Protection des Données (RGPD) s&apos;applique également par effet extraterritorial (art. 3 RGPD).</P>
+      <P>Le traitement de vos données est alors fondé sur les bases légales suivantes :</P>
+      <ul style={{ paddingLeft: "1.5rem", margin: "0.5rem 0" }}>
+        <Li><strong>Article 6.1.a — Consentement :</strong> newsletters, cookies non essentiels</Li>
+        <Li><strong>Article 6.1.b — Exécution du contrat :</strong> gestion compte, services Althy</Li>
+        <Li><strong>Article 6.1.c — Obligation légale :</strong> comptabilité, lutte blanchiment</Li>
+        <Li><strong>Article 6.1.f — Intérêt légitime :</strong> sécurité, prévention fraude</Li>
       </ul>
 
       <H2>4. Partage des données</H2>
@@ -104,14 +118,14 @@ export default function ConfidentialitePage() {
       <P>Certains sous-traitants sont établis aux États-Unis. Ces transferts sont encadrés par des <strong>Clauses Contractuelles Types (CCT/SCCs)</strong> approuvées par la Commission européenne et reconnues par le Préposé fédéral à la protection des données (PFPDT).</P>
       <P>La base de données principale (Supabase) est hébergée dans la région EU (Frankfurt, Allemagne), ce qui minimise les transferts transatlantiques pour les données les plus sensibles.</P>
 
-      <H2>6. Vos droits (LPD art. 25 / RGPD art. 15–22)</H2>
+      <H2>6. Vos droits (art. 25–32 nLPD / art. 15–22 RGPD)</H2>
       <div style={{ display: "grid", gap: "0.75rem", margin: "0.75rem 0" }}>
         {[
-          { droit: "Accès (art. 15 RGPD)", desc: "Obtenir une copie de toutes vos données personnelles" },
-          { droit: "Rectification (art. 16 RGPD)", desc: "Corriger des données inexactes ou incomplètes" },
-          { droit: "Effacement (art. 17 RGPD / LPD art. 32)", desc: "Demander la suppression de vos données (sous réserve d'obligations légales)" },
-          { droit: "Portabilité (art. 20 RGPD)", desc: "Recevoir vos données dans un format structuré (JSON/CSV)" },
-          { droit: "Opposition (art. 21 RGPD)", desc: "S'opposer au traitement fondé sur l'intérêt légitime" },
+          { droit: "Accès (art. 15 RGPD / art. 25 nLPD)", desc: "Obtenir une copie de toutes vos données personnelles" },
+          { droit: "Rectification (art. 16 RGPD / art. 32 al. 1 nLPD)", desc: "Corriger des données inexactes ou incomplètes" },
+          { droit: "Effacement (art. 17 RGPD / art. 32 al. 2 nLPD)", desc: "Demander la suppression de vos données (sous réserve d'obligations légales)" },
+          { droit: "Portabilité (art. 20 RGPD / art. 28 nLPD)", desc: "Recevoir vos données dans un format structuré (JSON/CSV)" },
+          { droit: "Opposition (art. 21 RGPD / art. 30 nLPD)", desc: "S'opposer au traitement fondé sur l'intérêt légitime" },
           { droit: "Retrait du consentement", desc: "Retirer votre consentement à tout moment (analytics, marketing)" },
         ].map(r => (
           <div key={r.droit} style={{ padding: "0.75rem 1rem", background: "#fff", borderRadius: 10, border: "1px solid var(--althy-border)", display: "flex", gap: "1rem", alignItems: "flex-start" }}>
