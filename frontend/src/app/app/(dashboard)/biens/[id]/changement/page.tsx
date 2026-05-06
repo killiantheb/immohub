@@ -3,29 +3,20 @@
 import { useParams } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import {
-  AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
-  ClipboardList, Home, Key, LogIn, LogOut, Plus, Search,
-  Trash2, Upload, UserCheck,
+  AlertTriangle, CheckCircle2,
+  ClipboardList, LogIn, LogOut, Search, UserCheck,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { fmtDate, fmtCHF, Card, Badge } from "../_shared";
 import { C } from "@/lib/design-tokens";
 import { BienBackButton } from "@/components/biens/BienBackButton";
+import { EdlCard, type Piece, type Edl } from "@/components/changement/EdlCard";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type Phase = "depart_annonce" | "recherche" | "checkout" | "checkin" | "termine";
 
 interface ChecklistItem { id: string; label: string; done: boolean }
-
-interface Piece {
-  nom: string;
-  etat: "bon" | "usure_normale" | "degradation" | "";
-  commentaire: string;
-  photos: string[];
-}
-
-interface Edl { pieces: Piece[]; inventaire: Record<string, unknown> }
 
 interface Changement {
   id: string;
@@ -63,12 +54,6 @@ const PHASES_INFO: Record<Phase | "termine", { label: string; icon: React.Elemen
   checkin:        { label: "Check-in (EDL entrée)", icon: LogIn,       color: C.green },
   termine:        { label: "Cycle terminé",         icon: CheckCircle2, color: C.green },
 };
-
-const ETAT_OPTIONS = [
-  { value: "bon",          label: "Bon état",       color: C.green },
-  { value: "usure_normale", label: "Usure normale",  color: C.amber },
-  { value: "degradation",  label: "Dégradation",    color: C.red },
-] as const;
 
 // ── Sous-composants ───────────────────────────────────────────────────────────
 
@@ -164,153 +149,6 @@ function ChecklistCard({ items, onToggle }: {
   );
 }
 
-function EdlCard({
-  title,
-  pieces,
-  onChange,
-  edlRef,
-}: {
-  title: string;
-  pieces: Piece[];
-  onChange: (pieces: Piece[]) => void;
-  edlRef?: Edl | null;
-}) {
-  const [open, setOpen] = useState<number | null>(0);
-
-  function setPiece(idx: number, update: Partial<Piece>) {
-    const next = pieces.map((p, i) => i === idx ? { ...p, ...update } : p);
-    onChange(next);
-  }
-
-  return (
-    <Card style={{ marginBottom: "1rem" }}>
-      <div style={{ fontWeight: 600, color: C.text, fontSize: 14, marginBottom: 12 }}>{title}</div>
-      {pieces.map((piece, idx) => {
-        const isOpen = open === idx;
-        const refPiece = edlRef?.pieces?.[idx];
-
-        return (
-          <div
-            key={idx}
-            style={{ borderBottom: `1px solid ${C.border}`, paddingBottom: 8, marginBottom: 8 }}
-          >
-            <button
-              onClick={() => setOpen(isOpen ? null : idx)}
-              style={{
-                width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-                background: "none", border: "none", cursor: "pointer",
-                padding: "6px 0", color: C.text, fontSize: 13, fontWeight: 500,
-              }}
-            >
-              <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <Home size={14} color={C.text3} />
-                {piece.nom}
-                {piece.etat && (
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 20,
-                    background: piece.etat === "bon" ? "var(--althy-green-bg)" : piece.etat === "usure_normale" ? "var(--althy-amber-bg)" : "var(--althy-red-bg)",
-                    color: piece.etat === "bon" ? C.green : piece.etat === "usure_normale" ? "var(--althy-amber)" : C.red,
-                  }}>
-                    {ETAT_OPTIONS.find(e => e.value === piece.etat)?.label}
-                  </span>
-                )}
-              </span>
-              {isOpen ? <ChevronUp size={14} color={C.text3} /> : <ChevronDown size={14} color={C.text3} />}
-            </button>
-
-            {isOpen && (
-              <div style={{ paddingTop: 8, display: "flex", flexDirection: "column", gap: 10 }}>
-                {/* Comparaison EDL ref */}
-                {refPiece?.etat && (
-                  <div style={{ fontSize: 12, color: C.text3, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, padding: "6px 10px" }}>
-                    <strong>EDL entrée :</strong> {ETAT_OPTIONS.find(e => e.value === refPiece.etat)?.label}
-                    {refPiece.commentaire && <> — {refPiece.commentaire}</>}
-                  </div>
-                )}
-
-                {/* État */}
-                <div style={{ display: "flex", gap: 8 }}>
-                  {ETAT_OPTIONS.map(opt => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setPiece(idx, { etat: opt.value as Piece["etat"] })}
-                      style={{
-                        flex: 1, padding: "6px 0", borderRadius: 8, cursor: "pointer",
-                        border: `2px solid ${piece.etat === opt.value ? opt.color : C.border}`,
-                        background: piece.etat === opt.value ? (opt.value === "bon" ? "var(--althy-green-bg)" : opt.value === "usure_normale" ? "var(--althy-amber-bg)" : "var(--althy-red-bg)") : C.surface,
-                        color: piece.etat === opt.value ? opt.color : C.text3,
-                        fontSize: 11, fontWeight: 600,
-                      }}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Commentaire */}
-                <textarea
-                  value={piece.commentaire}
-                  onChange={e => setPiece(idx, { commentaire: e.target.value })}
-                  placeholder="Observations, remarques..."
-                  rows={2}
-                  style={{
-                    width: "100%", borderRadius: 8, border: `1px solid ${C.border}`,
-                    padding: "8px 10px", fontSize: 12, color: C.text, resize: "none",
-                    background: C.surface, fontFamily: "inherit", boxSizing: "border-box",
-                  }}
-                />
-
-                {/* Photos (placeholder mobile-friendly) */}
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {piece.photos.map((url, pi) => (
-                    <div key={pi} style={{ position: "relative" }}>
-                      <img src={url} alt="" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 6 }} />
-                      <button
-                        onClick={() => setPiece(idx, { photos: piece.photos.filter((_, j) => j !== pi) })}
-                        style={{ position: "absolute", top: -4, right: -4, background: C.red, border: "none", borderRadius: "50%", width: 18, height: 18, cursor: "pointer", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
-                      >
-                        <Trash2 size={10} />
-                      </button>
-                    </div>
-                  ))}
-                  <label
-                    style={{
-                      width: 64, height: 64, borderRadius: 6,
-                      border: `2px dashed ${C.border}`, display: "flex",
-                      flexDirection: "column", alignItems: "center", justifyContent: "center",
-                      cursor: "pointer", color: C.text3, gap: 2,
-                    }}
-                  >
-                    <Upload size={14} />
-                    <span style={{ fontSize: 9, fontWeight: 600 }}>Photo</span>
-                    <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => {
-                      const f = e.target.files?.[0];
-                      if (!f) return;
-                      const url = URL.createObjectURL(f);
-                      setPiece(idx, { photos: [...piece.photos, url] });
-                    }} />
-                  </label>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })}
-
-      {/* Ajouter une pièce */}
-      <button
-        onClick={() => onChange([...pieces, { nom: `Pièce ${pieces.length + 1}`, etat: "", commentaire: "", photos: [] }])}
-        style={{
-          display: "flex", alignItems: "center", gap: 6, marginTop: 8,
-          background: "none", border: `1px dashed ${C.border}`, borderRadius: 8,
-          padding: "6px 12px", cursor: "pointer", color: C.text3, fontSize: 12,
-        }}
-      >
-        <Plus size={12} /> Ajouter une pièce
-      </button>
-    </Card>
-  );
-}
 
 // ── Page principale ───────────────────────────────────────────────────────────
 
@@ -605,6 +443,8 @@ export default function ChangementPage() {
             État des lieux de sortie
           </div>
           <EdlCard
+            changementId={changement.id}
+            edlType="sortie"
             title="EDL sortie — pièce par pièce"
             pieces={piecesEdlSortie}
             onChange={setPiecesEdlSortie}
@@ -672,6 +512,8 @@ export default function ChangementPage() {
             État des lieux d&apos;entrée — nouveau locataire
           </div>
           <EdlCard
+            changementId={changement.id}
+            edlType="entree"
             title="EDL entrée — pièce par pièce"
             pieces={piecesEdlEntree}
             onChange={setPiecesEdlEntree}
