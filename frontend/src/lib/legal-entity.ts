@@ -1,8 +1,5 @@
 /**
  * Constantes juridiques — source unique pour toutes les mentions légales.
- *
- * ⚠  À mettre à jour dès que la Sàrl est inscrite au RC.
- *     Champs marqués « TODO » = à compléter avec les données réelles.
  */
 export const LEGAL = {
   /** Raison sociale affichée partout */
@@ -11,8 +8,8 @@ export const LEGAL = {
   /** Forme juridique actuelle */
   form: "Société à responsabilité limitée (Sàrl)",
 
-  /** Numéro IDE — à compléter après attribution */
-  ide: "CHE-XXX.XXX.XXX" as const,   // TODO: remplacer par le vrai numéro
+  /** Numéro IDE (sert aussi de N° TVA) */
+  ide: "CHE-179.984.757" as const,
 
   /** Siège social */
   siege: "Genève, Suisse",
@@ -20,8 +17,8 @@ export const LEGAL = {
   /** Adresse postale complète — à compléter */
   adresse: "Genève, Suisse",         // TODO: adresse complète
 
-  /** Représentant légal */
-  representant: "HBM Swiss Sàrl",
+  /** Représentant légal (personne physique) */
+  representant: "Killian Thébaud",
 
   /** Contact général */
   email: "contact@althy.ch",
