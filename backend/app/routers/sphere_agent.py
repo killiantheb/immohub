@@ -40,8 +40,6 @@ AuthDep    = Annotated[User, Depends(get_current_user)]
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-_MODEL = "claude-sonnet-4-5-20251001"
-
 _ROLE_FR: dict[str, str] = {
     "proprio_solo":    "propriétaire solo",
     "agence":          "agence immobilière",
@@ -614,7 +612,7 @@ async def _call_claude(user: User, ctx: dict, prefs: dict, db: AsyncSession) -> 
     try:
         client  = _client()
         message = await client.messages.create(
-            model=_MODEL,
+            model=settings.ANTHROPIC_MODEL_DEFAULT,
             max_tokens=2000,
             system=_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": _build_prompt(user, ctx, prefs)}],
@@ -1211,7 +1209,7 @@ Conserve le sens original. Adapte selon l'instruction. Sois concis."""
 
     client  = _client()
     message = await client.messages.create(
-        model=_MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=600,
         system=_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}],
@@ -1429,7 +1427,7 @@ async def voice_action(
     client = _client()
 
     response = await client.messages.create(
-        model=_MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=800,
         messages=[{"role": "user", "content": f"""
 Tu es Althy, assistant immobilier suisse. L'utilisateur a dit :
@@ -1558,7 +1556,7 @@ Tu peux conseiller sur :
 Réponds en français, cite les articles de loi suisses si pertinent. Sois direct et actionnable. Max 300 mots."""
 
     response = await client.messages.create(
-        model=_MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=600,
         system=system,
         messages=[{"role": "user", "content": payload.question}],
@@ -1580,7 +1578,7 @@ async def parse_contract_params(
 
     client = _client()
     response = await client.messages.create(
-        model=_MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=500,
         messages=[{"role": "user", "content": f"""
 Tu es un expert en droit du bail suisse. Analyse cette description et extrait les paramètres du contrat.
@@ -1777,7 +1775,7 @@ async def parse_location(
         try:
             client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
             msg = client.messages.create(
-                model="claude-sonnet-4-6",
+                model=settings.ANTHROPIC_MODEL_DEFAULT,
                 max_tokens=256,
                 temperature=0,
                 system=_PARSE_LOCATION_SYSTEM,

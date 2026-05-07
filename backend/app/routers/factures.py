@@ -31,7 +31,6 @@ AuthDep = Annotated[User, Depends(get_current_user)]
 
 # ── Constantes Vision ─────────────────────────────────────────────────────────
 
-_MODEL   = "claude-sonnet-4-20250514"
 _MAX_MB  = 10
 _ALLOWED = {
     "image/jpeg":      "image",
@@ -129,7 +128,7 @@ async def analyser_facture(
     client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
     try:
         message = await client.messages.create(
-            model=_MODEL,
+            model=settings.ANTHROPIC_MODEL_VISION,
             max_tokens=512,
             messages=[{"role": "user", "content": contenu_vision}],
         )

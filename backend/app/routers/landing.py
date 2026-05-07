@@ -47,7 +47,6 @@ router = APIRouter(prefix="/landing", tags=["landing"])
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-MODEL = "claude-sonnet-4-5-20251001"
 MAX_TOKENS_PER_TURN = 500
 MAX_TURNS_PER_SESSION = 4
 COOKIE_NAME = "althy_landing_sid"
@@ -244,7 +243,7 @@ async def landing_chat(
 
         try:
             async with client.messages.stream(
-                model=MODEL,
+                model=settings.ANTHROPIC_MODEL_DEFAULT,
                 max_tokens=MAX_TOKENS_PER_TURN,
                 system=SYSTEM_PROMPT,
                 messages=messages,

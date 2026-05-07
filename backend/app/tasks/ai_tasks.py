@@ -184,7 +184,7 @@ async def _daily_briefing_async() -> dict:
                 first_name = user.first_name or user.email.split("@")[0]
 
                 response = await client.messages.create(
-                    model="claude-sonnet-4-5",
+                    model=settings.ANTHROPIC_MODEL_DEFAULT,
                     max_tokens=1024,
                     system=(
                         "Tu es Althy, assistante immobilière suisse. "

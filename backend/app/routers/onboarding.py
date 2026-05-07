@@ -232,7 +232,7 @@ async def analyser_agence(
     client = _claude()
     try:
         msg = await client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=settings.ANTHROPIC_MODEL_DEFAULT,
             max_tokens=1024,
             messages=[{
                 "role": "user",
@@ -711,7 +711,7 @@ Consignes :
     try:
         client = _claude()
         msg = await client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=settings.ANTHROPIC_MODEL_DEFAULT,
             max_tokens=1200,
             messages=[{"role": "user", "content": prompt}],
         )

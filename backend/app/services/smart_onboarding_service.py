@@ -13,13 +13,12 @@ from anthropic import AsyncAnthropic
 from app.core.config import settings
 
 client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-MODEL = "claude-sonnet-4-5"
 
 
 async def detect_profile_from_speech(transcript: str) -> dict:
     """Analyse ce que l'utilisateur a dit et extrait son profil."""
     response = await client.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=600,
         messages=[{"role": "user", "content": f"""
 Tu es Althy, assistant immobilier suisse. Un nouvel utilisateur vient de parler.
@@ -178,7 +177,7 @@ UNIQUEMENT le JSON."""
     try:
         response = await asyncio.wait_for(
             client.messages.create(
-                model=MODEL,
+                model=settings.ANTHROPIC_MODEL_DEFAULT,
                 max_tokens=3000,
                 tools=[{"type": "web_search_20250305", "name": "web_search"}],
                 messages=[{"role": "user", "content": search_prompt}],
@@ -191,7 +190,7 @@ UNIQUEMENT le JSON."""
         try:
             response = await asyncio.wait_for(
                 client.messages.create(
-                    model=MODEL,
+                    model=settings.ANTHROPIC_MODEL_DEFAULT,
                     max_tokens=1500,
                     messages=[{"role": "user", "content": search_prompt + "\n\nUtilise uniquement tes connaissances générales, sans recherche web."}],
                 ),

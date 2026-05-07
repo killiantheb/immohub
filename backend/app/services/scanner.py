@@ -105,7 +105,7 @@ async def _extraire_avec_claude(html: str, contexte_utilisateur: dict) -> dict:
     identifiant = agence or nom_complet
 
     resp = await claude.messages.create(
-        model      = "claude-sonnet-4-20250514",
+        model      = settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens = 3000,
         messages   = [{
             "role": "user",

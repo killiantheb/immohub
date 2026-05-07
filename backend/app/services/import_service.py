@@ -14,7 +14,6 @@ from anthropic import AsyncAnthropic
 from app.core.config import settings
 
 CLIENT = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-MODEL = "claude-sonnet-4-5"
 
 PROPERTY_SCHEMA = """
 {
@@ -63,7 +62,7 @@ Règles :
 async def extract_from_text(text: str) -> dict:
     """Extrait les données d'un texte brut via Claude."""
     response = await CLIENT.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=2000,
         messages=[{"role": "user", "content": f"{EXTRACT_PROMPT}\n\nDocument :\n{text[:8000]}"}],
     )
@@ -85,7 +84,7 @@ async def extract_from_pdf_bytes(pdf_bytes: bytes) -> dict:
     # Fallback: envoie le PDF en base64 à Claude (vision)
     b64 = base64.standard_b64encode(pdf_bytes).decode()
     response = await CLIENT.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=2000,
         messages=[{
             "role": "user",
@@ -102,7 +101,7 @@ async def extract_from_image_bytes(image_bytes: bytes, media_type: str) -> dict:
     """Extrait les données d'une image via Claude Vision."""
     b64 = base64.standard_b64encode(image_bytes).decode()
     response = await CLIENT.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=2000,
         messages=[{
             "role": "user",
@@ -180,7 +179,7 @@ Retourne UNIQUEMENT ce JSON :
 
     try:
         response = await CLIENT.messages.create(
-            model=MODEL,
+            model=settings.ANTHROPIC_MODEL_DEFAULT,
             max_tokens=400,
             messages=[{"role": "user", "content": messages_content}],
         )

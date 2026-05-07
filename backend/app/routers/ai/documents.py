@@ -518,7 +518,7 @@ async def generer_document(
     try:
         client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
         response = await client.messages.create(
-            model="claude-sonnet-4-5",
+            model=settings.ANTHROPIC_MODEL_DEFAULT,
             max_tokens=4096,
             system="Tu es Althy, assistante immobilière suisse experte en droit du bail. "
                    "Génère des documents juridiques précis et conformes au droit suisse.",

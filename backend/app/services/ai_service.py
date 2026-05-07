@@ -1,5 +1,10 @@
 """
-Althy AI Service — powered by Claude claude-sonnet-4-20250514.
+Althy AI Service — powered by Claude.
+
+Le modèle est lu depuis `settings.ANTHROPIC_MODEL_DEFAULT` (cf
+`app/core/config.py`) — source de vérité unique pour tous les appels
+Claude du backend (3-ARCHITECTURE.md §3.3). Ne JAMAIS hardcoder
+"claude-sonnet-*" / "claude-opus-*" / "claude-haiku-*" dans ce service.
 
 Features
 --------
@@ -52,7 +57,6 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-MODEL = "claude-sonnet-4-5-20251001"
 MAX_TOKENS = 1000
 RATE_LIMIT = 10          # calls per minute per user
 RATE_WINDOW = 60         # seconds
@@ -109,7 +113,7 @@ async def _log_usage(
     entry = AIUsageLog(
         user_id=uuid.UUID(user_id),
         action=action,
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         input_tokens=input_tok,
         output_tokens=output_tok,
         cost_usd=cost,
@@ -203,7 +207,7 @@ Retourne uniquement l'annonce, sans commentaire."""
 
     client = _client()
     message = await client.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=MAX_TOKENS,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -246,7 +250,7 @@ Facteurs : ratio revenus/loyer (idéal ≥3x), stabilité emploi, historique loc
 
     client = _client()
     message = await client.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=MAX_TOKENS,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -303,7 +307,7 @@ Retourne UNIQUEMENT un objet JSON valide :
 
     client = _client()
     message = await client.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=MAX_TOKENS,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -647,7 +651,7 @@ async def chat_stream(
 
     try:
         async with client.messages.stream(
-            model=MODEL,
+            model=settings.ANTHROPIC_MODEL_DEFAULT,
             max_tokens=MAX_TOKENS,
             system=system,
             messages=messages,
@@ -752,7 +756,7 @@ Détecte uniquement des patterns réels : impayés répétés, retards croissant
 
     client = _client()
     message = await client.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=MAX_TOKENS,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -829,7 +833,7 @@ Réponds uniquement le bail, en markdown."""
 
     client = _client()
     message = await client.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=4000,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -904,7 +908,7 @@ Inclus : cuisine, salle de bain, WC, séjour, chambres selon le bien, cave/local
 
     client = _client()
     message = await client.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=3000,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -953,7 +957,7 @@ Sois factuel, précis et professionnel. Max 400 mots."""
 
     client = _client()
     message = await client.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=1500,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -1010,7 +1014,7 @@ TVA CH : 8.1% (taux normal), 3.8% (hébergement), 2.6% (alimentation)."""
 
     client = _client()
     message = await client.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=2000,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -1077,7 +1081,7 @@ Sois clair, positif et neutre. Signale dans 'warnings' tout point défavorable o
 
     client = _client()
     message = await client.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=2000,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -1142,7 +1146,7 @@ Réponds en français."""
 
     client = _client()
     message = await client.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=1000,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -1230,7 +1234,7 @@ Retourne UNIQUEMENT ce JSON :
 
     client = _client()
     message = await client.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=2000,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -1304,7 +1308,7 @@ Règles:
 
     client = _client()
     message = await client.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=1500,
         messages=[{"role": "user", "content": prompt}],
     )

@@ -27,7 +27,6 @@ DbDep = Annotated[AsyncSession, Depends(get_db)]
 import logging
 _logger = logging.getLogger("althy.estimation")
 
-MODEL      = "claude-sonnet-4-20250514"
 MAX_TOKENS = 300
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -83,7 +82,7 @@ async def estimation_rapide(
     try:
         client  = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
         message = await client.messages.create(
-            model=MODEL,
+            model=settings.ANTHROPIC_MODEL_DEFAULT,
             max_tokens=MAX_TOKENS,
             messages=[{"role": "user", "content": prompt}],
         )

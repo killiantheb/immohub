@@ -220,7 +220,7 @@ async def scoring_locataire(
             "score_global": score_global,
         }
         resp = await client.messages.create(
-            model="claude-sonnet-4-5",
+            model=settings.ANTHROPIC_MODEL_DEFAULT,
             max_tokens=1024,
             system="Tu es Althy, assistante immobilière suisse. Génère un résumé concis (2-3 phrases) du profil locataire en français.",
             messages=[{"role": "user", "content": f"Données locataire : {_json.dumps(prompt_data, ensure_ascii=False)}"}],

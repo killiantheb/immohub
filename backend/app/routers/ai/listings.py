@@ -402,7 +402,7 @@ async def scan_facture(
         if media_type != "pdf":
             b64 = base64.standard_b64encode(file_bytes).decode()
             msg = await client.messages.create(
-                model="claude-sonnet-4-6",
+                model=settings.ANTHROPIC_MODEL_VISION,
                 max_tokens=400,
                 messages=[{"role": "user", "content": [
                     {"type": "text", "text": extraction_prompt},
@@ -417,7 +417,7 @@ async def scan_facture(
             except Exception:
                 pdf_text = "(Contenu PDF non lisible)"
             msg = await client.messages.create(
-                model="claude-sonnet-4-6",
+                model=settings.ANTHROPIC_MODEL_VISION,
                 max_tokens=400,
                 messages=[{"role": "user", "content": f"{extraction_prompt}\n\nContenu PDF:\n{pdf_text[:3000]}"}],
             )
@@ -581,7 +581,7 @@ Les tags doivent être 5 adjectifs ou courtes expressions décrivant les atouts 
 Réponds UNIQUEMENT avec le JSON, aucun autre texte."""
 
     message = await client.messages.create(
-        model="claude-sonnet-4-6",
+        model=settings.ANTHROPIC_MODEL_VISION,
         max_tokens=800,
         messages=[{"role": "user", "content": prompt}],
     )

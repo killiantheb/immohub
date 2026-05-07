@@ -451,7 +451,7 @@ async def ai_question(body: AIQuestionRequest, db: DbDep):
 
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
     ai_msg_resp = client.messages.create(
-        model="claude-sonnet-4-6",
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=400,
         system=(
             "Tu es Althy, l'assistant du portail propriétaire. "
