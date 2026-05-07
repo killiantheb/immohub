@@ -162,6 +162,11 @@ export default function ChangementPage() {
   // EDL local state (non-sauvegardé auto)
   const [piecesEdlSortie, setPiecesEdlSortie] = useState<Piece[]>(PIECES_DEFAUT);
   const [piecesEdlEntree, setPiecesEdlEntree] = useState<Piece[]>(PIECES_DEFAUT);
+  // Champs racine enrichis (PR-EDL-2) — peuplés au load depuis le JSONB et
+  // après pré-remplissage IA. Persistés dans `sauvegarderEdl` aux côtés des
+  // pièces. Lecture seule côté UI Phase 1.
+  const [rootSortie, setRootSortie] = useState<Edl | null>(null);
+  const [rootEntree, setRootEntree] = useState<Edl | null>(null);
   const [cautionRetenue, setCautionRetenue] = useState("");
   const [cautionMotif, setCautionMotif] = useState("");
   const [dateDepart, setDateDepart] = useState("");
@@ -176,6 +181,11 @@ export default function ChangementPage() {
       if (data) {
         if (data.edl_sortie?.pieces?.length) setPiecesEdlSortie(data.edl_sortie.pieces);
         if (data.edl_entree?.pieces?.length) setPiecesEdlEntree(data.edl_entree.pieces);
+        // Conserve les champs racine pour l'affichage lecture seule des
+        // détails IA (PR-EDL-2). Si le JSONB n'en a pas (ancien EDL), reste
+        // null et la section ne s'affiche pas.
+        setRootSortie(data.edl_sortie ?? null);
+        setRootEntree(data.edl_entree ?? null);
         if (data.caution_retenue) setCautionRetenue(String(data.caution_retenue));
         if (data.caution_motif) setCautionMotif(data.caution_motif);
         if (data.date_depart_prevu) setDateDepart(data.date_depart_prevu);
@@ -234,20 +244,82 @@ export default function ChangementPage() {
     }
   }
 
-  async function sauvegarderEdl(type: "sortie" | "entree") {
+  async function sauvegarderEdl(
+    type: "sortie" | "entree",
+    overrides?: Partial<Edl>,
+  ) {
     if (!changement) return;
     setSaving(true);
+    // Champs racine PR-EDL-2 : prend les overrides si fournis (cas pré-remplissage
+    // IA qui veut persister les champs racine du même mouvement), sinon ceux
+    // déjà en state (au load depuis JSONB).
+    const root = type === "sortie" ? rootSortie : rootEntree;
+    const r = { ...root, ...overrides };
     try {
       const { data } = await api.put(`/biens/${bienId}/changement/${changement.id}/edl`, {
         type,
         pieces: type === "sortie" ? piecesEdlSortie : piecesEdlEntree,
         caution_retenue: type === "sortie" && cautionRetenue ? parseFloat(cautionRetenue) : null,
         caution_motif: type === "sortie" ? cautionMotif || null : null,
+        // Champs racine PR-EDL-2
+        general_condition: r?.general_condition || null,
+        keys_given: r?.keys_given ?? null,
+        meter_readings: r?.meter_readings ?? null,
+        degradations: r?.degradations ?? null,
+        total_estimated_cost_chf: r?.total_estimated_cost_chf ?? null,
+        remarks: r?.remarks ?? null,
       });
       setChangement(data);
+      // Recharge le state racine depuis la réponse pour rester synchro
+      // (le backend renvoie le JSONB mis à jour).
+      if (type === "sortie") setRootSortie(data.edl_sortie ?? null);
+      else setRootEntree(data.edl_entree ?? null);
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
       setError(msg ?? "Erreur sauvegarde EDL");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /**
+   * Callback appelé quand l'IA pré-remplit l'EDL. Met à jour le state local
+   * (pieces + root) puis déclenche un save immédiat avec les champs racine
+   * pour persister dans le JSONB. L'utilisateur peut ensuite éditer pièce
+   * par pièce et re-sauver.
+   */
+  async function applyIaDraft(type: "sortie" | "entree", edl: Edl) {
+    if (type === "sortie") {
+      setPiecesEdlSortie(edl.pieces);
+      setRootSortie(edl);
+    } else {
+      setPiecesEdlEntree(edl.pieces);
+      setRootEntree(edl);
+    }
+    // Sauve immédiatement avec les pieces + champs racine fraîchement IA.
+    // On contourne le state asynchrone en passant le snapshot complet via
+    // override + en construisant les pieces sur place.
+    if (!changement) return;
+    setSaving(true);
+    try {
+      const { data } = await api.put(`/biens/${bienId}/changement/${changement.id}/edl`, {
+        type,
+        pieces: edl.pieces,
+        caution_retenue: type === "sortie" && cautionRetenue ? parseFloat(cautionRetenue) : null,
+        caution_motif: type === "sortie" ? cautionMotif || null : null,
+        general_condition: edl.general_condition || null,
+        keys_given: edl.keys_given ?? null,
+        meter_readings: edl.meter_readings ?? null,
+        degradations: edl.degradations ?? null,
+        total_estimated_cost_chf: edl.total_estimated_cost_chf ?? null,
+        remarks: edl.remarks ?? null,
+      });
+      setChangement(data);
+      if (type === "sortie") setRootSortie(data.edl_sortie ?? null);
+      else setRootEntree(data.edl_entree ?? null);
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setError(msg ?? "Erreur sauvegarde EDL après IA");
     } finally {
       setSaving(false);
     }
@@ -444,10 +516,13 @@ export default function ChangementPage() {
           </div>
           <EdlCard
             changementId={changement.id}
+            bienId={bienId}
             edlType="sortie"
             title="EDL sortie — pièce par pièce"
             pieces={piecesEdlSortie}
             onChange={setPiecesEdlSortie}
+            rootFields={rootSortie}
+            onApplyIaDraft={(edl) => applyIaDraft("sortie", edl)}
           />
 
           <Card style={{ marginBottom: "1rem" }}>
@@ -513,11 +588,14 @@ export default function ChangementPage() {
           </div>
           <EdlCard
             changementId={changement.id}
+            bienId={bienId}
             edlType="entree"
             title="EDL entrée — pièce par pièce"
             pieces={piecesEdlEntree}
             onChange={setPiecesEdlEntree}
             edlRef={changement.edl_sortie}
+            rootFields={rootEntree}
+            onApplyIaDraft={(edl) => applyIaDraft("entree", edl)}
           />
 
           <div style={{ display: "flex", gap: 8 }}>

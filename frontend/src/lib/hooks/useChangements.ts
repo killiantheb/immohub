@@ -22,6 +22,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
+import type { Edl, EdlElement, EdlDegradation, Piece } from "@/components/changement/EdlCard";
 
 export interface EdlPhotoUploadResponse {
   url: string;
@@ -31,6 +32,95 @@ export interface EdlPhotoUploadResponse {
 export interface EdlPhotoSignResponse {
   url: string;
   expires_at: string;
+}
+
+// ── Draft IA (PR-EDL-2) ─────────────────────────────────────────────────────
+// Forme du JSON renvoyé par `POST /ai/draft-edl`. Distinct de l'`Edl`
+// frontend : l'IA renvoie `rooms[]` (avec `elements[]` détaillés) ; on
+// transforme côté `onSuccess` en `pieces[]` (forme stockée dans le JSONB
+// `edl_sortie` / `edl_entree`). Mapping rooms→pieces côté frontend (Option A).
+
+interface DraftEdlRoom {
+  name: string;
+  elements: EdlElement[];
+}
+
+export interface DraftEdlResponse {
+  type: "entry" | "exit" | "entree" | "sortie";
+  date: string;
+  property_summary?: string;
+  general_condition?: "bon" | "moyen" | "mauvais" | string;
+  rooms?: DraftEdlRoom[];
+  keys_given?: Record<string, number>;
+  meter_readings?: Record<string, number | null>;
+  remarks?: string;
+  degradations?: EdlDegradation[];
+  total_estimated_cost_chf?: number | null;
+  signatures_required?: string[];
+  requires_validation?: boolean;
+  // Fallback : si Claude ne renvoie pas du JSON parseable, ai_service
+  // retourne `{ type, date, raw, rooms: [] }`.
+  raw?: string;
+}
+
+/**
+ * Map condition IA ("bon" | "moyen" | "mauvais" | "à noter" | …) vers l'enum
+ * frontend etat de pièce. "moyen" → usure normale (décision arbitrée
+ * PR-EDL-2). "à noter" et autres → "" (non saisi).
+ */
+function conditionToEtat(condition: string): Piece["etat"] {
+  const c = condition.toLowerCase().trim();
+  if (c === "bon") return "bon";
+  if (c === "moyen") return "usure_normale";
+  if (c === "mauvais") return "degradation";
+  return "";
+}
+
+/**
+ * Synthèse de l'état d'une pièce depuis ses elements[]. Heuristique :
+ *  - une dégradation détectée → "degradation"
+ *  - sinon une usure normale → "usure_normale"
+ *  - sinon tous "bon" → "bon"
+ *  - sinon (vide ou mixte) → "" (laissé à saisir)
+ */
+function pieceEtatFromElements(elements: EdlElement[]): Piece["etat"] {
+  if (!elements || elements.length === 0) return "";
+  const etats = elements.map((e) => conditionToEtat(e.condition));
+  if (etats.includes("degradation")) return "degradation";
+  if (etats.includes("usure_normale")) return "usure_normale";
+  if (etats.every((e) => e === "bon")) return "bon";
+  return "";
+}
+
+/**
+ * Convertit la réponse `DraftEdlResponse` en structure `Edl` stockée dans le
+ * JSONB. Le mapping rooms→pieces est l'opération clé : chaque room IA
+ * devient une `Piece` (avec elements[] préservés en lecture seule).
+ */
+export function draftEdlToEdl(draft: DraftEdlResponse): Edl {
+  const pieces: Piece[] = (draft.rooms ?? []).map((r) => ({
+    nom: r.name,
+    etat: pieceEtatFromElements(r.elements ?? []),
+    commentaire: "",
+    photos: [],
+    elements: r.elements ?? [],
+  }));
+
+  // Normalisation general_condition vers l'enum frontend.
+  const gc = (draft.general_condition ?? "").toLowerCase();
+  const generalCondition: Edl["general_condition"] =
+    gc === "bon" || gc === "moyen" || gc === "mauvais" ? gc : "";
+
+  return {
+    pieces,
+    inventaire: {},
+    general_condition: generalCondition,
+    keys_given: draft.keys_given,
+    meter_readings: draft.meter_readings,
+    degradations: draft.degradations,
+    total_estimated_cost_chf: draft.total_estimated_cost_chf ?? null,
+    remarks: draft.remarks,
+  };
 }
 
 /**
@@ -178,6 +268,43 @@ export function useDeleteEdlPhoto(changementId: string) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["changement", changementId] });
+    },
+  });
+}
+
+// ── Draft IA EDL (PR-EDL-2) ─────────────────────────────────────────────────
+//
+// Pré-remplit un EDL via Claude. Le mapping rooms→pieces est fait dans le
+// retour : `data.edl` (forme `Edl` frontend, prête à être posée dans le state
+// EDL local) + `data.draft` (la réponse brute IA, conservée si jamais on
+// veut afficher des champs non encore mappés). L'appelant choisit ensuite
+// d'écraser le state EDL — la modale de confirmation Option C est gérée
+// côté composant, pas ici.
+//
+// Erreurs backend :
+//  - 503 / 429 (rate limit IA) → toast clair côté composant via err.response
+//  - 500 → toast générique
+// Le hook ne mute pas le state local d'EdlCard : c'est la responsabilité du
+// composant (qui gère aussi le confirm avant écrasement).
+
+export function useDraftEdl(bienId: string) {
+  return useMutation({
+    mutationFn: async ({
+      edlType,
+      inspectionDate,
+      previousEdl,
+    }: {
+      edlType: "entree" | "sortie";
+      inspectionDate?: string;
+      previousEdl?: Edl | null;
+    }) => {
+      const { data } = await api.post<DraftEdlResponse>("/ai/draft-edl", {
+        bien_id: bienId,
+        edl_type: edlType,
+        inspection_date: inspectionDate ?? new Date().toISOString().slice(0, 10),
+        previous_edl: previousEdl ?? null,
+      });
+      return { draft: data, edl: draftEdlToEdl(data) };
     },
   });
 }
