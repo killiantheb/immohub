@@ -401,6 +401,8 @@ Détail complet : [`docs/session12/SPRINT-bien-complet.md`](./session12/SPRINT-b
 
 **Règle 8 — Interaction directe « 1 clic » sur chaque carré.** Depuis n'importe quelle entité parente (fiche bien, fiche locataire, fiche mandat), on accède et modifie ses entités liées sans changer de page. Chaque carré dans une fiche doit permettre 3 capacités minimales : (1) voir le détail (clic ligne → modale ou side panel), (2) créer un nouveau (bouton + dans le carré), (3) modifier l'existant (clic ligne → mode édition). Les sections globales (`/app/interventions`, `/app/locataires`, `/app/documents`) sont des vues consolidées multi-biens, jamais le seul point d'accès à une entité. Cf [`4-PRODUIT.md`](./4-PRODUIT.md) + [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md).
 
+**Règle 9 — Discipline `.env`.** Un seul `.env` actif par environnement. Noms autorisés figés dans `backend/` et `frontend/` : `.env`, `.env.example`, `.env.local`, `.env.staging`, `.env.production`. Tout suffixe exotique (`.env.backup`, `.env.migration`, `.env.prod-*`, `.env.temp`…) est interdit — risque de switch accidentel sur des secrets périmés. Pour un preset temporaire (variant DB pour migration, etc.), créer le fichier hors du repo dans `~/althy-archives/env-historiques-YYYY-MM/`. Sprint dédié « Séparation dev/staging/prod » à programmer pré-clients payants Phase 2 (livrables : script `switch-env.sh`, cleanup `.env.*`, régénération clés staging). Cf [`CLAUDE.md`](../CLAUDE.md) §B.14 + §F.
+
 ---
 
 ## 2.11 Backlog vision long terme (post-Phase 5)

@@ -125,6 +125,42 @@ Si une livraison échoue **un seul** des 3 critères → retour à la planche à
 - Si une migration nécessite du SQL brut complexe : utiliser `op.execute("""...""")` à l'intérieur du `.py` Alembic.
 - Source de vérité : `backend/alembic/versions/*.py` (cf `docs/3-ARCHITECTURE.md` §3.3).
 
+### B.14 Fichiers `.env` — discipline de naming
+
+⚠️ Un seul fichier `.env` « actif » par environnement à la fois. Les noms autorisés sont **figés** ; tout suffixe exotique est interdit.
+
+**Noms autorisés** dans `backend/` et `frontend/` :
+
+- `.env` — environnement actif courant (typiquement dev local pointant prod ou staging selon contexte).
+- `.env.example` — template versionné, **sans secrets**, seul `.env*` à committer.
+- `.env.local` — overrides dev personnels (gitignored, jamais shared).
+- `.env.staging` — config staging Supabase (à activer via switch explicite).
+- `.env.production` — config prod Supabase (à activer via switch explicite).
+
+**Noms interdits** — tout suffixe non listé ci-dessus :
+
+- `.env.backup`, `.env.bak`, `.env.copy`, `.env.old`
+- `.env.migration`, `.env.prod-migration`, `.env.import`
+- `.env.temp`, `.env.test`, `.env.debug`
+- Tout `.env.*` qui n'est pas dans la liste autorisée.
+
+**Pourquoi** :
+
+- **Risque #1** : un `cp .env.prod-backup .env` par mégarde te rebascule sur des secrets potentiellement périmés (clés rotées, prix Stripe legacy, etc.).
+- **Risque #2** : impossible de savoir au vol quel fichier pointe où sans `diff` manuel — 5 fichiers identiques à 1 ligne près = bombe à retardement.
+- **Risque #3** : pollution mentale + commits accidentels d'un secret (le `.gitignore` couvre `backend/.env.*` mais une faute de frappe `bakcend/` casse tout).
+
+**Procédure pour besoin temporaire** :
+
+- Preset hors du repo dans `~/althy-archives/env-historiques-YYYY-MM/`.
+- Switch via `cp` ou via un futur script `scripts/switch-env.sh` (livrable du sprint Séparation dev/staging/prod, cf §F backlog).
+- Toujours `echo $DATABASE_URL | sed 's/:.*@/:****@/'` après switch pour vérifier la cible.
+
+**Historique** :
+
+- 2026-05-08 : archivage de `backend/.env.prod-backup` et `backend/.env.prod-migration`, créés le 20-25 avril 2026 pendant la migration prod 0029 (cf `docs/archive/sessions/HANDOFF-migration-prod-0029.md`). Ces fichiers ne sont plus nécessaires depuis le hardening `statement_cache_size=0` (cf `app/core/database.py:38-41`) qui permet `alembic upgrade head` directement sur le pooler 6543, rendant obsolète le preset 5432 historique. Déplacés dans `~/althy-archives/env-historiques-2026-04/`.
+- `.env.staging` conservé en l'état, à traiter dans le sprint Séparation dev/staging/prod (régénération clés si réactivation staging).
+
 ---
 
 ## C. Conventions code (rappel rapide)
@@ -178,6 +214,7 @@ Backlog connu :
 - Aliases `--althy-orange*` dans `globals.css` → à supprimer quand plus aucune référence `C.orange` / `var(--althy-orange)`.
 - 4 `const S` résiduels (structurels CSSProperties) → garder tels quels.
 - TODO connus backend (WhatsApp, SMS Twilio, CAMT.054 réel, OCR enrichi, Email sequences) → cf [`docs/4-PRODUIT.md`](docs/4-PRODUIT.md) §4.10 et §4.13.
+- **Sprint Séparation dev/staging/prod** (à programmer pré-clients payants Phase 2) → livrables : (a) script `scripts/switch-env.sh` qui refuse les noms exotiques (cf §B.14), (b) audit + cleanup des `.env.*` du repo, (c) régénération des clés `.env.staging` si réactivation du projet Supabase staging, (d) doc procédure switch dev/staging/prod dans `docs/3-ARCHITECTURE.md` §3.9.
 
 ---
 
