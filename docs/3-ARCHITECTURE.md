@@ -569,6 +569,49 @@ Un seul composant `LocatairesGlobal` qui gère tous les locataires de tous les b
 
 ---
 
+## 3.14 Doctrine — Logging best-effort isolé
+
+> Figée 2026-05-08 suite à l'incident `/ai/draft-edl` 500 (table `ai_usage_logs` absente en prod → poison transactionnel sur la session utilisateur).
+
+**Pour tout logging non-critique** (audit IA, métriques, traces, événements analytiques) qui ne doit JAMAIS bloquer la requête utilisateur :
+
+1. **Session DB séparée** via `AsyncSessionLocal()` (cf `app/core/database.py`) — JAMAIS la session injectée par `get_db()` dans le handler. Le commit du log est isolé du commit utilisateur.
+2. **Try/except englobant TOUT le bloc** (open + add + commit). En cas d'échec, `log.warning("...", exc_info=True)` puis retour silencieux. Ne jamais propager.
+3. Référence d'implémentation : `app/services/ai_service.py:_log_usage` (post 2026-05-08).
+
+**Anti-pattern interdit** :
+```python
+# ❌ JAMAIS — sur la session user
+db.add(audit_entry)
+try:
+    await db.flush()        # si flush échoue, la transaction PG est aborted
+except Exception:
+    log.warning("...")       # le warning est logué, MAIS
+                             # toutes les opérations DB ultérieures échoueront
+                             # et le commit final pétera avec une erreur
+                             # de cause inconnue côté caller (faux statut interne).
+```
+
+PostgreSQL met la transaction en état `aborted` dès la première erreur SQL. Le `try/except` Python masque l'erreur initiale mais ne ROLLBACK pas la transaction — la session reste poisonnée jusqu'au prochain ROLLBACK explicite. Tout `INSERT`/`UPDATE`/`SELECT` ultérieur dans la même requête échouera silencieusement avec `current transaction is aborted, commands ignored until end of transaction block`. Le caller reçoit un 500 sans cause apparente. Cf §B.10 CLAUDE.md « pas de faux statuts ».
+
+**Pattern correct** :
+```python
+# ✅ session dédiée, isolée du user
+from app.core.database import AsyncSessionLocal
+
+async def _log_usage(...):
+    try:
+        async with AsyncSessionLocal() as log_db:
+            log_db.add(entry)
+            await log_db.commit()
+    except Exception:
+        log.warning("Failed to log ...", exc_info=True)
+```
+
+**Périmètre** : la doctrine s'applique aux logs « observabilité ». Les écritures **métier** (audit RGPD/LPD obligatoire dans `audit_logs`, transactions financières) restent sur la session user — leur échec doit faire échouer la requête.
+
+---
+
 ## Annexes
 
 - [1-VISION.md](./1-VISION.md) — Vision macro Althy

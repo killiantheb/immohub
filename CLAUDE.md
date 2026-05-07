@@ -110,6 +110,21 @@ Si une livraison échoue **un seul** des 3 critères → retour à la planche à
 - Données de démo → marquées `[DEMO]` ou seed explicite.
 - Témoignages : sourçables, datés, vérifiables (cf [`docs/6-LEGAL.md`](docs/6-LEGAL.md) §6.8).
 
+### B.12 Logging best-effort isolé
+
+- ⚠️ **Interdit** d'appeler `db.flush()` ou `db.add()` sur la session utilisateur pour un log non-critique (audit IA, métriques, traces) à l'intérieur d'un `try/except` silencieux.
+- Postgres met la transaction en état *aborted* dès la première erreur SQL. Le `try/except` masque l'erreur Python mais la session user reste poisonnée → 500 inattendu au commit final.
+- Pattern obligatoire : session dédiée via `AsyncSessionLocal()` + try/except englobant tout le bloc (open + add + commit).
+- Référence : `app/services/ai_service.py:_log_usage` (figé 2026-05-08 post-incident `/ai/draft-edl`).
+- Détail doctrine : [`docs/3-ARCHITECTURE.md`](docs/3-ARCHITECTURE.md) §3.14.
+
+### B.13 Migrations Alembic exclusivement Python
+
+- ⚠️ **Interdit** de créer des fichiers `.sql` dans `backend/alembic/versions/`.
+- Alembic ne charge **que les `.py`**. Un `.sql` posé là est **orphelin par construction** : il n'est jamais appliqué par `alembic upgrade head` et crée une dette structurelle invisible (cf incident 2026-05-08 : table `ai_usage_logs` absente en prod pendant 1 mois à cause d'un `0003_ai_usage_logs.sql` jamais exécuté).
+- Si une migration nécessite du SQL brut complexe : utiliser `op.execute("""...""")` à l'intérieur du `.py` Alembic.
+- Source de vérité : `backend/alembic/versions/*.py` (cf `docs/3-ARCHITECTURE.md` §3.3).
+
 ---
 
 ## C. Conventions code (rappel rapide)
