@@ -72,6 +72,36 @@ class Settings(BaseSettings):
     AI_RATE_LIMIT_STANDARD: int = 30    # interactions/jour standard
     AI_RATE_LIMIT_PRO: int = 100         # interactions/jour Pro
 
+    # ── Modèles Claude (source de vérité unique — cf 3-ARCHITECTURE.md §3.3,
+    # CLAUDE.md §B.2/§B.3 patterns pricing & legal-entity).
+    #
+    # Doctrine : aucune string `claude-*` ne doit être hardcodée dans le code
+    # backend. Tout appel à `client.messages.create(...)` lit le modèle depuis
+    # `settings.ANTHROPIC_MODEL_*`. Permet l'upgrade (ex. Sonnet 4.6 → 4.7,
+    # passage à Opus) sans toucher au code applicatif — il suffit de changer
+    # la valeur ici (ou la var d'env Railway `ANTHROPIC_MODEL_*`) puis
+    # redéployer.
+    #
+    # Choix de la variante :
+    #   - DEFAULT : chat conversationnel, génération de texte (briefings,
+    #     bails, quittances, EDL, descriptions, scoring résumé, parsing
+    #     intent, scraping HTML texte). Cas standard, qualité prioritaire.
+    #   - FAST    : tâches courtes / classifications / extractions simples
+    #     où la latence et le coût priment sur la sophistication. Pour
+    #     l'instant uniquement utilisé dans bien_service (estimation
+    #     enrichie sous-requête JSON).
+    #   - VISION  : appels multimodaux (OCR factures, OCR pièces d'identité,
+    #     analyse photos d'annonces). Modèle capable d'images (peut être le
+    #     même que DEFAULT en pratique — la séparation est sémantique pour
+    #     permettre une divergence future).
+    #
+    # Valeurs par défaut Phase 1 (2026-05-07) — alias mobiles, pas de
+    # snapshots datés (snapshots → divergence non maîtrisée dans l'historique
+    # comme l'audit l'a montré : 5 versions Sonnet coexistantes pré-sweep).
+    ANTHROPIC_MODEL_DEFAULT: str = "claude-sonnet-4-6"
+    ANTHROPIC_MODEL_FAST: str = "claude-haiku-4-5"
+    ANTHROPIC_MODEL_VISION: str = "claude-sonnet-4-6"
+
     # Commission rates (immutable — do not change)
     COMMISSION_FRONT_PCT: float = 3.0
     COMMISSION_BACK_PCT: float = 10.0
