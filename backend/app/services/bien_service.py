@@ -925,7 +925,7 @@ class BienService:
                     "content-type": "application/json",
                 },
                 json={
-                    "model": "claude-haiku-4-5-20251001",
+                    "model": settings.ANTHROPIC_MODEL_FAST,
                     "max_tokens": 512,
                     "messages": [{"role": "user", "content": prompt}],
                 },
@@ -1048,7 +1048,7 @@ class BienService:
         try:
             client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
             response = await client.messages.create(
-                model="claude-sonnet-4-6",
+                model=settings.ANTHROPIC_MODEL_DEFAULT,
                 max_tokens=600,
                 system=(
                     "Tu es un expert immobilier suisse. "
@@ -1202,7 +1202,10 @@ class BienService:
             )
             data["bien_id"] = str(bien.id)
             data["generated_at"] = datetime.now(timezone.utc)
-            data["model_used"] = "claude-sonnet-4-6"
+            # `model_used` reflète le modèle réellement appelé l. ~1344 — lu
+            # depuis settings pour rester cohérent en cas d'upgrade (cf §B.10
+            # CLAUDE.md « pas de faux statuts »).
+            data["model_used"] = settings.ANTHROPIC_MODEL_DEFAULT
             data.setdefault("meuble", bool(bien.is_furnished))
             data.setdefault("residence_type", bien.residence_type or "secondaire")
             data.setdefault("location_type_actuel", bien.location_type_actuel)
@@ -1341,7 +1344,7 @@ class BienService:
 
         client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
         response = await client.messages.create(
-            model="claude-sonnet-4-6",
+            model=settings.ANTHROPIC_MODEL_DEFAULT,
             max_tokens=4000,
             system=prompt_systeme,
             messages=[{"role": "user", "content": prompt_user}],
