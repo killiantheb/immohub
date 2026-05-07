@@ -67,7 +67,7 @@ async def qualify_need(description: str, user_id: str, db: AsyncSession) -> AIQu
         # Fallback: keyword matching
         return _keyword_qualify(description)
 
-    from app.services.ai_service import MODEL, _check_rate_limit, _log_usage
+    from app.services.ai_service import _check_rate_limit, _log_usage
 
     if not _check_rate_limit(user_id):
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Limite IA atteinte")
@@ -89,11 +89,11 @@ Retourne UNIQUEMENT ce JSON :
 
     client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
     msg = await client.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=200,
         messages=[{"role": "user", "content": prompt}],
     )
-    await _log_usage(db, user_id, "qualify_rfq", msg.usage)
+    await _log_usage(user_id, "qualify_rfq", msg.usage)
 
     raw = msg.content[0].text.strip()  # type: ignore[union-attr]
     if "```" in raw:

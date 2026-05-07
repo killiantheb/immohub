@@ -80,10 +80,14 @@ def _client() -> anthropic.AsyncAnthropic:
     return anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
 
 
-async def _log_usage(db: AsyncSession, user_id: _uuid.UUID, feature: str, usage: Any) -> None:
+async def _log_usage(user_id: _uuid.UUID, feature: str, usage: Any) -> None:
+    """Wrapper local — relaie au service IA central qui gère la session DB
+    isolée (cf doctrine `Logging best-effort isolé` 3-ARCHITECTURE.md §3.14).
+    Le `db` user n'a pas à être passé : le service crée sa propre session.
+    """
     try:
         from app.services.ai_service import _log_usage as _svc_log  # type: ignore[attr-defined]
-        await _svc_log(db, str(user_id), feature, usage)
+        await _svc_log(str(user_id), feature, usage)
     except Exception:
         pass
 
@@ -617,7 +621,7 @@ async def _call_claude(user: User, ctx: dict, prefs: dict, db: AsyncSession) -> 
             system=_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": _build_prompt(user, ctx, prefs)}],
         )
-        await _log_usage(db, _uid(user), "sphere_briefing", message.usage)
+        await _log_usage(_uid(user), "sphere_briefing", message.usage)
 
         raw = message.content[0].text.strip()  # type: ignore[union-attr]
         if "```" in raw:
@@ -1214,7 +1218,7 @@ Conserve le sens original. Adapte selon l'instruction. Sois concis."""
         system=_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}],
     )
-    await _log_usage(db, _uid(current_user), "sphere_regenerer", message.usage)
+    await _log_usage(_uid(current_user), "sphere_regenerer", message.usage)
 
     raw = message.content[0].text.strip()  # type: ignore[union-attr]
     if "```" in raw:

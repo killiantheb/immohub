@@ -266,7 +266,7 @@ async def compare_devis(
     """
     import anthropic
     from app.core.config import settings
-    from app.services.ai_service import MODEL, _check_rate_limit, _log_usage
+    from app.services.ai_service import _check_rate_limit, _log_usage
 
     svc = RFQService(db)
     rfq = await svc.get_rfq(rfq_id, current_user)
@@ -327,11 +327,11 @@ Sois factuel, précis, et mets en avant le rapport qualité/prix. Maximum 400 mo
 
     client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
     msg = await client.messages.create(
-        model=MODEL,
+        model=settings.ANTHROPIC_MODEL_DEFAULT,
         max_tokens=800,
         messages=[{"role": "user", "content": prompt}],
     )
-    await _log_usage(db, str(current_user.id), "compare_devis", msg.usage)
+    await _log_usage(str(current_user.id), "compare_devis", msg.usage)
 
     rapport = msg.content[0].text.strip()  # type: ignore[union-attr]
 

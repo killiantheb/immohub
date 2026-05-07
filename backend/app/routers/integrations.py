@@ -292,7 +292,7 @@ async def classify_emails(
     """
     import json as _json
     from anthropic import AsyncAnthropic
-    from app.services.ai_service import MODEL, _check_rate_limit, _log_usage
+    from app.services.ai_service import _check_rate_limit, _log_usage
 
     if not _check_rate_limit(str(current_user.id)):
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Limite IA atteinte")
@@ -392,10 +392,10 @@ Retourne UNIQUEMENT le JSON, pas de markdown."""
 
     client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
     msg = await client.messages.create(
-        model=MODEL, max_tokens=800,
+        model=settings.ANTHROPIC_MODEL_DEFAULT, max_tokens=800,
         messages=[{"role": "user", "content": prompt}],
     )
-    await _log_usage(db, str(current_user.id), "classify_emails", msg.usage)
+    await _log_usage(str(current_user.id), "classify_emails", msg.usage)
 
     classified_list: list[dict] = []
     try:

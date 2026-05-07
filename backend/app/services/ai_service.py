@@ -97,12 +97,26 @@ def _check_rate_limit(user_id: str) -> bool:
 
 
 async def _log_usage(
-    db: AsyncSession,
     user_id: str,
     action: str,
     usage: anthropic.types.Usage | None,
     context_ref: str | None = None,
 ) -> None:
+    """Best-effort logging des appels Claude (audit + quota mensuel).
+
+    Doctrine « Logging best-effort isolé » (3-ARCHITECTURE.md §3.14) :
+    - Session DB **dédiée** via `AsyncSessionLocal()` → JAMAIS la session
+      utilisateur. Si l'INSERT échoue (table absente, contrainte violée,
+      driver down…), la transaction utilisateur n'est pas affectée.
+    - Try/except englobant TOUT le bloc (open + add + commit) → l'échec est
+      logué en `warning` mais ne propage jamais.
+    - Anti-pattern banni : try/except autour de `db.flush()` sur la session
+      user. PostgreSQL met la transaction en état *aborted* dès la première
+      erreur ; toutes les opérations DB ultérieures échouent silencieusement
+      jusqu'au commit final → 500 inattendu en aval. Ne jamais reproduire.
+    """
+    from app.core.database import AsyncSessionLocal
+
     input_tok = getattr(usage, "input_tokens", None) if usage else None
     output_tok = getattr(usage, "output_tokens", None) if usage else None
     # Rough cost estimate: $3/M input, $15/M output (Sonnet pricing)
@@ -110,20 +124,21 @@ async def _log_usage(
     if input_tok and output_tok:
         cost = (input_tok / 1_000_000 * 3) + (output_tok / 1_000_000 * 15)
 
-    entry = AIUsageLog(
-        user_id=uuid.UUID(user_id),
-        action=action,
-        model=settings.ANTHROPIC_MODEL_DEFAULT,
-        input_tokens=input_tok,
-        output_tokens=output_tok,
-        cost_usd=cost,
-        context_ref=context_ref,
-    )
-    db.add(entry)
     try:
-        await db.flush()
+        async with AsyncSessionLocal() as log_db:
+            entry = AIUsageLog(
+                user_id=uuid.UUID(user_id),
+                action=action,
+                model=settings.ANTHROPIC_MODEL_DEFAULT,
+                input_tokens=input_tok,
+                output_tokens=output_tok,
+                cost_usd=cost,
+                context_ref=context_ref,
+            )
+            log_db.add(entry)
+            await log_db.commit()
     except Exception:
-        log.warning("Failed to flush AI usage log", exc_info=True)
+        log.warning("Failed to log AI usage", exc_info=True)
 
 
 # ── Shared Claude client ───────────────────────────────────────────────────────
@@ -212,7 +227,7 @@ Retourne uniquement l'annonce, sans commentaire."""
         messages=[{"role": "user", "content": prompt}],
     )
 
-    await _log_usage(db, user_id, "generate_listing", message.usage, str(bien.id))
+    await _log_usage(user_id, "generate_listing", message.usage, str(bien.id))
     return message.content[0].text.strip()  # type: ignore[union-attr]
 
 
@@ -255,7 +270,7 @@ Facteurs : ratio revenus/loyer (idéal ≥3x), stabilité emploi, historique loc
         messages=[{"role": "user", "content": prompt}],
     )
 
-    await _log_usage(db, user_id, "score_tenant", message.usage)
+    await _log_usage(user_id, "score_tenant", message.usage)
 
     raw = message.content[0].text.strip()  # type: ignore[union-attr]
     # Extract JSON even if surrounded by markdown fences
@@ -312,7 +327,7 @@ Retourne UNIQUEMENT un objet JSON valide :
         messages=[{"role": "user", "content": prompt}],
     )
 
-    await _log_usage(db, user_id, "recommend_quote", message.usage)
+    await _log_usage(user_id, "recommend_quote", message.usage)
 
     raw = message.content[0].text.strip()  # type: ignore[union-attr]
     if "```" in raw:
@@ -681,7 +696,7 @@ async def chat_stream(
             input_tokens = total_input
             output_tokens = total_output
 
-        await _log_usage(db, user_id, "chat", _FakeUsage(), context.get("bien_id"))  # type: ignore[arg-type]
+        await _log_usage(user_id, "chat", _FakeUsage(), context.get("bien_id"))  # type: ignore[arg-type]
 
 
 # ── 5. Payment anomaly detection ──────────────────────────────────────────────
@@ -761,7 +776,7 @@ Détecte uniquement des patterns réels : impayés répétés, retards croissant
         messages=[{"role": "user", "content": prompt}],
     )
 
-    await _log_usage(db, user_id, "detect_anomalies", message.usage, owner_id)
+    await _log_usage(user_id, "detect_anomalies", message.usage, owner_id)
 
     raw = message.content[0].text.strip()  # type: ignore[union-attr]
     if "```" in raw:
@@ -838,7 +853,7 @@ Réponds uniquement le bail, en markdown."""
         messages=[{"role": "user", "content": prompt}],
     )
 
-    await _log_usage(db, user_id, "draft_lease", message.usage)
+    await _log_usage(user_id, "draft_lease", message.usage)
     return message.content[0].text.strip()  # type: ignore[union-attr]
 
 
@@ -913,7 +928,7 @@ Inclus : cuisine, salle de bain, WC, séjour, chambres selon le bien, cave/local
         messages=[{"role": "user", "content": prompt}],
     )
 
-    await _log_usage(db, user_id, "draft_edl", message.usage)
+    await _log_usage(user_id, "draft_edl", message.usage)
 
     raw = message.content[0].text.strip()  # type: ignore[union-attr]
     if "```" in raw:
@@ -962,7 +977,7 @@ Sois factuel, précis et professionnel. Max 400 mots."""
         messages=[{"role": "user", "content": prompt}],
     )
 
-    await _log_usage(db, user_id, "draft_mission_report", message.usage)
+    await _log_usage(user_id, "draft_mission_report", message.usage)
     return message.content[0].text.strip()  # type: ignore[union-attr]
 
 
@@ -1019,7 +1034,7 @@ TVA CH : 8.1% (taux normal), 3.8% (hébergement), 2.6% (alimentation)."""
         messages=[{"role": "user", "content": prompt}],
     )
 
-    await _log_usage(db, user_id, "draft_company_quote", message.usage)
+    await _log_usage(user_id, "draft_company_quote", message.usage)
 
     raw = message.content[0].text.strip()  # type: ignore[union-attr]
     if "```" in raw:
@@ -1086,7 +1101,7 @@ Sois clair, positif et neutre. Signale dans 'warnings' tout point défavorable o
         messages=[{"role": "user", "content": prompt}],
     )
 
-    await _log_usage(db, user_id, "explain_contract", message.usage)
+    await _log_usage(user_id, "explain_contract", message.usage)
 
     raw = message.content[0].text.strip()  # type: ignore[union-attr]
     if "```" in raw:
@@ -1151,7 +1166,7 @@ Réponds en français."""
         messages=[{"role": "user", "content": prompt}],
     )
 
-    await _log_usage(db, user_id, "draft_notification", message.usage)
+    await _log_usage(user_id, "draft_notification", message.usage)
 
     raw = message.content[0].text.strip()  # type: ignore[union-attr]
     if "```" in raw:
@@ -1239,7 +1254,7 @@ Retourne UNIQUEMENT ce JSON :
         messages=[{"role": "user", "content": prompt}],
     )
 
-    await _log_usage(db, user_id, "property_recap", message.usage)
+    await _log_usage(user_id, "property_recap", message.usage)
 
     raw = message.content[0].text.strip()  # type: ignore[union-attr]
     if "```" in raw:
@@ -1313,7 +1328,7 @@ Règles:
         messages=[{"role": "user", "content": prompt}],
     )
 
-    await _log_usage(db, user_id, "generate_briefing", message.usage)
+    await _log_usage(user_id, "generate_briefing", message.usage)
 
     raw = message.content[0].text.strip()  # type: ignore[union-attr]
     if "```" in raw:
