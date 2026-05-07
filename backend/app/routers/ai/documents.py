@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import json as _json
+import logging
 import uuid as _uuid
+import warnings
 from typing import Annotated
+
+logger = logging.getLogger(__name__)
 
 from app.core.database import get_db
 from app.core.limiter import rate_limit
@@ -41,7 +45,9 @@ class DraftLeaseRequest(BaseModel):
 
 class DraftEDLRequest(BaseModel):
     bien_id: str
-    edl_type: str = "entry"
+    # FR canonique (CLAUDE.md §B.5/§3.12) : "entree" | "sortie".
+    # "entry" | "exit" acceptés en back-compat avec deprecation log (PR-EDL-2).
+    edl_type: str = "entree"
     inspection_date: str
     previous_edl: dict | None = None
     requires_validation: bool = True
@@ -139,7 +145,13 @@ async def draft_edl_endpoint(
     db: DbDep,
     _=rate_limit(5, 60),
 ):
-    """Generate a structured entry/exit inspection form."""
+    """Génère un EDL structuré (entrée ou sortie) via Claude.
+
+    `edl_type` accepte les valeurs FR canoniques (`entree`/`sortie`) et,
+    pour back-compat (PR-EDL-2), les valeurs EN historiques (`entry`/`exit`)
+    avec log DeprecationWarning. Conversion interne en EN avant appel à
+    `ai_service.draft_edl` (qui pilote le prompt Claude en EN).
+    """
     import uuid as _uuid_mod
     from app.models.bien import Bien
     from sqlalchemy import select as sa_sel
@@ -147,8 +159,26 @@ async def draft_edl_endpoint(
     if current_user.role not in ("proprio_solo", "agence", "opener", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès non autorisé")
 
-    if payload.edl_type not in ("entry", "exit"):
-        raise HTTPException(422, "edl_type doit être 'entry' ou 'exit'")
+    # ── Normalisation edl_type : FR canonique → EN interne (ai_service) ──
+    # Doctrine FR (CLAUDE.md §B.5/§3.12) : on accepte les deux côté entrée
+    # mais on log une dépréciation sur les valeurs EN pour migrer les
+    # appelants existants.
+    EDL_TYPE_MAP = {
+        "entree": "entry",
+        "sortie": "exit",
+        "entry": "entry",
+        "exit": "exit",
+    }
+    if payload.edl_type not in EDL_TYPE_MAP:
+        raise HTTPException(422, "edl_type doit être 'entree' ou 'sortie'")
+    if payload.edl_type in ("entry", "exit"):
+        msg = (
+            f'edl_type "{payload.edl_type}" deprecated, use '
+            f'"{"entree" if payload.edl_type == "entry" else "sortie"}"'
+        )
+        logger.warning(msg)
+        warnings.warn(msg, DeprecationWarning, stacklevel=2)
+    internal_type = EDL_TYPE_MAP[payload.edl_type]
 
     try:
         pid = _uuid_mod.UUID(payload.bien_id)
@@ -170,7 +200,7 @@ async def draft_edl_endpoint(
 
     try:
         edl = await draft_edl(
-            property_data, payload.edl_type, payload.inspection_date,
+            property_data, internal_type, payload.inspection_date,
             payload.previous_edl, db, str(current_user.id),
         )
     except RuntimeError as exc:

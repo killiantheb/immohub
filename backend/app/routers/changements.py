@@ -91,6 +91,14 @@ class EdlUpdate(BaseModel):
     inventaire: dict[str, Any] | None = None
     caution_retenue: float | None = None
     caution_motif: str | None = None
+    # ── Champs racine enrichis (PR-EDL-2) — optionnels, persistés tels quels
+    # dans le JSONB. Renseignés typiquement après pré-remplissage `/ai/draft-edl`.
+    general_condition: str | None = None
+    keys_given: dict[str, int] | None = None
+    meter_readings: dict[str, float | None] | None = None
+    degradations: list[dict[str, Any]] | None = None
+    total_estimated_cost_chf: float | None = None
+    remarks: str | None = None
 
 
 class FinaliserDepart(BaseModel):
@@ -247,10 +255,27 @@ async def update_edl(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Changement déjà terminé")
 
     import json
-    edl_data = json.dumps({
+    edl_payload: dict[str, Any] = {
         "pieces": [p.model_dump() for p in payload.pieces],
         "inventaire": payload.inventaire or {},
-    })
+    }
+    # Champs racine enrichis (PR-EDL-2) : on les persiste seulement s'ils sont
+    # fournis, pour ne pas écraser les valeurs précédentes par `null` lors
+    # d'un save manuel post-IA-draft (le frontend ne renvoie pas forcément
+    # tous les champs).
+    if payload.general_condition is not None:
+        edl_payload["general_condition"] = payload.general_condition
+    if payload.keys_given is not None:
+        edl_payload["keys_given"] = payload.keys_given
+    if payload.meter_readings is not None:
+        edl_payload["meter_readings"] = payload.meter_readings
+    if payload.degradations is not None:
+        edl_payload["degradations"] = payload.degradations
+    if payload.total_estimated_cost_chf is not None:
+        edl_payload["total_estimated_cost_chf"] = payload.total_estimated_cost_chf
+    if payload.remarks is not None:
+        edl_payload["remarks"] = payload.remarks
+    edl_data = json.dumps(edl_payload)
 
     if payload.type == "sortie":
         await db.execute(
