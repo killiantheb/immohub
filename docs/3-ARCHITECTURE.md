@@ -396,6 +396,22 @@ Photos d'État Des Lieux = pièces sensibles (état dégradé, dommages opposabl
 
 **Endpoints** : `POST /api/v1/changements/{id}/edl-photos` (multipart : file + piece_idx + edl_type ∈ {entree,sortie}) → `{ url, path }`. `DELETE /api/v1/changements/{id}/edl-photos` (body : `{ path }`) → 204.
 
+#### Génération IA EDL — `/ai/draft-edl` (PR-EDL-2)
+
+Pré-remplissage IA d'un EDL via Claude Sonnet, déclenché depuis l'`EdlCard` (bouton « Pré-remplir avec IA »). Trois choix structurants :
+
+1. **Mapping `rooms[]` → `pieces[]` côté frontend (Option A)**. Claude renvoie une structure riche `{ rooms: [{ name, elements: [{ name, condition, notes }] }], keys_given, meter_readings, degradations, total_estimated_cost_chf, remarks, general_condition }`. Le frontend (`useChangements.draftEdlToEdl`) transforme `rooms[]` en `pieces[]` du JSONB stocké :
+   - `piece.nom` ← `room.name`
+   - `piece.etat` ← synthèse heuristique des `elements[i].condition` (cf `pieceEtatFromElements`) : *mauvais* → `degradation`, *moyen* → `usure_normale`, tous *bon* → `bon`, sinon `""`.
+   - `piece.elements[]` ← préservé tel quel pour affichage lecture seule.
+   - Les champs racine (`general_condition`, `keys_given`, `meter_readings`, `degradations`, `total_estimated_cost_chf`, `remarks`) sont persistés au niveau racine du JSONB `edl_sortie` / `edl_entree` (champs optionnels du schema Pydantic `EdlSortieSchema`).
+
+2. **Phase 1 : édition des `elements[]` est lecture seule**. La carte `EdlCard` continue d'éditer la synthèse `etat`/`commentaire`/`photos` par pièce. Une section « Détails IA » en bas de carte affiche `keys_given`, `meter_readings`, `degradations` et `total_estimated_cost_chf` en lecture seule. L'édition complète (par élément, avec composition dynamique de pièces type « Salle de bain ×2 », saisie vocale Althy, déclenchement automatique d'interventions depuis dégradations) est Phase 2.
+
+3. **Modale de confirmation Option C avant écrasement**. Si l'EDL est vierge (aucun état ni commentaire ni photo saisis), le bouton IA pré-remplit directement. Sinon, une modale max 440 px (Règle 8 §4.2 / §3.12) avertit : « L'IA va remplacer votre saisie actuelle. {N} pièces, {M} photos seront perdues. Continuer ? ». L'application IA déclenche un `PUT /biens/{id}/changement/{cid}/edl` immédiat avec les pieces[] + champs racine.
+
+**Deprecation `entry`/`exit` → `entree`/`sortie` (PR-EDL-2)**. L'endpoint `POST /ai/draft-edl` accepte les quatre valeurs pour back-compat. Les valeurs anglaises loggent un `DeprecationWarning` côté backend (`logger.warning` + `warnings.warn`). Migrer les appelants vers FR canonique (cf [`CLAUDE.md`](../CLAUDE.md) §B.5/§3.12). Conversion interne FR → EN avant appel `ai_service.draft_edl` (le prompt Claude reste piloté en EN — non bloquant tant que le mapping interne tient ; rebascule prompt FR optionnelle Phase 2).
+
 ---
 
 ## 3.9 Déploiement
