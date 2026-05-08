@@ -82,6 +82,10 @@ class GenererDocumentRequest(BaseModel):
     type: str
     bien_id: _uuid.UUID
     locataire_id: _uuid.UUID | None = None
+    # PR-EDL-3 : pour type="edl", changement_id obligatoire (source = JSONB
+    # `changements_locataire.edl_entree`/`edl_sortie`). Optionnel pour les
+    # autres types (bail/quittance/relance) qui ne lisent pas un changement.
+    changement_id: _uuid.UUID | None = None
     params: dict = {}
 
 
@@ -466,6 +470,70 @@ async def generer_document(
     bien = bien_res.scalar_one_or_none()
     if not bien:
         raise HTTPException(404, "Bien introuvable")
+
+    # ── Authorization : owner_id / agency_id / super_admin ────────────────
+    # Les autres types (bail/quittance/relance) sortaient sans check
+    # d'ownership (legacy) — on resserre uniquement pour `edl` Phase 1
+    # pour éviter de fabriquer une régression non liée. Détail B.6/B.10.
+    if payload.type == "edl":
+        if current_user.role != "super_admin" and bien.owner_id != current_user.id:
+            raise HTTPException(403, "Accès non autorisé à ce bien")
+
+    # ── PR-EDL-3 : génération depuis JSONB stocké (pas de prompt IA) ──────
+    # Source de vérité unique = `changements_locataire.edl_entree` /
+    # `edl_sortie` (cf 3-ARCHITECTURE.md §3.3 + 4-PRODUIT.md §4.6/§4.9).
+    # Le PDF est un dérivé du JSONB — on remplace le pipeline IA narratif
+    # par le rendu fpdf2 dédié pour le seul `type="edl"`.
+    if payload.type == "edl":
+        from app.services.pdf_edl_service import render_edl_pdf
+
+        if payload.changement_id is None:
+            raise HTTPException(
+                422, "changement_id requis pour la génération d'un EDL PDF",
+            )
+        edl_param = (payload.params or {}).get("type", "sortie")
+        if edl_param not in ("entree", "sortie"):
+            raise HTTPException(
+                422, "params.type doit être 'entree' ou 'sortie' pour un EDL",
+            )
+
+        pdf_bytes = await render_edl_pdf(db, str(payload.changement_id), edl_param)
+
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        storage_path = f"documents/edl/{payload.bien_id}/{ts}.pdf"
+
+        async with httpx.AsyncClient(timeout=30.0) as http:
+            up = await http.post(
+                f"{settings.SUPABASE_URL}/storage/v1/object/althy-docs/{storage_path}",
+                content=pdf_bytes,
+                headers={
+                    "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
+                    "Content-Type": "application/pdf",
+                },
+            )
+            if up.status_code not in (200, 201):
+                raise HTTPException(500, f"Erreur upload Supabase: {up.text}")
+
+        public_url = (
+            f"{settings.SUPABASE_URL}/storage/v1/object/public/"
+            f"althy-docs/{storage_path}"
+        )
+
+        doc = DocumentAlthy(
+            bien_id=payload.bien_id,
+            locataire_id=payload.locataire_id,
+            type="edl_entree" if edl_param == "entree" else "edl_sortie",
+            url_storage=public_url,
+            date_document=date.today(),
+            genere_par_ia=True,
+        )
+        db.add(doc)
+        await db.commit()
+        await db.refresh(doc)
+
+        return GenererDocumentResponse(
+            document_id=doc.id, url=public_url, type="edl",
+        )
 
     loc_data: dict = {}
     if payload.locataire_id:
