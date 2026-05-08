@@ -86,6 +86,27 @@ const ETAT_OPTIONS = [
   { value: "degradation",  label: "Dégradation",    color: C.red },
 ] as const;
 
+/**
+ * AI EDL pre-fill button is DISABLED in Phase 1.
+ *
+ * Reason: The current `/ai/draft-edl` endpoint generates fictional EDL
+ * content without any real input (no photo analysis, no tenant description,
+ * no history). This creates a juridical risk if validated by mistake —
+ * a fictional EDL signed by both parties has caution and opposability
+ * implications (cf 4-PRODUIT.md §4.9 "Validation humaine obligatoire" +
+ * CLAUDE.md §B.10 "pas de faux statuts" : "Pré-remplir avec IA" sans base
+ * réelle est un faux statut produit).
+ *
+ * Phase 2 will rebuild this with vision-based photo analysis + tenant
+ * description + historical context.
+ *
+ * Backend `/ai/draft-edl`, `useDraftEdl` hook, modal confirmation, and
+ * "Détails IA" read-only section are kept intact for Phase 2 reuse.
+ *
+ * See `docs/EDL-VISION.md` (to be drafted) for Phase 2 vision.
+ */
+const ENABLE_AI_PREFILL: boolean = false;
+
 interface EdlCardProps {
   changementId: string;
   /**
@@ -308,7 +329,7 @@ export function EdlCard({
     return pathToUrl[path] ?? path;
   }
 
-  const showIaButton = !!bienId && !!onApplyIaDraft;
+  const showIaButton = ENABLE_AI_PREFILL && !!bienId && !!onApplyIaDraft;
   const iaPending = draftMut.isPending;
   const counts = piecesPhotosCount();
   const hasRootDetails =
