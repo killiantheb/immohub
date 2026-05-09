@@ -141,10 +141,28 @@ async def create_signed_url(bucket: str, path: str, expires_in: int = 3600) -> s
 
 
 def _can_write(bien: Bien, user: User) -> bool:
+    """Phase 1.0 (Sprint 1A) : locataire = lecture seule, jamais d'écriture
+    sur un bien (même le sien). Cf docs/4-PRODUIT.md §4.7."""
     if user.role == "super_admin":
         return True
     uid = user.id
     return bien.owner_id == uid or bien.created_by_id == uid or bien.agency_id == uid
+
+
+async def get_locataire_bien_ids(db: AsyncSession, user_id: uuid.UUID) -> set[uuid.UUID]:
+    """Phase 1.0 doctrine v6 (Sprint 1A — 2026-05-09) : retourne l'ensemble des
+    `bien_id` où ce user est locataire actif. Utilisé pour filtrer GET /biens et
+    autoriser GET /biens/{id} si l'utilisateur a le rôle `locataire`.
+
+    Cf docs/4-PRODUIT.md §4.7 (espace dédié SON bien uniquement).
+    """
+    rows = await db.execute(
+        select(Locataire.bien_id).where(
+            Locataire.user_id == user_id,
+            Locataire.statut == "actif",
+        )
+    )
+    return {row for (row,) in rows.all()}
 
 
 # ── Canton auto-fill ──────────────────────────────────────────────────────────
@@ -201,10 +219,21 @@ class BienService:
                     | (Bien.agency_id == current_user.id)
                     | (Bien.created_by_id == current_user.id)
                 )
+            elif current_user.role == "locataire":
+                # Phase 1.0 doctrine v6 (Sprint 1A — 2026-05-09) : locataire ne voit
+                # que SON bien. Cf docs/4-PRODUIT.md §4.7. Retourne une page vide
+                # plutôt qu'un 403 brutal — l'app frontend peut ainsi appeler
+                # GET /biens sans crash si le locataire n'est pas encore lié.
+                bien_ids = await get_locataire_bien_ids(self.db, current_user.id)
+                if not bien_ids:
+                    return PaginatedBiens(
+                        items=[], total=0, page=page, size=size, pages=1
+                    )
+                base_q = base_q.where(Bien.id.in_(bien_ids))
             else:
                 raise HTTPException(
                     status.HTTP_403_FORBIDDEN,
-                    "Accès réservé aux propriétaires et agences",
+                    "Accès réservé aux propriétaires, agences et locataires",
                 )
 
         # Filtres
@@ -311,7 +340,7 @@ class BienService:
         bien = await self._get(bien_id)
         if bien is None:
             return None
-        if not self._can_read(bien, current_user):
+        if not await self._can_read_async(bien, current_user):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
 
         # Images
@@ -836,7 +865,7 @@ class BienService:
         self, bien_id: str, current_user: User
     ) -> list[CatalogueEquipementRead]:
         bien = await self._get_or_404(bien_id)
-        if not self._can_read(bien, current_user):
+        if not await self._can_read_async(bien, current_user):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
         rows = (
             (
@@ -950,11 +979,30 @@ class BienService:
     # ─────────────────────────────────────────────────────────────────────────
 
     def _can_read(self, bien: Bien, user: User) -> bool:
+        """⚠️ Synchrone — couvre super_admin + manager (owner/agency/created_by).
+        Pour les locataires (lecture de SON bien), passer par `_can_read_async`
+        qui interroge la table locataires. Doctrine §B.10 : pas de faux statut,
+        on garde 2 helpers explicites plutôt qu'un check qui mentirait."""
         if user.role == "super_admin":
             return True
         return (
             bien.owner_id == user.id or bien.created_by_id == user.id or bien.agency_id == user.id
         )
+
+    async def _can_read_async(self, bien: Bien, user: User) -> bool:
+        """Phase 1.0 doctrine v6 (Sprint 1A — 2026-05-09) : version async qui
+        couvre aussi le rôle `locataire`. Autorise la lecture si le user est
+        locataire actif de ce bien. Cf docs/4-PRODUIT.md §4.7.
+
+        Utilisé par `get_detail()` et `get_for_access_check()` — les 2 points
+        d'entrée publics qui chargent un bien à des fins de lecture.
+        """
+        if self._can_read(bien, user):
+            return True
+        if user.role == "locataire":
+            bien_ids = await get_locataire_bien_ids(self.db, user.id)
+            return bien.id in bien_ids
+        return False
 
     async def _get(self, bien_id: uuid.UUID | str) -> Bien | None:
         """Fetch le bien actif par id (accepte UUID ou str)."""
@@ -986,7 +1034,7 @@ class BienService:
         bien = await self._get(bien_id)
         if bien is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Bien introuvable")
-        if not self._can_read(bien, current_user):
+        if not await self._can_read_async(bien, current_user):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
         return bien
 
