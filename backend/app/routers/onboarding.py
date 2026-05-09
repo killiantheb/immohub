@@ -596,7 +596,15 @@ async def rejoindre(
 ) -> dict:
     """
     Consomme un magic link et retourne des tokens d'authentification Supabase.
-    Utilisé par la page publique /rejoindre/[token].
+    Utilisé par les pages publiques `/rejoindre/[token]` (flow agence/portail
+    historique) et `/invite/[token]` (Sprint 1B — flow invitation locataire).
+
+    Branches selon `target_role` :
+      - `locataire` (Sprint 1B 2026-05-09) : crée le user Supabase + Locataire
+        lié au bien_id, retourne auth_url Supabase pour signin.
+      - autre (agence/portail/etc.) : flow historique — le user Supabase a
+        déjà été créé en amont par /onboarding/creer-compte, on update juste
+        prenom/nom. Cf docs/4-PRODUIT.md §4.7 + §2.4.8.
     """
     email = payload.email.strip().lower()
 
@@ -621,6 +629,22 @@ async def rejoindre(
         raise HTTPException(403, "L'email ne correspond pas à l'invitation")
 
     link_payload: dict = link.payload or {}
+
+    # ── Branche locataire (Sprint 1B — Phase 1.0 doctrine v6) ───────────────
+    # Le user Supabase n'existe pas encore (le locataire n'avait pas de compte
+    # avant l'invitation). On le crée maintenant + on crée la liaison Locataire.
+    if link.target_role == "locataire":
+        return await _rejoindre_locataire(
+            payload=payload,
+            link_id=link.id,
+            link_token=payload.token,
+            link_payload=link_payload,
+            email=email,
+            db=db,
+        )
+
+    # ── Branche historique (agence/portail) ──────────────────────────────────
+    # Le user Supabase a été créé en amont par /onboarding/creer-compte.
     user_id_str = link_payload.get("user_id")
     if not user_id_str:
         raise HTTPException(400, "Lien invalide — contactez votre agence")
@@ -662,6 +686,161 @@ async def rejoindre(
         "user_id":   user_id_str,
         "role":      link.target_role,
         "auth_url":  auth_url,       # Front redirects to this URL for auto sign-in
+    }
+
+
+# ── Branche locataire (Sprint 1B 2026-05-09) ──────────────────────────────────
+
+
+async def _rejoindre_locataire(
+    payload: RejoindrePayload,
+    link_id: _uuid.UUID,
+    link_token: str,
+    link_payload: dict,
+    email: str,
+    db: AsyncSession,
+) -> dict:
+    """Consomme un magic link de type invitation locataire :
+
+      1. Crée le user Supabase (`auth.users`) avec metadata role=locataire
+      2. Upsert dans notre table `users` (mapping id = supabase_uid)
+      3. Crée le `Locataire` lié au bien_id du payload (statut=actif)
+      4. Mark magic_links.used = TRUE
+      5. Génère un Supabase magic link pour signin auto
+
+    Cf docs/4-PRODUIT.md §4.7 (Module Invitation Locataire).
+    """
+    bien_id_str = link_payload.get("bien_id")
+    if not bien_id_str:
+        raise HTTPException(400, "Invitation invalide : bien_id manquant dans le payload")
+    try:
+        bien_id_val = _uuid.UUID(bien_id_str)
+    except ValueError:
+        raise HTTPException(400, "Invitation invalide : bien_id malformé")
+
+    prenom = (payload.prenom or link_payload.get("prenom") or "").strip()
+    nom = (payload.nom or link_payload.get("nom") or "").strip()
+
+    # ── 1. Crée le user Supabase via Admin API ──────────────────────────────
+    temp_password = secrets.token_urlsafe(20)
+    try:
+        supa = await _supa_post(
+            _auth_url("/admin/users"),
+            {
+                "email": email,
+                "password": temp_password,
+                "email_confirm": True,
+                "user_metadata": {
+                    "first_name": prenom,
+                    "last_name": nom,
+                    "role": "locataire",
+                    "bien_id": bien_id_str,
+                },
+            },
+            expected=201,
+        )
+    except HTTPException as exc:
+        # Email déjà inscrit côté Supabase → fetch user existant
+        if "already" in str(exc.detail).lower() or "422" in str(exc.detail):
+            async with httpx.AsyncClient(timeout=10) as client:
+                r = await client.get(
+                    f"{settings.SUPABASE_URL}/auth/v1/admin/users",
+                    headers=_SUPABASE_ADMIN_HEADERS,
+                    params={"email": email},
+                )
+            users = r.json().get("users", [])
+            if not users:
+                raise HTTPException(409, f"Email déjà utilisé côté Supabase : {email}")
+            supa = users[0]
+        else:
+            raise
+
+    supabase_uid = supa["id"]
+    user_id_val = _uuid.UUID(supabase_uid)
+
+    # ── 2. Upsert dans notre table users (schema first_name/last_name) ──────
+    try:
+        await db.execute(
+            text("""
+                INSERT INTO users (id, supabase_uid, email, first_name, last_name, role, is_verified)
+                VALUES (:id, :uid, :email, :fn, :ln, 'locataire', TRUE)
+                ON CONFLICT (id) DO UPDATE SET
+                    email      = EXCLUDED.email,
+                    first_name = COALESCE(EXCLUDED.first_name, users.first_name),
+                    last_name  = COALESCE(EXCLUDED.last_name, users.last_name),
+                    role       = 'locataire'
+            """),
+            {
+                "id": user_id_val,
+                "uid": supabase_uid,
+                "email": email,
+                "fn": prenom or None,
+                "ln": nom or None,
+            },
+        )
+    except Exception as exc:
+        await db.rollback()
+        raise HTTPException(500, f"Erreur création profil utilisateur : {exc!s:.200}")
+
+    # ── 3. Crée la liaison Locataire (table existante) ──────────────────────
+    # Idempotent : si déjà existe pour (bien_id, user_id), on ne duplique pas.
+    try:
+        await db.execute(
+            text("""
+                INSERT INTO locataires (id, bien_id, user_id, statut)
+                SELECT :lid, :bid, :uid, 'actif'
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM locataires WHERE bien_id = :bid AND user_id = :uid
+                )
+            """),
+            {
+                "lid": _uuid.uuid4(),
+                "bid": bien_id_val,
+                "uid": user_id_val,
+            },
+        )
+    except Exception as exc:
+        await db.rollback()
+        raise HTTPException(500, f"Erreur création liaison locataire-bien : {exc!s:.200}")
+
+    # ── 4. Mark magic_link consommé ─────────────────────────────────────────
+    try:
+        await db.execute(
+            text("""
+                UPDATE magic_links
+                SET used = TRUE, used_at = NOW(), used_by = :uid
+                WHERE id = :lid
+            """),
+            {"lid": link_id, "uid": user_id_val},
+        )
+        await db.commit()
+    except Exception as exc:
+        await db.rollback()
+        raise HTTPException(500, f"Erreur consommation token : {exc!s:.200}")
+
+    # ── 5. Génère un Supabase magic link pour signin auto ───────────────────
+    auth_url: str | None = None
+    try:
+        link_data = await _supa_post(
+            _auth_url("/admin/generate_link"),
+            {
+                "type": "magiclink",
+                "email": email,
+                "redirect_to": f"{settings.FRONTEND_URL}/app/mon-bien",
+            },
+        )
+        auth_url = link_data.get("action_link") or link_data.get("hashed_token")
+    except Exception:
+        # Échec génération signin → l'utilisateur peut se connecter manuellement
+        # via /login. Pas un blocker (le compte est créé), donc on ne raise pas.
+        auth_url = None
+
+    return {
+        "ok": True,
+        "user_id": supabase_uid,
+        "role": "locataire",
+        "bien_id": bien_id_str,
+        "auth_url": auth_url,
     }
 
 
