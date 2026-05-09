@@ -1,8 +1,9 @@
 // src/components/dashboards/UnifiedDashboard.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle, ArrowRight, Banknote, Bell, Briefcase, Building2,
   Calendar, CheckCircle2, Clock, Download, Euro,
@@ -1231,6 +1232,18 @@ function KpiSkeleton({ count }: { count: number }) {
   );
 }
 
+// ── LocataireRedirect ──────────────────────────────────────────────────────────
+// Phase 1.0 doctrine v6 (Sprint 1A — 2026-05-09) : un user `locataire` qui atterrit
+// sur /app est redirigé immédiatement vers /app/mon-bien (son seul espace autorisé).
+// Cf docs/4-PRODUIT.md §4.7 + DashboardLayoutClient.tsx RESTRICTED_PAGES.
+function LocataireRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/app/mon-bien");
+  }, [router]);
+  return null; // écran blanc pendant la nav, évite un flash de contenu manager
+}
+
 // ── UnifiedDashboard ──────────────────────────────────────────────────────────
 
 export function UnifiedDashboard() {
@@ -1246,6 +1259,14 @@ export function UnifiedDashboard() {
   // Portail proprio has its own dedicated component
   if (role === "portail_proprio") {
     return <DashboardPortail firstName={firstName} />;
+  }
+
+  // Phase 1.0 doctrine v6 (Sprint 1A — 2026-05-09) : locataire confiné à SON espace.
+  // Le dashboard générique manager-centric n'a pas sa place ici. Redirection
+  // immédiate vers /app/mon-bien (page placeholder Sprint 1A, vraie page Sprint 1C).
+  // Cf docs/4-PRODUIT.md §4.7.
+  if (role === "locataire") {
+    return <LocataireRedirect />;
   }
   const config    = DASHBOARD_CONFIGS[role ?? "proprio_solo"];
   const kpiValues = computeKpiValues(role, data);
