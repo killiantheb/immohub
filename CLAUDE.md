@@ -1,6 +1,6 @@
 # Guide pour Claude Code — Althy
 
-> Last update : 2026-04-29
+> Last update : 2026-05-09 (v2 — ajout §B.15 Phase 1 scope strict)
 > Entité opérationnelle : **HBM Swiss Sàrl** (CHE-179.984.757 TVA)
 > Marque commerciale : **Althy**
 > Branche canonique : `main`
@@ -78,9 +78,11 @@
 
 ### B.7 Phase actuelle
 
-- **Phase 1 = location pure** (proprio_solo + locataire + super_admin).
-- Tout autre rôle = ComingSoon Phase 2-3 (artisan partiellement actif M1 GE+VD).
-- Marketplace publique routée mais **MASQUÉE** Phase 1 (cleanup PR #6 + #7).
+- **Phase 1.0 = logiciel de gestion pure** (doctrine 2026-05-09) — proprio_solo + locataire (via invitation uniquement) + super_admin.
+- Cible commerciale immédiate : **migration Sunimmo Riviera**, gate dur 10 biens au 01/06/2026.
+- Tout autre rôle = ComingSoon Phase 2-3 (artisan partiellement gelé M1 GE+VD).
+- Marketplace publique = **CODE DORMANT Phase 2** (middleware redirect + composants landing désactivés).
+- Périmètre interdit Phase 1.0 + procédure STOP : §B.15.
 - Détail : [`docs/2-ROADMAP.md`](docs/2-ROADMAP.md) §2.4.
 
 ### B.8 Sprint en cours
@@ -160,6 +162,41 @@ Si une livraison échoue **un seul** des 3 critères → retour à la planche à
 
 - 2026-05-08 : archivage de `backend/.env.prod-backup` et `backend/.env.prod-migration`, créés le 20-25 avril 2026 pendant la migration prod 0029 (cf `docs/archive/sessions/HANDOFF-migration-prod-0029.md`). Ces fichiers ne sont plus nécessaires depuis le hardening `statement_cache_size=0` (cf `app/core/database.py:38-41`) qui permet `alembic upgrade head` directement sur le pooler 6543, rendant obsolète le preset 5432 historique. Déplacés dans `~/althy-archives/env-historiques-2026-04/`.
 - `.env.staging` conservé en l'état, à traiter dans le sprint Séparation dev/staging/prod (régénération clés si réactivation staging).
+
+### B.15 Phase 1 scope strict — interdictions doctrinales
+
+⚠️ **Doctrine figée 2026-05-09.** Phase 1 = **logiciel de gestion pure** (cf [`docs/2-ROADMAP.md`](docs/2-ROADMAP.md#24-phase-10--logiciel-de-gestion-sunimmo-test-) §2.4 + §2.10 Règle 10).
+
+**Toute demande utilisateur ou prompt qui implique l'un des périmètres suivants déclenche un STOP** :
+
+- **Marketplace publique** — pages `/biens` (publique), `/biens/[id]`, `/biens/swipe`, pages SEO villes (`/lausanne`, `/geneve`, `/fribourg`, `/neuchatel`, `/sion`, `/valais`, `/vaud`).
+- **Candidature spontanée** — soumission de dossier locataire sans invitation préalable du bailleur.
+- **Scoring IA candidature** — réactivation `tenants.ai_score` + `ai_score_detail` côté écriture.
+- **Frais propriétaire CHF 45 à l'acceptation** — réactivation prélèvement Stripe off-session sur `candidatures.owner_fee_*`.
+- **Diffusion portails externes** — Homegate, ImmoScout24, Flatfox, immobilier.ch.
+- **4 packs diffusion** (Découverte/Standard/Pro/Premium).
+- **Acquisition publique** — réseaux sociaux, SEO marketplace, viralité externe.
+- **Stripe Connect commission loyers** (3-5 %).
+- **OAuth Gmail/Outlook + WhatsApp Business API + SMS Twilio** (Phase 1.0 = email Resend uniquement).
+- **OCR factures avancé + affectation IA OBLF** (Phase 1.0 = OCR basique via sphère uniquement).
+- **Compta dynamique** (transactions live, export Bexio/Banana, déclaration IFD).
+
+**Procédure STOP** :
+
+1. **Refuser de coder** la feature.
+2. **Demander confirmation explicite Killian** que c'est un sprint Phase 2 anticipé (avec justification business).
+3. **Si confirmation** → marquer comme **dette doctrinale** dans le commit message + ajouter entrée dans `docs/2-ROADMAP.md` §F backlog avec date + raison.
+4. **Si pas de confirmation** → proposer une alternative Phase 1.0 OU noter la demande en backlog Phase 2 (`docs/2-ROADMAP.md` §F).
+
+**Pourquoi cette discipline** :
+
+- **Risque #1 dispersion** : chaque feature « juste un petit truc public » dilue l'attention de la migration Sunimmo (gate dur 10 biens au 01/06/2026).
+- **Risque #2 dette compliance** : la marketplace publique implique des obligations légales lourdes (LCD diffusion, RGPD prospects, hébergement données candidats) que Phase 1.0 n'a pas le temps de cadrer.
+- **Risque #3 prématurité produit** : ouvrir une marketplace sans avoir validé que Sunimmo utilise vraiment le logiciel de gestion = construire un toit avant les fondations.
+
+**Inventaire exhaustif périmètre interdit Phase 1.0** : [`docs/2-ROADMAP.md`](docs/2-ROADMAP.md#245-périmètre-exclu-phase-10-reporté-phase-2) §2.4.5.
+
+**Inventaire code dormant Phase 2 (présent en repo, désactivé)** : [`docs/2-ROADMAP.md`](docs/2-ROADMAP.md#246-code-dormant-phase-2-présent-en-repo-désactivé-en-nav) §2.4.6.
 
 ---
 
