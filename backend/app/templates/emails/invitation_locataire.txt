@@ -1,0 +1,21 @@
+Bonjour {prenom_locataire},
+
+{bailleur_nom} ({althy_creditor_name}) vous invite à créer votre espace
+locataire pour gérer votre logement à {bien_adresse_courte}.
+
+Votre espace Althy vous permet de retrouver en un clic :
+  - Votre bail et ses informations clés
+  - L'historique de vos paiements de loyer
+  - Vos quittances et documents
+  - Une messagerie directe avec votre bailleur
+{message_block_text}
+Pour créer votre compte, ouvrez ce lien :
+{invitation_url}
+
+Ce lien expire le {expires_at_formatted}. Vous n'attendiez pas cette
+invitation ? Vous pouvez l'ignorer en toute sécurité.
+
+—
+ALTHY
+{althy_creditor_name} · l'assistant immobilier suisse
+{emails_from}
