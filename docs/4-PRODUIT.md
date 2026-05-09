@@ -36,9 +36,9 @@ Le rôle `hunter` est **transversal** : tout user Althy (proprio, agence, voisin
 
 > **Note de comptage** : 9 rôles techniques dans le code (10 si on compte `acheteur_premium`) = **8 profils utilisateurs métier** + `super_admin` (rôle technique). Les 8 profils métier reflètent les 8 personas business du BP. Le rôle `super_admin` est technique (Killian + futurs admins ops).
 
-**Mappings legacy** : `owner` → `proprio_solo`, `agency` → `agence`, `tenant` → `locataire`, `company` → `artisan`. Source : `frontend/src/lib/useRole.ts`.
+**Mappings legacy** : `owner` → `proprio_solo`, `agency` → `agence`, `tenant` → `locataire`, `company` → `artisan`. Source : `frontend/src/lib/hooks/useRole.ts`.
 
-**Source code** : `frontend/src/lib/useRole.ts` (`ROLE_SECTIONS`) + `frontend/src/lib/flags.ts` (`FLAGS`) + `backend/app/core/config.py` (`ALLOWED_SIGNUP_ROLES`).
+**Source code** : `frontend/src/lib/hooks/useRole.ts` (`ROLE_SECTIONS`) + `frontend/src/lib/flags.ts` (`FLAGS`) + `backend/app/core/config.py` (`ALLOWED_SIGNUP_ROLES`).
 
 **Plan d'activation détaillé** : §4.14 + [`2-ROADMAP.md`](./2-ROADMAP.md).
 

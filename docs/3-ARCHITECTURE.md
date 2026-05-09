@@ -173,7 +173,7 @@ Pour toute sous-table 1:N attachée à `Bien` (et par extension à toute entité
 
 `acheteur_premium` existe également mais reste hardcodé `false` (Phase 5+).
 
-**Mappings legacy** : `owner` → `proprio_solo`, `agency` → `agence`, `tenant` → `locataire`, `company` → `artisan`. Source : `frontend/src/lib/useRole.ts`.
+**Mappings legacy** : `owner` → `proprio_solo`, `agency` → `agence`, `tenant` → `locataire`, `company` → `artisan`. Source : `frontend/src/lib/hooks/useRole.ts`.
 
 **Ajout d'un rôle** = checklist obligatoire (cf §3.12 Conventions).
 
@@ -524,7 +524,7 @@ Un seul composant `LocatairesGlobal` qui gère tous les locataires de tous les b
 - Source de vérité produit : [`4-PRODUIT.md`](./4-PRODUIT.md) + [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md) (Règle R6).
 
 **Ajout d'un rôle** = checklist obligatoire :
-- `frontend/src/lib/useRole.ts` → `ROLE_SECTIONS`
+- `frontend/src/lib/hooks/useRole.ts` → `ROLE_SECTIONS`
 - `frontend/src/components/dashboard/DashboardSidebar.tsx` → items nav
 - `frontend/src/lib/flags.ts` → `ROLE_FLAG` + `FLAGS`
 - `frontend/src/components/dashboard/DashboardLayoutClient.tsx` → `RESTRICTED_PAGES`

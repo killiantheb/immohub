@@ -231,7 +231,7 @@ Si une livraison échoue **un seul** des 3 critères → retour à la planche à
 
 Tout nouveau rôle nécessite la mise à jour **simultanée** de :
 
-- `frontend/src/lib/useRole.ts` → `ROLE_SECTIONS`
+- `frontend/src/lib/hooks/useRole.ts` → `ROLE_SECTIONS`
 - `frontend/src/components/dashboard/DashboardSidebar.tsx` → items nav
 - `frontend/src/lib/flags.ts` → `ROLE_FLAG` + `FLAGS`
 - `frontend/src/components/dashboard/DashboardLayoutClient.tsx` → `RESTRICTED_PAGES` si nécessaire
