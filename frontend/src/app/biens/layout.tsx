@@ -1,27 +1,17 @@
 import type { Metadata } from "next";
 
+// DORMANT Phase 2 — Killian 2026-05-09 — voir docs/2-ROADMAP.md §2.4.6.
+// Metadata SEO marketplace neutralisé Phase 1.0. La canonique + openGraph
+// historiques pointaient vers https://althy.ch/biens et poussaient Google à
+// indexer une marketplace inexistante. On force noindex + nofollow tant que
+// la marketplace n'est pas réactivée Phase 2.
+// Snapshot original conservé dans l'historique git pour réactivation.
 export const metadata: Metadata = {
-  title: "Biens à louer et à vendre en Suisse | Althy",
-  description:
-    "Trouvez votre prochain bien immobilier en Suisse romande. Location, vente, colocation à Genève, Lausanne, Fribourg et dans tout le canton de Vaud. Annonces vérifiées par Althy IA.",
-  keywords: [
-    "immobilier suisse",
-    "location appartement genève",
-    "location appartement lausanne",
-    "vente maison vaud",
-    "colocation suisse romande",
-    "althy",
-  ],
-  openGraph: {
-    title: "Marketplace immobilière Suisse | Althy",
-    description: "Location, vente et colocation en Suisse romande. Annonces vérifiées.",
-    url: "https://althy.ch/biens",
-    siteName: "Althy",
-    locale: "fr_CH",
-    type: "website",
-  },
-  alternates: {
-    canonical: "https://althy.ch/biens",
+  title: "Althy",
+  description: "Althy — logiciel de gestion locative.",
+  robots: {
+    index: false,
+    follow: false,
   },
 };
 

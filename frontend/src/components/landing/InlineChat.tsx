@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Send, Sparkles, X, ArrowRight } from "lucide-react";
 import { C } from "@/lib/design-tokens";
-// Phase 1 : marketplace publique masquée — BiensRecoCards retiré du chat.
+// DORMANT Phase 2 — Killian 2026-05-09 — voir docs/2-ROADMAP.md §2.4.6.
+// BiensRecoCards retiré du chat (marketplace = code dormant Phase 2).
 // import { BiensRecoCards } from "./BiensRecoCards";
 import { EstimationRange } from "./EstimationRange";
 import { AutonomieCalc } from "./AutonomieCalc";
@@ -272,7 +273,7 @@ export function InlineChat({
               >
                 {m.content || (streaming && i === messages.length - 1 ? <TypingDots /> : null)}
               </div>
-              {/* Phase 1 : <BiensRecoCards> retiré (marketplace publique masquée). */}
+              {/* DORMANT Phase 2 (cf 2-ROADMAP §2.4.6) : <BiensRecoCards> retiré. */}
               {/* {isLastAssistant && lastIntent === "recherche_bien" && (
                 <BiensRecoCards entities={lastEntities} />
               )} */}

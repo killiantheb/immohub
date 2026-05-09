@@ -74,6 +74,18 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // ── Phase 1.0 : marketplace publique = CODE DORMANT Phase 2 ─────────────
+  // Doctrine v6 (2026-05-09) — cf docs/2-ROADMAP.md §2.4.6 + CLAUDE.md §B.15.
+  // Routes /biens* (page liste, swipe, [id], pages SEO villes) interceptées :
+  //   - user authentifié → /app (dashboard interne)
+  //   - user non authentifié → / (landing Althy)
+  // Ceinture+bretelles : les pages elles-mêmes sont déjà des redirect("/")
+  // server-side (cleanup PR #6 + #7), mais le middleware évite de toucher
+  // au render Next.js et masque aussi les pages depuis les bots.
+  if (pathname === "/biens" || pathname.startsWith("/biens/")) {
+    return NextResponse.redirect(new URL(user ? "/app" : "/", request.url));
+  }
+
   const isPublic    = PUBLIC_ROUTES.some(p => pathname === p || pathname.startsWith(`${p}/`));
   const isProtected = PROTECTED_PREFIXES.some(p => pathname.startsWith(p));
 

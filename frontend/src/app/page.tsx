@@ -12,7 +12,8 @@ import { InlineChat }             from "@/components/landing/InlineChat";
 import { FloatingChatBubble }     from "@/components/landing/FloatingChatBubble";
 import { Footer }                 from "@/components/landing/Footer";
 import { LandingEstimation }      from "@/components/landing/LandingEstimation";
-// Phase 1 : marketplace publique masquée — LandingBiens retiré de la landing.
+// DORMANT Phase 2 — Killian 2026-05-09 — voir docs/2-ROADMAP.md §2.4.6.
+// LandingBiens retiré de la landing publique (marketplace = code dormant Phase 2).
 // import { LandingBiens }           from "@/components/landing/LandingBiens";
 import { LandingPreuve }          from "@/components/landing/LandingPreuve";
 import { SocialProof }            from "@/components/landing/SocialProof";
@@ -220,7 +221,7 @@ export default function LandingPage() {
 
         <AutonomieHighlight />
         <ProprioSolo />
-        {/* Phase 1 : <LandingBiens /> masqué — marketplace publique reportée. */}
+        {/* DORMANT Phase 2 (cf 2-ROADMAP §2.4.6) : <LandingBiens /> masqué. */}
         <LandingEstimation />
         <FeatureIA />
         <FeatureBiens />
