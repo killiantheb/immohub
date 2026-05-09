@@ -13,7 +13,9 @@ const IMMERSIVE_PATHS = ["/app/sphere"];
 /**
  * Pages Phase 2+ : masquées dans la sidebar mais accessibles par URL directe.
  * Clé = préfixe de chemin, valeur = rôles autorisés.
- * Un utilisateur avec un rôle absent de la liste est redirigé vers /app/sphere.
+ * Un utilisateur avec un rôle absent de la liste est redirigé :
+ *   - vers /app/mon-bien si role === "locataire" (Sprint 1A — Phase 1.0 doctrine v6)
+ *   - vers /app/sphere sinon
  */
 const RESTRICTED_PAGES: Record<string, string[]> = {
   "/app/ouvreurs":         ["opener",       "super_admin"],
@@ -21,6 +23,13 @@ const RESTRICTED_PAGES: Record<string, string[]> = {
   "/app/mes-candidatures": ["locataire",    "acheteur_premium", "super_admin"],
   "/app/candidatures":     ["proprio_solo", "agence", "super_admin"],
   "/app/portail":          ["agence",       "super_admin"],
+
+  // Phase 1.0 doctrine v6 (Sprint 1A — 2026-05-09) : locataire confiné à SON espace.
+  // Cf docs/4-PRODUIT.md §4.7 (anti-pattern interdit "tous mes biens").
+  "/app/mon-bien":         ["locataire",    "super_admin"],
+  "/app/biens":            ["proprio_solo", "agence", "super_admin"],
+  "/app/finances":         ["proprio_solo", "agence", "super_admin"],
+  "/app/documents":        ["proprio_solo", "agence", "super_admin"],
 };
 
 /**
@@ -128,8 +137,13 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
   const forbidden = roleForbidden || flagForbidden;
 
   useEffect(() => {
-    if (forbidden) router.replace("/app/sphere");
-  }, [forbidden, router]);
+    if (forbidden) {
+      // Phase 1.0 (Sprint 1A) : locataire forbidden → /app/mon-bien (jamais /app/sphere
+      // qui est lui-même hors scope locataire et créerait une boucle de redirect).
+      const fallback = role === "locataire" ? "/app/mon-bien" : "/app/sphere";
+      router.replace(fallback);
+    }
+  }, [forbidden, router, role]);
 
   // Rôle feature-flagged off → écran dédié (pas de redirection, on reste dans le shell)
   if (roleDisabled && role) {
