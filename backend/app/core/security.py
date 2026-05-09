@@ -66,7 +66,9 @@ ROLE_SECTIONS: dict[str, list[str]] = {
     ROLE_ARTISAN:         ["dashboard", "interventions", "finances", "abonnement", "sphere"],
     ROLE_EXPERT:          ["dashboard", "biens", "finances", "abonnement", "sphere"],
     ROLE_HUNTER:          ["dashboard", "hunters", "abonnement", "sphere"],
-    ROLE_LOCATAIRE:       ["dashboard", "biens", "finances", "documents", "sphere", "candidatures"],
+    # Phase 1.0 doctrine v6 (Sprint 1A — 2026-05-09) : locataire restreint à SON espace.
+    # Cf docs/4-PRODUIT.md §4.7. Cohérence stricte avec frontend useRole.ts:22.
+    ROLE_LOCATAIRE:       ["dashboard", "mon_bien", "profile"],
     ROLE_ACHETEUR:        ["dashboard", "listings", "sphere", "candidatures"],
 }
 

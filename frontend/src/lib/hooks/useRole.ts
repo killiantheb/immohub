@@ -19,7 +19,10 @@ export const ROLE_SECTIONS: Record<UserRole, string[]> = {
   artisan:          ["dashboard", "sphere", "carte", "interventions", "finances", "abonnement", "artisans", "settings", "communication", "profile"],
   expert:           ["dashboard", "sphere", "carte", "biens", "finances", "abonnement", "settings", "communication", "profile"],
   hunter:           ["dashboard", "sphere", "carte", "hunters", "abonnement", "vente", "settings", "communication", "profile"],
-  locataire:        ["dashboard", "sphere", "carte", "biens", "mes_candidatures", "finances", "documents", "settings", "communication", "profile"],
+  // Phase 1.0 doctrine v6 (Sprint 1A — 2026-05-09) : locataire restreint à SON espace dédié.
+  // Cf docs/4-PRODUIT.md §4.7 (anti-pattern interdit "tous mes biens" / accès marketplace).
+  // "messagerie" sera ajoutée Sprint Communication ultérieur.
+  locataire:        ["dashboard", "mon_bien", "profile"],
   acheteur_premium: ["dashboard", "sphere", "carte", "listings", "mes_candidatures", "settings", "vente", "communication", "profile"],
 };
 
