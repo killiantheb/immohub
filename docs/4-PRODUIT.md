@@ -1,7 +1,7 @@
 # 4. Produit Althy
 
 > **Source de vérité unique** pour la spec fonctionnelle.
-> Last update : 2026-04-30 (v5)
+> Last update : 2026-05-09 (v6 — refonte §4.7 Module Invitation Locataire + §4.13 Communication minimale Phase 1.0)
 > Audience : Killian, équipe produit, designers, Claude Code.
 > Entité opérationnelle : **HBM Swiss Sàrl** (CHE-179.984.757 TVA).
 
@@ -12,11 +12,11 @@
 | Rôle | Phase | Flag | Dashboard | Statut |
 |---|---|---|---|---|
 | `super_admin` | technique | toujours | DTopNav admin + admin pages | ✅ actif |
-| `proprio_solo` | 1 | toujours | `DashboardProprioSolo` | ✅ actif |
-| `locataire` | 1 | toujours | `DashboardLocataire` | ✅ actif |
+| `proprio_solo` | 1.0 | toujours | `DashboardProprioSolo` | ✅ actif |
+| `locataire` | 1.0 | toujours (via invitation uniquement) | `DashboardLocataire` (espace dédié à SON bien) | ✅ actif (cf §4.7 doctrine v6) |
 | `agence` | 2 | `NEXT_PUBLIC_FLAG_AGENCE` | `DashboardAgence` | 🔮 ComingSoon |
 | `portail_proprio` | 2 | `NEXT_PUBLIC_FLAG_PORTAIL` | `DashboardPortailProprio` | 🔮 ComingSoon |
-| `artisan` | 3 | `NEXT_PUBLIC_FLAG_ARTISAN` | `DashboardArtisan` | 🟡 partiel (M1 GE+VD) |
+| `artisan` | 3 | `NEXT_PUBLIC_FLAG_ARTISAN` | `DashboardArtisan` | 🟡 partiel gelé (M1 GE+VD) |
 | `opener` | 3 | `NEXT_PUBLIC_FLAG_OPENER` | `DashboardOpener` | 🔮 ComingSoon |
 | `expert` | 3 | hardcoded `false` | `DashboardExpert` | 🔮 ComingSoon |
 | `hunter` | post-3 | hardcoded `false` | `DashboardHunter` | 🔮 Phase 4 |
@@ -149,7 +149,8 @@ Source : `frontend/src/app/(landing)/`.
 | Confidentialité | `/legal/confidentialite` | Markdown depuis `frontend/src/legal/CH/confidentialite.md` |
 | Cookies | `/legal/cookies` | Markdown depuis `frontend/src/legal/CH/cookies.md` |
 | Disclaimer IA | `/legal/disclaimer-ia` | Markdown depuis `frontend/src/legal/CH/disclaimer-ia.md` |
-| Marketplace publique | `/biens` | 🚫 **Routée mais MASQUÉE Phase 1** (cleanup PR #6 + #7). Réactivation Phase 2. |
+| Acceptation invitation locataire 🆕 | `/invite/[token]` | Création compte locataire auto-linké au bien (sprint 13, cf §4.7) |
+| Marketplace publique | `/biens` + villes (`/lausanne`, `/geneve`, `/fribourg`, `/neuchatel`, `/sion`, `/valais`, `/vaud`) + `/biens/[id]` + `/biens/swipe` | 🚫 **CODE DORMANT Phase 2 (doctrine v6 — 2026-05-09)** — pages présentes en repo, accessibles via middleware redirect (`/biens*` → `/app` si auth, → `/` sinon). Réactivation Phase 2. Cf [`2-ROADMAP.md`](./2-ROADMAP.md) §2.4.6. |
 
 ### Règle absolue témoignages
 
@@ -248,43 +249,72 @@ Chaque card affiche un résumé (3-5 lignes), une action principale (1 clic), et
 
 ---
 
-## 4.7 Module Locataire
+## 4.7 Module Invitation Locataire + Espace Locataire
 
-### Dossier IA scoré 0-100
+> **Doctrine Phase 1.0 (figée 2026-05-09)** : pas de marketplace publique, pas de candidature spontanée, pas de scoring IA candidature. Le bailleur **invite manuellement** chaque locataire ; chaque locataire a un **espace dédié à SON bien** (pas d'accès à une marketplace ni à d'autres biens). Cf [`2-ROADMAP.md`](./2-ROADMAP.md#24-phase-10--logiciel-de-gestion-sunimmo-test-) §2.4.
 
-**Champs** : `tenants.ai_score` (int 0-100) + `tenants.ai_score_detail` (JSONB).
+### Module Invitation Locataire (Phase 1.0 🆕 — Sprint 13)
 
-**Critères du score IA** :
-- Revenus (ratio loyer/salaire — cible < 33 %)
-- Stabilité emploi (CDI / CDD / indépendant / sans emploi)
-- Garants (présence + qualité)
-- Antécédents (extrait poursuites OPF)
-- Cohérence dossier (pièces complètes ou manquantes)
+**Flux nominal** :
 
-**Disclaimer obligatoire** : le score est une estimation IA, pas une décision. Le propriétaire reste seul juge.
+1. Bailleur sur la fiche bien → bouton « **Inviter le locataire** ».
+2. Choix du vecteur (1 sur 3) :
+   - **Lien magique** — URL signée, copier/coller, transmissible WhatsApp / SMS / mail perso.
+   - **QR code imprimable** — à coller sur l'EDL papier ou sur la porte.
+   - **Email pré-rempli via Resend** — saisie email locataire → envoi automatique avec template `invite_locataire`.
+3. Token : table `invitations` (à créer migration sprint 13) ou JWT court signé. Champs minimaux : `id`, `bien_id`, `email_destinataire?`, `created_at`, `expires_at` (TTL 30 jours), `used_at?`, `used_by_user_id?`.
+4. Page publique `/invite/[token]` :
+   - Validation token (non expiré, non utilisé, bien actif).
+   - Création compte locataire (email + mot de passe Supabase Auth).
+   - Auto-link `User.bien_id` ou écriture dans table de jointure `bien_locataires`.
+   - Marquage `invitations.used_at` + `used_by_user_id`.
+5. Redirect vers `/app` → dashboard locataire restreint.
 
-**Source de vérité granulaire TenantFile + scoring IA** : voir [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md) — la rubrique « Rôle 3 — locataire » liste les ~80 champs du dossier locataire (identité OCR pièce d'identité, type contrat, employeur OCR fiche salaire, garant éventuel via `BienContact`, score IA détaillé) + la doctrine d'acquisition (~50 % données acquises automatiquement par OCR + APIs publiques, le locataire ne saisit que le minimum).
+**Multi-locataires (colocation)** :
 
-### Candidature gratuite (politique viralité)
+Politique « **max comptes utilisateurs** » figée 2026-05-09 :
+- Chaque colocataire reçoit **son propre lien d'invitation**.
+- Chaque colocataire crée **son propre compte** distinct (1 user = 1 personne physique).
+- Tous voient le même bien dans leur espace, mais avec leur propre fil de messagerie 1:1 avec le bailleur.
+- Pourquoi : (1) traçabilité audit nLPD (qui a vu quoi quand), (2) facturation futures Phase 2+ par tête, (3) départ d'un coloc = invalidation de SON compte sans toucher les autres.
 
-**Règle absolue** : le locataire ne paie **JAMAIS** rien à Althy. Ni inscription, ni candidature, ni acceptation, ni frais cachés. Tout endpoint qui facturerait un locataire est un **bug à corriger immédiatement**.
+**Anti-pattern interdit** : compte « partagé colocation » avec un seul login pour 4 personnes — refusé Phase 1.0 et au-delà.
 
-**Soumission** : nom + email + téléphone + dossier (CV bail, fiches salaire, extrait poursuites, attestation RC). Upload via Supabase Storage bucket `candidatures` avec RLS strict.
+### Module Espace Locataire (Phase 1.0 🆕 — Sprint 13)
 
-### Frais propriétaire CHF 45 (migration 0033)
+**Vue dédiée à SON bien uniquement** (RLS Postgres strict — un locataire ne peut JAMAIS lire les données d'un autre bien).
 
-- Prélevés à l'**acceptation** d'une candidature (pas à la soumission).
-- Migration 0033 : champs `owner_fee_amount`, `owner_fee_paid_at`, `owner_fee_stripe_intent_id`, `owner_fee_failed_at` sur `candidatures`.
-- Mode : Stripe **off-session** (carte enregistrée à l'inscription proprio).
-- Échec de prélèvement n'annule pas l'acceptation (le proprio est notifié pour régulariser).
+**Sections** :
 
-**Anciennes colonnes** `candidatures.frais_payes` et `candidatures.stripe_pi_id` : conservées pour audit mais **plus jamais écrites**.
+| Section | Contenu Phase 1.0 | Évolutions Phase 1.1+ |
+|---|---|---|
+| Mon bien | Adresse, photo, type, surface, contact bailleur | Documents communs (règlement immeuble, etc.) |
+| Mon bail | PDF du bail uploadé par le bailleur, dates, montants | Bail signé électroniquement Skribble (Phase 1.1) |
+| Mes paiements | Historique mensuel + statut (`pending` / `paid` / `late`) en mode manuel | QR-facture auto + paiement direct (Phase 1.1) |
+| Mes documents | Quittances reçues, EDL entrée, autres docs envoyés par le bailleur | Documents générés auto (attestations, etc.) |
+| Messagerie | Fil 1:1 bailleur ↔ locataire (cf §4.13) | Pièces jointes, threads par sujet |
 
-### CRM contacts
+**Anti-pattern interdit** :
+- Pas de page « marketplace » dans l'espace locataire.
+- Pas de page « tous mes biens » (un locataire ne voit jamais qu'un seul bien à la fois Phase 1.0).
+- Pas d'accès aux données d'autres locataires (même en colocation : chaque coloc voit le bail commun + ses propres paiements).
 
-- Liste de tous les locataires + candidats par bien
-- Filtres : actuel / ancien / candidat / refusé
-- Source : `frontend/src/app/app/(dashboard)/crm/page.tsx`
+### Code dormant Phase 2 (conservé en l'état)
+
+> Toute la mécanique candidature spontanée + scoring IA candidature + frais propriétaire CHF 45 est **reportée Phase 2**. Le code et le schéma DB existent mais ne sont **plus accessibles** Phase 1.0. Cf [`2-ROADMAP.md`](./2-ROADMAP.md) §2.4.6.
+
+**Inventaire dormant Phase 1.0** :
+
+- **Dossier IA scoré 0-100** — `tenants.ai_score` (int 0-100) + `tenants.ai_score_detail` (JSONB). Modèle conservé. Endpoint scoring désactivé.
+  - Critères historiques : revenus (ratio loyer/salaire < 33 %), stabilité emploi, garants, antécédents OPF, cohérence dossier.
+  - Réactivation Phase 2 avec disclaimer obligatoire (estimation IA, pas une décision).
+- **Candidature spontanée gratuite** — Soumission nom + email + téléphone + dossier (CV bail, fiches salaire, extrait poursuites, attestation RC) via bucket Supabase `candidatures`. Endpoint `POST /candidatures` désactivé Phase 1.0.
+- **Frais propriétaire CHF 45 (migration 0033)** — colonnes `owner_fee_amount`, `owner_fee_paid_at`, `owner_fee_stripe_intent_id`, `owner_fee_failed_at` sur table `candidatures`. Migration appliquée mais **aucune écriture Phase 1.0**. Stripe off-session non déclenché.
+- **CRM contacts** (filtres actuel / ancien / candidat / refusé) — `frontend/src/app/app/(dashboard)/crm/page.tsx`. Vue conservée mais sans onglet « candidat » Phase 1.0.
+
+**Règle absolue conservée** : le locataire ne paie **JAMAIS** rien à Althy. Ni inscription, ni acceptation, ni frais cachés. Tout endpoint qui facturerait un locataire est un **bug à corriger immédiatement**. Cette règle reste valide en Phase 2 lors de la réactivation marketplace.
+
+**Source de vérité granulaire TenantFile + scoring IA** : voir [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY.md) — la rubrique « Rôle 3 — locataire » liste les ~80 champs du dossier locataire complet (Phase 2 cible). Phase 1.0 = sous-ensemble minimal (identité, lien bail, lien paiements, lien messagerie).
 
 ---
 
@@ -482,47 +512,67 @@ Détail exhaustif : [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY
 
 ## 4.13 Communication
 
-### Messagerie in-app (Phase 1)
+> **Doctrine Phase 1.0 (figée 2026-05-09)** : strict minimum nécessaire à la migration Sunimmo. Messagerie interne 1:1 bailleur ↔ locataire + notifications email transactionnelles via Resend. **Aucun canal externe** (pas d'OAuth Gmail/Outlook, pas de WhatsApp API, pas de SMS Twilio). Cf [`2-ROADMAP.md`](./2-ROADMAP.md#24-phase-10--logiciel-de-gestion-sunimmo-test-) §2.4.
 
-- Table `messages` (migration 004).
-- Canal proprio ↔ locataire.
+### Phase 1.0 — Messagerie interne + email transactionnel
+
+**Messagerie interne in-app** :
+- Table `messages` (migration 004 — déjà en place).
+- Canal **1:1 bailleur ↔ locataire** lié à un bail (chaque thread = `(bien_id, user_id_bailleur, user_id_locataire)`).
+- Multi-locataires (colocation) : 1 fil distinct par coloc (cf §4.7 politique max comptes).
 - Notifications email Resend si message non lu après 24h.
-- Realtime configuré Supabase mais pas branché en Phase 1 (refresh manuel).
+- Realtime Supabase configuré mais **pas branché en Phase 1.0** (refresh manuel suffisant pour Sunimmo).
+- **Pas de pièces jointes Phase 1.0** (ajout Phase 1.1 si besoin terrain).
 
-### Email Resend (Phase 1)
-
-- Transactionnel : signup, reset password, quittances mensuelles, relances loyers.
-- Templates par locale (Phase 1 : `fr-CH` seul).
+**Email transactionnel via Resend** :
 - Émetteur : `noreply@althy.ch` (SPF/DKIM configurés).
+- Templates Phase 1.0 :
+  - `signup_bailleur` — confirmation inscription bailleur.
+  - `reset_password` — réinitialisation mot de passe.
+  - `invite_locataire` 🆕 — invitation locataire envoyée par le bailleur (cf §4.7 module Invitation).
+  - `nouveau_message` — notification message non lu après 24h.
+  - `loyer_marque_paye` — confirmation au locataire quand le bailleur marque un loyer comme payé.
+- Templates par locale (Phase 1.0 : `fr-CH` seul).
 
-### SMS Twilio (Phase 1 partiel)
+### Phase 1.1 — Compléments
 
-- Notifications critiques uniquement (paiement réussi, échec relance).
-- Numéro identifiable Althy (Sender ID).
-- Configuration prête, envoi non testé en prod (cf TODO connus CLAUDE.md).
+- **Signature électronique Skribble** intégrée au workflow bail (juin/juillet 2026).
+- **QR-facture SPC 2.0** envoyée automatiquement au locataire via Resend (template `loyer_qr_facture`).
+- **Relances loyers automatiques** par email (J-3 / J0 / J+5 / J+10 / mise en demeure CO art. 257d).
+- **Quittances mensuelles automatiques** (template `quittance_mensuelle`).
 
-### WhatsApp Business API (Phase 5+ Hub IA)
+### Phase 2 — Multi-canaux + sync externes
 
-- **Pas Phase 1**.
-- Conformité LCD : opt-out par message obligatoire.
-- Pattern unifié `InboxParser` côté backend.
+> Cf [`2-ROADMAP.md`](./2-ROADMAP.md#25-phase-2--lancement-public-payant) §2.5 — **Communication multi-canaux** (Phase 2).
 
-### Sync Google Calendar / Outlook (Phase 5+ Hub IA)
+- **OAuth Gmail / Outlook** — Microsoft Graph API + Google Workspace API + Infomaniak kMail API. Lecture mails + calendrier + IA propose actions contextuelles. OAuth2 (jamais de mot de passe stocké).
+- **WhatsApp Business API** (Meta Cloud API) — opt-out par message obligatoire (LCD). Pattern unifié `InboxParser` côté backend.
+- **SMS Twilio** — notifications critiques (paiement réussi, échec relance, alertes). Numéro identifiable Althy (Sender ID). Configuration code-side prête depuis Phase 0 mais **désactivée Phase 1.0 et 1.1**.
+- **Traduction auto FR/DE/IT/EN** des messages entrants/sortants (utilité multi-locale Phase 2 post-activation `de-CH`).
+- **Email nurturing 5 séquences** — Welcome / Onboarding / Re-engagement / Churn prevention / Upsell.
 
-- OAuth2 (jamais de mot de passe stocké).
-- Lecture mails + calendrier + IA propose actions contextuelles.
-- Microsoft Graph API + Google Workspace API + Infomaniak kMail API.
+### Anti-pattern interdit Phase 1.0
+
+- ❌ Pas de message broadcast bailleur → tous les locataires (Phase 2+).
+- ❌ Pas de notification SMS (Phase 2).
+- ❌ Pas d'OAuth Gmail/Outlook (Phase 2).
+- ❌ Pas de WhatsApp API (Phase 2).
+- ❌ Pas de chatbot IA proactif côté locataire (le locataire reste passif sur la communication, c'est le bailleur qui pilote).
 
 ---
 
 ## 4.14 Plan d'activation des rôles
 
-### Phase 1 (active maintenant)
+### Phase 1.0 (active maintenant — doctrine 2026-05-09)
 
-- `proprio_solo`, `locataire`, `super_admin`.
-- + `artisan` partiellement (M1 — 50 places fondateurs par canton GE+VD).
+- `proprio_solo` — propriétaire-bailleur autogéré (cible Sunimmo).
+- `locataire` — **ACTIF Phase 1.0**, mais accès **dédié à SON bien uniquement** via flux Invitation (cf §4.7). Pas d'accès à une marketplace, pas d'accès à d'autres biens, pas de candidature spontanée.
+- `super_admin` — Killian + admin technique (gestion partenaires, waitlist).
+- + `artisan` partiellement (M1 — 50 places fondateurs par canton GE+VD) — **gelé en l'état** Phase 1.0, pas d'évolution.
 - Backend : `ALLOWED_SIGNUP_ROLES = ["proprio_solo", "locataire", "super_admin", "artisan"]`.
 - Frontend : flags `false` pour les autres rôles → écran « en préparation ».
+
+> **Différence clé doctrine v6** : le rôle `locataire` reste actif Phase 1.0 mais **uniquement via invitation bailleur**. L'inscription publique d'un locataire sans invitation n'est pas exposée Phase 1.0 (le formulaire `/register` ne propose plus le rôle locataire en self-service ; le compte est créé via `/invite/[token]`). Le rôle `acheteur` et `hunter` restent en `ComingSoon` Phase 2-4.
 
 ### Phase 2 (gated par flags)
 
