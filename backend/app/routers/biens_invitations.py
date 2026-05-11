@@ -24,13 +24,14 @@ zéro migration neuve (Sprint 1B = 0 alembic).
 
 from __future__ import annotations
 
+import logging
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any, Literal
 
 from app.core.config import settings
-from app.core.database import get_db
+from app.core.database import AsyncSessionLocal, get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.services.email_service import EmailServiceError, send_email
@@ -38,6 +39,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger("althy.invitations")
 
 router = APIRouter()
 
@@ -315,33 +318,40 @@ async def inviter_locataire(
                 f"Envoi email échoué : {exc}",
             )
 
-        # Track dans invite_queue (best-effort, non-bloquant)
-        try:
-            await db.execute(
-                text("""
-                    INSERT INTO invite_queue
-                        (id, invited_by, magic_link_id, channel, status, sent_at)
-                    VALUES
-                        (:id, :by, :mid, 'email', :st, NOW())
-                """),
-                {
-                    "id": uuid.uuid4(),
-                    "by": current_user.id,
-                    "mid": invitation_id,
-                    "st": "sent" if email_sent else "pending",
-                },
-            )
-        except Exception:
-            # invite_queue est un log informatif — un échec ne doit pas bloquer
-            # l'invitation elle-même qui est déjà persistée dans magic_links.
-            pass
-
     elif payload.mode_envoi == "qr":
         qr_data_uri = _generate_qr_data_uri(invitation_url) or None
 
     # mode_envoi == "lien" : rien à faire de plus, l'URL est dans la réponse
 
     await db.commit()
+
+    # Track dans invite_queue (best-effort, non-bloquant) — doctrine §B.12 :
+    # session DÉDIÉE via AsyncSessionLocal(), JAMAIS la session user `db`.
+    # Si on faisait l'INSERT sur `db` dans un try/except Exception: pass, un
+    # échec (FK violation, table absente, contrainte) mettrait la transaction
+    # user en état aborted ; le commit final renverrait alors un ROLLBACK
+    # silencieux côté Postgres → 201 client + 0 ligne magic_links en DB.
+    # Référence : ai_service._log_usage (figé 2026-05-08, incident /ai/draft-edl).
+    if payload.mode_envoi == "email":
+        try:
+            async with AsyncSessionLocal() as log_db:
+                await log_db.execute(
+                    text("""
+                        INSERT INTO invite_queue
+                            (id, invited_by, magic_link_id, channel, status, sent_at)
+                        VALUES
+                            (:id, :by, :mid, 'email', :st, NOW())
+                    """),
+                    {
+                        "id": uuid.uuid4(),
+                        "by": current_user.id,
+                        "mid": invitation_id,
+                        "st": "sent" if email_sent else "pending",
+                    },
+                )
+                await log_db.commit()
+        except Exception:
+            logger.warning("Failed to log invite_queue entry", exc_info=True)
 
     return InvitationLocataireResponse(
         invitation_id=invitation_id,
