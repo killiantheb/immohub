@@ -1,4 +1,5 @@
 import json
+import uuid
 from collections.abc import AsyncGenerator
 from contextlib import contextmanager
 from datetime import date, datetime
@@ -35,9 +36,13 @@ engine = create_async_engine(
     json_serializer=_json_serializer,
     # Required for Supabase Transaction Pooler 6543 (pgbouncer transaction mode).
     # Prevents DuplicatePreparedStatementError when connections are recycled.
+    # Pgbouncer transaction mode + asyncpg : nommer chaque prepared statement
+    # transitoire avec UUID unique pour éviter DuplicatePreparedStatementError
+    # lors du recyclage connexion (cf incident 2026-05-12 + CLAUDE.md §B.12).
     connect_args={
         "statement_cache_size": 0,
         "prepared_statement_cache_size": 0,
+        "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4().hex}__",
     },
 )
 
