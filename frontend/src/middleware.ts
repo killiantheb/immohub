@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { LOCALE_COOKIE, DEFAULT_LOCALE, isSupportedLocale } from "@/i18n/config";
 
 // Routes accessibles sans authentification
-const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password", "/reset-password", "/legal", "/legal/cgu", "/legal/confidentialite", "/legal/cookies", "/legal/disclaimer-ia", "/contact", "/bientot"];
+const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password", "/reset-password", "/legal", "/legal/cgu", "/legal/confidentialite", "/legal/cookies", "/legal/disclaimer-ia", "/contact", "/bientot", "/invite"];
 // Préfixes qui nécessitent une session
 const PROTECTED_PREFIXES = ["/app"];
 // Préfixes anciens (portails séparés) → redirigés vers /app
