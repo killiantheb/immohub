@@ -241,11 +241,19 @@ app.include_router(
 app.include_router(rgpd_router, prefix="/api/v1/rgpd", tags=["rgpd"])
 app.include_router(sphere_router, prefix="/api/v1", tags=["sphere"])
 app.include_router(notations_router, prefix="/api/v1", tags=["notations"])
-app.include_router(oauth_router, prefix="/api/v1", tags=["oauth"])
 app.include_router(factures_router, prefix="/api/v1", tags=["factures"])
-app.include_router(messagerie_router, prefix="/api/v1", tags=["messagerie"])
 app.include_router(agenda_router, prefix="/api/v1", tags=["agenda"])
-app.include_router(whatsapp_router, prefix="/api/v1", tags=["whatsapp"])
+
+# ── Module Communication Phase 2 (code dormant §2.4.6) ──────────────────────
+# Gated derrière settings.ENABLE_OAUTH_COMMUNICATION (default false). Tant
+# que le flag est off, GET/POST sur /api/v1/oauth/*, /api/v1/whatsapp/*,
+# /api/v1/messagerie/* retournent 404 — pas un 501 « non implémenté » car
+# le code existe : c'est simplement non monté. Cf CLAUDE.md §B.15 :
+# « Phase 1.0 = email Resend uniquement ».
+if settings.ENABLE_OAUTH_COMMUNICATION:
+    app.include_router(oauth_router,     prefix="/api/v1", tags=["oauth"])
+    app.include_router(messagerie_router, prefix="/api/v1", tags=["messagerie"])
+    app.include_router(whatsapp_router,   prefix="/api/v1", tags=["whatsapp"])
 app.include_router(onboarding_router, prefix="/api/v1", tags=["onboarding"])
 app.include_router(contact_router, prefix="/api/v1", tags=["contact"])
 app.include_router(estimation_router, prefix="/api/v1", tags=["estimation"])
