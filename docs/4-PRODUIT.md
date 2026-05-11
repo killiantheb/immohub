@@ -517,10 +517,10 @@ Détail exhaustif : [`7-CATALOGUE-DONNEES-ALTHY.md`](./7-CATALOGUE-DONNEES-ALTHY
 ### Phase 1.0 — Messagerie interne + email transactionnel
 
 **Messagerie interne in-app** :
-- Table `messages` (migration 004 — déjà en place).
+- Table `bien_messages` (migration **0040** — sprint Module Communication PR-1, 2026-05-12). Rectification doctrine du 2026-05-11 : la mention historique « table `messages` migration 004 déjà en place » était erronée (table jamais créée, audit pré-PR confirmé). Naming aligné sur les autres tables filles de `biens` (`bien_annexes`, `bien_contacts`, etc.).
 - Canal **1:1 bailleur ↔ locataire** lié à un bail (chaque thread = `(bien_id, user_id_bailleur, user_id_locataire)`).
 - Multi-locataires (colocation) : 1 fil distinct par coloc (cf §4.7 politique max comptes).
-- Notifications email Resend si message non lu après 24h.
+- Notifications email Resend si message non lu après 24h (PR-4 à venir).
 - Realtime Supabase configuré mais **pas branché en Phase 1.0** (refresh manuel suffisant pour Sunimmo).
 - **Pas de pièces jointes Phase 1.0** (ajout Phase 1.1 si besoin terrain).
 
