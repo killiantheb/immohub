@@ -565,6 +565,22 @@
 .bien-sidebar-backdrop {
   display: none;
 }
+.bien-sidebar-trigger {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  margin: 12px 16px 4px;
+  border: 1px solid var(--althy-border);
+  background: var(--althy-surface);
+  color: var(--althy-text);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.bien-sidebar-trigger:hover { background: var(--althy-surface-2); }
 
 /* ── Main content ───────────────────────────────────────────────────────── */
 .althy-main {
@@ -661,6 +677,7 @@
     z-index: 46;
     backdrop-filter: blur(1px);
   }
+  .bien-sidebar-trigger { display: inline-flex; }
 
   /* Main content full width, offset for top bar */
   .althy-main {
