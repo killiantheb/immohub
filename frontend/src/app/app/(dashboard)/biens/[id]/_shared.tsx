@@ -8,8 +8,9 @@ import {
   AlertTriangle, Award, Building2, Calculator, CheckCircle2,
   ChevronDown, ChevronRight,
   Clock, Download, Eye, FileText, Lightbulb, Loader2, MapPin,
-  PiggyBank, Plus, RefreshCw, Sparkles, TrendingUp, User, Wrench, XCircle,
+  PiggyBank, Plus, RefreshCw, Sparkles, TrendingUp, User, UserPlus, Wrench, XCircle,
 } from "lucide-react";
+import { InviterLocataireModal } from "@/components/biens/InviterLocataireModal";
 import {
   useBien, useDocuments, useInterventions, useLocataireActuel,
   useLocataires, usePaiements, useScoring, useCreateIntervention,
@@ -83,12 +84,13 @@ export function ScoreBar({ label, value }: { label: string; value: number }) {
     </div>
   );
 }
-export function Empty({ icon: Icon, title, sub }: { icon: React.ElementType; title: string; sub?: string }) {
+export function Empty({ icon: Icon, title, sub, action }: { icon: React.ElementType; title: string; sub?: string; action?: React.ReactNode }) {
   return (
     <div style={{ textAlign: "center", padding: "3rem 1rem", color: C.text3 }}>
       <Icon size={34} style={{ margin: "0 auto 0.75rem", opacity: 0.35 }} />
       <p style={{ fontWeight: 600, color: C.text2, marginBottom: 4 }}>{title}</p>
       {sub && <p style={{ fontSize: 13 }}>{sub}</p>}
+      {action && <div style={{ marginTop: "1rem" }}>{action}</div>}
     </div>
   );
 }
@@ -220,16 +222,62 @@ export function TabLocataire({ bienId }: { bienId: string }) {
   const { data: locataire, isLoading } = useLocataireActuel(bienId);
   const { data: scoring, isLoading: loadScore } = useScoring(locataire?.id);
   const { data: paiements } = usePaiements(bienId);
+  const { data: bien } = useBien(bienId);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const moisCourant = new Date().toISOString().slice(0, 7);
   const pMois = paiements?.find(p => p.mois === moisCourant);
   const daysFin = daysUntil(locataire?.date_sortie);
+
+  const bienAdresseCourte = bien
+    ? [bien.adresse, [bien.cp, bien.ville].filter(Boolean).join(" ")].filter(Boolean).join(", ")
+    : undefined;
 
   if (isLoading) return (
     <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(270px, 1fr))" }}>
       <Card><Skel h={180} /></Card><Card><Skel h={120} /></Card><Card><Skel h={160} /></Card>
     </div>
   );
-  if (!locataire) return <Empty icon={User} title="Aucun locataire actuel" sub="Ce bien est vacant." />;
+  if (!locataire) {
+    return (
+      <>
+        <Empty
+          icon={User}
+          title="Aucun locataire actuel"
+          sub="Ce bien est vacant. Invitez votre locataire pour qu'il accède à son espace dédié."
+          action={
+            <button
+              type="button"
+              onClick={() => setInviteOpen(true)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "10px 20px",
+                borderRadius: 10,
+                background: C.prussian,
+                color: "#fff",
+                border: "none",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              <UserPlus size={16} />
+              Inviter le locataire
+            </button>
+          }
+        />
+        {inviteOpen && (
+          <InviterLocataireModal
+            bienId={bienId}
+            bienAdresseCourte={bienAdresseCourte}
+            onClose={() => setInviteOpen(false)}
+          />
+        )}
+      </>
+    );
+  }
 
   const ps = pMois ? PAI_STATUT[pMois.statut] : null;
   return (
