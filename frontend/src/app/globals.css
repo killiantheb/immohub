@@ -528,6 +528,44 @@
   flex-shrink: 0;
 }
 
+/* ── BienSidebar (contextuelle fiche bien, palette §B.4) ────────────────── */
+.bien-sidebar {
+  width: 240px;
+  min-width: 240px;
+  flex-shrink: 0;
+  background: var(--althy-surface);
+  border-right: 1px solid var(--althy-border);
+  align-self: stretch;
+  position: sticky;
+  top: 0;
+  max-height: 100vh;
+  overflow-y: auto;
+}
+.bien-sidebar__close {
+  display: none;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--althy-border);
+  background: var(--althy-surface);
+  color: var(--althy-text);
+  border-radius: 8px;
+  cursor: pointer;
+  z-index: 1;
+}
+.bien-sidebar__close:hover { background: var(--althy-surface-2); }
+.bien-sidebar__item:hover {
+  background: var(--althy-surface-2);
+  color: var(--althy-text);
+}
+.bien-sidebar-backdrop {
+  display: none;
+}
+
 /* ── Main content ───────────────────────────────────────────────────────── */
 .althy-main {
   flex: 1;
@@ -597,6 +635,31 @@
   }
   .althy-sidebar--open {
     transform: translateX(0) !important;
+  }
+
+  /* BienSidebar also becomes a drawer on mobile */
+  .bien-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    max-height: 100vh;
+    z-index: 47;
+    transform: translateX(-100%);
+    transition: transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 280px;
+    min-width: 280px;
+    box-shadow: 4px 0 32px rgba(26,22,18,0.18);
+  }
+  .bien-sidebar--open { transform: translateX(0); }
+  .bien-sidebar__close { display: inline-flex; }
+  .bien-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,22,18,0.45);
+    z-index: 46;
+    backdrop-filter: blur(1px);
   }
 
   /* Main content full width, offset for top bar */
