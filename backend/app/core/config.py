@@ -146,6 +146,15 @@ class Settings(BaseSettings):
     WHATSAPP_PHONE_ID: str = ""
     META_APP_SECRET: str = ""
 
+    # ── Feature flag : code dormant Phase 2 (OAuth Gmail/Outlook + WhatsApp) ──
+    # Default false = Phase 1.0 doctrine §B.15 (« Phase 1.0 = email Resend
+    # uniquement »). Quand ce flag est false, les routers oauth.py /
+    # whatsapp.py / messagerie.py NE SONT PAS montés dans main.py, et toute
+    # requête vers /api/v1/oauth/*, /api/v1/whatsapp/*, /api/v1/messagerie/*
+    # retourne 404. Le code reste en repo (cf §2.4.6 doctrine « dormant Phase 2 »).
+    # Réactivation Phase 2 : ENABLE_OAUTH_COMMUNICATION=true côté env Railway.
+    ENABLE_OAUTH_COMMUNICATION: bool = False
+
     # Portal syndication — Althy marge 15%
     PORTAL_MARGIN_PCT: float = 15.0
 

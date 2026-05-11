@@ -23,6 +23,15 @@ export const FLAGS = {
   ROLE_ARTISAN:          process.env.NEXT_PUBLIC_FLAG_ARTISAN === "true",
   ROLE_OPENER:           process.env.NEXT_PUBLIC_FLAG_OPENER === "true",
 
+  // ── Phase 2 — Module Communication (OAuth Gmail/Outlook + WhatsApp) ──────
+  // Doctrine §B.15 : Phase 1.0 = email Resend uniquement, pas d'OAuth/WhatsApp.
+  // Tant que ce flag est false : page /app/communication redirige vers /app,
+  // NavItem "Communication" masqué de la sidebar, bouton "Contacter" sur la
+  // fiche bien masqué, polling badge messagerie désactivé. Backend symétrique
+  // via settings.ENABLE_OAUTH_COMMUNICATION (cf backend/app/core/config.py).
+  // Réactivation Phase 2 : NEXT_PUBLIC_FLAG_OAUTH_COMMUNICATION=true côté Vercel.
+  OAUTH_COMMUNICATION:   process.env.NEXT_PUBLIC_FLAG_OAUTH_COMMUNICATION === "true",
+
   // ── Hors phase — désactivé en dur ─────────────────────────────────────────
   ROLE_EXPERT:           false,
   ROLE_HUNTER:           false,
@@ -52,7 +61,8 @@ export const ROLE_FLAG: Partial<Record<string, FlagName>> = {
  * Map section → flag requis. Si la section n'est pas dans la map, elle est toujours visible.
  */
 export const SECTION_FLAG: Partial<Record<string, FlagName>> = {
-  portail:    "ROLE_PORTAIL_PROPRIO",
+  portail:       "ROLE_PORTAIL_PROPRIO",
+  communication: "OAUTH_COMMUNICATION",
 };
 
 /** Vérifie si un rôle est activé par les feature flags. */
