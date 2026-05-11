@@ -222,7 +222,7 @@ async def inviter_locataire(
             INSERT INTO magic_links
                 (id, token, type, created_by, target_email, target_role, payload, expires_at)
             VALUES
-                (:id, :token, 'invitation', :by, :email, 'locataire', :payload::jsonb, :exp)
+                (:id, :token, 'invitation', :by, :email, 'locataire', CAST(:payload AS jsonb), :exp)
         """),
         {
             "id": invitation_id,
@@ -557,7 +557,7 @@ async def revoke_invitation(
     await db.execute(
         text("""
             UPDATE magic_links
-            SET used = TRUE, used_at = NOW(), used_by = :by, payload = :payload::jsonb
+            SET used = TRUE, used_at = NOW(), used_by = :by, payload = CAST(:payload AS jsonb)
             WHERE id = :iid
         """),
         {"iid": str(invitation_id), "by": current_user.id, "payload": json.dumps(link_payload)},
