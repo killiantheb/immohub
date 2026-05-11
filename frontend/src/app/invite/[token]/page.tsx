@@ -4,27 +4,31 @@
  * Page publique d'acceptation invitation locataire — Sprint 1C.
  * Phase 1.0 doctrine v6 §4.7.
  *
- * Workflow :
- *   1. GET /api/v1/invite/{token}/preview (public, Sprint 1C backend c1)
- *      → pré-remplit prenom/nom/email + affiche bailleur_nom + bien_adresse
+ * Workflow (PR-3-invite-password-flow 2026-05-13) :
+ *   1. GET /api/v1/invite/{token}/preview → pré-remplit prenom/nom/email +
+ *      affiche bailleur_nom + bien_adresse
  *   2. Si statut === "used" → message "Lien déjà utilisé, connectez-vous"
  *      Si statut === "expired" → message "Lien expiré, demandez un nouveau"
  *      Si statut === "pending" → form de création de compte
- *   3. Submit → POST /api/v1/onboarding/rejoindre {token, prenom, nom, email}
- *      (Sprint 1B : branche target_role=locataire crée user Supabase + Locataire
- *      + retourne auth_url Supabase magic link signin)
- *   4. Redirect window.location vers auth_url → Supabase signin auto
- *      → redirect /app/mon-bien (cohérent avec layout Sprint 1A)
+ *   3. Submit → POST /onboarding/rejoindre {token, prenom, nom, email,
+ *      password, confirm_password} → backend crée user Supabase avec ce
+ *      password + Locataire lié au bien.
+ *   4. Sur 200 → supabase.auth.signInWithPassword({email, password}) côté
+ *      client → cookies session posés sur althy.ch → router.push("/app/mon-bien").
  *
- * Branding : doctrine v6 §B.4 — bleu Prusse + or, fonts Fraunces/DM Sans.
- * Pas d'auth nécessaire (route hors PROTECTED_PREFIXES middleware).
+ * Doctrine §4.7 « Création compte locataire (email + mot de passe Supabase
+ * Auth) » + §B.10 (pas de faux statut, erreurs claires) + §B.15 (Resend
+ * uniquement, plus de dépendance Supabase magic link signin).
+ * Branding : §B.4 — bleu Prusse + or.
+ * Pas d'auth requise (route hors PROTECTED_PREFIXES middleware).
  */
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { Loader2, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { Loader2, AlertCircle, CheckCircle2, ArrowRight, Eye, EyeOff } from "lucide-react";
 import axios from "axios";
 import { AlthyLogo } from "@/components/AlthyLogo";
+import { createClient } from "@/lib/supabase";
 import { C } from "@/lib/design-tokens";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "https://api.althy.ch/api/v1")
@@ -52,10 +56,13 @@ interface RejoindreResponse {
   user_id: string;
   role: string;
   bien_id: string;
-  auth_url: string | null;
+  redirect_to: string;
 }
 
+const PASSWORD_MIN = 8;
+
 export default function InvitePage() {
+  const router = useRouter();
   const params = useParams<{ token: string }>();
   const token = params.token;
 
@@ -65,8 +72,18 @@ export default function InvitePage() {
 
   const [prenom, setPrenom] = useState("");
   const [nom, setNom] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Validation live
+  const passwordOk = password.length >= PASSWORD_MIN;
+  const confirmOk = confirmPassword.length > 0 && password === confirmPassword;
+  const canSubmit =
+    !!prenom.trim() && passwordOk && confirmOk && !submitting;
 
   // ── Load preview ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -93,32 +110,55 @@ export default function InvitePage() {
   // ── Submit ──────────────────────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!preview || !prenom.trim()) return;
+    if (!preview || !canSubmit) return;
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await pub.post<RejoindreResponse>("/onboarding/rejoindre", {
+      // 1. Crée le user Supabase + Locataire côté backend (admin API).
+      await pub.post<RejoindreResponse>("/onboarding/rejoindre", {
         token,
         prenom: prenom.trim(),
         nom: nom.trim(),
         email: preview.target_email,
+        password,
+        confirm_password: confirmPassword,
       });
-      if (res.data.auth_url) {
-        // Supabase magic link → signin auto + redirect /app/mon-bien (cf backend Sprint 1B c3)
-        window.location.href = res.data.auth_url;
-      } else {
-        // Fallback : compte créé mais magic link signin non généré → page login
-        window.location.href = "/login?invited=true";
+
+      // 2. Signin côté client avec le même password → pose les cookies session
+      //    sur le domaine althy.ch (cf doctrine §4.7 + §B.10 — pas de dépendance
+      //    Supabase magic link signin / Redirect URLs allowlist).
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: preview.target_email,
+        password,
+      });
+
+      if (signInError) {
+        // Le compte EST créé en DB (§B.10 — pas de mensonge : on ne dit pas
+        // "compte non créé"). On guide vers /login pour reconnexion manuelle.
+        setSubmitError(
+          "Compte créé, mais la connexion automatique a échoué. " +
+            "Connectez-vous manuellement via la page de connexion.",
+        );
+        setSubmitting(false);
+        return;
       }
+
+      // 3. Redirect vers l'espace locataire dédié (§4.7).
+      router.push("/app/mon-bien");
     } catch (err) {
       const detail = (err as { response?: { data?: { detail?: string }; status?: number } })?.response;
       const msg = detail?.data?.detail;
       if (detail?.status === 409) {
-        setSubmitError("Cet email est déjà inscrit. Connectez-vous via /login.");
+        setSubmitError("Cet email est déjà inscrit. Connectez-vous via la page de connexion.");
       } else if (detail?.status === 410) {
         setSubmitError("Ce lien a expiré. Demandez un nouveau lien à votre bailleur.");
       } else if (detail?.status === 404) {
         setSubmitError("Ce lien est invalide.");
+      } else if (detail?.status === 400) {
+        setSubmitError(msg || "Données invalides — vérifiez votre mot de passe.");
+      } else if (detail?.status === 422) {
+        setSubmitError("Le mot de passe doit faire au moins 8 caractères.");
       } else {
         setSubmitError(msg || "Erreur lors de la création du compte. Réessayez.");
       }
@@ -303,6 +343,41 @@ export default function InvitePage() {
                     </div>
                   </div>
 
+                  <div>
+                    <FormLabel>Mot de passe *</FormLabel>
+                    <PasswordInput
+                      value={password}
+                      onChange={setPassword}
+                      visible={showPassword}
+                      onToggleVisible={() => setShowPassword((v) => !v)}
+                      placeholder="Au moins 8 caractères"
+                      autoComplete="new-password"
+                    />
+                    <PasswordHint ok={passwordOk} label="8 caractères minimum" />
+                  </div>
+
+                  <div>
+                    <FormLabel>Confirmer le mot de passe *</FormLabel>
+                    <PasswordInput
+                      value={confirmPassword}
+                      onChange={setConfirmPassword}
+                      visible={showConfirm}
+                      onToggleVisible={() => setShowConfirm((v) => !v)}
+                      placeholder="Retapez votre mot de passe"
+                      autoComplete="new-password"
+                    />
+                    {confirmPassword.length > 0 && (
+                      <PasswordHint
+                        ok={confirmOk}
+                        label={
+                          confirmOk
+                            ? "Les mots de passe correspondent"
+                            : "Les mots de passe ne correspondent pas"
+                        }
+                      />
+                    )}
+                  </div>
+
                   {submitError && (
                     <p style={{ fontSize: 12, color: C.red, margin: 0, padding: "8px 12px", background: C.redBg, borderRadius: 8 }}>
                       {submitError}
@@ -311,16 +386,16 @@ export default function InvitePage() {
 
                   <button
                     type="submit"
-                    disabled={submitting || !prenom.trim()}
+                    disabled={!canSubmit}
                     style={{
                       padding: "14px 28px",
                       borderRadius: 10,
-                      background: submitting || !prenom.trim() ? "#8896A6" : C.prussian,
+                      background: !canSubmit ? "#8896A6" : C.prussian,
                       color: "#FFFFFF",
                       border: "none",
                       fontSize: 15,
                       fontWeight: 600,
-                      cursor: submitting || !prenom.trim() ? "not-allowed" : "pointer",
+                      cursor: !canSubmit ? "not-allowed" : "pointer",
                       fontFamily: "inherit",
                       display: "inline-flex",
                       alignItems: "center",
@@ -337,7 +412,7 @@ export default function InvitePage() {
                       </>
                     ) : (
                       <>
-                        Accéder à mon espace
+                        Créer mon compte et accéder à mon espace
                         <ArrowRight size={16} />
                       </>
                     )}
@@ -414,6 +489,86 @@ function FormInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
         color: disabled ? C.text3 : C.text,
       }}
     />
+  );
+}
+
+function PasswordInput({
+  value,
+  onChange,
+  visible,
+  onToggleVisible,
+  placeholder,
+  autoComplete,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  visible: boolean;
+  onToggleVisible: () => void;
+  placeholder?: string;
+  autoComplete?: string;
+}) {
+  return (
+    <div style={{ position: "relative" }}>
+      <input
+        type={visible ? "text" : "password"}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required
+        minLength={PASSWORD_MIN}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          padding: "11px 40px 11px 14px",
+          borderRadius: 10,
+          border: `1px solid ${C.border}`,
+          fontSize: 14,
+          fontFamily: "inherit",
+          outline: "none",
+          background: "#FFFFFF",
+          color: C.text,
+        }}
+      />
+      <button
+        type="button"
+        onClick={onToggleVisible}
+        aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+        style={{
+          position: "absolute",
+          right: 10,
+          top: "50%",
+          transform: "translateY(-50%)",
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          color: C.text3,
+          padding: 4,
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        {visible ? <EyeOff size={16} /> : <Eye size={16} />}
+      </button>
+    </div>
+  );
+}
+
+function PasswordHint({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <div
+      style={{
+        marginTop: 6,
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        fontSize: 12,
+        color: ok ? C.green : C.text3,
+      }}
+    >
+      <CheckCircle2 size={12} style={{ color: ok ? C.green : C.text3, opacity: ok ? 1 : 0.4 }} />
+      <span>{label}</span>
+    </div>
   );
 }
 
