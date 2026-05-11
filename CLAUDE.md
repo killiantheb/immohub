@@ -198,6 +198,15 @@ Si une livraison échoue **un seul** des 3 critères → retour à la planche à
 
 **Inventaire code dormant Phase 2 (présent en repo, désactivé)** : [`docs/2-ROADMAP.md`](docs/2-ROADMAP.md#246-code-dormant-phase-2-présent-en-repo-désactivé-en-nav) §2.4.6.
 
+**Gel actif : Module Communication Phase 2 (PR-0 cleanup 2026-05-11)** :
+
+Les surfaces OAuth Gmail/Outlook + WhatsApp + lecture `email_cache` sont gelées derrière un double feature flag (backend + frontend) :
+
+- Backend : `settings.ENABLE_OAUTH_COMMUNICATION: bool = False` (`backend/app/core/config.py`). Quand `false`, les routers `oauth.py` / `whatsapp.py` / `messagerie.py` ne sont **pas montés** dans `main.py` → toute requête vers `/api/v1/oauth/*`, `/api/v1/whatsapp/*`, `/api/v1/messagerie/*` retourne **404** (pas 501).
+- Frontend : `FLAGS.OAUTH_COMMUNICATION` (`frontend/src/lib/flags.ts`, driven par `NEXT_PUBLIC_FLAG_OAUTH_COMMUNICATION`). Quand `false` : page `/app/communication` redirige vers `/app`, item « Communication » masqué de `DashboardSidebar`, bouton « Contacter » sur la fiche bien masqué, polling unread désactivé.
+
+Le code source (`backend/app/routers/oauth.py` 330 l., `whatsapp.py` 413 l., `messagerie.py` 79 l., `frontend/src/app/app/(dashboard)/communication/page.tsx`, `frontend/src/components/communication/MessagerieContent.tsx`) est conservé tel quel pour réactivation Phase 2 sans refonte. **Réactivation = flip des deux env vars à `true`, zéro code à toucher.**
+
 ---
 
 ## C. Conventions code (rappel rapide)
