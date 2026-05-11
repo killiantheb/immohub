@@ -414,6 +414,100 @@ async def list_invitations_bien(
     return out
 
 
+# ── GET /invite/{token}/preview ───────────────────────────────────────────────
+# Note : route publique (no auth) — sert au frontend pour pré-remplir l'UI de
+# la page /invite/[token] AVANT la création du compte. Le token étant
+# cryptographiquement secret (32 bytes urlsafe), pas d'info sensible exposée
+# (juste prénom + email + adresse bien). Déclarée ici mais montée sur prefix
+# /api/v1 dans main.py via preview_router (pas /api/v1/biens).
+
+preview_router = APIRouter()
+
+
+class InvitationPreview(BaseModel):
+    invitation_id: uuid.UUID
+    target_email: str
+    prenom: str | None
+    nom: str | None
+    message_personnel: str | None
+    bailleur_nom: str | None
+    bien_adresse_courte: str | None
+    expires_at: datetime
+    statut: Literal["pending", "used", "expired"]
+
+
+@preview_router.get("/invite/{token}/preview", response_model=InvitationPreview)
+async def get_invitation_preview(
+    token: str,
+    db: DbDep,
+) -> InvitationPreview:
+    """Lecture publique d'une invitation (pré-remplissage UI page /invite/[token]).
+
+    Pas d'auth requise — le token agit comme bearer secret. Si le token est
+    invalide / inconnu → 404. Si utilisé → statut='used'. Si expiré → 'expired'.
+    """
+    row = await db.execute(
+        text("""
+            SELECT id, target_email, payload, used, expires_at, created_by
+            FROM magic_links
+            WHERE token = :token
+              AND type = 'invitation'
+              AND target_role = 'locataire'
+        """),
+        {"token": token},
+    )
+    rec = row.one_or_none()
+    if not rec:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Invitation introuvable")
+
+    link_payload: dict = rec.payload or {}
+
+    # Statut binaire pour le frontend
+    now = datetime.now(timezone.utc)
+    if rec.used:
+        statut = "used"
+    elif rec.expires_at < now:
+        statut = "expired"
+    else:
+        statut = "pending"
+
+    # Lookup bailleur (first_name + last_name)
+    bailleur_nom: str | None = None
+    if rec.created_by:
+        b_row = await db.execute(
+            text("SELECT first_name, last_name FROM users WHERE id = :uid"),
+            {"uid": rec.created_by},
+        )
+        b = b_row.one_or_none()
+        if b:
+            parts = [p for p in (b.first_name, b.last_name) if p]
+            bailleur_nom = " ".join(parts) or None
+
+    # Lookup bien (adresse courte)
+    bien_adresse_courte: str | None = None
+    bien_id = link_payload.get("bien_id")
+    if bien_id:
+        bn_row = await db.execute(
+            text("SELECT adresse, cp, ville FROM biens WHERE id = :bid AND is_active = TRUE"),
+            {"bid": bien_id},
+        )
+        bn = bn_row.one_or_none()
+        if bn:
+            bien_adresse_courte = _format_bien_address(bn.adresse, bn.cp, bn.ville)
+
+    return InvitationPreview(
+        invitation_id=rec.id,
+        target_email=rec.target_email,
+        prenom=link_payload.get("prenom"),
+        nom=link_payload.get("nom"),
+        message_personnel=link_payload.get("message_personnel"),
+        bailleur_nom=bailleur_nom,
+        bien_adresse_courte=bien_adresse_courte,
+        expires_at=rec.expires_at,
+        statut=statut,
+    )
+
+
 # ── DELETE /invitations/{invitation_id} ───────────────────────────────────────
 # Note : route déclarée ici mais montée sur prefix /api/v1 (pas /api/v1/biens)
 # car elle ne dépend pas d'un bien_id dans le path. Voir main.py inclusion.

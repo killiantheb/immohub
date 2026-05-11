@@ -24,6 +24,7 @@ from app.routers.bien_contacts import router as bien_contacts_router
 from app.routers.bien_keys import router as bien_keys_router
 from app.routers.biens import router as biens_router
 from app.routers.biens_invitations import (
+    preview_router as biens_invitations_preview_router,
     revoke_router as biens_invitations_revoke_router,
     router as biens_invitations_router,
 )
@@ -200,6 +201,7 @@ app.include_router(documents_router, prefix="/api/v1/documents", tags=["document
 app.include_router(biens_router, prefix="/api/v1/biens", tags=["biens"])
 app.include_router(biens_invitations_router, prefix="/api/v1/biens", tags=["bien-invitations"])
 app.include_router(biens_invitations_revoke_router, prefix="/api/v1", tags=["bien-invitations"])
+app.include_router(biens_invitations_preview_router, prefix="/api/v1", tags=["bien-invitations"])
 # ── Sous-tables fiche bien (PR-A11.A.6.b) — nested sous /biens/{bien_id} ─────
 app.include_router(bien_annexes_router, prefix="/api/v1/biens", tags=["bien-annexes"])
 app.include_router(bien_contacts_router, prefix="/api/v1/biens", tags=["bien-contacts"])
