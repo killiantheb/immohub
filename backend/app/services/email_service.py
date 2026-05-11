@@ -28,19 +28,31 @@ async def send_email(
     subject: str,
     html: str,
     text: str | None = None,
+    sender_name: str | None = None,
 ) -> str:
     """Send an email via Resend (if key set) or SMTP fallback.
+
+    Args:
+        sender_name: optional display name for the From header (e.g. agency
+            name or bailleur full name). Falls back to "Althy" if None/empty.
+            EMAILS_FROM (the email part) is always used — sender_name only
+            controls the display label before <email>.
 
     Returns the message ID on success.
     Raises EmailServiceError on failure.
     """
     recipients = [to] if isinstance(to, str) else to
 
+    # Resend rejects empty From with 422 — always materialise a non-empty
+    # label, fallback to "Althy" (doctrine §B.10).
+    display_name = (sender_name or "").strip() or "Althy"
+    from_field = f"{display_name} <{settings.EMAILS_FROM}>"
+
     if settings.RESEND_API_KEY:
-        return await _send_resend(recipients, subject, html, text)
+        return await _send_resend(recipients, subject, html, text, from_field)
 
     if settings.SMTP_HOST:
-        return _send_smtp(recipients, subject, html, text)
+        return _send_smtp(recipients, subject, html, text, from_field)
 
     # Dev mode — log only
     logger.info("[email] DEV — %s → %s (no transport configured)", subject, recipients)
@@ -48,11 +60,11 @@ async def send_email(
 
 
 async def _send_resend(
-    to: list[str], subject: str, html: str, text: str | None
+    to: list[str], subject: str, html: str, text: str | None, from_field: str
 ) -> str:
     """Send via Resend API (https://resend.com)."""
     payload: dict = {
-        "from": f"Althy <{settings.EMAILS_FROM}>",
+        "from": from_field,
         "to": to,
         "subject": subject,
         "html": html,
@@ -83,11 +95,11 @@ async def _send_resend(
 
 
 def _send_smtp(
-    to: list[str], subject: str, html: str, text: str | None
+    to: list[str], subject: str, html: str, text: str | None, from_field: str
 ) -> str:
     """Send via SMTP (synchronous — used as fallback)."""
     msg = MIMEMultipart("alternative")
-    msg["From"] = f"Althy <{settings.EMAILS_FROM}>"
+    msg["From"] = from_field
     msg["To"] = ", ".join(to)
     msg["Subject"] = subject
 
