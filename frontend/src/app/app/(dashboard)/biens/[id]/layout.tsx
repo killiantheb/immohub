@@ -4,6 +4,7 @@
 import { useParams, usePathname } from "next/navigation";
 import { FilAriane } from "@/components/FilAriane";
 import { BienHeader } from "./_shared";
+import { BienSidebar } from "@/components/biens/BienSidebar";
 import { useBien } from "@/lib/hooks/useBiens";
 import { C } from "@/lib/design-tokens";
 
@@ -12,9 +13,11 @@ export default function BienDetailLayout({ children }: { children: React.ReactNo
   const pathname = usePathname();
   const { data: bien } = useBien(id);
 
-  // Sur la vue d'ensemble, BienHeader est remplacé par les cards éditables (CardHeaderBien).
-  // Sur les sous-pages (locataire, finances, documents, etc.), BienHeader fournit le contexte
-  // du bien en haut de page puisque la barre BienTabs a été retirée (étape 4 sprint 12).
+  // BienSidebar (Sprint nav 2026-05-11) fournit la nav latérale Airbnb-style
+  // commune à l'overview + 7 sous-pages. BienHeader reste rendu sur les
+  // sous-pages : le header de la sidebar montre adresse + ville en compact,
+  // BienHeader donne le contexte complet (titre, statut, photo) en haut du
+  // contenu. Réconciliation/dédup éventuelle = PR 2 polish.
   const isOverview = pathname === `/app/biens/${id}`;
 
   const adresseLabel = bien
@@ -29,10 +32,15 @@ export default function BienDetailLayout({ children }: { children: React.ReactNo
         { label: adresseLabel },
       ]} />
 
-      {!isOverview && <BienHeader bienId={id} />}
+      <div style={{ display: "flex", alignItems: "flex-start" }}>
+        <BienSidebar bienId={id} />
 
-      <div style={{ maxWidth: 1400, marginLeft: "auto", marginRight: "auto" }}>
-        {children}
+        <main style={{ flex: 1, minWidth: 0 }}>
+          {!isOverview && <BienHeader bienId={id} />}
+          <div style={{ maxWidth: 1400, marginLeft: "auto", marginRight: "auto" }}>
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );
