@@ -30,7 +30,7 @@ from app.core.limiter import rate_limit
 from app.core.security import get_current_user
 from app.models.user import User
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -587,6 +587,24 @@ class RejoindrePayload(BaseModel):
     prenom: str
     nom:    str
     email:  str
+    # PR-3-invite : password requis Phase 1.0 doctrine §4.7 (« email + mot de
+    # passe Supabase Auth »). Optional pour rétrocompat branche agence/portail
+    # historique qui ne demande pas encore de password (cf _rejoindre flow
+    # historique ligne ~646). La validation match est faite ci-dessous.
+    password:         str | None = Field(default=None, min_length=8, max_length=128)
+    confirm_password: str | None = Field(default=None, min_length=8, max_length=128)
+
+    @model_validator(mode="after")
+    def _check_password_match(self) -> "RejoindrePayload":
+        # Si password fourni, confirm_password doit matcher.
+        # Les deux doivent être présents ou absents simultanément.
+        if self.password is None and self.confirm_password is None:
+            return self
+        if self.password is None or self.confirm_password is None:
+            raise ValueError("password et confirm_password doivent être fournis ensemble")
+        if self.password != self.confirm_password:
+            raise ValueError("Les mots de passe ne correspondent pas")
+        return self
 
 
 @router.post("/rejoindre")
