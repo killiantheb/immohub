@@ -26,6 +26,7 @@ import {
   FileText,
   History,
   LayoutGrid,
+  MessageSquare,
   RefreshCw,
   Sparkles,
   User,
@@ -46,6 +47,7 @@ interface Section {
 const SECTIONS: readonly Section[] = [
   { key: "overview",      label: "Vue d'ensemble", build: (id) => `/app/biens/${id}`,                icon: LayoutGrid },
   { key: "locataire",     label: "Locataire",      build: (id) => `/app/biens/${id}/locataire`,      icon: User },
+  { key: "messagerie",    label: "Messagerie",     build: (id) => `/app/biens/${id}/messagerie`,     icon: MessageSquare },
   { key: "documents",     label: "Documents",      build: (id) => `/app/biens/${id}/documents`,      icon: FileText },
   { key: "finances",      label: "Finances",       build: (id) => `/app/biens/${id}/finances`,       icon: Wallet },
   { key: "interventions", label: "Interventions",  build: (id) => `/app/biens/${id}/interventions`,  icon: Wrench },
