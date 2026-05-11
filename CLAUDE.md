@@ -119,6 +119,7 @@ Si une livraison échoue **un seul** des 3 critères → retour à la planche à
 - Pattern obligatoire : session dédiée via `AsyncSessionLocal()` + try/except englobant tout le bloc (open + add + commit).
 - Référence : `app/services/ai_service.py:_log_usage` (figé 2026-05-08 post-incident `/ai/draft-edl`).
 - Détail doctrine : [`docs/3-ARCHITECTURE.md`](docs/3-ARCHITECTURE.md) §3.14.
+- **Pgbouncer transaction mode + asyncpg** : `prepared_statement_name_func` avec UUID requis dans `connect_args` du `create_async_engine` pour éviter `DuplicatePreparedStatementError` sur connexions recyclées (cf `backend/app/core/database.py` connect_args + incident hotfix 2026-05-12 sur `bien_messages.py` selectinload).
 
 ### B.13 Migrations Alembic exclusivement Python
 
