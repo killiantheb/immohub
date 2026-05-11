@@ -739,14 +739,24 @@ async def _rejoindre_locataire(
     prenom = (payload.prenom or link_payload.get("prenom") or "").strip()
     nom = (payload.nom or link_payload.get("nom") or "").strip()
 
+    # PR-3-invite (doctrine §4.7 « email + mot de passe Supabase Auth ») :
+    # Le password est obligatoire pour la branche locataire — l'utilisateur le
+    # saisit sur /invite/[token] et signin avec ce même password côté client
+    # post-création. Plus de magic link signin Supabase (élimine la dépendance
+    # à la config dashboard Redirect URLs allowlist).
+    if not payload.password:
+        raise HTTPException(400, "Mot de passe requis pour finaliser votre compte locataire")
+
     # ── 1. Crée le user Supabase via Admin API ──────────────────────────────
-    temp_password = secrets.token_urlsafe(20)
+    # email_confirm=True : l'email est implicitement vérifié par le clic sur le
+    # lien Althy reçu par Resend → court-circuite l'email de confirmation
+    # Supabase (qui reste actif pour le /register public anti-spam).
     try:
         supa = await _supa_post(
             _auth_url("/admin/users"),
             {
                 "email": email,
-                "password": temp_password,
+                "password": payload.password,
                 "email_confirm": True,
                 "user_metadata": {
                     "first_name": prenom,
@@ -836,29 +846,18 @@ async def _rejoindre_locataire(
         await db.rollback()
         raise HTTPException(500, f"Erreur consommation token : {exc!s:.200}")
 
-    # ── 5. Génère un Supabase magic link pour signin auto ───────────────────
-    auth_url: str | None = None
-    try:
-        link_data = await _supa_post(
-            _auth_url("/admin/generate_link"),
-            {
-                "type": "magiclink",
-                "email": email,
-                "redirect_to": f"{settings.FRONTEND_URL}/app/mon-bien",
-            },
-        )
-        auth_url = link_data.get("action_link") or link_data.get("hashed_token")
-    except Exception:
-        # Échec génération signin → l'utilisateur peut se connecter manuellement
-        # via /login. Pas un blocker (le compte est créé), donc on ne raise pas.
-        auth_url = None
-
+    # ── 5. Pas de magic link signin Supabase Phase 1.0 doctrine §4.7 ────────
+    # Le frontend va appeler `supabase.auth.signInWithPassword({email, password})`
+    # côté client après le 200, ce qui pose les cookies session sur le domaine
+    # althy.ch directement (pas de dépendance Redirect URLs allowlist Supabase).
+    # Le password vient d'être créé côté Admin API à l'étape 1 avec
+    # email_confirm=True, donc le signin marchera immédiatement.
     return {
         "ok": True,
         "user_id": supabase_uid,
         "role": "locataire",
         "bien_id": bien_id_str,
-        "auth_url": auth_url,
+        "redirect_to": "/app/mon-bien",
     }
 
 
