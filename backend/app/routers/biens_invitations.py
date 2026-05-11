@@ -261,6 +261,32 @@ async def inviter_locataire(
         bailleur_nom = " ".join(p for p in bailleur_nom_parts if p) or settings.ALTHY_CREDITOR_NAME
         prenom_locataire = (payload.prenom or "").strip() or "Bonjour"
 
+        # ── Sender name dynamique (Option Z) ─────────────────────────────────
+        # Display name de l'expéditeur dans la boîte mail du locataire.
+        # Priorité : agency_settings.agency_name (si role=agence) >
+        #            first_name + last_name (proprio_solo / agence sans
+        #            agency_name renseigné) > None → fallback "Althy" côté
+        #            email_service (doctrine §B.10 — jamais de chaîne vide).
+        # Source agency_name : table agency_settings (1:1 user_id), pas
+        # User (le User model n'a pas de champ nom commercial).
+        sender_name: str | None = None
+        if current_user.role == "agence":
+            ag_row = await db.execute(
+                text("SELECT agency_name FROM agency_settings WHERE user_id = :uid"),
+                {"uid": str(current_user.id)},
+            )
+            ag_rec = ag_row.one_or_none()
+            if ag_rec and ag_rec.agency_name and ag_rec.agency_name.strip():
+                sender_name = ag_rec.agency_name.strip()
+        if not sender_name:
+            full = " ".join(
+                p.strip()
+                for p in (current_user.first_name, current_user.last_name)
+                if p and p.strip()
+            )
+            if full:
+                sender_name = full
+
         message_block_html = ""
         message_block_text = ""
         if payload.message_personnel:
@@ -306,6 +332,7 @@ async def inviter_locataire(
                 subject=subject,
                 html=html_body,
                 text=text_body,
+                sender_name=sender_name,
             )
             email_sent = msg_id != "dev-no-send"
         except EmailServiceError as exc:
