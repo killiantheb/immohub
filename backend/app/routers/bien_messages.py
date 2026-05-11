@@ -179,7 +179,20 @@ async def send_message(
     )
     db.add(msg)
     await db.commit()  # §B.12 : commit explicite après INSERT.
-    await db.refresh(msg)
+
+    # SQLAlchemy 2.0 async + Pydantic : recharger msg avec selectinload pour
+    # que sender/recipient soient déjà attachés au moment du model_validate.
+    # Sans ça, Pydantic déclenche un lazy-load hors greenlet → MissingGreenlet
+    # (cf hotfix 2026-05-12 bien_messages_pydantic_lazy_load).
+    reloaded = await db.execute(
+        select(BienMessage)
+        .options(
+            selectinload(BienMessage.sender),
+            selectinload(BienMessage.recipient),
+        )
+        .where(BienMessage.id == msg.id)
+    )
+    msg = reloaded.scalar_one()
 
     _ = sender_is_bailleur  # variable conservée pour clarté audit + futur hook notif
     return BienMessageRead.model_validate(msg)
@@ -320,7 +333,19 @@ async def mark_message_read(
         msg.lu = True
         msg.lu_at = datetime.now(timezone.utc)
         await db.commit()  # §B.12
-        await db.refresh(msg)
+
+        # Recharge avec selectinload : db.refresh() peut expirer les relations
+        # déjà chargées via le SELECT initial → MissingGreenlet au model_validate.
+        # Pattern miroir POST /messages (cf hotfix 2026-05-12).
+        reloaded = await db.execute(
+            select(BienMessage)
+            .options(
+                selectinload(BienMessage.sender),
+                selectinload(BienMessage.recipient),
+            )
+            .where(BienMessage.id == msg.id)
+        )
+        msg = reloaded.scalar_one()
 
     return BienMessageRead.model_validate(msg)
 
