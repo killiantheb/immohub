@@ -13,6 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { isEnabled } from "@/lib/flags";
 import {
   useBien, useUpdateBien, useLocataireActuel,
   usePaiements, useInterventions, useDocuments,
@@ -721,18 +722,22 @@ function SectionLocataire({ bienId }: { bienId: string }) {
           PR-A6 : ajout ?bien_id=X pour activer le banner contextuel sur la
           page communication. Le pré-ciblage d'un locataire spécifique
           (?contact=X) reste Phase 2.
+          2026-05-11 — gelé derrière flag OAUTH_COMMUNICATION (§B.15).
+          Sera remplacé par PR-2 « messagerie bailleur interne » Phase 1.0.
         */}
-        <Link
-          href={`/app/communication?tab=messages&bien_id=${bienId}`}
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            padding: "8px 14px", borderRadius: 9,
-            background: C.prussianBg, color: C.prussian,
-            fontSize: 13, fontWeight: 600, textDecoration: "none",
-          }}
-        >
-          <Mail size={13} /> Contacter
-        </Link>
+        {isEnabled("OAUTH_COMMUNICATION") && (
+          <Link
+            href={`/app/communication?tab=messages&bien_id=${bienId}`}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "8px 14px", borderRadius: 9,
+              background: C.prussianBg, color: C.prussian,
+              fontSize: 13, fontWeight: 600, textDecoration: "none",
+            }}
+          >
+            <Mail size={13} /> Contacter
+          </Link>
+        )}
         <Link
           href={bienLinks.locataire(bienId)}
           style={{

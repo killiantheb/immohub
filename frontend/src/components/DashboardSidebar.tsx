@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useRole } from "@/lib/hooks/useRole";
 import { useAuth, useUser } from "@/lib/auth";
-import { isSectionEnabled } from "@/lib/flags";
+import { isEnabled, isSectionEnabled } from "@/lib/flags";
 import { useAuthStore } from "@/lib/store/authStore";
 import { api } from "@/lib/api";
 import { AlthyLogo } from "@/components/AlthyLogo";
@@ -247,8 +247,11 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
   const [collapsed, setCollapsed] = useState(false);
   const [unreadMsg, setUnreadMsg] = useState(0);
 
-  // Poll unread count every 60s
+  // Poll unread count every 60s — uniquement quand le module Phase 2 est
+  // activé (sinon /api/v1/messagerie/non-lus est démonté → spammer 404
+  // toutes les 60s sans bénéfice). Cf CLAUDE.md §B.15 + lib/flags.ts.
   useEffect(() => {
+    if (!isEnabled("OAUTH_COMMUNICATION")) return;
     const load = async () => {
       try {
         const msg = await api.get<{ count: number }>("/messagerie/non-lus").catch(() => ({ data: { count: 0 } }));

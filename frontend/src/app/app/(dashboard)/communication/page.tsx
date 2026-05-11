@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Mail } from "lucide-react";
 import { api } from "@/lib/api";
+import { isEnabled } from "@/lib/flags";
 import { DTopNav } from "@/components/dashboards/DashBoardShared";
 import { MessagerieContent } from "@/components/communication/MessagerieContent";
 import { BienContextBanner } from "@/components/biens/BienContextBanner";
@@ -33,6 +34,11 @@ function CommunicationInner() {
   const router       = useRouter();
   const searchParams = useSearchParams();
 
+  // Phase 1.0 doctrine §B.15 + §2.4.6 — page gelée derrière flag dormant.
+  // Hooks toujours appelés dans le même ordre pour respecter Rules of Hooks ;
+  // le redirect + return null intervient après l'initialisation.
+  const flagOn = isEnabled("OAUTH_COMMUNICATION");
+
   const rawTab   = searchParams.get("tab") ?? "messages";
   // Phase 1 : seul l'onglet "messages" est actif. Toute autre valeur retombe dessus.
   const activeTab: TabKey = "messages";
@@ -42,6 +48,13 @@ function CommunicationInner() {
   const [msgCount, setMsgCount] = useState(0);
 
   useEffect(() => {
+    if (!flagOn) {
+      router.replace("/app");
+    }
+  }, [flagOn, router]);
+
+  useEffect(() => {
+    if (!flagOn) return;
     const load = async () => {
       const msg = await api
         .get<{ count: number }>("/messagerie/non-lus")
@@ -51,7 +64,9 @@ function CommunicationInner() {
     load();
     const t = setInterval(load, 60_000);
     return () => clearInterval(t);
-  }, []);
+  }, [flagOn]);
+
+  if (!flagOn) return null;
 
   function navigate(tab: TabKey) {
     router.push(`/app/communication?tab=${tab}`, { scroll: false });
