@@ -327,6 +327,12 @@ class Bien(BaseModel):
         back_populates="bien",
         cascade="all, delete-orphan",
     )
+    # Messagerie 1:1 bailleur ↔ locataire (Phase 1.0, cf §4.13 + 0040 migration).
+    messages: Mapped[list["BienMessage"]] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        "BienMessage",
+        back_populates="bien",
+        cascade="all, delete-orphan",
+    )
 
     __table_args__ = (
         Index("ix_biens_agency_id", "agency_id"),
