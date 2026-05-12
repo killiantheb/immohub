@@ -3,9 +3,11 @@
 /**
  * DossierProgressionBar — barre de progression 0-100% du dossier locataire.
  *
+ * Sprint 1B.1 (2026-05-12) : 100% strict pour finaliser la location, plus
+ * de seuil 70% intermédiaire (décision Killian post E2E Sunimmo).
+ *
  * Visuels (palette §B.4 stricte, 0 orange) :
- *   - < 70%  : barre Prussian + texte « Pour recevoir vos clés : 70% min »
- *   - ≥ 70%  : barre Or       + texte « Dossier presque complet »
+ *   - < 100% : barre Prussian + texte « Pour finaliser votre location : 100% requis »
  *   - = 100% : barre Vert     + texte « ✅ Dossier complet »
  *
  * Compatible read-only côté bailleur (même rendu, pas d'action).
@@ -25,20 +27,14 @@ interface Props {
 export function DossierProgressionBar({ progression, bailleurView = false }: Props) {
   const pct = Math.min(100, Math.max(0, progression));
   const isComplete = pct >= 100;
-  const isReady = pct >= 70;
-  const barColor = isComplete ? C.green : isReady ? C.gold : C.prussian;
-  const barBg = isComplete ? C.greenBg : isReady ? C.goldBg : C.prussianBg;
+  const barColor = isComplete ? C.green : C.prussian;
+  const barBg = isComplete ? C.greenBg : C.prussianBg;
 
   const label = (() => {
     if (isComplete) return bailleurView ? "Dossier complet" : "Dossier complet, bravo !";
-    if (isReady) {
-      return bailleurView
-        ? "Locataire prêt à recevoir les clés"
-        : "Dossier presque complet";
-    }
     return bailleurView
       ? `${pct}% — En attente de complétion`
-      : "Pour recevoir vos clés : 70% minimum";
+      : "Pour finaliser votre location : 100% requis";
   })();
 
   return (

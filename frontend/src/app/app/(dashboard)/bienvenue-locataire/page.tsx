@@ -232,12 +232,14 @@ export default function BienvenueLocatairePage() {
         </p>
       </div>
 
-      {/* Objectif */}
+      {/* Objectif (Sprint 1B.1 : 100% strict + mention équivalents) */}
       <div
         style={{
-          textAlign: "center",
           padding: "20px 24px",
           marginBottom: 24,
+          background: C.goldBg,
+          border: `1px solid ${C.gold}55`,
+          borderRadius: 12,
         }}
       >
         <p
@@ -245,14 +247,22 @@ export default function BienvenueLocatairePage() {
             fontFamily: "var(--font-serif)",
             fontSize: 17,
             color: C.text,
-            margin: "0 0 6px",
+            margin: "0 0 8px",
             fontWeight: 500,
           }}
         >
-          🎯 Objectif : 100% de complétion
+          🎯 Objectif : compléter votre dossier à 100%
         </p>
-        <p style={{ fontSize: 13, color: C.text2, margin: 0 }}>
-          Plus vite vous complétez, plus vite vous récupérez vos clés.
+        <p style={{ fontSize: 13, color: C.text2, margin: "0 0 12px", lineHeight: 1.5 }}>
+          Pour finaliser votre location, tous les documents doivent être présents.
+        </p>
+        <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.5 }}>
+          <strong>💡 Bon à savoir :</strong> si certains documents ne sont pas
+          encore disponibles (extrait poursuites en attente, assurance en cours
+          de souscription, etc.), vous pouvez fournir un <em>équivalent
+          temporaire</em> qui sera marqué &laquo;&nbsp;En attente de
+          confirmation&nbsp;&raquo;. Tous les documents — finaux ou équivalents
+          — doivent être présents pour atteindre 100%.
         </p>
       </div>
 

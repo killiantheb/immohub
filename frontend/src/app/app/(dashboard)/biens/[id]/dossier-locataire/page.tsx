@@ -152,7 +152,11 @@ export default function DossierLocataireBailleurPage() {
   }
 
   const renseignements = dossier.dossier;
-  const isReady = dossier.progression >= 70;
+  // Sprint 1B.1 (2026-05-12) : 100% strict pour finaliser, mais le bouton
+  // « marquer versement » doit s'activer dès que le reste est complet (95%).
+  // Le versement compte pour 5% — sans cette tolérance, on aurait un blocage
+  // logique (impossible d'atteindre 100% sans avoir d'abord pu marquer le 5%).
+  const isReady = dossier.progression >= 95;
 
   return (
     <>
@@ -301,7 +305,10 @@ export default function DossierLocataireBailleurPage() {
               {!isReady && (
                 <>
                   {" "}
-                  <strong>Disponible dès que le dossier atteint 70%.</strong>
+                  <strong>
+                    Disponible dès que tous les autres documents et
+                    renseignements sont fournis.
+                  </strong>
                 </>
               )}
             </p>

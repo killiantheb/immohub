@@ -130,8 +130,8 @@ export default function MonDossierPage() {
         Retour à mon bien
       </button>
 
-      {/* ── Banner warning si < 70% ─────────────────────────────────────────── */}
-      {dossier.progression < 70 && (
+      {/* ── Banner warning si < 100% (Sprint 1B.1 : 100% strict) ────────────── */}
+      {dossier.progression < 100 && (
         <div
           role="alert"
           style={{
@@ -150,8 +150,11 @@ export default function MonDossierPage() {
               Action requise — Complétez votre dossier
             </p>
             <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.5 }}>
-              Vous devez atteindre <strong>70% minimum</strong> pour que votre
-              bailleur puisse vous remettre les clés.
+              Vous devez compléter votre dossier à <strong>100%</strong> pour
+              finaliser votre location. Pas encore tous les documents finaux ?
+              Vous pouvez fournir un équivalent temporaire (mail d&apos;attente,
+              attestation en cours, etc.) en cochant la case correspondante sur
+              chaque section.
             </p>
           </div>
         </div>
