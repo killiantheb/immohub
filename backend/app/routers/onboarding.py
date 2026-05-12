@@ -56,7 +56,11 @@ async def _supa_post(url: str, payload: dict, *, expected: int = 200) -> dict:
     async with httpx.AsyncClient(timeout=15) as client:
         r = await client.post(url, json=payload, headers=_SUPABASE_ADMIN_HEADERS)
     if r.status_code not in (expected, 200, 201):
-        raise HTTPException(502, f"Supabase error: {r.text[:300]}")
+        # Expose le vrai status_code Supabase pour que l'appelant puisse
+        # brancher (e.g. 422 user_already_exists vs 5xx erreur réelle).
+        # Cf bug-invitation-001 audit 2026-05-12 (substring "422 in detail"
+        # fragile → remplacé par exc.status_code == 422).
+        raise HTTPException(r.status_code, f"Supabase error: {r.text[:300]}")
     return r.json()
 
 
