@@ -51,6 +51,7 @@ from app.services.document_dossier_service import (
     compute_progression,
     delete_from_storage,
     get_signed_url,
+    purge_rejected_documents,
     renseignements_minimaux_remplis,
     resolve_document_parties,
     resolve_dossier_parties,
@@ -153,7 +154,14 @@ async def upload_document(
         equivalent_libelle=equivalent_libelle,
     )
 
-    # 3. Quota par type
+    # 3. Hard-delete des anciens documents REJETÉS du même type (DB + Storage).
+    #    Évite la pollution UI côté locataire (cf Sprint 1B.1 polish 2026-05-12).
+    #    Best-effort sur Storage : un échec n'empêche pas le nouvel upload, on
+    #    laisse les orphelins éventuels au cleanup périodique Phase 2.
+    await purge_rejected_documents(db, locataire_id, type_document)
+
+    # 4. Quota par type (les rejetés viennent d'être purgés, donc ce check
+    #    travaille uniquement sur uploaded + valide).
     await assert_can_add_one_more(db, locataire_id, type_document)
 
     # 4. INSERT en DB d'abord pour récupérer l'UUID stable utilisé dans le path.

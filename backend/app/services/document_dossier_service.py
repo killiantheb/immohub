@@ -303,6 +303,10 @@ async def assert_can_add_one_more(
     - fiches_salaire : max 3 fichiers actifs (toutes statuts confondus sauf
       'rejete' qui libère le slot).
     - autres types : max 1 fichier actif (statut != 'rejete').
+
+    Sprint 1B.1 (2026-05-12) : les rejetés sont normalement déjà purgés par
+    `purge_rejected_documents()` appelé en amont du router. Le filtre `s != "rejete"`
+    reste comme defense in depth (purge race condition ou super_admin direct).
     """
     rows = await db.execute(
         select(DocumentDossier.statut).where(
@@ -310,16 +314,71 @@ async def assert_can_add_one_more(
             DocumentDossier.type_document == type_document,
         )
     )
-    statuts = [r for r in rows.scalars()]
+    statuts = list(rows.scalars())
     actifs = sum(1 for s in statuts if s != "rejete")
     max_allowed = TYPES_MULTI_FICHIERS.get(type_document, 1)
     if actifs >= max_allowed:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             f"Limite atteinte pour {type_document} : {actifs}/{max_allowed} "
-            f"déjà uploadé(s). Supprimez d'abord un fichier rejeté ou attendez "
-            f"la décision du bailleur.",
+            f"déjà uploadé(s). Attendez la décision du bailleur ou supprimez "
+            f"un fichier en attente.",
         )
+
+
+async def purge_rejected_documents(
+    db: AsyncSession,
+    locataire_id: uuid.UUID,
+    type_document: str,
+) -> int:
+    """Hard-delete des documents REJETÉS du même type (DB + Storage).
+
+    Sprint 1B.1 (2026-05-12) : appelé AVANT un nouvel upload pour libérer le
+    quota et nettoyer l'UI locataire (pollution post-rejet).
+
+    Algorithme :
+      1. SELECT les rows avec statut='rejete'
+      2. Pour chaque row : delete_from_storage(storage_key) en best-effort
+         (404 toléré côté Supabase, autres erreurs avalées avec log warning)
+      3. db.delete(row) pour chaque
+      4. flush (mais pas commit — le commit final viendra à la fin du flow upload)
+
+    Retourne le nombre de docs purgés.
+
+    §B.12 : pas de db.commit() ici — la transaction reste ouverte pour que le
+    rollback éventuel post-INSERT propage à la purge aussi.
+    """
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    rows = await db.execute(
+        select(DocumentDossier).where(
+            DocumentDossier.locataire_id == locataire_id,
+            DocumentDossier.type_document == type_document,
+            DocumentDossier.statut == "rejete",
+        )
+    )
+    rejected = list(rows.scalars())
+
+    for doc in rejected:
+        try:
+            await delete_from_storage(doc.storage_key)
+        except Exception as exc:
+            # Storage 502 / réseau : on continue pour ne pas bloquer le nouvel
+            # upload. Le fichier orphelin sera détectable par un cleanup
+            # périodique Phase 2 (cf docs/2-ROADMAP.md §2.4.15 Hardening Auth).
+            logger.warning(
+                "purge_rejected_documents: cleanup Supabase Storage échoué "
+                "pour storage_key=%s : %s",
+                doc.storage_key,
+                exc,
+            )
+        await db.delete(doc)
+
+    if rejected:
+        await db.flush()
+    return len(rejected)
 
 
 # ── Progression (calcul à la volée) ───────────────────────────────────────────
