@@ -13,10 +13,18 @@
  * Empty state si aucun locataire actif → CTA invitation.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Check, CheckCircle2, ClipboardCheck, Loader2, UserPlus } from "lucide-react";
+import {
+  Check,
+  CheckCircle2,
+  ClipboardCheck,
+  KeyRound,
+  Loader2,
+  PartyPopper,
+  UserPlus,
+} from "lucide-react";
 
 import { BienBackButton } from "@/components/biens/BienBackButton";
 import { CosignatairesForm } from "@/components/dossier/CosignatairesForm";
@@ -31,16 +39,19 @@ import {
 } from "@/lib/api/dossier-documents";
 import { useLocataireActuel } from "@/lib/hooks/useBiens";
 import {
+  useDeleteDocument,
   useDossierDocuments,
   useMarkLoyerCautionVerses,
   useOpenDocument,
   useRejectDocument,
+  useUploadDocument,
   useValidateDocument,
 } from "@/lib/hooks/useDossierDocuments";
 import { C } from "@/lib/design-tokens";
 
 
-const ALL_DOC_ORDER: readonly TypeDocument[] = [
+// Documents uploadés par le locataire (7 types, dans l'ordre d'affichage).
+const LOCATAIRE_DOC_ORDER: readonly TypeDocument[] = [
   "piece_identite",
   "permis_sejour",
   "contrat_travail",
@@ -48,7 +59,6 @@ const ALL_DOC_ORDER: readonly TypeDocument[] = [
   "assurance_rc",
   "caution",
   "extrait_poursuites",
-  "bail_signe",
 ];
 
 
@@ -62,9 +72,20 @@ export default function DossierLocataireBailleurPage() {
   const validate = useValidateDocument(safeId);
   const reject = useRejectDocument(safeId);
   const open = useOpenDocument();
+  const uploadBail = useUploadDocument(safeId);
+  const removeBail = useDeleteDocument(safeId);
   const markVerses = useMarkLoyerCautionVerses(safeId);
 
   const [rejectTarget, setRejectTarget] = useState<DocumentDossierRead | null>(null);
+  // Toast 100% — flip une fois quand markVerses.isSuccess passe true, auto-dismiss 6s.
+  const [showCompletionToast, setShowCompletionToast] = useState(false);
+  useEffect(() => {
+    if (markVerses.isSuccess) {
+      setShowCompletionToast(true);
+      const t = setTimeout(() => setShowCompletionToast(false), 6000);
+      return () => clearTimeout(t);
+    }
+  }, [markVerses.isSuccess]);
 
   // ── States ──────────────────────────────────────────────────────────────────
 
@@ -247,10 +268,10 @@ export default function DossierLocataireBailleurPage() {
         )}
       </div>
 
-      {/* Documents */}
-      <SectionTitle title="Documents" />
+      {/* Documents locataire (7 types) */}
+      <SectionTitle title="Documents fournis par le locataire" />
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {ALL_DOC_ORDER.map((type) => (
+        {LOCATAIRE_DOC_ORDER.map((type) => (
           <DocumentTypeCard
             key={type}
             type={type}
@@ -268,6 +289,19 @@ export default function DossierLocataireBailleurPage() {
       {/* Cosignataires read-only */}
       <SectionTitle title="Cosignataires" />
       <CosignatairesForm cosignataires={cosignataires} readOnly />
+
+      {/* Étape 9 : Bail signé (uploadé par bailleur Sprint 3) */}
+      <SectionTitle title="Bail signé — à uploader par vous" />
+      <DocumentTypeCard
+        type="bail_signe"
+        documents={docsOfType("bail_signe")}
+        maxFichiers={maxFichiers("bail_signe")}
+        isReadOnly={false}
+        isLoading={uploadBail.isPending || removeBail.isPending}
+        onUpload={(payload) => uploadBail.mutateAsync(payload)}
+        onDelete={(docId) => removeBail.mutateAsync(docId)}
+        onOpen={(docId) => open.mutateAsync(docId)}
+      />
 
       {/* Étape 10 : Loyer + caution versés */}
       <SectionTitle title="Versement loyer + caution" />
@@ -341,6 +375,43 @@ export default function DossierLocataireBailleurPage() {
           </>
         )}
       </div>
+
+      {/* Toast 100% — Sprint 3 : dossier complet + bien basculé loué côté backend */}
+      {showCompletionToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            position: "fixed",
+            bottom: 24,
+            right: 24,
+            zIndex: 1000,
+            maxWidth: 380,
+            padding: "14px 18px",
+            background: C.green,
+            color: "#fff",
+            borderRadius: 12,
+            boxShadow: "0 10px 30px rgba(0,0,0,0.18)",
+            display: "flex",
+            gap: 12,
+            alignItems: "flex-start",
+            fontSize: 13,
+            lineHeight: 1.5,
+          }}
+        >
+          <PartyPopper size={20} style={{ flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <p style={{ margin: "0 0 4px", fontWeight: 700 }}>
+              Dossier complet à 100%
+            </p>
+            <p style={{ margin: 0 }}>
+              <KeyRound size={12} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />
+              Vous pouvez remettre les clés au locataire. Le bien est
+              désormais marqué comme loué.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Modal rejet */}
       {rejectTarget && (
