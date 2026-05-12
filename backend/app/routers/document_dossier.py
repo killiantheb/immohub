@@ -24,16 +24,17 @@ Doctrine :
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Annotated
 
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.models.bien import Bien
 from app.models.document_dossier import (
     TYPE_DOCUMENT_POIDS,
     DocumentDossier,
 )
-from app.models.locataire import DossierLocataire
+from app.models.locataire import DossierLocataire, Locataire
 from app.models.user import User
 from app.schemas.document_dossier import (
     DocumentDossierRead,
@@ -530,8 +531,16 @@ async def mark_loyer_caution_verses(
 
     Étape 10 / 5% progression. Idempotent : un appel sur un dossier déjà
     flag-é renvoie le même état (pas d'erreur).
+
+    Sprint 3 (2026-05-12) — Auto-bascule à 100% :
+      Si la progression atteint 100 après ce flip, on bascule dans la même
+      transaction (§B.12 cohérence DB) :
+        - locataire.date_entree = date.today() si pas déjà set
+        - bien.statut = 'loue' si actuellement 'vacant'
+      Si une de ces conditions ne s'applique pas (ex: bien en 'en_travaux'
+      ou date_entree déjà set), on ne touche pas la valeur existante.
     """
-    _loc, _bien, _il, is_bailleur, is_super_admin = await resolve_dossier_parties(
+    locataire, bien, _il, is_bailleur, is_super_admin = await resolve_dossier_parties(
         db, locataire_id, current_user
     )
     if not (is_bailleur or is_super_admin):
@@ -554,6 +563,19 @@ async def mark_loyer_caution_verses(
         dossier.loyer_caution_verses = True
         dossier.loyer_caution_verses_at = datetime.now(UTC)
         dossier.loyer_caution_verses_by = current_user.id
+        # Flush pour que compute_progression() voie le flip dans la transaction.
+        await db.flush()
+
+    # Recalcul progression avec le nouveau flag pris en compte.
+    progression_resp = await compute_progression(db, locataire_id)
+    if progression_resp.progression == 100:
+        # Bascule locataire : date_entree si pas déjà set.
+        if locataire.date_entree is None:
+            locataire.date_entree = date.today()
+        # Bascule bien : vacant → loue (pas en_travaux pour respecter l'état
+        # explicitement choisi par le bailleur).
+        if bien.statut == "vacant":
+            bien.statut = "loue"
 
     try:
         await db.commit()
