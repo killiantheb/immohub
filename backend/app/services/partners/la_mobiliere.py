@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from app.services.partners import PartnerAdapter, register
+from app.services.partners import register
 
 logger = logging.getLogger("althy.partners.la_mobiliere")
 

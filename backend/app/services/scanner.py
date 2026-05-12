@@ -15,9 +15,12 @@ Fonctionne pour :
   - Locataires / acheteurs (cherche leurs préférences si profil public)
 """
 from __future__ import annotations
-import asyncio, re, json
+
+import asyncio
+import json
+import re
 from dataclasses import dataclass, field
-from typing import Optional
+
 import httpx
 from anthropic import AsyncAnthropic
 from app.core.config import settings

@@ -24,6 +24,8 @@ from app.services.artisan_service import (
     create_stripe_connect_link,
     founding_spots_remaining,
     settle_intervention_payment,
+)
+from app.services.artisan_service import (
     subscribe as artisan_subscribe,
 )
 from app.services.geocoding import geocode

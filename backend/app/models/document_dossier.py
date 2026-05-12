@@ -18,7 +18,6 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-
 # ── Constantes métier (source unique côté Python) ─────────────────────────────
 
 # Poids progression par type. Total cumulé avec les 2 booléens d'étape de
@@ -127,16 +126,16 @@ class DocumentDossier(BaseModel):
     ai_details: Mapped[Any | None] = mapped_column(JSONB)
 
     # Relations
-    locataire: Mapped["Locataire"] = relationship(  # type: ignore[name-defined]  # noqa: F821
+    locataire: Mapped[Locataire] = relationship(  # type: ignore[name-defined]  # noqa: F821
         "Locataire",
         back_populates="documents_dossier",
         foreign_keys=[locataire_id],
     )
-    uploaded_by: Mapped["User"] = relationship(  # type: ignore[name-defined]  # noqa: F821
+    uploaded_by: Mapped[User] = relationship(  # type: ignore[name-defined]  # noqa: F821
         "User",
         foreign_keys=[uploaded_by_user_id],
     )
-    valide_par: Mapped["User | None"] = relationship(  # type: ignore[name-defined]  # noqa: F821
+    valide_par: Mapped[User | None] = relationship(  # type: ignore[name-defined]  # noqa: F821
         "User",
         foreign_keys=[valide_par_user_id],
     )

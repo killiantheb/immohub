@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import mimetypes
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from typing import Annotated, Any
 
 from app.core.config import settings
@@ -559,7 +559,7 @@ async def sign_edl_photo(
         settings.SUPABASE_BUCKET_EDL_PHOTOS, path, expires_in=_SIGNED_URL_TTL_SECONDS
     )
     expires_at = (
-        datetime.now(timezone.utc) + timedelta(seconds=_SIGNED_URL_TTL_SECONDS)
+        datetime.now(UTC) + timedelta(seconds=_SIGNED_URL_TTL_SECONDS)
     ).isoformat()
 
     return SignEdlPhotoResponse(url=signed, expires_at=expires_at)

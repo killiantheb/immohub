@@ -4,41 +4,40 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
 
 class ProfileArtisanBase(BaseModel):
     # Identité
-    raison_sociale: Optional[str] = None
-    uid_ide: Optional[str] = None
-    numero_tva: Optional[str] = None
-    statut_juridique: Optional[str] = None   # independant/sarl/sa
-    annees_experience: Optional[int] = None
-    site_web: Optional[str] = None
+    raison_sociale: str | None = None
+    uid_ide: str | None = None
+    numero_tva: str | None = None
+    statut_juridique: str | None = None   # independant/sarl/sa
+    annees_experience: int | None = None
+    site_web: str | None = None
     # Activité
-    specialites: Optional[list[str]] = None
+    specialites: list[str] | None = None
     rayon_km: int = 30
     assurance_rc: bool = False
-    lat: Optional[float] = None
-    lng: Optional[float] = None
+    lat: float | None = None
+    lng: float | None = None
     # Préférences charge
-    montant_min_mission: Optional[float] = None
+    montant_min_mission: float | None = None
     urgences_acceptees: bool = False
     majoration_urgence_pct: int = 0
     chantiers_simultanees: int = 3
     # Paiement
-    iban: Optional[str] = None
+    iban: str | None = None
     delai_paiement_jours: int = 30
-    billing_name: Optional[str] = None
-    billing_adresse: Optional[str] = None
+    billing_name: str | None = None
+    billing_adresse: str | None = None
     virement_auto: bool = False
     facturation_auto: bool = False
     relance_auto: bool = False
     # Marketplace M1 (migration 0036)
-    canton: Optional[str] = None
-    specialties: Optional[list[str]] = None
+    canton: str | None = None
+    specialties: list[str] | None = None
 
 
 class ProfileArtisanCreate(ProfileArtisanBase):
@@ -46,31 +45,31 @@ class ProfileArtisanCreate(ProfileArtisanBase):
 
 
 class ProfileArtisanUpdate(BaseModel):
-    raison_sociale: Optional[str] = None
-    uid_ide: Optional[str] = None
-    numero_tva: Optional[str] = None
-    statut_juridique: Optional[str] = None
-    annees_experience: Optional[int] = None
-    site_web: Optional[str] = None
-    specialites: Optional[list[str]] = None
-    rayon_km: Optional[int] = None
-    assurance_rc: Optional[bool] = None
-    lat: Optional[float] = None
-    lng: Optional[float] = None
-    montant_min_mission: Optional[float] = None
-    urgences_acceptees: Optional[bool] = None
-    majoration_urgence_pct: Optional[int] = None
-    chantiers_simultanees: Optional[int] = None
-    iban: Optional[str] = None
-    delai_paiement_jours: Optional[int] = None
-    billing_name: Optional[str] = None
-    billing_adresse: Optional[str] = None
-    virement_auto: Optional[bool] = None
-    facturation_auto: Optional[bool] = None
-    relance_auto: Optional[bool] = None
+    raison_sociale: str | None = None
+    uid_ide: str | None = None
+    numero_tva: str | None = None
+    statut_juridique: str | None = None
+    annees_experience: int | None = None
+    site_web: str | None = None
+    specialites: list[str] | None = None
+    rayon_km: int | None = None
+    assurance_rc: bool | None = None
+    lat: float | None = None
+    lng: float | None = None
+    montant_min_mission: float | None = None
+    urgences_acceptees: bool | None = None
+    majoration_urgence_pct: int | None = None
+    chantiers_simultanees: int | None = None
+    iban: str | None = None
+    delai_paiement_jours: int | None = None
+    billing_name: str | None = None
+    billing_adresse: str | None = None
+    virement_auto: bool | None = None
+    facturation_auto: bool | None = None
+    relance_auto: bool | None = None
     # Marketplace M1
-    canton: Optional[str] = None
-    specialties: Optional[list[str]] = None
+    canton: str | None = None
+    specialties: list[str] | None = None
 
 
 class ProfileArtisanRead(ProfileArtisanBase):
@@ -81,11 +80,11 @@ class ProfileArtisanRead(ProfileArtisanBase):
     note_moyenne: float
     nb_chantiers: int
     created_at: datetime
-    subscription_plan: Optional[str] = None
+    subscription_plan: str | None = None
     is_founding_member: bool = False
-    stripe_connect_id: Optional[str] = None
+    stripe_connect_id: str | None = None
     stripe_connect_ready: bool = False
-    subscription_activated_at: Optional[datetime] = None
+    subscription_activated_at: datetime | None = None
 
 
 # ── Subscribe (marketplace M1) ───────────────────────────────────────────────

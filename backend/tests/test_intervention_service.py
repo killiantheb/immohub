@@ -11,8 +11,6 @@ from __future__ import annotations
 import uuid
 from unittest.mock import MagicMock
 
-import pytest
-
 from app.services.intervention_service import InterventionService
 
 

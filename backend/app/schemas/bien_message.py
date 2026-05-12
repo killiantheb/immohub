@@ -18,7 +18,6 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-
 _BODY_MAX = 5000
 
 

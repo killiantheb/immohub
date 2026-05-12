@@ -16,7 +16,7 @@ import hashlib
 import json
 import re as _re
 import uuid as _uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from typing import Annotated, Any
 
 import anthropic
@@ -68,7 +68,7 @@ def _uid(user: User) -> _uuid.UUID:
 
 
 def _now_utc() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _ctx_hash(ctx: dict) -> str:
@@ -1365,7 +1365,8 @@ async def chat_get(
     from app.models.bien import Bien
     from app.models.intervention import Intervention
     from app.models.locataire import Locataire
-    from sqlalchemy import and_, func, select as sa_sel
+    from sqlalchemy import and_, func
+    from sqlalchemy import select as sa_sel
 
     uid = current_user.id
     ctx: dict = {"role": current_user.role, "user_name": current_user.first_name or ""}
@@ -1513,7 +1514,8 @@ async def agency_advisor(
     """Conseiller IA spécialisé pour agences et propriétaires."""
     from app.models.contract import Contract
     from app.models.transaction import Transaction
-    from sqlalchemy import select as sa_sel, and_
+    from sqlalchemy import and_
+    from sqlalchemy import select as sa_sel
 
     if current_user.role not in ("agence", "proprio_solo", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux agences et propriétaires")

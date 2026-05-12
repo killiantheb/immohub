@@ -5,17 +5,14 @@ Tests the critical payment flow: stats, CSV export, and Stripe webhook handling.
 
 from __future__ import annotations
 
-import pytest
-from httpx import AsyncClient
-
 
 class TestHealthAndPayments:
     """Smoke + payment-adjacent tests that run without DB in CI."""
 
     def test_health_sync(self):
         """Health endpoint responds — already covered in test_health.py, keep as regression."""
-        from fastapi.testclient import TestClient
         from app.main import app
+        from fastapi.testclient import TestClient
         client = TestClient(app)
         r = client.get("/api/health")
         assert r.status_code == 200
@@ -25,8 +22,8 @@ class TestHealthAndPayments:
         assert body["version"] == "1.0.0"
 
     def test_openapi_schema_accessible(self):
-        from fastapi.testclient import TestClient
         from app.main import app
+        from fastapi.testclient import TestClient
         client = TestClient(app)
         r = client.get("/api/openapi.json")
         assert r.status_code == 200
@@ -41,8 +38,8 @@ class TestHealthAndPayments:
 
     def test_stripe_webhook_rejects_invalid_signature(self):
         """Stripe webhook must reject calls without valid signature."""
-        from fastapi.testclient import TestClient
         from app.main import app
+        from fastapi.testclient import TestClient
         client = TestClient(app)
         r = client.post(
             "/api/v1/webhooks/stripe",
@@ -53,22 +50,22 @@ class TestHealthAndPayments:
         assert r.status_code in (400, 422, 500), f"Expected rejection, got {r.status_code}"
 
     def test_unauthenticated_paiements_returns_401(self):
-        from fastapi.testclient import TestClient
         from app.main import app
+        from fastapi.testclient import TestClient
         client = TestClient(app)
         r = client.get("/api/v1/paiements")
         assert r.status_code in (401, 403), f"Expected auth error, got {r.status_code}"
 
     def test_unauthenticated_rgpd_export_returns_401(self):
-        from fastapi.testclient import TestClient
         from app.main import app
+        from fastapi.testclient import TestClient
         client = TestClient(app)
         r = client.get("/api/v1/rgpd/export")
         assert r.status_code in (401, 403), f"Expected auth error, got {r.status_code}"
 
     def test_unauthenticated_vente_estimate_returns_401(self):
-        from fastapi.testclient import TestClient
         from app.main import app
+        from fastapi.testclient import TestClient
         client = TestClient(app)
         r = client.post("/api/v1/vente/estimate", json={
             "address": "Rue de Rive 12",
@@ -79,8 +76,8 @@ class TestHealthAndPayments:
         assert r.status_code in (401, 403), f"Expected auth error, got {r.status_code}"
 
     def test_portail_view_invalid_token_returns_404(self):
-        from fastapi.testclient import TestClient
         from app.main import app
+        from fastapi.testclient import TestClient
         client = TestClient(app)
         import uuid
         fake_token = uuid.uuid4()
@@ -88,8 +85,8 @@ class TestHealthAndPayments:
         assert r.status_code == 404
 
     def test_security_headers_present(self):
-        from fastapi.testclient import TestClient
         from app.main import app
+        from fastapi.testclient import TestClient
         client = TestClient(app)
         r = client.get("/api/health")
         assert r.headers.get("x-content-type-options") == "nosniff"

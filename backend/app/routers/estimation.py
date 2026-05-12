@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 import anthropic
@@ -25,6 +25,7 @@ router = APIRouter(prefix="/estimation", tags=["estimation"])
 DbDep = Annotated[AsyncSession, Depends(get_db)]
 
 import logging
+
 _logger = logging.getLogger("althy.estimation")
 
 MAX_TOKENS = 300
@@ -124,7 +125,7 @@ async def estimation_rapide(
                     "confiance": result.confiance,
                 }),
                 "ip":         ip,
-                "created_at": datetime.now(timezone.utc),
+                "created_at": datetime.now(UTC),
             },
         )
         await db.commit()
@@ -178,7 +179,7 @@ async def estimation_deferred(
                     "email":  body.email,
                 }),
                 "ip":         ip,
-                "created_at": datetime.now(timezone.utc),
+                "created_at": datetime.now(UTC),
             },
         )
         await db.commit()

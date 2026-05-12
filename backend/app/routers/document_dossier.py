@@ -24,7 +24,7 @@ Doctrine :
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from app.core.database import get_db
@@ -33,7 +33,7 @@ from app.models.document_dossier import (
     TYPE_DOCUMENT_POIDS,
     DocumentDossier,
 )
-from app.models.locataire import DossierLocataire, Locataire
+from app.models.locataire import DossierLocataire
 from app.models.user import User
 from app.schemas.document_dossier import (
     DocumentDossierRead,
@@ -69,7 +69,6 @@ from fastapi import (
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-
 
 # ── Routers (2 prefixes distincts) ────────────────────────────────────────────
 # - Routes par locataire : montées sur /api/v1/locataires/{locataire_id}/dossier
@@ -361,7 +360,7 @@ async def validate_document(
 
     doc.statut = "valide"
     doc.valide_par_user_id = current_user.id
-    doc.valide_at = datetime.now(timezone.utc)
+    doc.valide_at = datetime.now(UTC)
     doc.commentaire_rejet = None  # nettoyage défensif
     try:
         await db.commit()
@@ -421,7 +420,7 @@ async def reject_document(
     doc.statut = "rejete"
     doc.commentaire_rejet = payload.commentaire_rejet
     doc.valide_par_user_id = current_user.id
-    doc.valide_at = datetime.now(timezone.utc)
+    doc.valide_at = datetime.now(UTC)
     try:
         await db.commit()
     except Exception as exc:
@@ -488,7 +487,7 @@ async def update_renseignements(
     # Auto-flip si renseignements minimaux remplis et pas déjà flag-é
     if renseignements_minimaux_remplis(dossier) and not dossier.renseignements_complets:
         dossier.renseignements_complets = True
-        dossier.renseignements_completed_at = datetime.now(timezone.utc)
+        dossier.renseignements_completed_at = datetime.now(UTC)
 
     try:
         await db.commit()
@@ -545,7 +544,7 @@ async def mark_loyer_caution_verses(
 
     if not dossier.loyer_caution_verses:
         dossier.loyer_caution_verses = True
-        dossier.loyer_caution_verses_at = datetime.now(timezone.utc)
+        dossier.loyer_caution_verses_at = datetime.now(UTC)
         dossier.loyer_caution_verses_by = current_user.id
 
     try:

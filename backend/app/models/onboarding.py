@@ -1,8 +1,10 @@
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, Text, DateTime
-from sqlalchemy.dialects.postgresql import UUID
+from datetime import UTC, datetime
+
 from app.core.database import Base
+from sqlalchemy import Column, DateTime, Integer, String, Text
+from sqlalchemy.dialects.postgresql import UUID
+
 
 class OnboardingScan(Base):
     __tablename__ = "onboarding_scans"
@@ -15,4 +17,4 @@ class OnboardingScan(Base):
     # done → importé
     elements_trouves = Column(Text, nullable=True)  # JSON
     nb_elements      = Column(Integer, default=0)
-    created_at       = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at       = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

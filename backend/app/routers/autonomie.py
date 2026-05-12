@@ -19,6 +19,7 @@ from typing import Annotated, Literal
 
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.models.autonomy import AutonomySubscription
 from app.models.user import User
 from app.services.autonomy_service import (
     AUTONOMIE_PRICE_MONTHLY,
@@ -30,7 +31,6 @@ from app.services.autonomy_service import (
     consume_opener_mission,
     consume_verification,
 )
-from app.models.autonomy import AutonomySubscription
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select

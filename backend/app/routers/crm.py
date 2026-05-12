@@ -5,7 +5,7 @@ Agrège locataires (actifs + passés) et prospects en une vue unifiée.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Annotated
 
 from app.core.database import get_db

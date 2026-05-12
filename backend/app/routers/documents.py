@@ -8,9 +8,9 @@ from typing import Annotated, Any
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models.contract import Contract
 from app.models.bien import Bien
-from app.models.document import DocumentTemplate, GeneratedDocument
+from app.models.contract import Contract
+from app.models.document import GeneratedDocument
 from app.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from jinja2 import BaseLoader, Environment
@@ -873,7 +873,7 @@ def _build_quittance(ctx: dict) -> str:
 <p style="margin-top:1.2rem;">
 Le bailleur, ou son mandataire, reconnaît avoir reçu de <strong>{tenant.get('full_name','…')}</strong>
 la somme de <strong>CHF {_fmt_chf(total)}.-</strong>
-à titre de loyer {f"et charges " if charges else ""}pour le mois de <strong>{month_label} {year}</strong>
+à titre de loyer {"et charges " if charges else ""}pour le mois de <strong>{month_label} {year}</strong>
 concernant le logement sis <strong>{prop.get('address','')}, {prop.get('city','')}</strong>.
 </p>
 

@@ -5,24 +5,23 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, time
 from decimal import Decimal
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
-
 
 # ── Mission ouvreur ───────────────────────────────────────────────────────────
 
 class MissionOuvreurBase(BaseModel):
     bien_id: uuid.UUID
-    agence_id: Optional[uuid.UUID] = None
-    ouvreur_id: Optional[uuid.UUID] = None
+    agence_id: uuid.UUID | None = None
+    ouvreur_id: uuid.UUID | None = None
     type: Literal["visite", "edl_entree", "edl_sortie", "remise_cles", "expertise"]
-    date_mission: Optional[str] = None  # YYYY-MM-DD
-    creneau_debut: Optional[time] = None
-    creneau_fin: Optional[time] = None
+    date_mission: str | None = None  # YYYY-MM-DD
+    creneau_debut: time | None = None
+    creneau_fin: time | None = None
     nb_candidats: int = 0
-    instructions: Optional[str] = None
-    remuneration: Optional[Decimal] = None
+    instructions: str | None = None
+    remuneration: Decimal | None = None
     statut: Literal["brouillon", "proposee", "publiee", "acceptee", "effectuee", "annulee"] = "proposee"
     rayon_km: int = 20
 
@@ -32,14 +31,14 @@ class MissionOuvreurCreate(MissionOuvreurBase):
 
 
 class MissionOuvreurUpdate(BaseModel):
-    ouvreur_id: Optional[uuid.UUID] = None
-    date_mission: Optional[str] = None
-    creneau_debut: Optional[time] = None
-    creneau_fin: Optional[time] = None
-    nb_candidats: Optional[int] = None
-    instructions: Optional[str] = None
-    remuneration: Optional[Decimal] = None
-    statut: Optional[Literal["brouillon", "proposee", "publiee", "acceptee", "effectuee", "annulee"]] = None
+    ouvreur_id: uuid.UUID | None = None
+    date_mission: str | None = None
+    creneau_debut: time | None = None
+    creneau_fin: time | None = None
+    nb_candidats: int | None = None
+    instructions: str | None = None
+    remuneration: Decimal | None = None
+    statut: Literal["brouillon", "proposee", "publiee", "acceptee", "effectuee", "annulee"] | None = None
 
 
 class MissionOuvreurRead(MissionOuvreurBase):
@@ -53,29 +52,29 @@ class MissionOuvreurRead(MissionOuvreurBase):
 
 class ProfileOuvreurBase(BaseModel):
     # Identité
-    statut_ouvreur: Optional[str] = None   # independant/employe_agence
-    numero_avs: Optional[str] = None
+    statut_ouvreur: str | None = None   # independant/employe_agence
+    numero_avs: str | None = None
     permis_conduire: bool = False
     vehicule: bool = False
     # Zone & dispo
     rayon_km: int = 20
-    jours_dispo: Optional[list[int]] = None
-    heure_debut: Optional[time] = None
-    heure_fin: Optional[time] = None
-    types_missions: Optional[list[str]] = None
-    lat: Optional[float] = None
-    lng: Optional[float] = None
+    jours_dispo: list[int] | None = None
+    heure_debut: time | None = None
+    heure_fin: time | None = None
+    types_missions: list[str] | None = None
+    lat: float | None = None
+    lng: float | None = None
     # Préférences charge
-    montant_min_mission: Optional[float] = None
+    montant_min_mission: float | None = None
     urgences_acceptees: bool = False
     majoration_urgence_pct: int = 0
     missions_par_jour: int = 5
     # Paiement
-    iban: Optional[str] = None
-    bic: Optional[str] = None
-    bank_account_holder: Optional[str] = None
-    billing_name: Optional[str] = None
-    billing_adresse: Optional[str] = None
+    iban: str | None = None
+    bic: str | None = None
+    bank_account_holder: str | None = None
+    billing_name: str | None = None
+    billing_adresse: str | None = None
     virement_auto: bool = False
 
 
@@ -84,27 +83,27 @@ class ProfileOuvreurCreate(ProfileOuvreurBase):
 
 
 class ProfileOuvreurUpdate(BaseModel):
-    statut_ouvreur: Optional[str] = None
-    numero_avs: Optional[str] = None
-    permis_conduire: Optional[bool] = None
-    vehicule: Optional[bool] = None
-    rayon_km: Optional[int] = None
-    jours_dispo: Optional[list[int]] = None
-    heure_debut: Optional[time] = None
-    heure_fin: Optional[time] = None
-    types_missions: Optional[list[str]] = None
-    lat: Optional[float] = None
-    lng: Optional[float] = None
-    montant_min_mission: Optional[float] = None
-    urgences_acceptees: Optional[bool] = None
-    majoration_urgence_pct: Optional[int] = None
-    missions_par_jour: Optional[int] = None
-    iban: Optional[str] = None
-    bic: Optional[str] = None
-    bank_account_holder: Optional[str] = None
-    billing_name: Optional[str] = None
-    billing_adresse: Optional[str] = None
-    virement_auto: Optional[bool] = None
+    statut_ouvreur: str | None = None
+    numero_avs: str | None = None
+    permis_conduire: bool | None = None
+    vehicule: bool | None = None
+    rayon_km: int | None = None
+    jours_dispo: list[int] | None = None
+    heure_debut: time | None = None
+    heure_fin: time | None = None
+    types_missions: list[str] | None = None
+    lat: float | None = None
+    lng: float | None = None
+    montant_min_mission: float | None = None
+    urgences_acceptees: bool | None = None
+    majoration_urgence_pct: int | None = None
+    missions_par_jour: int | None = None
+    iban: str | None = None
+    bic: str | None = None
+    bank_account_holder: str | None = None
+    billing_name: str | None = None
+    billing_adresse: str | None = None
+    virement_auto: bool | None = None
 
 
 class ProfileOuvreurRead(ProfileOuvreurBase):

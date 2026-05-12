@@ -8,10 +8,12 @@ def scanner_nouvel_utilisateur(self, user_id: str, contexte: dict):
     Lancée automatiquement après l'inscription.
     Résultats stockés en DB → frontend les affiche pour validation.
     """
-    import asyncio, json
-    from app.services.scanner import scanner_tout
+    import asyncio
+    import json
+
     from app.core.database import sync_session
     from app.models.onboarding import OnboardingScan
+    from app.services.scanner import scanner_tout
 
     try:
         elements = asyncio.run(scanner_tout(contexte))

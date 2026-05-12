@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -23,11 +22,11 @@ class ScoringLocataireCreate(ScoringLocataireBase):
 
 
 class ScoringLocataireUpdate(BaseModel):
-    ponctualite: Optional[float] = Field(default=None, ge=0, le=10)
-    solvabilite: Optional[float] = Field(default=None, ge=0, le=10)
-    communication: Optional[float] = Field(default=None, ge=0, le=10)
-    etat_logement: Optional[float] = Field(default=None, ge=0, le=10)
-    nb_retards: Optional[int] = None
+    ponctualite: float | None = Field(default=None, ge=0, le=10)
+    solvabilite: float | None = Field(default=None, ge=0, le=10)
+    communication: float | None = Field(default=None, ge=0, le=10)
+    etat_logement: float | None = Field(default=None, ge=0, le=10)
+    nb_retards: int | None = None
 
 
 class ScoringLocataireRead(ScoringLocataireBase):
@@ -35,5 +34,5 @@ class ScoringLocataireRead(ScoringLocataireBase):
 
     id: uuid.UUID
     score_global: float
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
     created_at: datetime

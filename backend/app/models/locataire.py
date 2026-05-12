@@ -43,7 +43,7 @@ class Locataire(BaseModel):
 
     # Relations Phase 1.0 — documents dossier (1:N, cascade DELETE).
     # Type forward-ref pour éviter l'import circulaire avec models/document_dossier.py.
-    documents_dossier: Mapped[list["DocumentDossier"]] = relationship(  # type: ignore[name-defined]  # noqa: F821
+    documents_dossier: Mapped[list[DocumentDossier]] = relationship(  # type: ignore[name-defined]  # noqa: F821
         "DocumentDossier",
         back_populates="locataire",
         cascade="all, delete-orphan",

@@ -18,6 +18,7 @@ import logging
 import math
 import mimetypes
 import uuid
+from datetime import UTC
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
@@ -43,7 +44,6 @@ from app.schemas.bien import (
     BienImageRead,
     BienImageUpdate,
     BienListItem,
-    BienRead,
     BienUpdate,
     CatalogueEquipementRead,
     EstimationFiscalite,
@@ -1223,7 +1223,7 @@ class BienService:
         se déclenche en prod : check API key, longueur réponse, JSON parse,
         validation Pydantic.
         """
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         bien = await self.get_for_access_check(bien_id, current_user)
         contexte = self._build_contexte_enrichi(bien)
@@ -1249,7 +1249,7 @@ class BienService:
                 bien.id,
             )
             data["bien_id"] = str(bien.id)
-            data["generated_at"] = datetime.now(timezone.utc)
+            data["generated_at"] = datetime.now(UTC)
             # `model_used` reflète le modèle réellement appelé l. ~1344 — lu
             # depuis settings pour rester cohérent en cas d'upgrade (cf §B.10
             # CLAUDE.md « pas de faux statuts »).
@@ -1435,7 +1435,7 @@ class BienService:
         sont conservateurs (multiplicateur médian 230× loyer, scores neutres
         à 5/10). L'utilisateur est averti via `confidence_score = 2.0` (faible).
         """
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         loyer = float(bien.loyer or 0)
         charges = float(bien.charges or 0)
@@ -1475,7 +1475,7 @@ class BienService:
 
         return EstimationIAEnrichie(
             bien_id=bien.id,
-            generated_at=datetime.now(timezone.utc),
+            generated_at=datetime.now(UTC),
             model_used="fallback-static",
             confidence_score=Decimal("2.0"),
             meuble=bool(bien.is_furnished),

@@ -46,16 +46,16 @@ class BienMessage(BaseModel):
     lu_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     # ── Relations ────────────────────────────────────────────────────────────
-    bien: Mapped["Bien"] = relationship(
+    bien: Mapped[Bien] = relationship(
         "Bien",
         back_populates="messages",
         foreign_keys=[bien_id],
     )
-    sender: Mapped["User"] = relationship(
+    sender: Mapped[User] = relationship(
         "User",
         foreign_keys=[sender_user_id],
     )
-    recipient: Mapped["User"] = relationship(
+    recipient: Mapped[User] = relationship(
         "User",
         foreign_keys=[recipient_user_id],
     )

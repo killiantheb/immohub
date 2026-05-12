@@ -1,4 +1,6 @@
 """Importe les éléments confirmés par l'utilisateur dans Althy."""
+from datetime import UTC
+
 from app.common.enums import normalize_bien_type
 from app.tasks.celery_app import celery_app
 
@@ -37,11 +39,12 @@ def importer_elements(user_id: str, user_role: str, elements: list[dict]):
     Convertit chaque élément trouvé en Bien + Listing dans la DB Althy.
     Utilise Claude pour enrichir la description si elle est trop courte.
     """
+    import uuid
+    from datetime import datetime, timedelta
+
     from app.core.database import sync_session
     from app.models.bien import Bien
     from app.models.listing import Listing
-    from datetime import datetime, timezone, timedelta
-    import uuid
 
     uid = uuid.UUID(user_id)
 
@@ -82,8 +85,8 @@ def importer_elements(user_id: str, user_role: str, elements: list[dict]):
                 source_site      = el.get("source_site"),
                 source_id        = el.get("source_id"),
                 source_url       = el.get("source_url"),
-                published_at     = datetime.now(timezone.utc),
-                expire_at        = datetime.now(timezone.utc) + timedelta(days=365),
+                published_at     = datetime.now(UTC),
+                expire_at        = datetime.now(UTC) + timedelta(days=365),
             )
             db.add(listing)
 

@@ -16,8 +16,8 @@ import json
 import re
 import secrets
 import uuid as _uuid
+from datetime import UTC, datetime, timedelta
 from datetime import date as _date
-from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Annotated, Any
 
@@ -395,7 +395,7 @@ async def creer_compte(
     # ── 3. Generate magic link token ─────────────────────────────────────────
     token      = secrets.token_urlsafe(32)
     magic_id   = _uuid.uuid4()
-    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    expires_at = datetime.now(UTC) + timedelta(days=7)
 
     await db.execute(
         text("""
@@ -598,7 +598,7 @@ class RejoindrePayload(BaseModel):
     confirm_password: str | None = Field(default=None, min_length=8, max_length=128)
 
     @model_validator(mode="after")
-    def _check_password_match(self) -> "RejoindrePayload":
+    def _check_password_match(self) -> RejoindrePayload:
         # Si password fourni, confirm_password doit matcher.
         # Les deux doivent être présents ou absents simultanément.
         if self.password is None and self.confirm_password is None:
@@ -642,7 +642,7 @@ async def rejoindre(
         raise HTTPException(404, "Lien introuvable ou expiré")
     if link.used:
         raise HTTPException(409, "Ce lien a déjà été utilisé")
-    if link.expires_at < datetime.now(timezone.utc):
+    if link.expires_at < datetime.now(UTC):
         raise HTTPException(410, "Lien expiré — demandez un nouveau lien à votre agence")
 
     # Email must match (or be the target)
@@ -969,8 +969,8 @@ def _fallback_email_html(prenom: str, nom_agence: str, magic_link_url: str) -> s
 
 # ── Scan onboarding ───────────────────────────────────────────────────────────
 
-from sqlalchemy import select as _select
 from app.models.onboarding import OnboardingScan
+from sqlalchemy import select as _select
 
 
 @router.get("/scan")

@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -16,7 +16,7 @@ class PaiementBase(BaseModel):
     mois: str  # YYYY-MM
     montant: Decimal
     date_echeance: date
-    date_paiement: Optional[date] = None
+    date_paiement: date | None = None
     statut: Literal["recu", "en_attente", "retard"] = "en_attente"
     jours_retard: int = 0
 
@@ -34,12 +34,12 @@ class PaiementCreate(PaiementBase):
 
 
 class PaiementUpdate(BaseModel):
-    date_paiement: Optional[date] = None
-    statut: Optional[Literal["recu", "en_attente", "retard"]] = None
-    jours_retard: Optional[int] = None
-    montant: Optional[Decimal] = None
-    net_montant: Optional[Decimal] = None
-    stripe_payment_intent_id: Optional[str] = None
+    date_paiement: date | None = None
+    statut: Literal["recu", "en_attente", "retard"] | None = None
+    jours_retard: int | None = None
+    montant: Decimal | None = None
+    net_montant: Decimal | None = None
+    stripe_payment_intent_id: str | None = None
 
 
 class PaiementRead(PaiementBase):
@@ -48,5 +48,5 @@ class PaiementRead(PaiementBase):
     id: uuid.UUID
     created_at: datetime
     # net_montant = montant - 4% Althy — toujours affiché comme "Loyer net reçu"
-    net_montant: Optional[Decimal] = None
-    stripe_payment_intent_id: Optional[str] = None
+    net_montant: Decimal | None = None
+    stripe_payment_intent_id: str | None = None

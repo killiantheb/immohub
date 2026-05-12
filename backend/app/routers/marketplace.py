@@ -9,14 +9,14 @@ Routes authentifiées :           POST /publier  PATCH /{id}  DELETE /{id}
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Annotated
 
 import stripe
 from app.core.config import settings
-from app.core.rate_limit import limiter
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.core.security import ROLES_PROPERTY_MANAGERS, get_current_user, get_optional_current_user
 from app.models.bien import Bien
 from app.models.candidature import Candidature
@@ -36,9 +36,20 @@ from app.services.marketplace_service import (
     serialize_listing,
     upload_candidature_files,
 )
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    UploadFile,
+)
 from pydantic import BaseModel
-from sqlalchemy import func, select, text as sa_text
+from sqlalchemy import func, select
+from sqlalchemy import text as sa_text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -390,7 +401,7 @@ async def postuler(request: Request, body: PostulerRequest, db: DbDep, user: Aut
         listing_id=body.listing_id, user_id=user.id,
         statut="en_attente", documents=docs, message=body.message,
         score_ia=score_ia, score_details=score_details,
-        updated_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(UTC),
     )
     db.add(candidature)
     listing.contacts_count = (listing.contacts_count or 0) + 1
@@ -478,7 +489,7 @@ async def traiter_candidature(
     if bien.owner_id != user.id and bien.agency_id != user.id and user.role != "super_admin":
         raise HTTPException(403, "Vous n'êtes pas propriétaire de ce bien")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     previous_statut = candidature.statut
     candidature.statut     = body.statut
     candidature.updated_at = now
@@ -544,7 +555,7 @@ async def _charge_owner_dossier_fee(
 
     if not customer_id or not pm_id:
         reason = "Aucune carte enregistrée — le propriétaire doit en ajouter une dans /app/settings/paiement."
-        candidature.owner_fee_failed_at = datetime.now(timezone.utc)
+        candidature.owner_fee_failed_at = datetime.now(UTC)
         candidature.owner_fee_failure_reason = reason
         logger.warning(
             "owner_fee_skipped candidature=%s owner=%s reason=no_payment_method",
@@ -571,7 +582,7 @@ async def _charge_owner_dossier_fee(
         candidature.owner_fee_amount = fee_chf
         candidature.owner_fee_stripe_intent_id = pi.id
         if pi.status == "succeeded":
-            candidature.owner_fee_paid_at = datetime.now(timezone.utc)
+            candidature.owner_fee_paid_at = datetime.now(UTC)
             candidature.owner_fee_failed_at = None
             candidature.owner_fee_failure_reason = None
             return {
@@ -587,7 +598,7 @@ async def _charge_owner_dossier_fee(
         }
     except stripe.error.CardError as e:
         reason = e.user_message or str(e)
-        candidature.owner_fee_failed_at = datetime.now(timezone.utc)
+        candidature.owner_fee_failed_at = datetime.now(UTC)
         candidature.owner_fee_failure_reason = reason
         logger.warning(
             "owner_fee_declined candidature=%s owner=%s reason=%s",
@@ -596,7 +607,7 @@ async def _charge_owner_dossier_fee(
         return {"charged": False, "reason": reason, "amount_chf": float(fee_chf)}
     except stripe.error.StripeError as e:
         reason = getattr(e, "user_message", None) or str(e)
-        candidature.owner_fee_failed_at = datetime.now(timezone.utc)
+        candidature.owner_fee_failed_at = datetime.now(UTC)
         candidature.owner_fee_failure_reason = reason
         logger.exception(
             "owner_fee_stripe_error candidature=%s owner=%s",
@@ -639,7 +650,7 @@ async def deposer_candidature(
     uploaded_docs = await upload_candidature_files(documents, user.id, listing_id)
     score_ia, score_details = await score_candidature_ia(user, listing, bien, uploaded_docs, db)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     candidature = Candidature(
         listing_id=listing_id, interest_id=interest_id, user_id=user.id,
         statut="en_attente", documents=uploaded_docs,

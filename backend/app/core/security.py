@@ -16,11 +16,11 @@ import uuid
 from typing import Annotated
 
 import jwt
-from jwt import PyJWKClient, PyJWKClientError
 from app.core.config import settings
 from app.core.database import get_db
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt import PyJWKClient, PyJWKClientError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -202,7 +202,7 @@ async def get_optional_current_user(
         Depends(_optional_bearer),
     ],
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> "User | None":
+) -> User | None:
     """
     Comme get_current_user mais renvoie None si aucun token valide.
     Usage : routes accessibles aux anonymes ET aux connectés.

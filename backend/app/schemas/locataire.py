@@ -5,27 +5,26 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
-
 
 # ── Locataire ─────────────────────────────────────────────────────────────────
 
 class LocataireBase(BaseModel):
     bien_id: uuid.UUID
-    user_id: Optional[uuid.UUID] = None
-    date_entree: Optional[date] = None
-    date_sortie: Optional[date] = None
-    loyer: Optional[Decimal] = None
-    charges: Optional[Decimal] = None
-    depot_garantie: Optional[Decimal] = None
-    type_caution: Optional[Literal["cash", "compte_bloque", "organisme"]] = None
-    banque_caution: Optional[str] = None
-    iban_caution: Optional[str] = None
+    user_id: uuid.UUID | None = None
+    date_entree: date | None = None
+    date_sortie: date | None = None
+    loyer: Decimal | None = None
+    charges: Decimal | None = None
+    depot_garantie: Decimal | None = None
+    type_caution: Literal["cash", "compte_bloque", "organisme"] | None = None
+    banque_caution: str | None = None
+    iban_caution: str | None = None
     statut: Literal["actif", "sorti"] = "actif"
-    motif_depart: Optional[str] = None
-    note_interne: Optional[str] = None
+    motif_depart: str | None = None
+    note_interne: str | None = None
 
 
 class LocataireCreate(LocataireBase):
@@ -33,17 +32,17 @@ class LocataireCreate(LocataireBase):
 
 
 class LocataireUpdate(BaseModel):
-    date_entree: Optional[date] = None
-    date_sortie: Optional[date] = None
-    loyer: Optional[Decimal] = None
-    charges: Optional[Decimal] = None
-    depot_garantie: Optional[Decimal] = None
-    type_caution: Optional[Literal["cash", "compte_bloque", "organisme"]] = None
-    banque_caution: Optional[str] = None
-    iban_caution: Optional[str] = None
-    statut: Optional[Literal["actif", "sorti"]] = None
-    motif_depart: Optional[str] = None
-    note_interne: Optional[str] = None
+    date_entree: date | None = None
+    date_sortie: date | None = None
+    loyer: Decimal | None = None
+    charges: Decimal | None = None
+    depot_garantie: Decimal | None = None
+    type_caution: Literal["cash", "compte_bloque", "organisme"] | None = None
+    banque_caution: str | None = None
+    iban_caution: str | None = None
+    statut: Literal["actif", "sorti"] | None = None
+    motif_depart: str | None = None
+    note_interne: str | None = None
 
 
 class LocataireRead(LocataireBase):
@@ -57,17 +56,17 @@ class LocataireRead(LocataireBase):
 
 class DossierLocataireBase(BaseModel):
     locataire_id: uuid.UUID
-    employeur: Optional[str] = None
-    poste: Optional[str] = None
-    type_contrat: Optional[Literal["cdi", "cdd", "independant", "retraite", "autre"]] = None
-    salaire_net: Optional[Decimal] = None
-    anciennete: Optional[int] = None
-    assureur_rc: Optional[str] = None
-    numero_police: Optional[str] = None
-    validite_assurance: Optional[date] = None
-    resultat_poursuites: Optional[str] = None
-    date_poursuites: Optional[date] = None
-    office_poursuites: Optional[str] = None
+    employeur: str | None = None
+    poste: str | None = None
+    type_contrat: Literal["cdi", "cdd", "independant", "retraite", "autre"] | None = None
+    salaire_net: Decimal | None = None
+    anciennete: int | None = None
+    assureur_rc: str | None = None
+    numero_police: str | None = None
+    validite_assurance: date | None = None
+    resultat_poursuites: str | None = None
+    date_poursuites: date | None = None
+    office_poursuites: str | None = None
 
 
 class DossierLocataireCreate(DossierLocataireBase):
@@ -75,17 +74,17 @@ class DossierLocataireCreate(DossierLocataireBase):
 
 
 class DossierLocataireUpdate(BaseModel):
-    employeur: Optional[str] = None
-    poste: Optional[str] = None
-    type_contrat: Optional[Literal["cdi", "cdd", "independant", "retraite", "autre"]] = None
-    salaire_net: Optional[Decimal] = None
-    anciennete: Optional[int] = None
-    assureur_rc: Optional[str] = None
-    numero_police: Optional[str] = None
-    validite_assurance: Optional[date] = None
-    resultat_poursuites: Optional[str] = None
-    date_poursuites: Optional[date] = None
-    office_poursuites: Optional[str] = None
+    employeur: str | None = None
+    poste: str | None = None
+    type_contrat: Literal["cdi", "cdd", "independant", "retraite", "autre"] | None = None
+    salaire_net: Decimal | None = None
+    anciennete: int | None = None
+    assureur_rc: str | None = None
+    numero_police: str | None = None
+    validite_assurance: date | None = None
+    resultat_poursuites: str | None = None
+    date_poursuites: date | None = None
+    office_poursuites: str | None = None
 
 
 class DossierLocataireRead(DossierLocataireBase):

@@ -11,9 +11,8 @@ from __future__ import annotations
 
 from datetime import date
 
-from fpdf import FPDF
-
 from app.services._pdf_utils import sanitize_for_pdf as _s
+from fpdf import FPDF
 
 
 def generate_quittance_pdf(

@@ -17,11 +17,10 @@ import logging
 import uuid
 from decimal import Decimal
 
-from sqlalchemy import func, select, text
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.config import settings
 from app.models.profile_artisan import ProfileArtisan
+from sqlalchemy import func, select, text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger("althy.artisan")
 
@@ -104,7 +103,7 @@ async def subscribe(
 
     profile.canton = canton
     profile.specialties = specialties
-    profile.subscription_activated_at = dt.datetime.now(dt.timezone.utc)
+    profile.subscription_activated_at = dt.datetime.now(dt.UTC)
 
     await db.flush()
     await db.refresh(profile)

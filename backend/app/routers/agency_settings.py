@@ -5,20 +5,19 @@ from __future__ import annotations
 import csv
 import io
 import uuid as uuid_lib
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.agency_settings import AgencySettings
 from app.models.bien import Bien
-from app.models.contract import Contract
 from app.models.transaction import Transaction
 from app.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from sqlalchemy import and_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
@@ -156,16 +155,16 @@ async def export_accounting(
     if current_user.role not in ALLOWED_ROLES:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux agences et propriétaires")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if month:
         year, m = int(month.split("-")[0]), int(month.split("-")[1])
     else:
         year, m = now.year, now.month
 
-    period_start = datetime(year, m, 1, tzinfo=timezone.utc)
+    period_start = datetime(year, m, 1, tzinfo=UTC)
     next_m = m + 1 if m < 12 else 1
     next_y = year if m < 12 else year + 1
-    period_end = datetime(next_y, next_m, 1, tzinfo=timezone.utc)
+    period_end = datetime(next_y, next_m, 1, tzinfo=UTC)
 
     # Récupère les transactions du mois pour cet owner/agence
     tx_result = await db.execute(

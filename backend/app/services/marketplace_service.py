@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import mimetypes
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 import httpx
@@ -17,7 +17,8 @@ from app.models.listing import Listing
 from app.models.user import User
 from fastapi import HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select, text as sa_text
+from sqlalchemy import select
+from sqlalchemy import text as sa_text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
@@ -244,10 +245,12 @@ async def publier_bien_service(body: PublierRequest, user: User, db: AsyncSessio
     - Sinon → crée un nouveau Bien + Listing.
     Génère la description IA si absente.
     """
-    from app.services.geocoding import geocode  # import tardif pour éviter les dépendances circulaires
     from app.services.ai_service import generate_listing_description
+    from app.services.geocoding import (
+        geocode,  # import tardif pour éviter les dépendances circulaires
+    )
 
-    now        = datetime.now(timezone.utc)
+    now        = datetime.now(UTC)
     expire_at  = now + timedelta(days=30)
 
     if body.bien_id:
@@ -360,7 +363,7 @@ async def publier_bien_service(body: PublierRequest, user: User, db: AsyncSessio
 # ── Dépôt de candidature avec upload fichiers ─────────────────────────────────
 
 async def upload_candidature_files(
-    documents: list["UploadFile"],
+    documents: list[UploadFile],
     user_id: uuid.UUID,
     listing_id: uuid.UUID,
 ) -> list[dict]:

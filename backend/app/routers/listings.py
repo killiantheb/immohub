@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import UTC
 from typing import Annotated, Any
 
 from app.core.database import get_db
@@ -238,8 +239,8 @@ async def publish_listing(
     listing.portals = portals
 
     if not listing.published_at:
-        from datetime import datetime, timezone
-        listing.published_at = datetime.now(timezone.utc)
+        from datetime import datetime
+        listing.published_at = datetime.now(UTC)
 
     await db.commit()
     await db.refresh(listing)

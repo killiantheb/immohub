@@ -5,10 +5,9 @@ from __future__ import annotations
 import uuid
 
 from app.models.base import BaseModel
-from sqlalchemy import Boolean, DateTime, Index, Integer, JSON, String, Text
+from sqlalchemy import JSON, Boolean, Index, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.sql import func
 
 
 class DocumentTemplate(BaseModel):

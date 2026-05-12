@@ -282,7 +282,6 @@ def generate_monthly_quittances(self) -> dict:
 async def _generate_quittances_async() -> dict:
     from app.core.database import AsyncSessionLocal
     from app.models.document_althy import DocumentAlthy
-    from app.models.locataire import Locataire
     from app.models.paiement import Paiement
     from sqlalchemy import and_, exists, select
 
@@ -361,7 +360,6 @@ def reverse_loyers(self) -> dict:
 
 async def _reverse_loyers_async() -> dict:
     from app.core.database import AsyncSessionLocal
-    from app.core.config import settings
     from sqlalchemy import text
 
     reversed_count = 0

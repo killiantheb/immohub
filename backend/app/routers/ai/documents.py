@@ -10,17 +10,19 @@ from typing import Annotated
 
 logger = logging.getLogger(__name__)
 
+from datetime import UTC
+
 from app.core.database import get_db
 from app.core.limiter import rate_limit
 from app.core.security import get_current_user
 from app.models.user import User
 from app.services.ai_service import (
+    draft_company_quote,
     draft_edl,
     draft_lease,
     draft_mission_report,
-    draft_company_quote,
-    explain_contract,
     draft_notification,
+    explain_contract,
     generate_property_recap,
 )
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -106,6 +108,7 @@ async def draft_lease_endpoint(
 ):
     """Generate a complete Swiss-law compliant lease. Owners and agencies only."""
     import uuid as _uuid_mod
+
     from app.models.bien import Bien
     from sqlalchemy import select as sa_sel
 
@@ -157,6 +160,7 @@ async def draft_edl_endpoint(
     `ai_service.draft_edl` (qui pilote le prompt Claude en EN).
     """
     import uuid as _uuid_mod
+
     from app.models.bien import Bien
     from sqlalchemy import select as sa_sel
 
@@ -222,6 +226,7 @@ async def mission_report_endpoint(
 ):
     """Generate a professional mission report for an opener."""
     import uuid as _uuid_mod
+
     from app.models.opener import Mission
     from sqlalchemy import select as sa_sel
 
@@ -261,8 +266,9 @@ async def draft_quote_endpoint(
 ):
     """AI-assisted quote draft for a company responding to an RFQ."""
     import uuid as _uuid_mod
-    from app.models.rfq import RFQ
+
     from app.models.company import Company
+    from app.models.rfq import RFQ
     from sqlalchemy import select as sa_sel
 
     if current_user.role not in ("artisan", "super_admin"):
@@ -311,6 +317,7 @@ async def explain_contract_endpoint(
 ):
     """Explain a lease contract in plain language for a tenant."""
     import uuid as _uuid_mod
+
     from app.models.contract import Contract
     from sqlalchemy import select as sa_sel
 
@@ -379,11 +386,13 @@ async def property_recap_endpoint(
 ):
     """Generate a complete property history recap (owner/agency only)."""
     import uuid as _uuid_mod
+
     from app.models.bien import Bien
     from app.models.contract import Contract
-    from app.models.transaction import Transaction as Txn
     from app.models.rfq import RFQ
-    from sqlalchemy import select as sa_sel, and_
+    from app.models.transaction import Transaction as Txn
+    from sqlalchemy import and_
+    from sqlalchemy import select as sa_sel
 
     if current_user.role not in ("proprio_solo", "agence", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Réservé aux propriétaires et agences")
@@ -451,16 +460,16 @@ async def generer_document(
     _=rate_limit(5, 60),
 ) -> GenererDocumentResponse:
     """Génère un document (bail, quittance, EDL, relance) via Claude, crée un PDF et le stocke."""
-    import io
+    from datetime import date, datetime
+
+    import httpx
     from anthropic import AsyncAnthropic
     from app.core.config import settings
     from app.models.bien import Bien
     from app.models.document_althy import DocumentAlthy
     from app.models.locataire import DossierLocataire, Locataire
-    from datetime import date, datetime, timezone
     from fpdf import FPDF
     from sqlalchemy import select as sa_sel
-    import httpx
 
     DOC_TYPES = {"bail", "quittance", "edl", "relance"}
     if payload.type not in DOC_TYPES:
@@ -499,7 +508,7 @@ async def generer_document(
 
         pdf_bytes = await render_edl_pdf(db, str(payload.changement_id), edl_param)
 
-        ts = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        ts = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
         storage_path = f"documents/edl/{payload.bien_id}/{ts}.pdf"
 
         async with httpx.AsyncClient(timeout=30.0) as http:
@@ -607,7 +616,7 @@ async def generer_document(
         pdf.multi_cell(0, 6, line if line else " ")
     pdf_bytes = pdf.output()
 
-    ts           = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    ts           = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
     storage_path = f"documents/{payload.type}/{payload.bien_id}/{ts}.pdf"
 
     async with httpx.AsyncClient(timeout=30.0) as http:
@@ -649,8 +658,9 @@ async def export_etat_locatif(
     year: int = 2025,
 ):
     """Export état locatif annuel au format CSV (fiduciaire suisse, UTF-8 BOM pour Excel)."""
-    import io
     import csv
+    import io
+
     from sqlalchemy import text as sa_text
 
     rows = (await db.execute(
@@ -728,6 +738,7 @@ async def export_etat_locatif_pdf(
 ):
     """Export état locatif annuel au format PDF (fpdf2)."""
     import io
+
     from fpdf import FPDF
     from sqlalchemy import text as sa_text
 
@@ -784,6 +795,7 @@ async def export_etat_locatif_xlsx(
 ):
     """Export état locatif annuel au format XLSX (openpyxl), compatible ERP suisse."""
     import io
+
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
     from sqlalchemy import text as sa_text
@@ -839,6 +851,7 @@ async def export_declaration_fiscale(
 ):
     """Génère un PDF de déclaration fiscale préremplie (revenus locatifs)."""
     import io
+
     from fpdf import FPDF
     from sqlalchemy import text as sa_text
 
@@ -928,6 +941,7 @@ async def export_rapport_gestion(
 ):
     """Rapport de gestion annuel — performances et rendements par bien."""
     import io
+
     from fpdf import FPDF
     from sqlalchemy import text as sa_text
 

@@ -291,6 +291,7 @@ async def classify_emails(
     Retourne la liste avec : sujet, expéditeur, bien_id proposé, catégorie, priorité.
     """
     import json as _json
+
     from anthropic import AsyncAnthropic
     from app.services.ai_service import _check_rate_limit, _log_usage
 

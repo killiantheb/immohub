@@ -3,11 +3,10 @@
 Expose un unique `router` (prefix `/ai`) qui regroupe les 3 sous-modules.
 URLs publiques inchangées : `/api/v1/ai/<endpoint>`.
 """
-from fastapi import APIRouter
-
 from app.routers.ai.documents import router as _documents_router
 from app.routers.ai.listings import router as _listings_router
 from app.routers.ai.scoring import router as _scoring_router
+from fastapi import APIRouter
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 router.include_router(_documents_router)

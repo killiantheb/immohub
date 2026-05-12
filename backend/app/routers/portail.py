@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import secrets
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 import anthropic
@@ -25,7 +25,7 @@ from app.models.base import Base
 from app.models.user import User
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, EmailStr
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Text, VARCHAR, func, select
+from sqlalchemy import VARCHAR, DateTime, ForeignKey, Index, Text, func, select
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
@@ -324,7 +324,7 @@ async def portail_view(token: uuid.UUID, db: DbDep):
 
     if inv.inv_status == "pending":
         inv.inv_status = "active"
-        inv.accepted_at = datetime.now(timezone.utc)
+        inv.accepted_at = datetime.now(UTC)
         await db.commit()
 
     bien_info = None

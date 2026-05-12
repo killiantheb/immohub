@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -15,7 +14,7 @@ class NotificationBase(BaseModel):
     titre: str
     message: str
     lu: bool = False
-    lien: Optional[str] = None
+    lien: str | None = None
 
 
 class NotificationCreate(NotificationBase):
@@ -23,7 +22,7 @@ class NotificationCreate(NotificationBase):
 
 
 class NotificationUpdate(BaseModel):
-    lu: Optional[bool] = None
+    lu: bool | None = None
 
 
 class NotificationRead(NotificationBase):

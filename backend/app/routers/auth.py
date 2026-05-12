@@ -4,6 +4,7 @@ from typing import Annotated
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.limiter import rate_limit
 from app.core.security import get_current_user
 from app.models.user import User
 from app.schemas.auth import (
@@ -16,7 +17,6 @@ from app.schemas.auth import (
     UserProfileResponse,
 )
 from app.services.auth_service import AuthService
-from app.core.limiter import rate_limit
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 

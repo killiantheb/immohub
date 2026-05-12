@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -16,11 +16,11 @@ DocumentTypeLiteral = Literal[
 
 
 class DocumentAlthyBase(BaseModel):
-    bien_id: Optional[uuid.UUID] = None
-    locataire_id: Optional[uuid.UUID] = None
+    bien_id: uuid.UUID | None = None
+    locataire_id: uuid.UUID | None = None
     type: DocumentTypeLiteral
     url_storage: str
-    date_document: Optional[date] = None
+    date_document: date | None = None
     genere_par_ia: bool = False
 
 
@@ -29,10 +29,10 @@ class DocumentAlthyCreate(DocumentAlthyBase):
 
 
 class DocumentAlthyUpdate(BaseModel):
-    type: Optional[DocumentTypeLiteral] = None
-    url_storage: Optional[str] = None
-    date_document: Optional[date] = None
-    genere_par_ia: Optional[bool] = None
+    type: DocumentTypeLiteral | None = None
+    url_storage: str | None = None
+    date_document: date | None = None
+    genere_par_ia: bool | None = None
 
 
 class DocumentAlthyRead(DocumentAlthyBase):

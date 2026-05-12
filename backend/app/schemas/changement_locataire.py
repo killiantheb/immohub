@@ -24,7 +24,6 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-
 # ── Enums (FR canonique projet, cf CLAUDE.md §3.12) ─────────────────────────
 EdlType = Literal["entree", "sortie"]
 EtatPiece = Literal["bon", "usure_normale", "degradation", ""]

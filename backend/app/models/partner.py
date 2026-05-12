@@ -31,7 +31,6 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-
 VERTICALS = (
     "insurance",
     "caution",
@@ -73,13 +72,13 @@ class Partner(BaseModel):
     contract_end_date: Mapped[date | None] = mapped_column(Date)
     exclusivity_region: Mapped[str | None] = mapped_column(String(64))
 
-    deals: Mapped[list["PartnerDeal"]] = relationship(
+    deals: Mapped[list[PartnerDeal]] = relationship(
         "PartnerDeal", back_populates="partner", cascade="all, delete-orphan"
     )
-    leads: Mapped[list["PartnerLead"]] = relationship(
+    leads: Mapped[list[PartnerLead]] = relationship(
         "PartnerLead", back_populates="partner"
     )
-    commissions: Mapped[list["PartnerCommission"]] = relationship(
+    commissions: Mapped[list[PartnerCommission]] = relationship(
         "PartnerCommission", back_populates="partner"
     )
 

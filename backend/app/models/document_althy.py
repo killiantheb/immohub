@@ -6,7 +6,7 @@ import uuid
 from datetime import date
 
 from app.models.base import BaseModel
-from sqlalchemy import Boolean, Date, Enum, ForeignKey, String, Text
+from sqlalchemy import Boolean, Date, Enum, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 

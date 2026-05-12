@@ -22,27 +22,37 @@ from app.routers.bien_annexes import router as bien_annexes_router
 from app.routers.bien_compteurs import router as bien_compteurs_router
 from app.routers.bien_contacts import router as bien_contacts_router
 from app.routers.bien_keys import router as bien_keys_router
+from app.routers.bien_messages import (
+    router as bien_messages_router,
+)
+from app.routers.bien_messages import (
+    unread_router as bien_messages_unread_router,
+)
 from app.routers.biens import router as biens_router
 from app.routers.biens_invitations import (
     preview_router as biens_invitations_preview_router,
+)
+from app.routers.biens_invitations import (
     revoke_router as biens_invitations_revoke_router,
+)
+from app.routers.biens_invitations import (
     router as biens_invitations_router,
-)
-from app.routers.bien_messages import (
-    router as bien_messages_router,
-    unread_router as bien_messages_unread_router,
-)
-from app.routers.document_dossier import (
-    document_router as dossier_document_router,
-    locataire_router as dossier_locataire_router,
 )
 from app.routers.catalogue import router as catalogue_router
 from app.routers.changements import (
     edl_photos_router as changements_edl_photos_router,
+)
+from app.routers.changements import (
     router as changements_router,
 )
 from app.routers.contact import router as contact_router
 from app.routers.crm import router as crm_router
+from app.routers.document_dossier import (
+    document_router as dossier_document_router,
+)
+from app.routers.document_dossier import (
+    locataire_router as dossier_locataire_router,
+)
 from app.routers.documents import router as documents_router
 from app.routers.documents_althy import router as docs_althy_router
 from app.routers.estimation import router as estimation_router

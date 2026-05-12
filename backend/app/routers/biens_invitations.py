@@ -27,7 +27,7 @@ from __future__ import annotations
 import logging
 import secrets
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any, Literal
 
 from app.core.config import settings
@@ -208,7 +208,7 @@ async def inviter_locataire(
     # ── Création nouvelle invitation ─────────────────────────────────────────
     token = secrets.token_urlsafe(32)
     invitation_id = uuid.uuid4()
-    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    expires_at = datetime.now(UTC) + timedelta(days=7)
 
     import json
 
@@ -416,7 +416,7 @@ async def list_invitations_bien(
         {"bid": str(bien_id)},
     )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     out: list[InvitationListItem] = []
     for r in rows:
         link_payload: dict = r.payload or {}
@@ -500,7 +500,7 @@ async def get_invitation_preview(
     link_payload: dict = rec.payload or {}
 
     # Statut binaire pour le frontend
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if rec.used:
         statut = "used"
     elif rec.expires_at < now:
@@ -588,7 +588,7 @@ async def revoke_invitation(
     import json
 
     link_payload: dict = dict(rec.payload or {})
-    link_payload["revoked_at"] = datetime.now(timezone.utc).isoformat()
+    link_payload["revoked_at"] = datetime.now(UTC).isoformat()
     link_payload["revoked_by"] = str(current_user.id)
 
     await db.execute(

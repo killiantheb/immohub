@@ -6,7 +6,7 @@ Scheduled daily by Celery Beat.
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, date, timedelta
+from datetime import date, timedelta
 
 from app.tasks.celery_app import celery_app
 from celery.utils.log import get_task_logger

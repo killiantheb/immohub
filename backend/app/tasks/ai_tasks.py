@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-import logging
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 
 from app.tasks.celery_app import celery_app
 from celery.utils.log import get_task_logger

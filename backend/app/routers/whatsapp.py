@@ -9,7 +9,7 @@ import hashlib
 import hmac
 import logging
 import uuid as _uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 import httpx
@@ -189,7 +189,7 @@ async def send_message(conv_id: str, payload: SendBody, current_user: AuthDep, d
 
     # ── Persist message with actual status ──
     msg_id = _uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     try:
         await db.execute(
             text("""
@@ -307,9 +307,9 @@ async def _handle_inbound_message(db: AsyncSession, value: dict, msg: dict) -> N
 
     timestamp = msg.get("timestamp")
     sent_at = (
-        datetime.fromtimestamp(int(timestamp), tz=timezone.utc)
+        datetime.fromtimestamp(int(timestamp), tz=UTC)
         if timestamp
-        else datetime.now(timezone.utc)
+        else datetime.now(UTC)
     )
 
     # Contact name from Meta payload

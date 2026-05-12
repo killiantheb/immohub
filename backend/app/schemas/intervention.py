@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -26,7 +26,7 @@ class InterventionPhotoRead(BaseModel):
 class InterventionBase(BaseModel):
     bien_id: uuid.UUID
     titre: str
-    description: Optional[str] = None
+    description: str | None = None
     categorie: Literal[
         "plomberie", "electricite", "menuiserie",
         "peinture", "serrurerie", "chauffage", "autre"
@@ -34,13 +34,13 @@ class InterventionBase(BaseModel):
     urgence: Literal["faible", "moderee", "urgente", "tres_urgente"] = "moderee"
     statut: Literal["nouveau", "en_cours", "planifie", "resolu"] = "nouveau"
     avancement: int = Field(default=0, ge=0, le=100)
-    date_signalement: Optional[date] = None
-    date_intervention: Optional[date] = None
-    cout: Optional[Decimal] = None
-    photos: Optional[list[str]] = None
-    artisan_id: Optional[uuid.UUID] = None
-    note_cloture: Optional[str] = None
-    closed_at: Optional[datetime] = None
+    date_signalement: date | None = None
+    date_intervention: date | None = None
+    cout: Decimal | None = None
+    photos: list[str] | None = None
+    artisan_id: uuid.UUID | None = None
+    note_cloture: str | None = None
+    closed_at: datetime | None = None
 
 
 class InterventionCreate(InterventionBase):
@@ -48,17 +48,17 @@ class InterventionCreate(InterventionBase):
 
 
 class InterventionUpdate(BaseModel):
-    titre: Optional[str] = None
-    description: Optional[str] = None
-    categorie: Optional[str] = None
-    urgence: Optional[str] = None
-    statut: Optional[Literal["nouveau", "en_cours", "planifie", "resolu"]] = None
-    avancement: Optional[int] = Field(default=None, ge=0, le=100)
-    date_intervention: Optional[date] = None
-    cout: Optional[Decimal] = None
-    photos: Optional[list[str]] = None
-    artisan_id: Optional[uuid.UUID] = None
-    note_cloture: Optional[str] = None
+    titre: str | None = None
+    description: str | None = None
+    categorie: str | None = None
+    urgence: str | None = None
+    statut: Literal["nouveau", "en_cours", "planifie", "resolu"] | None = None
+    avancement: int | None = Field(default=None, ge=0, le=100)
+    date_intervention: date | None = None
+    cout: Decimal | None = None
+    photos: list[str] | None = None
+    artisan_id: uuid.UUID | None = None
+    note_cloture: str | None = None
 
 
 class InterventionRead(InterventionBase):
@@ -76,10 +76,10 @@ class DevisBase(BaseModel):
     intervention_id: uuid.UUID
     artisan_id: uuid.UUID
     montant: Decimal
-    description: Optional[str] = None
+    description: str | None = None
     statut: Literal["en_attente", "accepte", "refuse"] = "en_attente"
-    date_envoi: Optional[date] = None
-    date_reponse: Optional[date] = None
+    date_envoi: date | None = None
+    date_reponse: date | None = None
 
 
 class DevisCreate(DevisBase):
@@ -87,10 +87,10 @@ class DevisCreate(DevisBase):
 
 
 class DevisUpdate(BaseModel):
-    montant: Optional[Decimal] = None
-    description: Optional[str] = None
-    statut: Optional[Literal["en_attente", "accepte", "refuse"]] = None
-    date_reponse: Optional[date] = None
+    montant: Decimal | None = None
+    description: str | None = None
+    statut: Literal["en_attente", "accepte", "refuse"] | None = None
+    date_reponse: date | None = None
 
 
 class DevisRead(DevisBase):

@@ -222,7 +222,8 @@ class ContractService:
 
     async def generate_pdf(self, contract_id: str, current_user: User) -> Response:
         from app.models.bien import BienImage
-        from sqlalchemy import select as _select, and_ as _and_
+        from sqlalchemy import and_ as _and_
+        from sqlalchemy import select as _select
 
         contract = await self._get_or_404(contract_id, current_user)
 
@@ -314,7 +315,9 @@ Signé le: {contract.signed_at.strftime("%d/%m/%Y %H:%M") if contract.signed_at 
     # ── Cover photo ───────────────────────────────────────────────────────────
     if cover_url:
         try:
-            import httpx as _httpx, io as _io
+            import io as _io
+
+            import httpx as _httpx
             r = _httpx.get(cover_url, timeout=5, follow_redirects=True)
             if r.status_code == 200:
                 img_bytes = _io.BytesIO(r.content)

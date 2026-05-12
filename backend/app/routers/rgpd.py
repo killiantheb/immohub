@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import csv
 import io
-import json
-import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,7 +31,7 @@ async def export_my_data(db: DbDep, user: AuthDep) -> JSONResponse:
     """
     uid = str(user.id)
     data: dict = {
-        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "exported_at": datetime.now(UTC).isoformat(),
         "user": {
             "id": uid,
             "email": user.email,
@@ -104,7 +102,7 @@ async def export_my_data(db: DbDep, user: AuthDep) -> JSONResponse:
     return JSONResponse(
         content=data,
         headers={
-            "Content-Disposition": f'attachment; filename="althy_export_{uid[:8]}_{datetime.now(timezone.utc).strftime("%Y%m%d")}.json"',
+            "Content-Disposition": f'attachment; filename="althy_export_{uid[:8]}_{datetime.now(UTC).strftime("%Y%m%d")}.json"',
             "Content-Type": "application/json; charset=utf-8",
         },
     )

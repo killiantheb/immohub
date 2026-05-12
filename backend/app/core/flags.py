@@ -19,9 +19,8 @@ Règle : missing env var → False (défaut sûr).
 Les routers webhook (stripe_webhooks, etc.) ne doivent JAMAIS être gatés
 sous peine de perte d'événements prod.
 """
-from fastapi import HTTPException, status
-
 from app.core.config import settings
+from fastapi import HTTPException, status
 
 
 def require_flag(flag_name: str):

@@ -14,7 +14,7 @@ from app.models.user import User
 from app.schemas.paiement import PaiementCreate, PaiementRead, PaiementUpdate
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import select, text
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 stripe.api_key = settings.STRIPE_SECRET_KEY

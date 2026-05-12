@@ -14,7 +14,6 @@ par police, et nécessite tests visuels sur tous les PDFs.
 """
 from __future__ import annotations
 
-
 # Caractères Unicode courants à remplacer pour la compatibilité latin-1.
 # Valable pour les polices core fpdf2 (Helvetica, Times, Courier).
 _REPLACEMENTS: dict[str, str] = {

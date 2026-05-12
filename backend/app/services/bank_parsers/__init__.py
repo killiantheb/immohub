@@ -15,8 +15,8 @@ Usage :
 """
 
 from .base import BankEntry, BankStatementParser, UnsupportedFormatError
-from .camt054 import Camt054Parser
 from .camt053 import Camt053Parser
+from .camt054 import Camt054Parser
 from .registry import get_parser, register_parser
 
 __all__ = [

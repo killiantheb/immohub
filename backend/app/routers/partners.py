@@ -13,19 +13,12 @@ Clé API chiffrée : encrypt/decrypt via SECRET_KEY (partner_service.encrypt_api
 """
 
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.database import get_db
 from app.core.security import get_current_user, require_roles
-from app.models.user import User
-from sqlalchemy import text
 from app.models.partner import (
     DEAL_TYPES,
     LEAD_STATUSES,
@@ -35,6 +28,7 @@ from app.models.partner import (
     PartnerDeal,
     PartnerLead,
 )
+from app.models.user import User
 from app.services.partner_service import (
     NoPartnerAvailable,
     PartnerConsentRequired,
@@ -42,7 +36,10 @@ from app.services.partner_service import (
     send_lead_to_partner,
     upsert_monthly_commission,
 )
-
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
+from sqlalchemy import func, select, text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 DbDep = Annotated[AsyncSession, Depends(get_db)]
@@ -518,7 +515,7 @@ async def update_lead_status(
     if not lead:
         raise HTTPException(404, "Lead introuvable")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     lead.status = body.status
     if body.status == "qualified" and not lead.qualified_at:
         lead.qualified_at = now
@@ -651,7 +648,7 @@ async def mark_invoiced(
     )).scalar_one_or_none()
     if not c:
         raise HTTPException(404, "Commission introuvable")
-    c.invoice_sent_at = datetime.now(timezone.utc)
+    c.invoice_sent_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(c)
     return _commission_to_read(c)
@@ -666,7 +663,7 @@ async def mark_paid(
     )).scalar_one_or_none()
     if not c:
         raise HTTPException(404, "Commission introuvable")
-    c.paid_at = datetime.now(timezone.utc)
+    c.paid_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(c)
     return _commission_to_read(c)

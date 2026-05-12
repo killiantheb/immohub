@@ -4,7 +4,7 @@ from __future__ import annotations
 import uuid
 
 from app.models.base import BaseModel
-from sqlalchemy import Boolean, Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, Index, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 

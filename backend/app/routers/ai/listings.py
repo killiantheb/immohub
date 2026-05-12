@@ -5,6 +5,7 @@ from __future__ import annotations
 import json as _json
 import re as _re
 import uuid as _uuid
+from datetime import UTC
 from typing import Annotated
 
 from app.common.enums import normalize_bien_statut, normalize_bien_type
@@ -14,7 +15,6 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.services.ai_service import generate_listing_description
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -153,6 +153,7 @@ async def generate_listing(
 ) -> GenerateListingResponse:
     """Generate an SEO property description via Claude."""
     import uuid
+
     from app.models.bien import Bien
     from sqlalchemy import select
 
@@ -270,8 +271,8 @@ async def import_property_file(
                 async with httpx.AsyncClient(timeout=5) as hclient:
                     resp = await hclient.head(logo_url)
                     if resp.status_code == 200:
-                        from sqlalchemy import select as sa_select
                         from app.models.user import User as UserModel
+                        from sqlalchemy import select as sa_select
                         result2 = await db.execute(sa_select(UserModel).where(UserModel.id == current_user.id))
                         user_row = result2.scalar_one_or_none()
                         if user_row and not user_row.avatar_url:
@@ -342,12 +343,15 @@ async def scan_facture(
     """Scan une facture (image JPEG/PNG/WEBP ou PDF) via Claude Vision."""
     import base64
     import io as _io
+    from datetime import date as _date
+    from datetime import datetime
+
     import httpx
-    from datetime import date as _date, datetime, timezone
     from anthropic import AsyncAnthropic
     from app.core.config import settings
     from app.models.bien import Bien
-    from sqlalchemy import select as sa_sel, text as sa_text
+    from sqlalchemy import select as sa_sel
+    from sqlalchemy import text as sa_text
 
     form      = await request.form()
     file      = form.get("file")
@@ -370,7 +374,7 @@ async def scan_facture(
     else:
         media_type = "pdf"
 
-    ts           = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    ts           = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
     storage_path = f"factures/{current_user.id}/{ts}_{filename}"
     public_url: str | None = None
 

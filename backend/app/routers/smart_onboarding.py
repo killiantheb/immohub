@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import List, Optional
 
-from app.services.smart_onboarding_service import deep_search, detect_profile_from_speech
 from app.core.limiter import rate_limit
+from app.services.smart_onboarding_service import deep_search, detect_profile_from_speech
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -20,12 +19,12 @@ class SpeechInput(BaseModel):
 class ManualInput(BaseModel):
     role: str
     name: str
-    website: Optional[str] = None
-    uid_number: Optional[str] = None
-    location: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    specialties: Optional[List[str]] = []
+    website: str | None = None
+    uid_number: str | None = None
+    location: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    specialties: list[str] | None = []
 
 
 SEARCH_MESSAGES = {
@@ -136,11 +135,12 @@ async def onboard_from_manual(data: ManualInput, _=rate_limit(5, 60)) -> Streami
 
 # ── Session endpoint (used by /bienvenue?auto=true) ───────────────────────────
 
+from typing import Annotated
+
+from app.core.database import get_db
 from fastapi import HTTPException
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import get_db
-from typing import Annotated
 
 _DbDep = Annotated[AsyncSession, Depends(get_db)]
 

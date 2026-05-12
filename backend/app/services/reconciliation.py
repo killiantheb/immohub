@@ -13,10 +13,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from app.services.bank_parsers import BankEntry, get_parser
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.services.bank_parsers import BankEntry, get_parser
 
 
 def parse_camt054(xml_bytes: bytes) -> list[dict]:

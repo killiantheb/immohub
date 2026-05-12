@@ -13,9 +13,8 @@ sur la table email_sequence_logs.
 from __future__ import annotations
 
 import asyncio
-import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import httpx
 from app.core.config import settings
@@ -710,7 +709,7 @@ async def _mark_sent(db, user_id: str, seq_key: str) -> None:
 async def _check_email_sequences_async() -> dict:
     from app.core.database import AsyncSessionLocal
 
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     sent_total = 0
     skipped_condition = 0
     errors = 0

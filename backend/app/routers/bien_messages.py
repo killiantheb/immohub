@@ -20,7 +20,7 @@ donné. 403 sinon. Pattern miroir de `_check_bien_ownership` dans
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from app.core.database import get_db
@@ -277,7 +277,7 @@ async def mark_thread_read(
     """Marque tous les messages reçus non-lus de ce thread comme lus."""
     await _resolve_thread_parties(db, bien_id, current_user)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     result = await db.execute(
         update(BienMessage)
         .where(
@@ -331,7 +331,7 @@ async def mark_message_read(
 
     if not msg.lu:
         msg.lu = True
-        msg.lu_at = datetime.now(timezone.utc)
+        msg.lu_at = datetime.now(UTC)
         await db.commit()  # §B.12
 
         # Recharge avec selectinload : db.refresh() peut expirer les relations

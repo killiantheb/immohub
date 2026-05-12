@@ -40,7 +40,7 @@ import uuid
 from collections import defaultdict
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 import anthropic
@@ -519,7 +519,7 @@ async def _check_monthly_quota(db: AsyncSession, user_id: str) -> bool:
     if user is None:
         return True
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     reset = user.monthly_ai_reset_date
     if reset is None or reset.year != now.year or reset.month != now.month:
         user.monthly_ai_tokens_used = 0

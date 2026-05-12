@@ -8,13 +8,12 @@ Limits:
 
 from __future__ import annotations
 
+from app.core.config import settings
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-
-from app.core.config import settings
+from slowapi.util import get_remote_address
 
 
 def _get_user_or_ip(request: Request) -> str:

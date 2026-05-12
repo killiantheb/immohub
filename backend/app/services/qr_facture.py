@@ -14,7 +14,6 @@ from app.core.config import settings
 from app.services._pdf_utils import sanitize_for_pdf as _s
 from fpdf import FPDF
 
-
 # ── Mod10 récursif (SIX Swiss QR-Referenz) ────────────────────────────────────
 
 _MOD10_TABLE = [0, 9, 4, 6, 8, 2, 7, 1, 3, 5]

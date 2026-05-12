@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated
 
 from app.core.database import get_db
@@ -61,7 +61,7 @@ async def create_scoring(
     data["score_global"] = _compute_global(
         data["ponctualite"], data["solvabilite"], data["communication"], data["etat_logement"]
     )
-    data["updated_at"] = datetime.now(timezone.utc)
+    data["updated_at"] = datetime.now(UTC)
     s = ScoringLocataire(**data)
     db.add(s)
     await db.flush()
@@ -87,7 +87,7 @@ async def update_scoring(
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(s, field, value)
     s.score_global = _compute_global(s.ponctualite, s.solvabilite, s.communication, s.etat_logement)
-    s.updated_at = datetime.now(timezone.utc)
+    s.updated_at = datetime.now(UTC)
     await db.flush()
     await db.refresh(s)
     return ScoringLocataireRead.model_validate(s)

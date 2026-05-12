@@ -5,10 +5,7 @@ Tests the AI estimation logic and document generation without calling the real A
 
 from __future__ import annotations
 
-import json
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 
 class TestAIEstimation:

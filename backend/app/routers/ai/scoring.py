@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json as _json
 import uuid as _uuid
+from datetime import UTC
 from typing import Annotated
 
 from app.core.database import get_db
@@ -161,12 +162,13 @@ async def scoring_locataire(
     _=rate_limit(20, 60),
 ) -> ScoringLocataireResponse:
     """Calcule le score d'un locataire, génère un résumé via Claude, sauvegarde."""
+    from datetime import datetime
+
     from anthropic import AsyncAnthropic
     from app.core.config import settings
     from app.models.locataire import DossierLocataire, Locataire
     from app.models.paiement import Paiement
     from app.models.scoring import ScoringLocataire
-    from datetime import datetime, timezone
     from sqlalchemy import select as sa_sel
 
     loc_res = await db.execute(sa_sel(Locataire).where(Locataire.id == payload.locataire_id))
@@ -243,14 +245,14 @@ async def scoring_locataire(
         scoring.etat_logement = etat_logement
         scoring.score_global  = score_global
         scoring.nb_retards    = nb_retards
-        scoring.updated_at    = datetime.now(timezone.utc)
+        scoring.updated_at    = datetime.now(UTC)
     else:
         scoring = ScoringLocataire(
             locataire_id=payload.locataire_id,
             ponctualite=round(ponctualite, 2), solvabilite=round(solvabilite, 2),
             communication=communication, etat_logement=etat_logement,
             score_global=score_global, nb_retards=nb_retards,
-            updated_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(UTC),
         )
         db.add(scoring)
 

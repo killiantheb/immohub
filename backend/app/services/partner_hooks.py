@@ -23,13 +23,12 @@ import logging
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.services.partner_service import (
     NoPartnerAvailable,
     PartnerConsentRequired,
     send_lead_to_partner,
 )
+from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
     from app.models.contract import Contract
@@ -66,7 +65,7 @@ async def _safe_send(
 # ── P1 : bail signé → assurance ──────────────────────────────────────────────
 
 
-async def on_contract_signed(db: AsyncSession, contract: "Contract") -> None:
+async def on_contract_signed(db: AsyncSession, contract: Contract) -> None:
     """P1 : propose couverture assurance au propriétaire juste après signature du bail.
 
     Le consentement doit avoir été donné AVANT la signature (checkbox RGPD).
@@ -149,7 +148,7 @@ async def on_signup_buy_intent(
 # ── P4 : bail terminé → déménageur ───────────────────────────────────────────
 
 
-async def on_contract_ended(db: AsyncSession, contract: "Contract") -> None:
+async def on_contract_ended(db: AsyncSession, contract: Contract) -> None:
     """P4 : bail qui se termine → proposer déménageur au locataire."""
     if not contract or not contract.tenant_id:
         return

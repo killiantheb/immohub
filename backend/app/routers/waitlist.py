@@ -13,11 +13,6 @@ import logging
 import uuid
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.core.database import get_db
 from app.core.rate_limit import limiter
 from app.core.security import require_roles
@@ -26,6 +21,10 @@ from app.services.resend_service import (
     get_or_create_audience_for_role,
     send_transactional,
 )
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel, EmailStr, Field
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger("althy.waitlist")
 router = APIRouter()

@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import mimetypes
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Final
 
 import httpx
@@ -53,7 +53,6 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-
 
 _BUCKET: Final[str] = "dossiers-locataires"
 _STORAGE_HEADERS: Final[dict[str, str]] = {
@@ -234,7 +233,7 @@ async def get_signed_url(storage_key: str, expires_in: int = 3600) -> tuple[str,
             "Supabase n'a pas retourné de signedURL",
         )
     url = f"{settings.SUPABASE_URL}/storage/v1{signed_path}"
-    expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+    expires_at = datetime.now(UTC) + timedelta(seconds=expires_in)
     return url, expires_at
 
 

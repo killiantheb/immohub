@@ -27,23 +27,24 @@ import base64
 import hashlib
 import logging
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from app.core.config import settings
-from cryptography.fernet import Fernet, InvalidToken
-from sqlalchemy import case, func, select, text
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.partner import Partner, PartnerCommission, PartnerDeal, PartnerLead
 
 # Import adaptateurs pour peupler le registre (side-effect register()).
-from app.services.partners import (  # noqa: F401
+from app.services.partners import (  # noqa: F401  # noqa: F401
     PartnerAdapter,
     adapters_for,
     get_adapter,
+    la_mobiliere,
+    raiffeisen,
+    swisscaution,
 )
-from app.services.partners import la_mobiliere, raiffeisen, swisscaution  # noqa: F401
-
-from app.models.partner import Partner, PartnerCommission, PartnerDeal, PartnerLead
+from cryptography.fernet import Fernet, InvalidToken
+from sqlalchemy import case, func, select, text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger("althy.partners")
 
@@ -179,7 +180,7 @@ async def send_lead_to_partner(
         vertical=vertical,
         lead_data=lead_data,
         status="sent",
-        sent_at=datetime.now(timezone.utc),
+        sent_at=datetime.now(UTC),
         consent_id=consent_id,
     )
     db.add(lead)

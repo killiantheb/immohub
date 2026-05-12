@@ -15,10 +15,9 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-
 
 # Types Literal (source unique côté Pydantic — doivent matcher
 # models/document_dossier.py:TYPE_DOCUMENT_POIDS keys).
@@ -44,8 +43,8 @@ class DocumentDossierUserMini(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    first_name: str | None = None
+    last_name: str | None = None
 
 
 # ── DocumentDossier ───────────────────────────────────────────────────────────
@@ -56,7 +55,7 @@ class DocumentDossierBase(BaseModel):
 
     type_document: TypeDocument
     est_equivalent: bool = False
-    equivalent_libelle: Optional[str] = Field(None, max_length=200)
+    equivalent_libelle: str | None = Field(None, max_length=200)
 
 
 class DocumentDossierRead(DocumentDossierBase):
@@ -72,17 +71,17 @@ class DocumentDossierRead(DocumentDossierBase):
     size_bytes: int
     statut: StatutDocument
     poids_progression: int
-    commentaire_rejet: Optional[str] = None
+    commentaire_rejet: str | None = None
     uploaded_by_user_id: uuid.UUID
-    uploaded_by: Optional[DocumentDossierUserMini] = None
-    valide_par_user_id: Optional[uuid.UUID] = None
-    valide_par: Optional[DocumentDossierUserMini] = None
-    valide_at: Optional[datetime] = None
-    ai_score_at: Optional[datetime] = None
-    ai_recommendation: Optional[Literal["approve", "review", "reject"]] = None
-    ai_details: Optional[dict[str, Any]] = None
+    uploaded_by: DocumentDossierUserMini | None = None
+    valide_par_user_id: uuid.UUID | None = None
+    valide_par: DocumentDossierUserMini | None = None
+    valide_at: datetime | None = None
+    ai_score_at: datetime | None = None
+    ai_recommendation: Literal["approve", "review", "reject"] | None = None
+    ai_details: dict[str, Any] | None = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
 
 class RejectDocumentRequest(BaseModel):
@@ -114,19 +113,19 @@ class RenseignementsUpdate(BaseModel):
     """
 
     # Emploi
-    employeur: Optional[str] = Field(None, max_length=200)
-    poste: Optional[str] = Field(None, max_length=200)
-    type_contrat: Optional[Literal["cdi", "cdd", "independant", "retraite", "autre"]] = None
-    salaire_net: Optional[Decimal] = Field(None, ge=0)
-    anciennete: Optional[int] = Field(None, ge=0, description="mois")
+    employeur: str | None = Field(None, max_length=200)
+    poste: str | None = Field(None, max_length=200)
+    type_contrat: Literal["cdi", "cdd", "independant", "retraite", "autre"] | None = None
+    salaire_net: Decimal | None = Field(None, ge=0)
+    anciennete: int | None = Field(None, ge=0, description="mois")
     # Assurance RC
-    assureur_rc: Optional[str] = Field(None, max_length=200)
-    numero_police: Optional[str] = Field(None, max_length=100)
-    validite_assurance: Optional[date] = None
+    assureur_rc: str | None = Field(None, max_length=200)
+    numero_police: str | None = Field(None, max_length=100)
+    validite_assurance: date | None = None
     # Poursuites
-    resultat_poursuites: Optional[str] = Field(None, max_length=100)
-    date_poursuites: Optional[date] = None
-    office_poursuites: Optional[str] = Field(None, max_length=200)
+    resultat_poursuites: str | None = Field(None, max_length=100)
+    date_poursuites: date | None = None
+    office_poursuites: str | None = Field(None, max_length=200)
 
 
 class LoyerCautionVersesRequest(BaseModel):
@@ -137,8 +136,8 @@ class LoyerCautionVersesRequest(BaseModel):
     le montant officiel reste sur `locataires.loyer` / `locataires.depot_garantie`).
     """
 
-    loyer_montant: Optional[Decimal] = Field(None, ge=0)
-    caution_montant: Optional[Decimal] = Field(None, ge=0)
+    loyer_montant: Decimal | None = Field(None, ge=0)
+    caution_montant: Decimal | None = Field(None, ge=0)
 
 
 class DossierMetaRead(BaseModel):
@@ -149,23 +148,23 @@ class DossierMetaRead(BaseModel):
     id: uuid.UUID
     locataire_id: uuid.UUID
     # Emploi + Assurance + Poursuites (lecture seule via cet endpoint)
-    employeur: Optional[str] = None
-    poste: Optional[str] = None
-    type_contrat: Optional[str] = None
-    salaire_net: Optional[Decimal] = None
-    anciennete: Optional[int] = None
-    assureur_rc: Optional[str] = None
-    numero_police: Optional[str] = None
-    validite_assurance: Optional[date] = None
-    resultat_poursuites: Optional[str] = None
-    date_poursuites: Optional[date] = None
-    office_poursuites: Optional[str] = None
+    employeur: str | None = None
+    poste: str | None = None
+    type_contrat: str | None = None
+    salaire_net: Decimal | None = None
+    anciennete: int | None = None
+    assureur_rc: str | None = None
+    numero_police: str | None = None
+    validite_assurance: date | None = None
+    resultat_poursuites: str | None = None
+    date_poursuites: date | None = None
+    office_poursuites: str | None = None
     # Étapes Phase 1.0
     renseignements_complets: bool
-    renseignements_completed_at: Optional[datetime] = None
+    renseignements_completed_at: datetime | None = None
     loyer_caution_verses: bool
-    loyer_caution_verses_at: Optional[datetime] = None
-    loyer_caution_verses_by: Optional[uuid.UUID] = None
+    loyer_caution_verses_at: datetime | None = None
+    loyer_caution_verses_by: uuid.UUID | None = None
     created_at: datetime
 
 
@@ -190,7 +189,7 @@ class DossierProgressionResponse(BaseModel):
     progression: int = Field(..., ge=0, le=100)
     renseignements_complets: bool
     loyer_caution_verses: bool
-    dossier: Optional[DossierMetaRead] = None
+    dossier: DossierMetaRead | None = None
     documents: list[DocumentDossierRead]
     breakdown: dict[str, TypeBreakdown]
 

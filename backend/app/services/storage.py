@@ -6,11 +6,8 @@ Bucket : "documents" (créé via migration SQL).
 
 from __future__ import annotations
 
-from datetime import datetime
-
 import httpx
 from app.core.config import settings
-
 
 _BUCKET = "documents"
 _TIMEOUT = 15
