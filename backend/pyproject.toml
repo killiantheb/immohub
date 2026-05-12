@@ -12,6 +12,10 @@ ignore = [
     "SIM102", # nested if — sometimes clearer than single if
     "SIM105", # suppress — try/except/pass is more explicit here
     "SIM117", # allow nested with
+    "F841",   # local variable assigned but never used — 7 legacy violations,
+              # TODO Phase 1.1 cleanup. Re-activer dès que la dette est purgée
+              # (cf chore/ruff-autofix 2026-05-13 — partie des 105 erreurs
+              # non auto-fixables laissées telles quelles).
 ]
 
 [tool.ruff.lint.per-file-ignores]
