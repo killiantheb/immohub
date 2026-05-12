@@ -772,20 +772,23 @@ async def _rejoindre_locataire(
             expected=201,
         )
     except HTTPException as exc:
-        # Email déjà inscrit côté Supabase → fetch user existant
-        if "already" in str(exc.detail).lower() or "422" in str(exc.detail):
-            async with httpx.AsyncClient(timeout=10) as client:
-                r = await client.get(
-                    f"{settings.SUPABASE_URL}/auth/v1/admin/users",
-                    headers=_SUPABASE_ADMIN_HEADERS,
-                    params={"email": email},
-                )
-            users = r.json().get("users", [])
-            if not users:
-                raise HTTPException(409, f"Email déjà utilisé côté Supabase : {email}")
-            supa = users[0]
-        else:
-            raise
+        # Email déjà inscrit côté Supabase Auth → on REJETTE l'invitation
+        # avec 409 explicite. Pas de fallback aveugle `users[0]` (cf
+        # bug-invitation-001 audit 2026-05-12 : le filtre GET ?email= était
+        # ignoré par GoTrue, ce qui réutilisait un user random et créait un
+        # mismatch users.email vs auth.users.email).
+        # Doctrine Phase 1.0 §4.7bis : 1 email = 1 compte = 1 rôle. Multi-
+        # rôles prévu Phase 1.1 post-migration Sunimmo.
+        if exc.status_code == 422:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"Cet email ({email}) a déjà un compte Althy. "
+                    "Pour l'utiliser comme locataire de ce bien, "
+                    "contactez le support althy.ch."
+                ),
+            )
+        raise
 
     supabase_uid = supa["id"]
     user_id_val = _uuid.UUID(supabase_uid)
