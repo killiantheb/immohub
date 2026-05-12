@@ -44,6 +44,22 @@ import { Card, Empty, Skel, btnP } from "@/app/app/(dashboard)/biens/[id]/_share
 
 interface Props {
   bienId: string;
+  /**
+   * Mode locataire (PR-3 Module Communication, 2026-05-13).
+   * Quand fourni → le composant inverse la perspective :
+   *   - Le destinataire est le bailleur (`bien.owner_id`), pas un locataire.
+   *   - Skip de `useLocataireActuel` (endpoint admin-only — 403 sinon).
+   *   - Empty states / header adaptés (« Votre bailleur » au lieu de « Locataire actif »).
+   * Les bulles restent symétriques automatiquement via `sender_user_id === currentUserId`.
+   *
+   * Quand absent → comportement historique bailleur (lookup locataire actif via hook).
+   */
+  locataireView?: {
+    /** Id du bailleur destinataire — à passer depuis `bien.owner_id` côté parent. */
+    recipientUserId: string;
+    /** Fallback affiché en header tant qu'aucun message n'a permis de récupérer le vrai nom. */
+    recipientFallbackName?: string;
+  };
 }
 
 // ── Helpers locaux (relative time + initiales) ────────────────────────────────
@@ -181,10 +197,14 @@ function MessageBubble({
 
 // ── Main component ───────────────────────────────────────────────────────────
 
-export function ConversationBien({ bienId }: Props) {
+export function ConversationBien({ bienId, locataireView }: Props) {
+  const isLocataireMode = Boolean(locataireView);
   const { data: profile } = useUser();
   const { data: bien, isLoading: loadingBien, error: bienError } = useBien(bienId);
-  const { data: locataire, isLoading: loadingLoc } = useLocataireActuel(bienId);
+  // Côté locataire on désactive le fetch (l'endpoint /locataires/ exige admin).
+  const { data: locataire, isLoading: loadingLoc } = useLocataireActuel(bienId, {
+    enabled: !isLocataireMode,
+  });
   const {
     messages,
     isLoading: loadingMsgs,
@@ -204,7 +224,9 @@ export function ConversationBien({ bienId }: Props) {
   const userScrolledUpRef = useRef(false);
 
   const currentUserId = profile?.id ?? null;
-  const recipientUserId = locataire?.user_id ?? null;
+  const recipientUserId = isLocataireMode
+    ? (locataireView?.recipientUserId ?? null)
+    : (locataire?.user_id ?? null);
 
   // ── Marquage lu automatique au montage ───────────────────────────────────
   // On déclenche markThreadRead() une seule fois quand les messages sont
@@ -346,8 +368,8 @@ export function ConversationBien({ bienId }: Props) {
     );
   }
 
-  // 3) Loading locataire
-  if (loadingLoc) {
+  // 3) Loading locataire (skip en mode locataire — pas de lookup admin)
+  if (!isLocataireMode && loadingLoc) {
     return (
       <Card>
         <Skel h={20} w="40%" />
@@ -357,8 +379,21 @@ export function ConversationBien({ bienId }: Props) {
     );
   }
 
-  // 4) Pas de locataire actif ou locataire pas encore lié à un user
-  if (!locataire || !recipientUserId) {
+  // 4a) Mode locataire — recipient bailleur manquant (§B.10 : honnête)
+  if (isLocataireMode && !recipientUserId) {
+    return (
+      <Card>
+        <Empty
+          icon={MessageSquare}
+          title="Aucun bailleur identifié"
+          sub="Ce bien n'a pas de propriétaire associé. Contactez le support althy.ch."
+        />
+      </Card>
+    );
+  }
+
+  // 4b) Mode bailleur — pas de locataire actif ou pas encore lié à un user
+  if (!isLocataireMode && (!locataire || !recipientUserId)) {
     return (
       <Card>
         <Empty
@@ -418,20 +453,28 @@ export function ConversationBien({ bienId }: Props) {
 
   // ── Render principal : header + zone scroll + input ──────────────────────
 
-  const locataireName = fullName(
-    locataire.user_id
-      ? // On préfère l'identité réelle si on en a une (via un message déjà
-        // reçu d'eux). Sinon fallback "Locataire #xxxx".
-        renderedMessages.find((m) => m.sender_user_id === recipientUserId)
-          ?.sender ?? null
-      : null,
-    `Locataire #${locataire.id.slice(0, 6)}`,
+  // Calcul nom + initiales du peer (locataire pour bailleur view, bailleur pour
+  // locataire view). Dans les 2 cas on tente d'extraire l'identité réelle depuis
+  // un message déjà reçu de cette personne ; sinon fallback contextuel.
+  const peerSenderMini = renderedMessages.find(
+    (m) => m.sender_user_id === recipientUserId,
+  )?.sender ?? null;
+
+  const peerName = isLocataireMode
+    ? fullName(peerSenderMini, locataireView?.recipientFallbackName ?? "Votre bailleur")
+    : fullName(
+        locataire?.user_id ? peerSenderMini : null,
+        `Locataire #${locataire?.id.slice(0, 6) ?? "?"}`,
+      );
+
+  const peerInitials = initialsFromUser(
+    peerSenderMini,
+    isLocataireMode ? "VB" : "L",
   );
-  const locataireInitials = initialsFromUser(
-    renderedMessages.find((m) => m.sender_user_id === recipientUserId)
-      ?.sender ?? null,
-    "L",
-  );
+
+  const peerSubtitle = isLocataireMode
+    ? `Propriétaire · ${bien.adresse}`
+    : `Locataire actif · ${bien.adresse}`;
 
   return (
     <Card style={{ padding: 0, display: "flex", flexDirection: "column", height: "calc(100vh - 280px)", minHeight: 480 }}>
@@ -463,15 +506,13 @@ export function ConversationBien({ bienId }: Props) {
             flexShrink: 0,
           }}
         >
-          {locataireInitials}
+          {peerInitials}
         </div>
         <div style={{ minWidth: 0 }}>
           <p style={{ fontSize: 14, fontWeight: 600, color: C.text }}>
-            {locataireName}
+            {peerName}
           </p>
-          <p style={{ fontSize: 11, color: C.text3 }}>
-            Locataire actif · {bien.adresse}
-          </p>
+          <p style={{ fontSize: 11, color: C.text3 }}>{peerSubtitle}</p>
         </div>
       </div>
 
@@ -491,8 +532,16 @@ export function ConversationBien({ bienId }: Props) {
           <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Empty
               icon={MessageSquare}
-              title="Démarrez la conversation"
-              sub={`Aucun message échangé avec ${locataireName} pour ce bien. Écrivez le premier message ci-dessous.`}
+              title={
+                isLocataireMode
+                  ? "Démarrez la conversation avec votre bailleur"
+                  : "Démarrez la conversation"
+              }
+              sub={
+                isLocataireMode
+                  ? `Aucun message échangé pour ce bien. Posez votre première question à ${peerName} ci-dessous.`
+                  : `Aucun message échangé avec ${peerName} pour ce bien. Écrivez le premier message ci-dessous.`
+              }
             />
           </div>
         ) : (
