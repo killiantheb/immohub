@@ -18,8 +18,9 @@
  */
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Home, FileText, Banknote, MessageSquare, MapPin } from "lucide-react";
+import { ArrowRight, Banknote, ClipboardCheck, FileText, Home, MapPin, MessageSquare } from "lucide-react";
 import { useBiensList } from "@/lib/hooks/useBiens";
 import { useRole } from "@/lib/hooks/useRole";
 import { ConversationBien } from "@/components/messagerie/ConversationBien";
@@ -153,6 +154,56 @@ export default function MonBienPage() {
         </div>
       </section>
 
+      {/* ── Section "Mon dossier" (PR Sprint 1B — Module Dossier Locataire) ── */}
+      <Link
+        href="/app/mon-bien/dossier"
+        style={{
+          display: "block",
+          textDecoration: "none",
+          background: C.surface,
+          border: `1px solid ${C.prussianBorder}`,
+          borderRadius: 12,
+          padding: 20,
+          boxShadow: C.shadow,
+          marginBottom: 16,
+          transition: "transform 0.15s, box-shadow 0.15s",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: C.prussianBg,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <ClipboardCheck size={22} style={{ color: C.prussian }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h3
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: 16,
+                fontWeight: 500,
+                color: C.text,
+                margin: "0 0 4px",
+              }}
+            >
+              Mon dossier locataire
+            </h3>
+            <p style={{ fontSize: 13, color: C.text2, lineHeight: 1.4, margin: 0 }}>
+              Complétez votre dossier pour recevoir vos clés. Documents requis, renseignements, cosignataires.
+            </p>
+          </div>
+          <ArrowRight size={18} style={{ color: C.prussian, flexShrink: 0 }} />
+        </div>
+      </Link>
+
       {/* ── Sections "à venir Sprint 1D" ─────────────────────────────────── */}
       <div
         style={{
@@ -170,11 +221,6 @@ export default function MonBienPage() {
           icon={Banknote}
           title="Mes paiements"
           description="L'historique de vos loyers et leur statut (payé/en attente) sera disponible Phase 1.1."
-        />
-        <ComingCard
-          icon={FileText}
-          title="Mes documents"
-          description="Vos quittances et autres documents seront accessibles ici."
         />
       </div>
 
