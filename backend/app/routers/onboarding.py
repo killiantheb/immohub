@@ -358,20 +358,19 @@ async def creer_compte(
             expected=201,
         )
     except HTTPException as exc:
-        # If user already exists, fetch existing
-        if "already" in str(exc.detail).lower() or "422" in str(exc.detail):
-            async with httpx.AsyncClient(timeout=10) as client:
-                r = await client.get(
-                    f"{settings.SUPABASE_URL}/auth/v1/admin/users",
-                    headers=_SUPABASE_ADMIN_HEADERS,
-                    params={"email": email},
-                )
-            users = r.json().get("users", [])
-            if not users:
-                raise HTTPException(409, f"Email déjà utilisé : {email}")
-            supa = users[0]
-        else:
-            raise
+        # Email déjà inscrit côté Supabase Auth → rejet 409. Pas de fallback
+        # users[0] aveugle (cf bug-invitation-001 audit 2026-05-12 — le
+        # param ?email= était ignoré par GoTrue et users[0] retournait un
+        # user random). Doctrine Phase 1.0 §4.7bis : 1 email = 1 compte.
+        if exc.status_code == 422:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"Cet email ({email}) a déjà un compte Althy. "
+                    "Contactez le support althy.ch pour activer votre accès."
+                ),
+            )
+        raise
 
     supabase_uid = supa["id"]
 
