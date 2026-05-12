@@ -1094,7 +1094,13 @@ class BienService:
         )
 
         try:
-            client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+            # Sprint B perf (2026-05-12) : timeout 15 s pour éviter le cas
+            # pathologique 57 s observé en HAR. Au pire, l'utilisateur tombe
+            # sur le fallback générique ci-dessous — §B.10 honnête.
+            client = AsyncAnthropic(
+                api_key=settings.ANTHROPIC_API_KEY,
+                timeout=15.0,
+            )
             response = await client.messages.create(
                 model=settings.ANTHROPIC_MODEL_DEFAULT,
                 max_tokens=600,
