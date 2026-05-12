@@ -101,3 +101,34 @@ class DossierLocataire(BaseModel):
     loyer_caution_verses_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )
+
+    # ── Module Proposition de dates (Sprint 4B — migration 0046) ─────────────
+    # Dates + préférences saisies par le locataire dans son espace dossier.
+    # Workflow back-and-forth bailleur ↔ locataire plafonné à 4 tours via
+    # proposition_count + CHECK statut_proposition (cf migration 0046).
+    date_entree_souhaitee: Mapped[date | None] = mapped_column(Date)
+    duree_envisagee: Mapped[str | None] = mapped_column(String(20))
+    preferences: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default="{}"
+    )
+    commentaire_locataire: Mapped[str | None] = mapped_column(Text)
+
+    # Workflow state — values enforced by CHECK constraint (cf migration 0046).
+    statut_proposition: Mapped[str] = mapped_column(
+        String(40), nullable=False, default="non_propose", server_default="non_propose"
+    )
+    proposition_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+
+    # Réponse bailleur (contre-proposition).
+    date_contre_proposee_bailleur: Mapped[date | None] = mapped_column(Date)
+    commentaire_bailleur: Mapped[str | None] = mapped_column(Text)
+
+    # Final state — un seul des deux est non-NULL après transition terminale.
+    motif_refus: Mapped[str | None] = mapped_column(Text)
+    date_accord: Mapped[date | None] = mapped_column(Date)
+
+    # Tracking dernière action.
+    last_proposed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_proposed_by: Mapped[str | None] = mapped_column(String(20))
