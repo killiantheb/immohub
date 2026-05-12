@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { Home, FileText, Banknote, MessageSquare, MapPin } from "lucide-react";
 import { useBiensList } from "@/lib/hooks/useBiens";
 import { useRole } from "@/lib/hooks/useRole";
+import { ConversationBien } from "@/components/messagerie/ConversationBien";
 import { C } from "@/lib/design-tokens";
 
 export default function MonBienPage() {
@@ -175,12 +176,40 @@ export default function MonBienPage() {
           title="Mes documents"
           description="Vos quittances et autres documents seront accessibles ici."
         />
-        <ComingCard
-          icon={MessageSquare}
-          title="Messagerie"
-          description="Un canal direct avec votre bailleur sera ouvert prochainement."
-        />
       </div>
+
+      {/* ── Messagerie 1:1 bailleur ↔ locataire (§4.13 Phase 1.0) ────────── */}
+      <section
+        aria-label="Messagerie avec votre bailleur"
+        style={{ marginTop: 24 }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 12,
+          }}
+        >
+          <MessageSquare size={16} style={{ color: C.prussian }} />
+          <h2
+            style={{
+              fontFamily: "var(--font-serif)",
+              fontSize: 18,
+              fontWeight: 500,
+              color: C.text,
+              margin: 0,
+              letterSpacing: "0.01em",
+            }}
+          >
+            Messagerie
+          </h2>
+        </div>
+        <ConversationBien
+          bienId={bien.id}
+          locataireView={{ recipientUserId: bien.owner_id }}
+        />
+      </section>
 
       <p
         style={{
@@ -191,8 +220,7 @@ export default function MonBienPage() {
           lineHeight: 1.5,
         }}
       >
-        Phase 1.0 — votre espace s&apos;enrichira progressivement. Pour toute question,
-        contactez votre bailleur directement.
+        Phase 1.0 — votre espace s&apos;enrichira progressivement.
       </p>
     </div>
   );
