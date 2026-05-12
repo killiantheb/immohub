@@ -52,6 +52,9 @@ export interface Locataire {
   motif_depart?: string | null;
   note_interne?: string | null;
   created_at: string;
+  /** Cosignataires (Sprint 1A.5 — couple/famille sans refacto multi-comptes).
+   *  Vide par défaut pour les locataires créés avant migration 0042. */
+  cosignataires?: import("@/lib/api/dossier-documents").CosignataireBase[];
 }
 
 export interface DossierLocataire {
