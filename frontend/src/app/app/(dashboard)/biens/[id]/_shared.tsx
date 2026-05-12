@@ -1044,9 +1044,41 @@ export function TabPotentielIA({ bienId }: { bienId: string }) {
   if (error || !data) return <EstimationError onRetry={refetch} isFetching={isFetching} />;
 
   const estim: EstimationIAEnrichie = data;
+  // Sprint 4A (2026-05-12) — Phase 1.0 doctrine "IA = enrichissement, pas
+  // béquille". Quand le backend retourne `model_used="fallback-static"` (API
+  // Claude KO ou parsing échoué), on n'affiche QUE les calculs déterministes
+  // (valeur × multiplicateur marché, moyennes canton). Les blocs orientés
+  // "analyse IA" (Recommandations IA, Scores investissement/locatif/revente)
+  // sont cachés pour ne pas afficher de chiffres random génériques sous
+  // couvert d'IA. Banner honnête en tête.
+  const isFallback = estim.model_used === "fallback-static";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {isFallback && (
+        <div
+          role="status"
+          style={{
+            borderRadius: 10,
+            border: `1px solid ${C.gold}`,
+            background: C.goldBg,
+            padding: "10px 14px",
+            display: "flex",
+            gap: 8,
+            alignItems: "flex-start",
+          }}
+        >
+          <AlertTriangle size={16} style={{ color: C.gold, flexShrink: 0, marginTop: 2 }} />
+          <p style={{ fontSize: 12, color: C.text2, margin: 0, lineHeight: 1.5 }}>
+            <strong>Analyse IA temporairement indisponible.</strong> Les données
+            ci-dessous sont des estimations génériques calculées à partir des
+            multiplicateurs marché Suisse romand (loyer × 200–260, moyennes
+            cantonales). Les blocs « Recommandations IA » et « Scores » seront
+            réaffichés au retour de l&apos;analyse Claude.
+          </p>
+        </div>
+      )}
+
       {/* Disclaimer LSFin permanent */}
       <div
         style={{
@@ -1228,7 +1260,8 @@ export function TabPotentielIA({ bienId }: { bienId: string }) {
         </div>
       </ExpandableSection>
 
-      {/* SECTION 5 — RECOMMANDATIONS */}
+      {/* SECTION 5 — RECOMMANDATIONS (cachée en fallback — Phase 1.0) */}
+      {!isFallback && (
       <ExpandableSection
         title="Recommandations IA"
         icon={Lightbulb}
@@ -1276,8 +1309,10 @@ export function TabPotentielIA({ bienId }: { bienId: string }) {
           </div>
         </div>
       </ExpandableSection>
+      )}
 
-      {/* SECTION 6 — SCORES */}
+      {/* SECTION 6 — SCORES (cachée en fallback — Phase 1.0) */}
+      {!isFallback && (
       <ExpandableSection
         title="Scores"
         icon={Award}
@@ -1297,6 +1332,7 @@ export function TabPotentielIA({ bienId }: { bienId: string }) {
           <ScoreCard label="Revente" score={estim.score_revente} />
         </div>
       </ExpandableSection>
+      )}
 
       {/* META FOOTER */}
       <p
@@ -1307,7 +1343,10 @@ export function TabPotentielIA({ bienId }: { bienId: string }) {
           margin: "4px 0 0",
         }}
       >
-        Généré par {estim.model_used} · Dernière analyse :{" "}
+        {isFallback
+          ? "Calcul déterministe (analyse IA indisponible)"
+          : `Généré par ${estim.model_used}`}{" "}
+        · Dernière analyse :{" "}
         {new Date(estim.generated_at).toLocaleString("fr-CH")} ·{" "}
         <button
           type="button"
@@ -1324,7 +1363,7 @@ export function TabPotentielIA({ bienId }: { bienId: string }) {
             padding: 0,
           }}
         >
-          {isFetching ? "Régénération…" : "Régénérer"}
+          {isFetching ? "Régénération…" : "Réessayer l'analyse"}
         </button>
       </p>
     </div>
