@@ -52,7 +52,7 @@ from app.schemas.document_dossier import (
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 _BUCKET: Final[str] = "dossiers-locataires"
 _STORAGE_HEADERS: Final[dict[str, str]] = {
@@ -432,25 +432,33 @@ async def compute_progression(
       → max 100
 
     Le résultat n'est PAS persisté (calculé à la volée à chaque GET).
+
+    Perf (Sprint perf quick-wins 2026-05-12) :
+      - joinedload sur uploaded_by + valide_par → 1 round-trip SQL (LEFT JOIN)
+        au lieu de 3 round-trips (selectinload : 1 principal + 2 par relation).
+        Acceptable car ≤ 20 docs/locataire et 2 LEFT JOIN sur table users.
+      - Note : asyncio.gather sur la même AsyncSession ne parallélise pas
+        (asyncpg sérialise sur 1 connexion). Garder séquentiel pour ne pas
+        risquer un greenlet issue.
     """
-    # 1. Charger les documents avec relations user mini
-    rows = await db.execute(
+    # 1. Documents + relations user mini (joinedload — 1 round-trip)
+    docs_result = await db.execute(
         select(DocumentDossier)
         .options(
-            selectinload(DocumentDossier.uploaded_by),
-            selectinload(DocumentDossier.valide_par),
+            joinedload(DocumentDossier.uploaded_by),
+            joinedload(DocumentDossier.valide_par),
         )
         .where(DocumentDossier.locataire_id == locataire_id)
         .order_by(DocumentDossier.created_at.desc())
     )
-    documents = list(rows.scalars())
+    # unique() requis avec joinedload pour collapser les rows dupliquées par JOIN
+    documents = list(docs_result.unique().scalars())
 
-    # 2. Charger le DossierLocataire (1:1, peut ne pas exister Phase 1.0 si
-    #    le bailleur n'a pas encore créé la fiche dossier)
-    dossier_row = await db.execute(
+    # 2. DossierLocataire (1:1, peut ne pas exister si renseignements pas saisis)
+    dossier_result = await db.execute(
         select(DossierLocataire).where(DossierLocataire.locataire_id == locataire_id)
     )
-    dossier = dossier_row.scalar_one_or_none()
+    dossier = dossier_result.scalar_one_or_none()
 
     renseignements_complets = bool(dossier and dossier.renseignements_complets)
     loyer_caution_verses = bool(dossier and dossier.loyer_caution_verses)
