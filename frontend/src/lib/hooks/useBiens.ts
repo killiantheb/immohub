@@ -627,7 +627,11 @@ export function useGenerateBienDescription(bienId: string) {
 
 // ── Locataires ────────────────────────────────────────────────────────────────
 
-export function useLocataires(bienId: string, statut?: LocataireStatut) {
+export function useLocataires(
+  bienId: string,
+  statut?: LocataireStatut,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: bienKeys.locataires(bienId, statut),
     queryFn: async () => {
@@ -636,13 +640,19 @@ export function useLocataires(bienId: string, statut?: LocataireStatut) {
       const { data } = await api.get<Locataire[]>("/locataires/", { params });
       return data;
     },
-    enabled: Boolean(bienId),
+    enabled: Boolean(bienId) && options?.enabled !== false,
     staleTime: 30_000,
   });
 }
 
-export function useLocataireActuel(bienId: string) {
-  const q = useLocataires(bienId, "actif");
+// `options.enabled = false` permet d'éviter l'appel côté locataire (l'endpoint
+// /locataires/ exige admin — cf bien_messages PR-3 2026-05-13 intégration
+// messagerie /app/mon-bien).
+export function useLocataireActuel(
+  bienId: string,
+  options?: { enabled?: boolean },
+) {
+  const q = useLocataires(bienId, "actif", options);
   return { ...q, data: q.data?.[0] ?? null };
 }
 
