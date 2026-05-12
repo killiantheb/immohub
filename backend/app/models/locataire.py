@@ -5,9 +5,11 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 
+from typing import Any
+
 from app.models.base import BaseModel
 from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 LocataireStatut = Enum("actif", "sorti", name="locataire_statut_enum")
@@ -40,6 +42,16 @@ class Locataire(BaseModel):
     )
     motif_depart: Mapped[str | None] = mapped_column(String(300))
     note_interne: Mapped[str | None] = mapped_column(Text)
+
+    # ── Cosignataires (Sprint 1A.5 — migration 0042) ─────────────────────────
+    # Array JSONB d'objets {type, prenom, nom, date_naissance, signature_requise,
+    # lien_filial}. Conjoint cosigne le bail, enfants = occupants déclarés.
+    # Couvre Solo (vide) + Couple + Famille = ~95% Sunimmo. Colocation N comptes
+    # = Phase 1.1 (refacto séparé). Validation structure côté Pydantic
+    # (schemas/locataire.py:CosignataireBase).
+    cosignataires: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=False, default=list, server_default="[]"
+    )
 
     # Relations Phase 1.0 — documents dossier (1:N, cascade DELETE).
     # Type forward-ref pour éviter l'import circulaire avec models/document_dossier.py.
