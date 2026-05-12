@@ -20,6 +20,12 @@ import { useEstimationEnrichie } from "@/lib/hooks/useDashboardData";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { C } from "@/lib/design-tokens";
+import {
+  TYPO_BADGE,
+  TYPO_CAPTION,
+  TYPO_LABEL_MEDIUM,
+  TYPO_LABEL_SMALL,
+} from "@/lib/typography";
 import { bienLinks } from "@/lib/bien-links";
 import type {
   EstimationIAEnrichie,
@@ -54,7 +60,7 @@ export function initials(str?: string | null) {
 // ── Atoms ──────────────────────────────────────────────────────────────────────
 export function Badge({ label, color, bg }: { label: string; color: string; bg: string }) {
   return (
-    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 20, color, background: bg, whiteSpace: "nowrap" }}>
+    <span style={{ ...TYPO_BADGE, color, background: bg }}>
       {label}
     </span>
   );
@@ -195,18 +201,18 @@ export function BienHeader({ bienId }: { bienId: string }) {
             { label: "Charges", val: bien.charges },
           ].filter(m => m.val != null).map(m => (
             <div key={m.label} style={{ textAlign: "center" }}>
-              <p style={{ fontSize: 10, color: C.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>{m.label}</p>
-              <p style={{ fontSize: 18, fontWeight: 700, color: C.text }}>{fmtCHF(m.val)}</p>
-              <p style={{ fontSize: 10, color: C.text3 }}>/ mois</p>
+              <p style={{ ...TYPO_LABEL_SMALL, color: C.text2, margin: 0 }}>{m.label}</p>
+              <p style={{ fontSize: 18, fontWeight: 700, color: C.text, margin: "2px 0" }}>{fmtCHF(m.val)}</p>
+              <p style={{ ...TYPO_CAPTION, color: C.text2, margin: 0 }}>/ mois</p>
             </div>
           ))}
           {bien.loyer && bien.loyer > 0 && (
             <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: 10, color: C.text3, textTransform: "uppercase", letterSpacing: "0.06em" }}>Rendement</p>
-              <p style={{ fontSize: 18, fontWeight: 700, color: C.green }}>
+              <p style={{ ...TYPO_LABEL_SMALL, color: C.text2, margin: 0 }}>Rendement</p>
+              <p style={{ fontSize: 18, fontWeight: 700, color: C.green, margin: "2px 0" }}>
                 {(((bien.loyer - (bien.charges ?? 0)) * 12) / (bien.loyer * 266.67) * 100).toFixed(1)}%
               </p>
-              <p style={{ fontSize: 10, color: C.text3 }}>brut estimé</p>
+              <p style={{ ...TYPO_CAPTION, color: C.text2, margin: 0 }}>brut estimé</p>
             </div>
           )}
         </div>
@@ -284,7 +290,7 @@ export function TabLocataire({ bienId }: { bienId: string }) {
     <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(270px, 1fr))" }}>
       {/* Contact & bail */}
       <Card>
-        <p style={{ fontSize: 11, fontWeight: 700, color: C.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "1rem" }}>Contact & bail</p>
+        <p style={{ ...TYPO_LABEL_MEDIUM, color: C.text2, margin: "0 0 1rem" }}>Contact &amp; bail</p>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "1rem" }}>
           <div style={{ width: 44, height: 44, borderRadius: "50%", background: C.prussianBg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: C.prussian }}>
             {initials(locataire.id)}
@@ -336,7 +342,7 @@ export function TabLocataire({ bienId }: { bienId: string }) {
 
       {/* Paiement du mois */}
       <Card>
-        <p style={{ fontSize: 11, fontWeight: 700, color: C.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "1rem" }}>
+        <p style={{ ...TYPO_LABEL_MEDIUM, color: C.text2, margin: "0 0 1rem" }}>
           Paiement · {fmtMois(moisCourant)}
         </p>
         {ps && pMois ? (
@@ -363,7 +369,7 @@ export function TabLocataire({ bienId }: { bienId: string }) {
 
       {/* Scoring IA */}
       <Card>
-        <p style={{ fontSize: 11, fontWeight: 700, color: C.text3, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "1rem" }}>
+        <p style={{ ...TYPO_LABEL_MEDIUM, color: C.text2, margin: "0 0 1rem" }}>
           Scoring IA
         </p>
         {loadScore ? <Skel h={140} /> : scoring ? (
@@ -466,7 +472,7 @@ export function TabDocuments({ bienId }: { bienId: string }) {
         ? <Empty icon={FileText} title="Aucun document" sub="Déposez ou générez vos premiers documents." />
         : Object.entries(grouped).map(([type, items]) => (
           <div key={type} style={{ marginBottom: "1.25rem" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: C.text3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+            <p style={{ ...TYPO_LABEL_MEDIUM, color: C.text2, margin: "0 0 8px" }}>
               {DOC_LABELS[type] ?? type}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
