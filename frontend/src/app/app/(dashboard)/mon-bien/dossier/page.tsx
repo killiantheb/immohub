@@ -21,7 +21,16 @@
  */
 
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowLeft, CheckCircle2, Clock, FileSignature } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CheckCircle2,
+  Clock,
+  Eye,
+  FileSignature,
+  KeyRound,
+  PartyPopper,
+} from "lucide-react";
 
 import { CosignatairesForm } from "@/components/dossier/CosignatairesForm";
 import { DocumentTypeCard } from "@/components/dossier/DocumentTypeCard";
@@ -130,6 +139,35 @@ export default function MonDossierPage() {
         Retour à mon bien
       </button>
 
+      {/* ── Banner 100% (Sprint 3 : dossier complet, locataire officiel) ────── */}
+      {dossier.progression === 100 && (
+        <div
+          role="status"
+          style={{
+            display: "flex",
+            gap: 14,
+            padding: "18px 22px",
+            background: C.greenBg,
+            border: `1px solid ${C.green}`,
+            borderRadius: 14,
+            marginBottom: 20,
+            boxShadow: C.shadow,
+          }}
+        >
+          <PartyPopper size={26} style={{ color: C.green, flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <p style={{ fontSize: 16, fontWeight: 700, color: C.green, margin: "0 0 4px" }}>
+              Félicitations ! Votre dossier est complet à 100%.
+            </p>
+            <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.5 }}>
+              <KeyRound size={13} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />
+              Vous êtes officiellement locataire. Votre bailleur vous remettra
+              les clés très prochainement.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ── Banner warning si < 100% (Sprint 1B.1 : 100% strict) ────────────── */}
       {dossier.progression < 100 && (
         <div
@@ -192,14 +230,30 @@ export default function MonDossierPage() {
         ))}
       </div>
 
-      {/* ── Étape 9 : Bail signé (read-only Sprint 1B, géré Sprint 3) ────────── */}
+      {/* ── Étape 9 : Bail signé (uploadé par le bailleur Sprint 3) ──────────── */}
       <SectionTitle index={9} title="Bail signé" weight={10} />
-      <ReadOnlyStepCard
-        icon={FileSignature}
-        title="En attente de votre bailleur"
-        message="Une fois votre dossier validé, votre bailleur déposera ici le bail signé. Sprint 3 ajoutera la signature électronique."
-        documents={docsOfType("bail_signe")}
-      />
+      {(() => {
+        const bailDocs = docsOfType("bail_signe");
+        const hasBail = bailDocs.length > 0;
+        return (
+          <ReadOnlyStepCard
+            icon={FileSignature}
+            ok={hasBail}
+            title={
+              hasBail
+                ? "Bail signé disponible"
+                : "En attente du bail signé par votre bailleur"
+            }
+            message={
+              hasBail
+                ? "Votre bailleur a déposé le bail signé. Vous pouvez le consulter et le télécharger ci-dessous."
+                : "Une fois votre dossier complété, votre bailleur déposera ici le bail signé. Vous serez notifié."
+            }
+            documents={bailDocs}
+            onOpenDocument={(docId) => open.mutateAsync(docId)}
+          />
+        );
+      })()}
 
       {/* ── Étape 10 : Versement loyer + caution (read-only) ─────────────────── */}
       <SectionTitle index={10} title="Versement loyer + caution" weight={5} />
@@ -212,7 +266,11 @@ export default function MonDossierPage() {
         }
         message={
           dossier.loyer_caution_verses
-            ? "Votre bailleur a confirmé la réception du premier loyer et de la caution."
+            ? dossier.dossier?.loyer_caution_verses_at
+              ? `Votre bailleur a confirmé la réception le ${new Date(
+                  dossier.dossier.loyer_caution_verses_at,
+                ).toLocaleDateString("fr-CH")}.`
+              : "Votre bailleur a confirmé la réception du premier loyer et de la caution."
             : "Cette étape sera marquée par votre bailleur après réception du premier loyer et de la caution."
         }
         ok={dossier.loyer_caution_verses}
@@ -332,12 +390,14 @@ function ReadOnlyStepCard({
   message,
   ok = false,
   documents,
+  onOpenDocument,
 }: {
   icon: React.ElementType;
   title: string;
   message: string;
   ok?: boolean;
   documents?: { id: string; filename_original: string; created_at: string }[];
+  onOpenDocument?: (documentId: string) => Promise<unknown> | void;
 }) {
   const accentColor = ok ? C.green : C.text3;
   return (
@@ -384,20 +444,50 @@ function ReadOnlyStepCard({
         </p>
         <p style={{ fontSize: 13, color: C.text2, lineHeight: 1.5, margin: 0 }}>{message}</p>
         {documents && documents.length > 0 && (
-          <ul style={{ margin: "10px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
+          <ul style={{ margin: "10px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
             {documents.map((d) => (
               <li
                 key={d.id}
                 style={{
                   fontSize: 12,
                   color: C.text2,
-                  padding: "6px 10px",
+                  padding: "8px 12px",
                   background: C.surface2,
                   borderRadius: 8,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  flexWrap: "wrap",
                 }}
               >
-                {d.filename_original} ·{" "}
-                {new Date(d.created_at).toLocaleDateString("fr-CH")}
+                <span style={{ minWidth: 0, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {d.filename_original} ·{" "}
+                  {new Date(d.created_at).toLocaleDateString("fr-CH")}
+                </span>
+                {onOpenDocument && (
+                  <button
+                    type="button"
+                    onClick={() => void onOpenDocument(d.id)}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "5px 10px",
+                      borderRadius: 6,
+                      border: `1px solid ${C.border}`,
+                      background: C.surface,
+                      color: C.text2,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    <Eye size={12} />
+                    Voir le bail
+                  </button>
+                )}
               </li>
             ))}
           </ul>
