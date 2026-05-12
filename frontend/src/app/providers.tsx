@@ -14,6 +14,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
           queries: {
             staleTime: 60 * 1000,
             retry: 1,
+            // Sprint perf quick-wins (2026-05-12) : désactivation des refetch
+            // automatiques par défaut. L'audit HAR a révélé 3× refetch en 60s
+            // sur le même endpoint dossier (3-5s wait serveur × 3 = 9-15s
+            // de wait inutile côté locataire). Les hooks qui NEED un polling
+            // doivent l'opt-in explicitement via `refetchInterval` (ex:
+            // useMessages PR-3 messagerie qui poll 15s).
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
+            refetchOnMount: false,
           },
         },
       }),

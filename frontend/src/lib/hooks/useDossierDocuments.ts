@@ -45,7 +45,14 @@ export function useMyLocataire() {
   return useQuery({
     queryKey: dossierKeys.me(),
     queryFn: getMyLocataire,
+    // Sprint perf quick-wins (2026-05-12) : staleTime 60s + désactiver les
+    // refetch automatiques (focus/mount/reconnect). Le locataire d'un user
+    // ne change quasi-jamais ; les invalidations explicites suffisent
+    // (signup → invalidate ; admin re-link → invalidate manuel).
     staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
     retry: (count, err) => {
       // 404 = pas de locataire actif (cas pré-invitation) — pas de retry.
       const status = (err as { response?: { status?: number } })?.response?.status;
@@ -59,13 +66,21 @@ export function useMyLocataire() {
 // ── Documents + progression ───────────────────────────────────────────────────
 
 
-/** Liste les documents + progression. Poll-friendly via staleTime 30s. */
+/** Liste les documents + progression. */
 export function useDossierDocuments(locataireId: string | undefined) {
   return useQuery({
     queryKey: locataireId ? dossierKeys.documents(locataireId) : ["dossier", "noop"],
     queryFn: () => listDossierDocuments(locataireId as string),
     enabled: Boolean(locataireId),
+    // Sprint perf quick-wins (2026-05-12) : staleTime 30s + désactivation
+    // des refetch automatiques. L'audit HAR a montré 3× refetch en 60s pour
+    // le même endpoint (3-5s wait serveur × 3 = 9-15s de wait inutile).
+    // Les mutations (upload, validate, reject, delete) invalident
+    // explicitement le cache via useQueryClient.invalidateQueries.
     staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
     retry: (count, err) => {
       const status = (err as { response?: { status?: number } })?.response?.status;
       if (status === 403 || status === 404) return false;
