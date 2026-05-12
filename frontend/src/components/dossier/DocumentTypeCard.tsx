@@ -69,7 +69,60 @@ function fmtSize(bytes: number): string {
 }
 
 
-function StatutBadge({ statut }: { statut: "uploaded" | "valide" | "rejete" }) {
+// Exemples concrets d'équivalents acceptés par type (Sprint 1B.1).
+// Texte affiché sous la checkbox « C'est un équivalent » + utilisé comme
+// placeholder de l'input libellé.
+const EQUIVALENT_EXAMPLES: Record<TypeDocument, string> = {
+  piece_identite:
+    "Demande de renouvellement en cours + copie de l'ancien document expiré",
+  permis_sejour:
+    "Récépissé officiel de demande de renouvellement",
+  contrat_travail:
+    "Promesse d'embauche signée par l'employeur (date prise de poste + salaire mensuel)",
+  fiches_salaire:
+    "Promesse d'embauche + 3 derniers relevés bancaires (si fiches non encore disponibles)",
+  assurance_rc:
+    "Email de confirmation de demande de souscription auprès de votre assureur",
+  caution:
+    "Email de confirmation Gocaution / Swisscaution OU attestation de blocage bancaire en cours",
+  extrait_poursuites:
+    "Email de demande à l'office des poursuites (< 1 mois)",
+  bail_signe: "", // n/a — uploadé par bailleur, jamais en équivalent côté locataire
+};
+
+
+function StatutBadge({
+  statut,
+  isEquivalent = false,
+}: {
+  statut: "uploaded" | "valide" | "rejete";
+  isEquivalent?: boolean;
+}) {
+  // Sprint 1B.1 (2026-05-12) : badge spécial Or « En attente de confirmation »
+  // pour les docs équivalents en statut 'uploaded'. Distingue visuellement les
+  // équivalents temporaires des documents finaux en attente.
+  if (statut === "uploaded" && isEquivalent) {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4,
+          fontSize: 11,
+          fontWeight: 600,
+          padding: "3px 10px",
+          borderRadius: 99,
+          color: C.gold,
+          background: C.goldBg,
+          whiteSpace: "nowrap",
+        }}
+      >
+        <Loader2 size={11} />
+        En attente de confirmation
+      </span>
+    );
+  }
+
   const map = {
     uploaded: { label: "En attente", color: C.prussian, bg: C.prussianBg, icon: Loader2 },
     valide:   { label: "Validé",     color: C.green,    bg: C.greenBg,    icon: CheckCircle2 },
@@ -261,30 +314,53 @@ export function DocumentTypeCard({
                   onChange={(e) => setShowEquivalent(e.target.checked)}
                   style={{ accentColor: C.prussian }}
                 />
-                C&apos;est un document équivalent (promesse d&apos;embauche, mail
-                d&apos;attente…)
+                C&apos;est un document équivalent (en attente du document final)
               </label>
               {showEquivalent && (
-                <input
-                  type="text"
-                  value={equivalentLibelle}
-                  onChange={(e) => setEquivalentLibelle(e.target.value)}
-                  placeholder="Ex: Promesse d'embauche signée"
-                  maxLength={200}
-                  style={{
-                    marginTop: 8,
-                    width: "100%",
-                    boxSizing: "border-box",
-                    padding: "8px 12px",
-                    borderRadius: 8,
-                    border: `1px solid ${C.border}`,
-                    fontSize: 13,
-                    fontFamily: "inherit",
-                    background: C.surface,
-                    color: C.text,
-                    outline: "none",
-                  }}
-                />
+                <>
+                  {EQUIVALENT_EXAMPLES[type] && (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        padding: "8px 12px",
+                        background: C.goldBg,
+                        borderLeft: `3px solid ${C.gold}`,
+                        borderRadius: "0 6px 6px 0",
+                        fontSize: 12,
+                        color: C.text2,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      <strong style={{ color: C.text }}>
+                        💡 Exemple accepté :
+                      </strong>{" "}
+                      {EQUIVALENT_EXAMPLES[type]}
+                    </div>
+                  )}
+                  <input
+                    type="text"
+                    value={equivalentLibelle}
+                    onChange={(e) => setEquivalentLibelle(e.target.value)}
+                    placeholder={
+                      EQUIVALENT_EXAMPLES[type] ||
+                      "Décrivez la nature de l'équivalent"
+                    }
+                    maxLength={200}
+                    style={{
+                      marginTop: 8,
+                      width: "100%",
+                      boxSizing: "border-box",
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      border: `1px solid ${C.border}`,
+                      fontSize: 13,
+                      fontFamily: "inherit",
+                      background: C.surface,
+                      color: C.text,
+                      outline: "none",
+                    }}
+                  />
+                </>
               )}
             </div>
           )}
@@ -371,20 +447,27 @@ export function DocumentTypeCard({
         </>
       )}
 
-      {/* Quota atteint */}
-      {!isReadOnly && !canAddMore && activeDocs.length > 0 && (
-        <p
-          style={{
-            fontSize: 11,
-            color: C.text3,
-            margin: "8px 0 0",
-            fontStyle: "italic",
-          }}
-        >
-          Quota atteint ({activeDocs.length}/{maxFichiers}). Supprimez un fichier
-          actif ou attendez une décision du bailleur.
-        </p>
-      )}
+      {/* Quota atteint — message cohérent selon le mix des statuts (Sprint 1B.1) */}
+      {!isReadOnly && !canAddMore && activeDocs.length > 0 && (() => {
+        const allValide = activeDocs.every((d) => d.statut === "valide");
+        const messageBase = allValide
+          ? "✅ Documents complets pour cette section."
+          : "📬 Document en attente de vérification par votre bailleur. Vous pourrez en ajouter un autre si celui-ci est rejeté.";
+        return (
+          <p
+            style={{
+              fontSize: 12,
+              color: allValide ? C.green : C.text2,
+              margin: "8px 0 0",
+              padding: "8px 12px",
+              background: allValide ? C.greenBg : C.surface2,
+              borderRadius: 8,
+            }}
+          >
+            {messageBase}
+          </p>
+        );
+      })()}
 
       {/* Bailleur sans aucun doc */}
       {isReadOnly && !hasAnyDoc && (
@@ -419,6 +502,14 @@ function DocumentRow({
 }) {
   const isUploaded = doc.statut === "uploaded";
   const isRejete = doc.statut === "rejete";
+  // Sprint 1B.1 : bordure Or sur les équivalents en attente, pour
+  // distinguer visuellement des documents finaux.
+  const isEquivalentPending = doc.est_equivalent && isUploaded;
+  const borderColor = isRejete
+    ? C.red
+    : isEquivalentPending
+      ? C.gold
+      : C.border;
 
   return (
     <div
@@ -428,7 +519,7 @@ function DocumentRow({
         gap: 8,
         padding: "10px 12px",
         borderRadius: 10,
-        border: `1px solid ${isRejete ? C.red : C.border}`,
+        border: `1px solid ${borderColor}`,
         background: C.surface,
       }}
     >
@@ -466,7 +557,7 @@ function DocumentRow({
             )}
           </p>
         </div>
-        <StatutBadge statut={doc.statut} />
+        <StatutBadge statut={doc.statut} isEquivalent={doc.est_equivalent} />
       </div>
 
       {/* Motif rejet (§B.10 transparence locataire) */}
