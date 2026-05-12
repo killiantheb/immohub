@@ -327,17 +327,20 @@ export function TabLocataire({ bienId }: { bienId: string }) {
           </div>
         )}
         {/*
-          P0.3 fix : ce bouton était décoratif (sans onClick). Pointe désormais
-          vers la sphère IA pour rédaction d'avenant. Le pré-remplissage du
-          prompt via query param sera ajouté Phase 2 (la sphère ne lit pas
-          encore `?prompt=` actuellement — vérifié par grep useSearchParams).
+          Sprint 4A (2026-05-12) — bouton "Proposer renouvellement" caché en
+          Phase 1.0 sauf si on est dans la fenêtre utile : bail en cours avec
+          une date_sortie connue et ≤ 90 jours devant (3 mois pré-fin = délai
+          de préavis CH standard). Le module de renouvellement dédié arrive
+          Phase 1.1 — d'ici là, on évite le clic mort.
         */}
-        <Link
-          href="/app/sphere"
-          style={{ ...btnP, marginTop: "1rem", textDecoration: "none" }}
-        >
-          <RefreshCw size={12} /> Proposer renouvellement
-        </Link>
+        {daysFin !== null && daysFin > 0 && daysFin <= 90 && (
+          <Link
+            href="/app/sphere"
+            style={{ ...btnP, marginTop: "1rem", textDecoration: "none" }}
+          >
+            <RefreshCw size={12} /> Proposer renouvellement
+          </Link>
+        )}
       </Card>
 
       {/* Paiement du mois */}
