@@ -30,6 +30,7 @@ import { BienBackButton } from "@/components/biens/BienBackButton";
 import { CosignatairesForm } from "@/components/dossier/CosignatairesForm";
 import { DocumentTypeCard } from "@/components/dossier/DocumentTypeCard";
 import { DossierProgressionBar } from "@/components/dossier/DossierProgressionBar";
+import { PropositionBailleurSection } from "@/components/dossier/PropositionBailleurSection";
 import { RejectDocumentModal } from "@/components/dossier/RejectDocumentModal";
 import {
   type DocumentDossierRead,
@@ -47,6 +48,7 @@ import {
   useUploadDocument,
   useValidateDocument,
 } from "@/lib/hooks/useDossierDocuments";
+import { useProposition } from "@/lib/hooks/useProposition";
 import { C } from "@/lib/design-tokens";
 
 
@@ -67,6 +69,7 @@ export default function DossierLocataireBailleurPage() {
   const locataireQuery = useLocataireActuel(bienId);
   const locataireId = locataireQuery.data?.id;
   const dossierQuery = useDossierDocuments(locataireId);
+  const propositionQuery = useProposition(locataireId);
 
   const safeId = locataireId ?? "";
   const validate = useValidateDocument(safeId);
@@ -217,6 +220,17 @@ export default function DossierLocataireBailleurPage() {
       <div style={{ marginBottom: 28 }}>
         <DossierProgressionBar progression={dossier.progression} bailleurView />
       </div>
+
+      {/* Proposition de dates (Sprint 4B) — affichée toujours si donnée disponible */}
+      {propositionQuery.data && locataireId && (
+        <>
+          <SectionTitle title="Proposition de location" />
+          <PropositionBailleurSection
+            locataireId={locataireId}
+            proposition={propositionQuery.data}
+          />
+        </>
+      )}
 
       {/* Renseignements read-only */}
       <SectionTitle title="Renseignements de base" />
