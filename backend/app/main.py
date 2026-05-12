@@ -32,6 +32,10 @@ from app.routers.bien_messages import (
     router as bien_messages_router,
     unread_router as bien_messages_unread_router,
 )
+from app.routers.document_dossier import (
+    document_router as dossier_document_router,
+    locataire_router as dossier_locataire_router,
+)
 from app.routers.catalogue import router as catalogue_router
 from app.routers.changements import (
     edl_photos_router as changements_edl_photos_router,
@@ -217,6 +221,18 @@ app.include_router(bien_keys_router, prefix="/api/v1/biens", tags=["bien-keys"])
 app.include_router(bank_accounts_router, prefix="/api/v1/users", tags=["bank-accounts"])
 app.include_router(catalogue_router, prefix="/api/v1/catalogue", tags=["catalogue"])
 app.include_router(locataires_router, prefix="/api/v1/locataires", tags=["locataires"])
+# ── Module Dossier Locataire Phase 1.0 (PR-1 backend — 2026-05-13) ───────────
+# Deux prefix : par locataire (étapes + liste) et par doc (mutations unitaires).
+app.include_router(
+    dossier_locataire_router,
+    prefix="/api/v1/locataires",
+    tags=["dossier-locataire"],
+)
+app.include_router(
+    dossier_document_router,
+    prefix="/api/v1/dossier",
+    tags=["dossier-locataire"],
+)
 app.include_router(docs_althy_router, prefix="/api/v1/docs-althy", tags=["docs-althy"])
 app.include_router(paiements_router, prefix="/api/v1/paiements", tags=["paiements"])
 app.include_router(
