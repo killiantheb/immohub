@@ -35,6 +35,7 @@ import {
 import { CosignatairesForm } from "@/components/dossier/CosignatairesForm";
 import { DocumentTypeCard } from "@/components/dossier/DocumentTypeCard";
 import { DossierProgressionBar } from "@/components/dossier/DossierProgressionBar";
+import { PropositionLocataireSection } from "@/components/dossier/PropositionLocataireSection";
 import { RenseignementsForm } from "@/components/dossier/RenseignementsForm";
 import {
   MAX_FICHIERS_PAR_TYPE,
@@ -49,6 +50,7 @@ import {
   useUpdateRenseignements,
   useUploadDocument,
 } from "@/lib/hooks/useDossierDocuments";
+import { useProposition } from "@/lib/hooks/useProposition";
 import { C } from "@/lib/design-tokens";
 
 
@@ -69,6 +71,7 @@ export default function MonDossierPage() {
   const myLocataireQuery = useMyLocataire();
   const locataireId = myLocataireQuery.data?.id;
   const dossierQuery = useDossierDocuments(locataireId);
+  const propositionQuery = useProposition(locataireId);
 
   // Mutations (instanciées avec une string vide quand locataireId absent —
   // jamais appelées dans ce cas car le rendu se fait après vérif locataireId).
@@ -202,6 +205,49 @@ export default function MonDossierPage() {
       <div style={{ marginBottom: 28 }}>
         <DossierProgressionBar progression={dossier.progression} />
       </div>
+
+      {/* ── Étape 0 : Proposition de dates + préférences (Sprint 4B) ─────────── */}
+      {propositionQuery.data && (
+        <>
+          <div
+            style={{
+              margin: "28px 0 12px",
+              display: "flex",
+              alignItems: "baseline",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <span
+              aria-hidden
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: C.gold,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+              }}
+            >
+              Avant de commencer
+            </span>
+            <h2
+              style={{
+                fontFamily: "var(--font-serif, Georgia, serif)",
+                fontSize: 19,
+                color: C.text,
+                margin: 0,
+                fontWeight: 500,
+              }}
+            >
+              Vos préférences et dates d&apos;entrée
+            </h2>
+          </div>
+          <PropositionLocataireSection
+            locataireId={locataireId}
+            proposition={propositionQuery.data}
+          />
+        </>
+      )}
 
       {/* ── Étape 1 : Renseignements ─────────────────────────────────────────── */}
       <SectionTitle index={1} title="Renseignements de base" weight={15} />
