@@ -23,6 +23,7 @@ from app.models.conversation_message import ConversationMessage
 from app.models.crm import CRMContact, CRMNote
 from app.models.document import DocumentTemplate, GeneratedDocument
 from app.models.document_althy import DocumentAlthy
+from app.models.document_dossier import DocumentDossier
 from app.models.favorite import Favorite
 from app.models.inspection import Inspection
 from app.models.interest import Interest
@@ -57,6 +58,7 @@ __all__ = [
     "Locataire",
     "DossierLocataire",
     "DocumentAlthy",
+    "DocumentDossier",
     "Paiement",
     "Intervention",
     "Devis",

@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 
 from app.models.base import BaseModel
-from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 LocataireStatut = Enum("actif", "sorti", name="locataire_statut_enum")
 TypeCaution = Enum("cash", "compte_bloque", "organisme", name="type_caution_enum")
@@ -41,6 +41,14 @@ class Locataire(BaseModel):
     motif_depart: Mapped[str | None] = mapped_column(String(300))
     note_interne: Mapped[str | None] = mapped_column(Text)
 
+    # Relations Phase 1.0 — documents dossier (1:N, cascade DELETE).
+    # Type forward-ref pour éviter l'import circulaire avec models/document_dossier.py.
+    documents_dossier: Mapped[list["DocumentDossier"]] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        "DocumentDossier",
+        back_populates="locataire",
+        cascade="all, delete-orphan",
+    )
+
 
 class DossierLocataire(BaseModel):
     __tablename__ = "dossiers_locataires"
@@ -62,3 +70,22 @@ class DossierLocataire(BaseModel):
     resultat_poursuites: Mapped[str | None] = mapped_column(String(100))
     date_poursuites: Mapped[date | None] = mapped_column(Date)
     office_poursuites: Mapped[str | None] = mapped_column(String(200))
+
+    # ── Étapes de complétion Phase 1.0 (migration 0041) ─────────────────────
+    # Étape 1 — locataire saisit ses renseignements (15% progression).
+    renseignements_complets: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    renseignements_completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
+    # Étape 10 — bailleur confirme versement loyer + caution (5% progression).
+    loyer_caution_verses: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    loyer_caution_verses_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
+    loyer_caution_verses_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
