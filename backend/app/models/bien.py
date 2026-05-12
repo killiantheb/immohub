@@ -335,6 +335,11 @@ class Bien(BaseModel):
     )
 
     __table_args__ = (
+        # ix_biens_owner_id + ix_biens_statut créés via migrations 0044 + 0045
+        # (Sprint perf 2026-05-12). Déclarés ici pour cohérence ORM↔DB et éviter
+        # un drift au prochain `alembic revision --autogenerate`.
+        Index("ix_biens_owner_id", "owner_id"),
+        Index("ix_biens_statut", "statut"),
         Index("ix_biens_agency_id", "agency_id"),
         Index("ix_biens_created_by_id", "created_by_id"),
         Index("ix_biens_canton", "canton"),
