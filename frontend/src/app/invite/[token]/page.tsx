@@ -144,8 +144,11 @@ export default function InvitePage() {
         return;
       }
 
-      // 3. Redirect vers l'espace locataire dédié (§4.7).
-      router.push("/app/mon-bien");
+      // 3. Redirect vers la page bienvenue locataire (Sprint 1B Module Dossier).
+      //    Cette page elle-même redirige vers /app/mon-bien/dossier si
+      //    progression > 0 (visite ultérieure). À première arrivée, elle
+      //    affiche la checklist des 8 documents à fournir.
+      router.push("/app/bienvenue-locataire");
     } catch (err) {
       const detail = (err as { response?: { data?: { detail?: string }; status?: number } })?.response;
       const msg = detail?.data?.detail;
