@@ -161,7 +161,14 @@ export function useMarkLoyerCautionVerses(locataireId: string) {
     mutationFn: (body?: { loyer_montant?: number; caution_montant?: number }) =>
       markLoyerCautionVerses(locataireId, body),
     onSuccess: () => {
+      // Dossier — progression + statut versement.
       qc.invalidateQueries({ queryKey: dossierKeys.documents(locataireId) });
+      // Sprint 3 (2026-05-12) : si la progression atteint 100, le backend
+      // bascule bien.statut → 'loue' + locataire.date_entree dans la même
+      // transaction. On invalide donc les listes biens + locataires pour que
+      // l'UI reflète immédiatement la bascule (fiche bien, badge "loué", etc.).
+      qc.invalidateQueries({ queryKey: ["biens"] });
+      qc.invalidateQueries({ queryKey: ["locataires"] });
     },
   });
 }
