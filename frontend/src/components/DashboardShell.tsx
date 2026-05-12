@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
-import { SphereWidget } from "@/components/SphereWidget";
 import { AlthyLogo } from "@/components/AlthyLogo";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -45,8 +44,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <main className="althy-main">
         {children}
       </main>
-
-      <SphereWidget />
     </div>
   );
 }
