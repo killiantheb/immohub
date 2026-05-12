@@ -77,7 +77,7 @@ export default function InvitePage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<React.ReactNode | null>(null);
 
   // Validation live
   const passwordOk = password.length >= PASSWORD_MIN;
@@ -150,7 +150,22 @@ export default function InvitePage() {
       const detail = (err as { response?: { data?: { detail?: string }; status?: number } })?.response;
       const msg = detail?.data?.detail;
       if (detail?.status === 409) {
-        setSubmitError("Cet email est déjà inscrit. Connectez-vous via la page de connexion.");
+        // Email déjà pris côté Supabase Auth (cf bug-invitation-001 fix
+        // 2026-05-13). Doctrine §4.7bis : 1 email = 1 compte = 1 rôle
+        // Phase 1.0. Multi-rôles Phase 1.1 → support manuel pour le moment.
+        setSubmitError(
+          <>
+            Cet email a déjà un compte Althy. Pour l&apos;utiliser comme
+            locataire de ce bien, contactez{" "}
+            <a
+              href="/contact"
+              style={{ color: C.prussian, textDecoration: "underline", fontWeight: 600 }}
+            >
+              le support althy.ch
+            </a>
+            .
+          </>,
+        );
       } else if (detail?.status === 410) {
         setSubmitError("Ce lien a expiré. Demandez un nouveau lien à votre bailleur.");
       } else if (detail?.status === 404) {
