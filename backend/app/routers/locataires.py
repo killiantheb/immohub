@@ -16,7 +16,9 @@ from app.schemas.locataire import (
     LocataireCreate,
     LocataireRead,
     LocataireUpdate,
+    UpdateCosignatairesRequest,
 )
+from app.services.document_dossier_service import resolve_dossier_parties
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -186,6 +188,54 @@ async def update_dossier(
     await db.flush()
     await db.refresh(dossier)
     return DossierLocataireRead.model_validate(dossier)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Cosignataires (Sprint 1A.5 — couple/famille sans refacto multi-comptes)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+@router.patch("/{locataire_id}/cosignataires", response_model=LocataireRead)
+async def update_cosignataires(
+    locataire_id: uuid.UUID,
+    payload: UpdateCosignatairesRequest,
+    current_user: AuthDep,
+    db: DbDep,
+) -> LocataireRead:
+    """Remplace l'array `cosignataires` du locataire (replace, pas merge).
+
+    RBAC : locataire lui-même OU bailleur du bien OU super_admin (réutilise
+    `resolve_dossier_parties` du service dossier — pattern identique).
+
+    Validation Pydantic (CosignataireBase) :
+      - type ∈ {conjoint, enfant, autre}
+      - prenom/nom non vides
+      - signature_requise forcé False si type=enfant
+      - max 20 entrées (limite arbitraire Phase 1.0)
+
+    §B.12 : commit explicite, rollback si exception.
+    """
+    locataire, _bien, _is_locataire, _is_bailleur, _is_super_admin = (
+        await resolve_dossier_parties(db, locataire_id, current_user)
+    )
+
+    # JSONB attend un list[dict] sérialisable. Pydantic v2 → mode="json" pour
+    # convertir les date en str ISO (sinon asyncpg refuse les Python date dans
+    # un champ JSONB).
+    locataire.cosignataires = [
+        c.model_dump(mode="json") for c in payload.cosignataires
+    ]
+    try:
+        await db.commit()
+        await db.refresh(locataire)
+    except Exception as exc:
+        await db.rollback()
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            f"Erreur mise à jour cosignataires : {exc!s:.200}",
+        ) from exc
+
+    return LocataireRead.model_validate(locataire)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
