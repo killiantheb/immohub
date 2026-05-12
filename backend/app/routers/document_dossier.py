@@ -570,8 +570,14 @@ async def mark_loyer_caution_verses(
     progression_resp = await compute_progression(db, locataire_id)
     if progression_resp.progression == 100:
         # Bascule locataire : date_entree si pas déjà set.
+        # Sprint 4B (2026-05-12) — si la négociation de dates a abouti
+        # (statut_proposition == "accepte"), on utilise la date_accord
+        # convenue lors du back-and-forth. Sinon fallback today().
         if locataire.date_entree is None:
-            locataire.date_entree = date.today()
+            date_entree_finale: date | None = None
+            if dossier.statut_proposition == "accepte" and dossier.date_accord:
+                date_entree_finale = dossier.date_accord
+            locataire.date_entree = date_entree_finale or date.today()
         # Bascule bien : vacant → loue (pas en_travaux pour respecter l'état
         # explicitement choisi par le bailleur).
         if bien.statut == "vacant":

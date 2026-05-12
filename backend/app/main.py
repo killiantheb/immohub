@@ -53,6 +53,7 @@ from app.routers.document_dossier import (
 from app.routers.document_dossier import (
     locataire_router as dossier_locataire_router,
 )
+from app.routers.proposition import router as proposition_router
 from app.routers.documents import router as documents_router
 from app.routers.documents_althy import router as docs_althy_router
 from app.routers.estimation import router as estimation_router
@@ -242,6 +243,14 @@ app.include_router(
     dossier_document_router,
     prefix="/api/v1/dossier",
     tags=["dossier-locataire"],
+)
+# ── Module Proposition de dates (Sprint 4B Option C — 2026-05-12) ────────────
+# Workflow back-and-forth bailleur ↔ locataire plafonné à 4 tours. Endpoints
+# nested sous /locataires/{id}/proposition.
+app.include_router(
+    proposition_router,
+    prefix="/api/v1/locataires",
+    tags=["proposition"],
 )
 app.include_router(docs_althy_router, prefix="/api/v1/docs-althy", tags=["docs-althy"])
 app.include_router(paiements_router, prefix="/api/v1/paiements", tags=["paiements"])
