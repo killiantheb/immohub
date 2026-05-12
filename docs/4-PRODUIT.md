@@ -318,6 +318,35 @@ Politique « **max comptes utilisateurs** » figée 2026-05-09 :
 
 ---
 
+## 4.7bis Limitation Phase 1.0 — single-role par email
+
+> **Doctrine figée 2026-05-13** (post bug-invitation-001).
+
+**Règle** : en Phase 1.0, **1 email = 1 compte Supabase Auth = 1 rôle principal**. Pas de cumul `proprio_solo + locataire` ni `proprio_solo + artisan` sur le même email.
+
+**Conséquence opérationnelle** :
+
+- Si un bailleur invite un locataire dont l'email a déjà un compte Althy (peu importe le rôle), `POST /onboarding/rejoindre` retourne **`409 Conflict`** avec message :
+  > « Cet email a déjà un compte Althy. Pour l'utiliser comme locataire de ce bien, contactez le support althy.ch. »
+- Le bailleur reçoit le retour côté UI invite et doit contacter `support@althy.ch` pour activation manuelle (Killian fait la liaison `Locataire ↔ bien` en SQL le temps que Phase 1.1 livre le multi-rôles).
+- **Pas de fallback silencieux** côté backend : le compte n'est jamais réutilisé aveuglément (cf incident bug-invitation-001 du 2026-05-12 où le fallback `users[0]` non filtré réutilisait un `auth.users` orphelin).
+
+**Pourquoi cette discipline** :
+
+- **Risque #1 mismatch identité** : sans filtrage strict, deux invitations différentes peuvent pointer vers le même `auth.users.id` mais avec des `users.email` différents → corruption identitaire RLS + impossibilité de se reconnecter.
+- **Risque #2 RLS** : un compte multi-rôles non encadré côté DB peut voir des biens d'un autre rôle (fuite cross-tenant Sunimmo).
+- **Risque #3 sécurité magic_links** : un cumul de rôles via le même email peut être exploité pour escalader vers proprio_solo via une invitation locataire (Phase 2 quand le code marketplace sera réactivé).
+
+**Évolution Phase 1.1 (post-migration Sunimmo)** : refacto `users` → table de jointure `user_roles` N-N + switch top-right UI à la Airbnb. Cf [`2-ROADMAP.md`](./2-ROADMAP.md) §F backlog « Sprint Multi-rôles Phase 1.1 ».
+
+**Référence code** :
+
+- Backend rejet 409 : `backend/app/routers/onboarding.py:_rejoindre_locataire` (branche `except HTTPException` post-POST admin/users).
+- Backend rejet 409 : `backend/app/routers/onboarding.py:creer_compte` (même pattern, flow agence/portail).
+- Frontend gestion 409 : `frontend/src/app/invite/[token]/page.tsx:handleSubmit` (lien `/contact`).
+
+---
+
 ## 4.8 Module Finances
 
 ### Loyers QR-facture SPC 2.0 (sprint 15)

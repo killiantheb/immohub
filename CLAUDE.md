@@ -262,6 +262,8 @@ Backlog connu :
 - 4 `const S` résiduels (structurels CSSProperties) → garder tels quels.
 - TODO connus backend (WhatsApp, SMS Twilio, CAMT.054 réel, OCR enrichi, Email sequences) → cf [`docs/4-PRODUIT.md`](docs/4-PRODUIT.md) §4.10 et §4.13.
 - **Sprint Séparation dev/staging/prod** (à programmer pré-clients payants Phase 2) → livrables : (a) script `scripts/switch-env.sh` qui refuse les noms exotiques (cf §B.14), (b) audit + cleanup des `.env.*` du repo, (c) régénération des clés `.env.staging` si réactivation du projet Supabase staging, (d) doc procédure switch dev/staging/prod dans `docs/3-ARCHITECTURE.md` §3.9.
+- **Sprint Multi-rôles Phase 1.1** (post-migration Sunimmo) → refacto `users.role` unique vers table `user_roles` N-N + switch top-right UI (pattern Airbnb). Cf `docs/2-ROADMAP.md` §2.4.15 + `docs/4-PRODUIT.md` §4.7bis (suppression de la doctrine 1 email = 1 rôle après livraison).
+- **Sprint Hardening Auth Phase 2** (pré-marketplace publique) → idempotence `_rejoindre_locataire`, refacto `_supa_post` en dataclass typée, logs audit auth complets, cleanup périodique des `auth.users` orphelins. Cf `docs/2-ROADMAP.md` §2.4.15.
 
 ---
 

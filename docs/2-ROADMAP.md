@@ -311,6 +311,27 @@ Les modules suivants étaient initialement scopés Phase 1 (« location pure »)
 - **Stripe Connect commission 3 %** → **Phase 2**.
 - **Coming Soon public + alpha fermée externe** → **Phase 1.1** (Phase 1.0 = Sunimmo only, pas d'externe).
 
+### 2.4.15 Backlog identité & auth (post bug-invitation-001 2026-05-12)
+
+Sprints identifiés suite à l'incident `bug-invitation-001` (mismatch `users.email` vs `auth.users.email` causé par un fallback `users[0]` aveugle dans `_rejoindre_locataire`). Cf [`4-PRODUIT.md`](./4-PRODUIT.md) §4.7bis.
+
+**Sprint Multi-rôles Phase 1.1** (post-migration Sunimmo, avant Phase 2) :
+
+- Refacto `users.role` (string unique) → table de jointure `user_roles` N-N + colonne `users.primary_role` pour le défaut UI.
+- UI : switch de rôle en haut à droite (pattern Airbnb « Switch to hosting »).
+- Backend : endpoints adaptés par rôle **effectif** (X-Active-Role header) et plus par `current_user.role` figé.
+- Migration Alembic : backfill `user_roles` depuis `users.role` existant. RLS strict pour empêcher escalade.
+- Estimation : 3-5 jours dev + tests + migration prod + recettes Sunimmo.
+- Livrable bonus : suppression de la doctrine §4.7bis (qui est une restriction provisoire Phase 1.0).
+
+**Sprint Hardening Auth Phase 2** (pré-marketplace publique) :
+
+- Idempotence forte sur `_rejoindre_locataire` (clé idempotence = `magic_links.token` + cache 5 min anti double-submit).
+- Cache anti-collision Supabase Auth : check préalable `auth.users.email` exact avant POST `/admin/users` pour éviter de dépendre du 422 GoTrue.
+- Refacto `_supa_post` → dataclass typée `SupaResponse(status_code, data, raw_text)` (au lieu de `dict` brut + `HTTPException`-as-control-flow).
+- Logs d'audit auth complets dans `audit_logs` (qui invite qui sur quel bien, quand, depuis quelle IP).
+- Cleanup périodique des `auth.users` orphelins (job hebdo cron — détection `LEFT JOIN users ON users.supabase_uid = auth.users.id` `WHERE users.id IS NULL`).
+
 ---
 
 ## 2.5 Phase 2 — Lancement public payant
