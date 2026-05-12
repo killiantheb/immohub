@@ -38,10 +38,15 @@ import type { AuditLogEntry } from "@/lib/types";
 // ── Design constants ──────────────────────────────────────────────────────────
 
 const CARD: React.CSSProperties = {
+  // Sprint 4A (2026-05-12) — flex column + height 100% pour aligner verticalement
+  // les cards d'une même grid (`items-stretch` au niveau du parent grid).
   background: "#fff",
   borderRadius: 24,
   border: `1px solid var(--border-subtle)`,
   padding: 28,
+  height: "100%",
+  display: "flex",
+  flexDirection: "column",
 };
 const LABEL: React.CSSProperties = {
   display: "block",

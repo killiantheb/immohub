@@ -50,11 +50,11 @@ const SECTIONS: readonly Section[] = [
   { key: "locataire",     label: "Locataire",      build: (id) => `/app/biens/${id}/locataire`,      icon: User },
   { key: "dossier",       label: "Dossier locataire", build: (id) => `/app/biens/${id}/dossier-locataire`, icon: ClipboardCheck },
   { key: "messagerie",    label: "Messagerie",     build: (id) => `/app/biens/${id}/messagerie`,     icon: MessageSquare },
-  { key: "documents",     label: "Documents",      build: (id) => `/app/biens/${id}/documents`,      icon: FileText },
+  { key: "documents",     label: "Documents du bien", build: (id) => `/app/biens/${id}/documents`,      icon: FileText },
   { key: "finances",      label: "Finances",       build: (id) => `/app/biens/${id}/finances`,       icon: Wallet },
   { key: "interventions", label: "Interventions",  build: (id) => `/app/biens/${id}/interventions`,  icon: Wrench },
   { key: "historique",    label: "Historique",     build: (id) => `/app/biens/${id}/historique`,     icon: History },
-  { key: "potentiel",     label: "Potentiel IA",   build: (id) => `/app/biens/${id}/potentiel`,      icon: Sparkles },
+  { key: "potentiel",     label: "Potentiel locatif", build: (id) => `/app/biens/${id}/potentiel`,      icon: Sparkles },
   { key: "changement",    label: "Changement",     build: (id) => `/app/biens/${id}/changement`,     icon: RefreshCw },
 ];
 

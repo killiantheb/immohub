@@ -66,8 +66,22 @@ export function Badge({ label, color, bg }: { label: string; color: string; bg: 
   );
 }
 export function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  // Sprint 4A (2026-05-12) — height:100% + flex column par défaut pour que les
+  // cards d'une même grid CSS (items-stretch) s'alignent visuellement à la
+  // hauteur de la plus grande. Sans contrainte du parent (cards isolées), le
+  // height:100% est inerte → effet bénin partout.
   return (
-    <div style={{ background: C.surface, borderRadius: 14, border: `1px solid ${C.border}`, boxShadow: C.shadow, padding: "1.25rem", ...style }}>
+    <div style={{
+      background: C.surface,
+      borderRadius: 14,
+      border: `1px solid ${C.border}`,
+      boxShadow: C.shadow,
+      padding: "1.25rem",
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
+      ...style,
+    }}>
       {children}
     </div>
   );
