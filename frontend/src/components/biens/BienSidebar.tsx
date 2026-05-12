@@ -23,6 +23,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  ClipboardCheck,
   FileText,
   History,
   LayoutGrid,
@@ -47,6 +48,7 @@ interface Section {
 const SECTIONS: readonly Section[] = [
   { key: "overview",      label: "Vue d'ensemble", build: (id) => `/app/biens/${id}`,                icon: LayoutGrid },
   { key: "locataire",     label: "Locataire",      build: (id) => `/app/biens/${id}/locataire`,      icon: User },
+  { key: "dossier",       label: "Dossier locataire", build: (id) => `/app/biens/${id}/dossier-locataire`, icon: ClipboardCheck },
   { key: "messagerie",    label: "Messagerie",     build: (id) => `/app/biens/${id}/messagerie`,     icon: MessageSquare },
   { key: "documents",     label: "Documents",      build: (id) => `/app/biens/${id}/documents`,      icon: FileText },
   { key: "finances",      label: "Finances",       build: (id) => `/app/biens/${id}/finances`,       icon: Wallet },
