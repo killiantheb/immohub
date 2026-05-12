@@ -75,6 +75,37 @@ async def create_locataire(
     return LocataireRead.model_validate(loc)
 
 
+@router.get("/me", response_model=LocataireRead)
+async def get_my_locataire(
+    current_user: AuthDep,
+    db: DbDep,
+) -> LocataireRead:
+    """Retourne le Locataire actif lié au user connecté.
+
+    Sprint 1B — nécessaire au frontend locataire pour récupérer son
+    `locataire_id` (les autres endpoints du module dossier sont indexés
+    par id). Sans ça, le frontend devrait passer par /locataires/ qui est
+    admin-only. Doctrine §4.7 — espace locataire dédié à SON bien.
+
+    Erreurs :
+      - 404 si l'user n'a aucun Locataire actif (cas pré-invitation acceptée
+        ou drift DB).
+    """
+    result = await db.execute(
+        select(Locataire)
+        .where(Locataire.user_id == current_user.id, Locataire.statut == "actif")
+        .order_by(Locataire.created_at.desc())
+        .limit(1)
+    )
+    loc = result.scalar_one_or_none()
+    if not loc:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            "Aucun locataire actif lié à votre compte",
+        )
+    return LocataireRead.model_validate(loc)
+
+
 @router.get("/{locataire_id}", response_model=LocataireRead)
 async def get_locataire(
     locataire_id: uuid.UUID,
