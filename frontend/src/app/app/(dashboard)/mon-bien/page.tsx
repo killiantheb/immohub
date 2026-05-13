@@ -20,12 +20,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Banknote, CheckCircle, ClipboardCheck, Download, FileText, Home, MapPin, MessageSquare, PenLine } from "lucide-react";
+import { ArrowRight, CheckCircle, ClipboardCheck, Download, FileText, Home, MapPin, MessageSquare, PenLine } from "lucide-react";
 import { useBiensList } from "@/lib/hooks/useBiens";
 import { useMyContract } from "@/lib/hooks/useContracts";
 import { useRole } from "@/lib/hooks/useRole";
 import { ConversationBien } from "@/components/messagerie/ConversationBien";
 import { CountersignModal } from "@/components/contracts/CountersignModal";
+import { MesPaiementsSection } from "@/components/loyers/MesPaiementsSection";
 import { C } from "@/lib/design-tokens";
 
 export default function MonBienPage() {
@@ -211,19 +212,9 @@ export default function MonBienPage() {
         <MonBailSection />
       </div>
 
-      {/* ── Sections "à venir Sprint 1D" ─────────────────────────────────── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 16,
-        }}
-      >
-        <ComingCard
-          icon={Banknote}
-          title="Mes paiements"
-          description="L'historique de vos loyers et leur statut (payé/en attente) sera disponible Phase 1.1."
-        />
+      {/* ── Mes paiements (Sprint 8 Lot D — historique loyers locataire) ─── */}
+      <div style={{ marginBottom: 16 }}>
+        <MesPaiementsSection />
       </div>
 
       {/* ── Messagerie 1:1 bailleur ↔ locataire (§4.13 Phase 1.0) ────────── */}
