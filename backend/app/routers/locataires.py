@@ -7,6 +7,7 @@ from typing import Annotated
 
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.models.bien import Bien
 from app.models.locataire import DossierLocataire, Locataire
 from app.models.user import User
 from app.schemas.locataire import (
@@ -50,8 +51,27 @@ async def list_locataires(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
 ) -> list[LocataireRead]:
+    """Liste paginée des locataires accessibles à l'utilisateur courant.
+
+    Sprint 7 A2 — fix data leak : la version précédente filtrait
+    UNIQUEMENT sur le rôle (`_check_admin`) sans contrainte d'ownership.
+    Un `proprio_solo` pouvait voir les locataires de tous les autres
+    proprios → fuite cross-tenant Sunimmo.
+
+    Règle d'accès :
+      - `super_admin` voit tout (audit, support).
+      - `proprio_solo` / `agence` ne voient que les locataires des biens
+        qu'ils possèdent (owner_id), gèrent (agency_id) ou ont créés
+        (created_by_id) — mêmes critères que `security.require_bien_access`.
+    """
     _check_admin(current_user)
-    q = select(Locataire)
+    q = select(Locataire).join(Bien, Locataire.bien_id == Bien.id)
+    if current_user.role != "super_admin":
+        q = q.where(
+            (Bien.owner_id == current_user.id)
+            | (Bien.agency_id == current_user.id)
+            | (Bien.created_by_id == current_user.id)
+        )
     if bien_id:
         q = q.where(Locataire.bien_id == bien_id)
     if statut:
@@ -112,13 +132,37 @@ async def get_locataire(
     current_user: AuthDep,
     db: DbDep,
 ) -> LocataireRead:
+    """Détail d'un locataire.
+
+    Sprint 7 A2 — fix data leak : la version précédente vérifiait
+    seulement `_check_admin` (rôle), sans contrainte d'ownership. Un
+    `proprio_solo` connaissant un UUID locataire d'un autre proprio
+    pouvait lire son dossier complet.
+
+    Règle d'accès :
+      - `super_admin` voit tout.
+      - Le locataire lui-même voit SON propre dossier (`user_id`).
+      - `proprio_solo` / `agence` doivent posséder le bien associé.
+    """
     result = await db.execute(select(Locataire).where(Locataire.id == locataire_id))
     loc = result.scalar_one_or_none()
     if not loc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Locataire introuvable")
-    # Le locataire lui-même peut voir son dossier
+
+    # Le locataire lui-même peut voir son propre dossier.
     if current_user.role not in ("admin", "super_admin") and loc.user_id != current_user.id:
+        # Sinon il faut être manager ET posséder le bien rattaché.
         _check_admin(current_user)
+        bien = await db.scalar(select(Bien).where(Bien.id == loc.bien_id))
+        if bien is None or (
+            bien.owner_id != current_user.id
+            and bien.agency_id != current_user.id
+            and bien.created_by_id != current_user.id
+        ):
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "Vous n'avez pas accès à ce locataire (bien non rattaché à votre compte).",
+            )
     return LocataireRead.model_validate(loc)
 
 
