@@ -17,9 +17,11 @@ import { trackEvent } from "@/lib/analytics";
 
 const CGU_VERSION = "2026-04";
 
+// Phase 1.0 (§B.15) : inscription publique réservée aux propriétaires.
+// Le rôle `locataire` n'est accessible que via une invitation bailleur (cf /invite/[token]).
+// Le rôle `artisan` reste listé mais filtré par FLAGS.ROLE_ARTISAN (Phase 3 — M1 GE+VD).
 const ROLE_OPTIONS = [
   { role: "proprio_solo", icon: "🏠", label: "Je suis propriétaire",         sub: "Gérez vos biens, baux et loyers" },
-  { role: "locataire",    icon: "🔑", label: "Je cherche un logement",        sub: "Candidatez, signez, suivez" },
   { role: "artisan",      icon: "🔧", label: "Je suis artisan / professionnel", sub: "Missions, devis, facturation" },
 ] as const;
 
@@ -444,6 +446,13 @@ function RegisterForm() {
               >
                 ← Corriger mon email
               </button>
+
+              {/* Invitation locataire — Phase 1.0 §B.15 : les locataires rejoignent
+                  uniquement via le lien envoyé par leur bailleur. */}
+              <div className="mt-6 rounded-lg border border-gray-200 bg-white px-4 py-3 text-xs leading-relaxed text-gray-600">
+                Vous avez reçu une invitation locataire ?
+                {" "}Utilisez le lien dans l&apos;email de votre bailleur pour rejoindre votre espace.
+              </div>
             </>
           )}
         </div>
