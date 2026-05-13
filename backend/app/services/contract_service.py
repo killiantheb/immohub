@@ -295,13 +295,23 @@ Signé le: {contract.signed_at.strftime("%d/%m/%Y %H:%M") if contract.signed_at 
         # Wrap in minimal valid PDF bytes (not a real PDF, but won't crash)
         return content.encode()
 
-    # ── Luxury light PDF ──────────────────────────────────────────────────────
-    # Palette
-    OR, OG, OB = 212, 96, 26          # terracotta orange
-    TOR, TOG, TOB = 28, 15, 6          # near-black brown
-    T3R, T3G, T3B = 140, 110, 90       # muted brown
-    BGr, BGg, BGb = 250, 245, 235      # warm cream
-    LR, LG, LB = 230, 220, 208         # light line color
+    # ── Palette Althy v2 (Sprint 8 Lot A — 2026-05-14) ────────────────────────
+    # Doctrine §B.4 stricte : Bleu de Prusse #0F2E4C + Or Althy #C9A961.
+    # La palette terracotta orange historique (#D4601A) a été retirée le
+    # 20/04/2026. Le footer doit citer l'entité légale HBM Swiss Sàrl (§B.3).
+    PRUSSIAN_R, PRUSSIAN_G, PRUSSIAN_B = 15, 46, 76        # #0F2E4C — accent principal
+    GOLD_R, GOLD_G, GOLD_B = 201, 169, 97                  # #C9A961 — accent premium
+    INK_R, INK_G, INK_B = 26, 22, 18                       # #1A1612 — texte titre / valeurs
+    MUTED_R, MUTED_G, MUTED_B = 110, 118, 130              # #6E7682 — texte secondaire
+    PARCHMENT_R, PARCHMENT_G, PARCHMENT_B = 248, 246, 240  # #F8F6F0 — fond row alterné
+    LINE_R, LINE_G, LINE_B = 224, 220, 210                 # divider clair
+
+    # Aliases retro-compat pour ne pas casser les `row()` / `section()` ci-dessous.
+    OR, OG, OB = PRUSSIAN_R, PRUSSIAN_G, PRUSSIAN_B
+    TOR, TOG, TOB = INK_R, INK_G, INK_B
+    T3R, T3G, T3B = MUTED_R, MUTED_G, MUTED_B
+    BGr, BGg, BGb = PARCHMENT_R, PARCHMENT_G, PARCHMENT_B
+    LR, LG, LB = LINE_R, LINE_G, LINE_B
 
     pdf = FPDF(format="A4")
     pdf.set_margins(22, 22, 22)
@@ -391,23 +401,39 @@ Signé le: {contract.signed_at.strftime("%d/%m/%Y %H:%M") if contract.signed_at 
     row("Dépôt de garantie", f"{float(contract.deposit):,.2f} CHF" if contract.deposit else "—")
     pdf.ln(8)
 
-    section("Signature électronique")
-    if contract.signed_at:
-        row("Signé le", contract.signed_at.strftime("%d %B %Y à %H:%M UTC"))
-        row("Adresse IP", contract.signed_ip or "—")
+    # §B.10 — on n'utilise pas le terme « signature électronique » qui
+    # impliquerait une signature qualifiée (SES/QES, Skribble). Phase 1.0 =
+    # acceptation contractuelle horodatée + IP. Workflow à 2 parties :
+    # bailleur d'abord (`signed_at`), puis locataire (`tenant_signed_at`).
+    section("Acceptation contractuelle")
+    landlord_dt = getattr(contract, "signed_at", None)
+    tenant_dt = getattr(contract, "tenant_signed_at", None)
+    if landlord_dt:
+        row("Acceptée par le bailleur", landlord_dt.strftime("%d %B %Y à %H:%M UTC"))
+        row("IP bailleur", contract.signed_ip or "—")
     else:
-        pdf.set_font("Helvetica", "I", 9)
-        pdf.set_text_color(T3R, T3G, T3B)
-        pdf.cell(0, 7, "Document en attente de signature", new_x="LMARGIN", new_y="NEXT")
+        row("Acceptée par le bailleur", "En attente")
+    if tenant_dt:
+        row("Contre-signée par le locataire", tenant_dt.strftime("%d %B %Y à %H:%M UTC"))
+        row("IP locataire", getattr(contract, "tenant_signed_ip", None) or "—")
+    else:
+        row(
+            "Contre-signée par le locataire",
+            "En attente" if landlord_dt else "Bail non encore accepté",
+        )
     pdf.ln(16)
 
-    # ── Footer ─────────────────────────────────────────────────────────────────
+    # ── Footer — entité légale HBM Swiss Sàrl (§B.3) + branding Althy ─────────
     pdf.set_draw_color(LR, LG, LB)
     pdf.set_line_width(0.3)
     pdf.line(22, pdf.get_y(), 188, pdf.get_y())
     pdf.ln(4)
     pdf.set_font("Helvetica", "", 7.5)
-    pdf.set_text_color(T3R, T3G, T3B)
-    pdf.cell(0, 5, "Document généré automatiquement — Althy  ·  althy.ch", align="C")
+    pdf.set_text_color(MUTED_R, MUTED_G, MUTED_B)
+    pdf.cell(
+        0, 5,
+        "Document généré par Althy  ·  Édité par HBM Swiss Sàrl  ·  CHE-179.984.757 TVA  ·  althy.ch",
+        align="C",
+    )
 
     return pdf.output()
