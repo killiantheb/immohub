@@ -6,6 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { AlthyMap, type AlthyMapMarker } from "@/components/map/AlthyMap";
 import { C } from "@/lib/design-tokens";
+import { FLAGS } from "@/lib/flags";
+import { ComingSoon } from "@/components/ComingSoon";
 
 const CITY_COORDS: Record<string, [number, number]> = {
   "ge": [6.143, 46.204], "vd": [6.632, 46.519], "vs": [7.359, 46.233],
@@ -143,6 +145,11 @@ const SPECIALITES_COURANTES = [
 const CANTONS_CH = ["GE","VD","VS","FR","BE","ZH","BS","BL","AG","SO","TI","NE","JU"];
 
 export default function ArtisansPage() {
+  // Phase 1.0 §B.15 : marketplace artisans gele (rollout canton par canton, M1 GE+VD).
+  if (!FLAGS.ROLE_ARTISAN) {
+    return <ComingSoon title="Annuaire Artisans en préparation" phase="Phase 3" />;
+  }
+
   const [search,     setSearch]     = useState("");
   const [canton,     setCanton]     = useState("");
   const [specialite, setSpecialite] = useState("");

@@ -12,6 +12,8 @@ import { Briefcase, MapPin, Wrench } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { C } from "@/lib/design-tokens";
+import { FLAGS } from "@/lib/flags";
+import { ComingSoon } from "@/components/ComingSoon";
 
 type RFQ = {
   id: string;
@@ -25,6 +27,11 @@ type RFQ = {
 };
 
 export default function ArtisansMissionsPage() {
+  // Phase 1.0 §B.15 : marketplace artisans gele (M1 GE+VD).
+  if (!FLAGS.ROLE_ARTISAN) {
+    return <ComingSoon title="Missions Artisans en préparation" phase="Phase 3" />;
+  }
+
   const q = useQuery({
     queryKey: ["artisan-missions", "open"],
     queryFn: async (): Promise<{ items: RFQ[] }> =>

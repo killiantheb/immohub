@@ -17,6 +17,8 @@ import { CheckCircle2, Gift, Loader2, ShieldCheck, Sparkles } from "lucide-react
 import { api } from "@/lib/api";
 import { C } from "@/lib/design-tokens";
 import { Analytics } from "@/lib/analytics";
+import { FLAGS } from "@/lib/flags";
+import { ComingSoon } from "@/components/ComingSoon";
 
 const CANTONS = [
   "GE","VD","VS","NE","FR","JU","BE","ZH","BS","BL","AG","AR","AI",
@@ -44,6 +46,11 @@ type Profil = {
 type FoundingSpot = { canton: string; total_spots: number; taken: number; remaining: number };
 
 export default function ProfilArtisanPage() {
+  // Phase 1.0 §B.15 : marketplace artisans gele (M1 GE+VD).
+  if (!FLAGS.ROLE_ARTISAN) {
+    return <ComingSoon title="Profil Artisan en préparation" phase="Phase 3" />;
+  }
+
   const qc = useQueryClient();
   const [canton, setCanton] = useState<string>("");
   const [specs, setSpecs] = useState<string[]>([]);

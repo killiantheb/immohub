@@ -8,6 +8,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Euro, TrendingUp, Wallet, type LucideIcon } from "lucide-react";
 import { api } from "@/lib/api";
 import { C } from "@/lib/design-tokens";
+import { FLAGS } from "@/lib/flags";
+import { ComingSoon } from "@/components/ComingSoon";
 
 type Paiement = {
   id: string;
@@ -18,6 +20,11 @@ type Paiement = {
 };
 
 export default function ArtisansRevenusPage() {
+  // Phase 1.0 §B.15 : marketplace artisans gele (M1 GE+VD).
+  if (!FLAGS.ROLE_ARTISAN) {
+    return <ComingSoon title="Revenus Artisans en préparation" phase="Phase 3" />;
+  }
+
   const paiQ = useQuery({
     queryKey: ["artisan-paiements"],
     queryFn: async (): Promise<Paiement[]> => (await api.get("/paiements?size=100")).data,
