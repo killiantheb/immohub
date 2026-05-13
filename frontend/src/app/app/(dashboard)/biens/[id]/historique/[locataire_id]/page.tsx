@@ -13,6 +13,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { C } from "@/lib/design-tokens";
+import { formatLocataireName } from "@/app/app/(dashboard)/biens/[id]/_shared";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtDate(iso?: string | null) {
@@ -126,7 +127,7 @@ function TabIdentite({ locataireId }: { locataireId: string }) {
             L
           </div>
           <div>
-            <p style={{ fontWeight: 700, color: C.text }}>Locataire #{loc.id.slice(0, 8)}</p>
+            <p style={{ fontWeight: 700, color: C.text }}>{formatLocataireName(loc)}</p>
             <Badge label={loc.statut === "actif" ? "Actif" : "Sorti"} color={loc.statut === "actif" ? C.green : C.text2} bg={loc.statut === "actif" ? C.greenBg : C.border} />
           </div>
         </div>
@@ -488,7 +489,7 @@ export default function DossierLocatairePage() {
           <div style={{ width: 40, height: 40, borderRadius: "50%", background: C.orangeBg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: C.orange }}>L</div>
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 800, color: C.text }}>
-              Dossier locataire #{locataire_id.slice(0, 8)}
+              Dossier — {formatLocataireName(loc)}
             </h1>
             <p style={{ fontSize: 13, color: C.text2 }}>
               {fmtDate(loc?.date_entree)} → {fmtDate(loc?.date_sortie)}

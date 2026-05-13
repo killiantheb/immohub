@@ -39,6 +39,7 @@ import {
   TYPE_DOCUMENT_LABELS,
 } from "@/lib/api/dossier-documents";
 import { useLocataireActuel } from "@/lib/hooks/useBiens";
+import { formatLocataireName } from "@/app/app/(dashboard)/biens/[id]/_shared";
 import {
   useDeleteDocument,
   useDossierDocuments,
@@ -209,10 +210,11 @@ export default function DossierLocataireBailleurPage() {
             fontWeight: 500,
           }}
         >
-          Locataire #{locataire.id.slice(0, 8)}
+          {formatLocataireName(locataire)}
         </h1>
         <p style={{ fontSize: 12, color: C.text3, margin: "4px 0 0" }}>
-          Compte créé le {new Date(locataire.created_at).toLocaleDateString("fr-CH")}
+          {locataire.user?.email ?? "Compte locataire"} · Créé le{" "}
+          {new Date(locataire.created_at).toLocaleDateString("fr-CH")}
         </p>
       </div>
 

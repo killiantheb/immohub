@@ -67,6 +67,27 @@ class UpdateCosignatairesRequest(BaseModel):
     cosignataires: list[CosignataireBase] = Field(default_factory=list, max_length=20)
 
 
+# ── UserMini (Sprint 6 K1) ────────────────────────────────────────────────────
+
+
+class UserMini(BaseModel):
+    """Sous-set minimal de User exposé dans LocataireRead.
+
+    Sprint 6 K1 (2026-05-13) : permet d'afficher prénom + nom + email + tel
+    côté UI bailleur au lieu d'un hash UUID. Tous les champs sont nullable
+    (un User locataire fraîchement créé via /invite peut avoir first_name/
+    last_name vides tant qu'il n'a pas complété son profil).
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    email: str
+    first_name: str | None = None
+    last_name: str | None = None
+    phone: str | None = None
+
+
 # ── Locataire ─────────────────────────────────────────────────────────────────
 
 class LocataireBase(BaseModel):
@@ -110,6 +131,10 @@ class LocataireRead(LocataireBase):
     created_at: datetime
     # Cosignataires (Sprint 1A.5) — array JSONB, vide par défaut.
     cosignataires: list[CosignataireBase] = Field(default_factory=list)
+    # Sprint 6 K1 — user lié au locataire (nom + email + tel pour UI).
+    # `None` si le locataire n'est pas encore lié à un compte (invitation
+    # pas encore consommée, drift DB) ou si la relation n'a pas été chargée.
+    user: UserMini | None = None
 
 
 # ── Dossier locataire ─────────────────────────────────────────────────────────

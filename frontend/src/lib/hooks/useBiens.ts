@@ -36,6 +36,14 @@ export type {
 export type LocataireStatut = "actif" | "sorti";
 export type TypeCaution = "cash" | "compte_bloque" | "organisme";
 
+export interface LocataireUser {
+  id: string;
+  email: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  phone?: string | null;
+}
+
 export interface Locataire {
   id: string;
   bien_id: string;
@@ -55,6 +63,8 @@ export interface Locataire {
   /** Cosignataires (Sprint 1A.5 — couple/famille sans refacto multi-comptes).
    *  Vide par défaut pour les locataires créés avant migration 0042. */
   cosignataires?: import("@/lib/api/dossier-documents").CosignataireBase[];
+  /** User lié (Sprint 6 K1) — null si invitation pas encore consommée. */
+  user?: LocataireUser | null;
 }
 
 export interface DossierLocataire {

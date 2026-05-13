@@ -26,6 +26,14 @@ class Locataire(BaseModel):
     user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
+    # Relation vers User (lecture seule côté backend, eager-loadée pour exposer
+    # prenom/nom/email/phone dans LocataireRead — Sprint 6 K1 : zéro hash UUID
+    # affiché côté UI bailleur).
+    user: Mapped[User | None] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        "User",
+        foreign_keys=[user_id],
+        lazy="selectin",
+    )
     # Infos bail
     date_entree: Mapped[date | None] = mapped_column(Date)
     date_sortie: Mapped[date | None] = mapped_column(Date)

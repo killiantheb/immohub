@@ -57,6 +57,28 @@ export function initials(str?: string | null) {
   return str.trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 2);
 }
 
+/**
+ * Sprint 6 K1 — affichage humain du locataire à partir de sa relation `user`.
+ * Fallback en cascade : nom complet → prénom → nom → préfixe email →
+ * placeholder « Locataire à compléter » (cas user_id NULL ou profil vide).
+ *
+ * Doctrine §B.10 : si aucune donnée disponible, on l'annonce honnêtement
+ * (« Locataire à compléter ») plutôt que d'afficher un hash UUID qui ne dit
+ * rien à personne et démolit la crédibilité produit côté Sunimmo.
+ */
+export function formatLocataireName(loc?: Locataire | null): string {
+  const u = loc?.user;
+  if (!u) return "Locataire à compléter";
+  const fn = u.first_name?.trim();
+  const ln = u.last_name?.trim();
+  if (fn && ln) return `${fn} ${ln}`;
+  if (fn) return fn;
+  if (ln) return ln;
+  const email = u.email?.trim();
+  if (email) return email.split("@")[0];
+  return "Locataire à compléter";
+}
+
 // ── Atoms ──────────────────────────────────────────────────────────────────────
 export function Badge({ label, color, bg }: { label: string; color: string; bg: string }) {
   return (
@@ -307,11 +329,13 @@ export function TabLocataire({ bienId }: { bienId: string }) {
         <p style={{ ...TYPO_LABEL_MEDIUM, color: C.text2, margin: "0 0 1rem" }}>Contact &amp; bail</p>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "1rem" }}>
           <div style={{ width: 44, height: 44, borderRadius: "50%", background: C.prussianBg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: C.prussian }}>
-            {initials(locataire.id)}
+            {initials(formatLocataireName(locataire))}
           </div>
           <div>
-            <p style={{ fontWeight: 600, color: C.text }}>Locataire</p>
-            <p style={{ fontSize: 11, color: C.text3 }}>#{locataire.id.slice(0, 8)}</p>
+            <p style={{ fontWeight: 600, color: C.text }}>{formatLocataireName(locataire)}</p>
+            {locataire.user?.email && (
+              <p style={{ fontSize: 11, color: C.text3 }}>{locataire.user.email}</p>
+            )}
           </div>
         </div>
         <InfoRow label="Statut" value={<Badge label="Actif" color={C.green} bg={C.greenBg} />} />
@@ -433,10 +457,10 @@ export function TabHistorique({ bienId }: { bienId: string }) {
           <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "space-between", flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 40, height: 40, borderRadius: "50%", background: C.surface2, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: C.text2, flexShrink: 0 }}>
-                L
+                {initials(formatLocataireName(loc))}
               </div>
               <div>
-                <p style={{ fontWeight: 600, color: C.text }}>Locataire #{loc.id.slice(0, 8)}</p>
+                <p style={{ fontWeight: 600, color: C.text }}>{formatLocataireName(loc)}</p>
                 <p style={{ fontSize: 12, color: C.text2 }}>
                   {fmtDate(loc.date_entree)} → {fmtDate(loc.date_sortie)}
                 </p>
