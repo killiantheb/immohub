@@ -1,0 +1,24 @@
+ALTHY — QR-facture de loyer
+
+Bonjour {prenom_locataire},
+
+Voici votre QR-facture pour le loyer du mois de {mois_label}.
+
+— Bien concerné : {bien_adresse}
+— Montant : CHF {montant_chf}
+— Référence QR : {qr_reference}
+
+Téléchargez votre QR-facture PDF et scannez-la depuis votre e-banking pour
+effectuer le paiement :
+
+  {download_url}
+
+Vous pouvez également retrouver toutes vos QR-factures et quittances dans
+votre espace Althy : https://althy.ch/app/mon-bien
+
+Le lien de téléchargement est valide 14 jours. Au-delà, connectez-vous à
+votre espace Althy pour régénérer une copie.
+
+—
+{althy_creditor_name} · l'assistant immobilier suisse
+{emails_from}
