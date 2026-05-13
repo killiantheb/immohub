@@ -24,7 +24,10 @@ export default function ArtisansRevenusPage() {
   if (!FLAGS.ROLE_ARTISAN) {
     return <ComingSoon title="Revenus Artisans en préparation" phase="Phase 3" />;
   }
+  return <ArtisansRevenusPageInner />;
+}
 
+function ArtisansRevenusPageInner() {
   const paiQ = useQuery({
     queryKey: ["artisan-paiements"],
     queryFn: async (): Promise<Paiement[]> => (await api.get("/paiements?size=100")).data,

@@ -149,7 +149,10 @@ export default function ArtisansPage() {
   if (!FLAGS.ROLE_ARTISAN) {
     return <ComingSoon title="Annuaire Artisans en préparation" phase="Phase 3" />;
   }
+  return <ArtisansPageInner />;
+}
 
+function ArtisansPageInner() {
   const [search,     setSearch]     = useState("");
   const [canton,     setCanton]     = useState("");
   const [specialite, setSpecialite] = useState("");

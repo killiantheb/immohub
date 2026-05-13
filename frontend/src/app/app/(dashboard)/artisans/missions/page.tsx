@@ -31,7 +31,10 @@ export default function ArtisansMissionsPage() {
   if (!FLAGS.ROLE_ARTISAN) {
     return <ComingSoon title="Missions Artisans en préparation" phase="Phase 3" />;
   }
+  return <ArtisansMissionsPageInner />;
+}
 
+function ArtisansMissionsPageInner() {
   const q = useQuery({
     queryKey: ["artisan-missions", "open"],
     queryFn: async (): Promise<{ items: RFQ[] }> =>

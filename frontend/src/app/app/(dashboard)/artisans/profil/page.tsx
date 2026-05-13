@@ -50,7 +50,10 @@ export default function ProfilArtisanPage() {
   if (!FLAGS.ROLE_ARTISAN) {
     return <ComingSoon title="Profil Artisan en préparation" phase="Phase 3" />;
   }
+  return <ProfilArtisanPageInner />;
+}
 
+function ProfilArtisanPageInner() {
   const qc = useQueryClient();
   const [canton, setCanton] = useState<string>("");
   const [specs, setSpecs] = useState<string[]>([]);
