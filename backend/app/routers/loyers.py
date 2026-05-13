@@ -24,7 +24,7 @@ from app.models.user import User
 from app.services.qr_facture import generate_qr_bill_pdf, generate_qr_reference
 from app.services.reconciliation import parse_camt054, reconcile_payments
 from app.services.storage import get_signed_url, upload_pdf
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -83,6 +83,29 @@ class PatchStatutRequest(BaseModel):
     statut: str
     reference_virement_sortant: str | None = None
     commentaire: str | None = None
+
+
+class GenererAnneeRequest(BaseModel):
+    """Génération batch des 12 mois d'une année (Sprint 8 Lot B)."""
+    bien_id: _uuid.UUID
+    annee: int  # ex. 2026
+
+
+class GenererAnneeResponse(BaseModel):
+    bien_id: _uuid.UUID
+    annee: int
+    created_count: int
+    skipped_count: int
+    created_months: list[str]
+    skipped_months: list[str]
+
+
+class ImportCamtResponse(BaseModel):
+    """Résultat d'un import CAMT.054 (Sprint 8 Lot B)."""
+    matched_count: int
+    unmatched_count: int
+    matched_details: list[dict]
+    unmatched_details: list[dict]
 
 
 # ── POST /loyers/generer-qr ───────────────────────────────────────────────────
@@ -451,3 +474,230 @@ async def patch_loyer_statut(
         text("SELECT * FROM loyer_transactions WHERE id = :id"), {"id": str(tx_id)},
     )).mappings().one_or_none()
     return dict(row) if row else {}
+
+
+# ── POST /loyers/generer-annee ────────────────────────────────────────────────
+
+@router.post(
+    "/generer-annee",
+    response_model=GenererAnneeResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def generer_loyers_annee(
+    payload: GenererAnneeRequest,
+    current_user: AuthDep,
+    db: DbDep,
+) -> GenererAnneeResponse:
+    """Génère les 12 loyer_transactions d'une année pour un bien.
+
+    Phase 1.0 §B.15 : pas de commission Stripe Connect (commission_pct=0).
+    Idempotent : skip les mois déjà créés (clé bien_id + tenant_id + mois_concerne).
+    Le PDF QR-facture et l'email locataire sont générés mensuellement par la
+    cron `generate_monthly_rents` quand le mois courant arrive.
+    """
+    if current_user.role not in _MANAGER_ROLES:
+        raise HTTPException(status_code=403, detail="Accès réservé aux propriétaires et agences.")
+    if not (2024 <= payload.annee <= 2030):
+        raise HTTPException(status_code=400, detail="Année hors bornes (2024-2030).")
+
+    # ── Bien ──
+    bien = (await db.execute(
+        text("SELECT id, adresse, loyer, owner_id FROM biens WHERE id = :id AND is_active = true"),
+        {"id": str(payload.bien_id)},
+    )).one_or_none()
+    if not bien:
+        raise HTTPException(status_code=404, detail="Bien introuvable.")
+    if str(bien.owner_id) != str(current_user.id) and current_user.role not in _ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="Ce bien ne vous appartient pas.")
+    if not bien.loyer or float(bien.loyer) <= 0:
+        raise HTTPException(status_code=400, detail="Le bien n'a pas de loyer défini.")
+
+    # ── Locataire actif ──
+    tenant = (await db.execute(
+        text(
+            "SELECT id, loyer FROM locataires "
+            "WHERE bien_id = :bid AND statut = 'actif' "
+            "ORDER BY created_at DESC LIMIT 1"
+        ),
+        {"bid": str(payload.bien_id)},
+    )).one_or_none()
+    if not tenant:
+        raise HTTPException(
+            status_code=400,
+            detail="Aucun locataire actif sur ce bien.",
+        )
+
+    tenant_id = _uuid.UUID(str(tenant.id))
+    # Priorité loyer négocié locataire > loyer par défaut bien.
+    raw_loyer = tenant.loyer if tenant.loyer is not None else bien.loyer
+    montant_total = float(raw_loyer)
+    if montant_total <= 0:
+        raise HTTPException(status_code=400, detail="Loyer non défini.")
+
+    # Phase 1.0 §B.15 : commission = 0 (Stripe Connect gelé Phase 2).
+    commission_pct = 0.0
+    commission_montant = 0.0
+    montant_reverse = montant_total
+
+    created: list[str] = []
+    skipped: list[str] = []
+
+    for month in range(1, 13):
+        from datetime import date as _date
+        mois_concerne = _date(payload.annee, month, 1)
+        mois_str = mois_concerne.strftime("%Y-%m")
+
+        existing = (await db.execute(
+            text(
+                "SELECT id FROM loyer_transactions "
+                "WHERE bien_id = :bid AND tenant_id = :tid AND mois_concerne = :mois LIMIT 1"
+            ),
+            {
+                "bid": str(payload.bien_id),
+                "tid": str(tenant_id),
+                "mois": mois_concerne,
+            },
+        )).one_or_none()
+        if existing:
+            skipped.append(mois_str)
+            continue
+
+        qr_ref = generate_qr_reference(payload.bien_id, tenant_id, mois_str)
+        tx_id = _uuid.uuid4()
+        await db.execute(
+            text("""
+                INSERT INTO loyer_transactions
+                    (id, bien_id, tenant_id, owner_id,
+                     montant_total, commission_pct, commission_montant, montant_reverse,
+                     qr_reference, statut, mois_concerne)
+                VALUES
+                    (:id, :bid, :tid, :oid, :total, :cpct, :cmt, :rev,
+                     :qr_ref, 'en_attente', :mois)
+            """),
+            {
+                "id": tx_id,
+                "bid": str(payload.bien_id),
+                "tid": str(tenant_id),
+                "oid": str(bien.owner_id),
+                "total": montant_total,
+                "cpct": commission_pct,
+                "cmt": commission_montant,
+                "rev": montant_reverse,
+                "qr_ref": qr_ref,
+                "mois": mois_concerne,
+            },
+        )
+        created.append(mois_str)
+
+    await db.commit()
+
+    return GenererAnneeResponse(
+        bien_id=payload.bien_id,
+        annee=payload.annee,
+        created_count=len(created),
+        skipped_count=len(skipped),
+        created_months=created,
+        skipped_months=skipped,
+    )
+
+
+# ── POST /loyers/import-camt054 ───────────────────────────────────────────────
+
+@router.post("/import-camt054", response_model=ImportCamtResponse)
+async def import_camt054(
+    current_user: AuthDep,
+    db: DbDep,
+    file: UploadFile = File(...),
+) -> ImportCamtResponse:
+    """Import CAMT.054 multipart pour réconciliation automatique des loyers.
+
+    Différences avec /reconcilier (base64 + admin-only) :
+      - Upload multipart : pratique depuis l'UI bailleur.
+      - Ouvert à proprio_solo + agence : chaque proprio peut importer son
+        propre CAMT.054 reçu de sa banque. Le filtrage par owner_id garantit
+        qu'un bailleur ne peut pas matcher les loyers d'un autre.
+      - Admin : pas de filtrage (vue globale Althy).
+    """
+    if current_user.role not in _MANAGER_ROLES:
+        raise HTTPException(status_code=403, detail="Accès réservé aux propriétaires et agences.")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Fichier vide.")
+
+    try:
+        entries = parse_camt054(content)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Fichier CAMT.054 invalide : {exc}",
+        )
+
+    is_admin = current_user.role in _ADMIN_ROLES
+    matched_details: list[dict] = []
+    unmatched_details: list[dict] = []
+
+    for entry in entries:
+        ref = str(entry.get("reference", "")).strip().replace(" ", "")
+        if not ref or len(ref) != 27:
+            unmatched_details.append({**entry, "raison": "reference_invalide"})
+            continue
+
+        row = (await db.execute(
+            text(
+                "SELECT id, owner_id, montant_total "
+                "FROM loyer_transactions "
+                "WHERE qr_reference = :ref AND statut = 'en_attente' "
+                "LIMIT 1"
+            ),
+            {"ref": ref},
+        )).one_or_none()
+
+        if not row:
+            unmatched_details.append({**entry, "raison": "qr_reference_inconnu"})
+            continue
+
+        # Filtrage ownership pour non-admin (un bailleur ne match que SES loyers).
+        if not is_admin and str(row.owner_id) != str(current_user.id):
+            unmatched_details.append({**entry, "raison": "non_proprietaire"})
+            continue
+
+        # Tolérance ±0.05 CHF (arrondis bancaires).
+        montant_recu = float(entry.get("montant", 0))
+        if abs(float(row.montant_total) - montant_recu) > 0.05:
+            unmatched_details.append({
+                **entry,
+                "raison": "montant_incorrect",
+                "attendu": float(row.montant_total),
+            })
+            continue
+
+        # Date de réception
+        dt_str = str(entry.get("date", ""))
+        try:
+            reception_dt = datetime.fromisoformat(dt_str) if dt_str else datetime.now()
+        except ValueError:
+            reception_dt = datetime.now()
+
+        await db.execute(
+            text(
+                "UPDATE loyer_transactions "
+                "SET statut = 'recu', date_reception = :dt, updated_at = now() "
+                "WHERE id = :id"
+            ),
+            {"dt": reception_dt, "id": str(row.id)},
+        )
+        matched_details.append({
+            "reference": ref,
+            "transaction_id": str(row.id),
+            "montant": montant_recu,
+        })
+
+    await db.commit()
+
+    return ImportCamtResponse(
+        matched_count=len(matched_details),
+        unmatched_count=len(unmatched_details),
+        matched_details=matched_details,
+        unmatched_details=unmatched_details[:50],  # tronqué pour limiter la payload
+    )
