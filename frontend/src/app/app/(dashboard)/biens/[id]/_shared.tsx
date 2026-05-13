@@ -2,13 +2,14 @@
 // Composants et utilitaires partagés entre les sous-pages de la fiche bien
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle, Award, Building2, Calculator, CheckCircle2,
   ChevronDown, ChevronRight,
-  Clock, Download, Eye, FileText, Lightbulb, Loader2, MapPin,
-  PiggyBank, Plus, Sparkles, TrendingUp, User, UserPlus, Wrench, XCircle,
+  Clock, Copy, Download, Eye, FileText, Lightbulb, Loader2, Mail, MapPin,
+  MessageSquare, Phone, PiggyBank, Plus, Sparkles, TrendingUp, User, UserPlus,
+  Wrench, XCircle,
 } from "lucide-react";
 import { InviterLocataireModal } from "@/components/biens/InviterLocataireModal";
 import {
@@ -266,6 +267,18 @@ export function TabLocataire({ bienId }: { bienId: string }) {
   const { data: paiements } = usePaiements(bienId);
   const { data: bien } = useBien(bienId);
   const [inviteOpen, setInviteOpen] = useState(false);
+  // Sprint 6 K5 — toast éphémère "Copié" (durée 2s, position fixed bottom-right).
+  const [copyMsg, setCopyMsg] = useState<string | null>(null);
+  const handleCopy = useCallback((value: string, label: string) => {
+    if (typeof navigator === "undefined" || !navigator.clipboard) return;
+    navigator.clipboard.writeText(value).then(() => {
+      setCopyMsg(`${label} copié`);
+      setTimeout(() => setCopyMsg(null), 2000);
+    }).catch(() => {
+      setCopyMsg("Échec copie");
+      setTimeout(() => setCopyMsg(null), 2000);
+    });
+  }, []);
   const moisCourant = new Date().toISOString().slice(0, 7);
   const pMois = paiements?.find(p => p.mois === moisCourant);
   const daysFin = daysUntil(locataire?.date_sortie);
@@ -323,22 +336,97 @@ export function TabLocataire({ bienId }: { bienId: string }) {
 
   const ps = pMois ? PAI_STATUT[pMois.statut] : null;
   return (
+    <>
+    {/* Sprint 6 K5 — toast éphémère post-copy. Position fixed bottom-right,
+        durée 2s. Wording validé : "Email copié" / "Téléphone copié". */}
+    {copyMsg && (
+      <div
+        role="status"
+        aria-live="polite"
+        style={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          padding: "10px 18px",
+          background: C.prussian,
+          color: "#fff",
+          borderRadius: 10,
+          fontSize: 13,
+          fontWeight: 600,
+          boxShadow: C.shadowMd ?? C.shadow,
+          zIndex: 10000,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <CheckCircle2 size={14} /> {copyMsg}
+      </div>
+    )}
     <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(270px, 1fr))" }}>
       {/* Contact & bail */}
       <Card>
         <p style={{ ...TYPO_LABEL_MEDIUM, color: C.text2, margin: "0 0 1rem" }}>Contact &amp; bail</p>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "1rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "0.75rem" }}>
           <div style={{ width: 44, height: 44, borderRadius: "50%", background: C.prussianBg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: C.prussian }}>
             {initials(formatLocataireName(locataire))}
           </div>
           <div>
             <p style={{ fontWeight: 600, color: C.text }}>{formatLocataireName(locataire)}</p>
-            {locataire.user?.email && (
-              <p style={{ fontSize: 11, color: C.text3 }}>{locataire.user.email}</p>
-            )}
+            <Badge label="Actif" color={C.green} bg={C.greenBg} />
           </div>
         </div>
-        <InfoRow label="Statut" value={<Badge label="Actif" color={C.green} bg={C.greenBg} />} />
+
+        {/* Sprint 6 K5 — actions contact email + téléphone. Affichées
+            uniquement si la donnée existe (§B.10 — pas de placeholder vide). */}
+        {locataire.user?.email && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: `1px solid ${C.border}` }}>
+            <Mail size={14} style={{ color: C.text3, flexShrink: 0 }} />
+            <span style={{ fontSize: 13, color: C.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {locataire.user.email}
+            </span>
+            <button
+              type="button"
+              onClick={() => handleCopy(locataire.user!.email, "Email")}
+              title="Copier l'email"
+              style={{ ...iconBtn, cursor: "pointer" }}
+            >
+              <Copy size={12} />
+            </button>
+            <a
+              href={`mailto:${locataire.user.email}`}
+              title="Écrire un email"
+              style={{ ...iconBtn, color: C.prussian, borderColor: C.prussian }}
+            >
+              <Mail size={12} />
+            </a>
+          </div>
+        )}
+        {locataire.user?.phone && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: `1px solid ${C.border}` }}>
+            <Phone size={14} style={{ color: C.text3, flexShrink: 0 }} />
+            <span style={{ fontSize: 13, color: C.text, flex: 1 }}>
+              {locataire.user.phone}
+            </span>
+            <button
+              type="button"
+              onClick={() => handleCopy(locataire.user!.phone!, "Téléphone")}
+              title="Copier le numéro"
+              style={{ ...iconBtn, cursor: "pointer" }}
+            >
+              <Copy size={12} />
+            </button>
+            <a
+              href={`tel:${locataire.user.phone.replace(/\s+/g, "")}`}
+              title="Appeler"
+              style={{ ...iconBtn, color: C.prussian, borderColor: C.prussian }}
+            >
+              <Phone size={12} />
+            </a>
+          </div>
+        )}
+
+        <InfoRow label="Entrée" value={fmtDate(locataire.date_entree)} />
         <InfoRow label="Entrée" value={fmtDate(locataire.date_entree)} />
         <InfoRow label="Sortie prévue" value={
           locataire.date_sortie
@@ -384,6 +472,22 @@ export function TabLocataire({ bienId }: { bienId: string }) {
             <RefreshCw size={12} /> Proposer renouvellement
           </Link>
         )} */}
+
+        {/* Sprint 6 K5 — accès direct messagerie 1:1 bailleur ↔ locataire
+            (§4.13 doctrine produit). Bouton plein largeur pour rester
+            visible dans la zone d'action principale de la fiche locataire. */}
+        <Link
+          href={`/app/biens/${bienId}/messagerie`}
+          style={{
+            ...btnP,
+            marginTop: "1rem",
+            justifyContent: "center",
+            width: "100%",
+            textDecoration: "none",
+          }}
+        >
+          <MessageSquare size={14} /> Ouvrir la messagerie
+        </Link>
       </Card>
 
       {/* Paiement du mois */}
@@ -445,6 +549,7 @@ export function TabLocataire({ bienId }: { bienId: string }) {
         )}
       </Card>
     </div>
+    </>
   );
 }
 
