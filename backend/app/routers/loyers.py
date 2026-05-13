@@ -378,11 +378,42 @@ async def patch_loyer_statut(
     current_user: AuthDep,
     db: DbDep,
 ) -> dict:
-    """Admin uniquement — force un statut (ex: marquer 'reverse' après virement manuel)."""
-    if current_user.role not in _ADMIN_ROLES:
-        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs.")
+    """Modifie le statut d'un loyer.
+
+    Sprint 6 K4 (2026-05-13) : ouvre l'endpoint au proprio_solo (était
+    admin-only). Le bailleur Sunimmo doit pouvoir marquer un loyer
+    « recu » / « en_retard » sur SES propres biens sans passer par le
+    support. Les statuts purement opérationnels Althy (« reverse » =
+    virement sortant) restent réservés à super_admin.
+    """
     if payload.statut not in _VALID_STATUTS:
         raise HTTPException(status_code=400, detail=f"Statut invalide. Valeurs : {_VALID_STATUTS}")
+
+    # Récupérer le owner_id pour autorisation (le proprio du bien lié au loyer).
+    row = (await db.execute(
+        text("SELECT owner_id FROM loyer_transactions WHERE id = :id"),
+        {"id": str(tx_id)},
+    )).mappings().one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Transaction introuvable.")
+
+    is_admin = current_user.role in _ADMIN_ROLES
+    is_owner = str(row["owner_id"]) == str(current_user.id)
+
+    if not (is_admin or is_owner):
+        raise HTTPException(
+            status_code=403,
+            detail="Vous n'êtes pas propriétaire de ce loyer.",
+        )
+
+    # Le statut "reverse" implique un virement sortant côté Althy : réservé
+    # admin. Le proprio_solo peut marquer recu / en_attente / en_retard /
+    # conteste sur SES propres loyers.
+    if payload.statut == "reverse" and not is_admin:
+        raise HTTPException(
+            status_code=403,
+            detail="Le statut 'reverse' (virement Althy → propriétaire) est réservé à l'équipe Althy.",
+        )
 
     updates = ["statut = :statut", "updated_at = now()"]
     params: dict = {"id": str(tx_id), "statut": payload.statut}
