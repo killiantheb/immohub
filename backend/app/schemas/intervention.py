@@ -68,6 +68,10 @@ class InterventionRead(InterventionBase):
     signale_par_id: uuid.UUID
     created_at: datetime
     images: list[InterventionPhotoRead] = []
+    # Sprint 6 K6 — progression dérivée du statut (0/33/66/100). Calculée
+    # côté model via @hybrid_property → exposée ici en lecture seule. Le
+    # frontend l'utilise pour la progress bar §B.4 (Or → Prussian → Vert).
+    progression: int = 0
 
 
 # ── Devis ─────────────────────────────────────────────────────────────────────

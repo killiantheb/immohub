@@ -8,7 +8,22 @@ from datetime import date, datetime
 from app.models.base import BaseModel
 from sqlalchemy import Date, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+
+# ── Mapping progression Sprint 6 K6 (2026-05-13) ──────────────────────────────
+# Dérivé de l'enum `intervention_statut_enum` (4 valeurs réelles côté DB).
+# Étapes : signalée → planifiée → en cours → résolue.
+# Doctrine §B.10 : un statut = une étape réelle. Pas de "termine" intermédiaire
+# car la transition vers "resolu" est immédiate côté workflow Phase 1.0 (le
+# bailleur passe le travail en résolu dès qu'il valide la clôture).
+PROGRESSION_BY_STATUT: dict[str, int] = {
+    "nouveau":  0,
+    "planifie": 33,
+    "en_cours": 66,
+    "resolu":   100,
+}
 
 InterventionCategorie = Enum(
     "plomberie",
@@ -81,6 +96,16 @@ class Intervention(BaseModel):
         order_by="InterventionPhoto.order",
         lazy="selectin",
     )
+
+    # Sprint 6 K6 — progression dérivée du statut (0/33/66/100).
+    # hybrid_property : accessible côté Python via .progression ET via SQL
+    # (utile pour ORDER BY / filtre WHERE futur sans dénormaliser la colonne).
+    # Distinct de `avancement` (Integer manuel) qui reste pour les cas où
+    # l'artisan veut afficher un % fin pendant l'exécution (ex: 80% planché
+    # posé). Côté UI Phase 1.0 on affiche `progression` (déterministe).
+    @hybrid_property
+    def progression(self) -> int:  # type: ignore[override]
+        return PROGRESSION_BY_STATUT.get(self.statut, 0)
 
 
 class InterventionPhoto(BaseModel):
