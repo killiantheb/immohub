@@ -97,6 +97,16 @@ ParkingType = Enum(
 class Bien(BaseModel):
     __tablename__ = "biens"
 
+    # ── Titre (Sprint 7 Lot B — 2026-05-13) ──────────────────────────────────
+    # Label libre saisi par le bailleur lors de la création (« Studio Crans
+    # Forum », « Appartement Vy-d'Étraz 17 »). Distinct de building_name
+    # (nom officiel immeuble) et reference_number (référence interne agence).
+    # Optionnel — fallback affichage côté UI = `adresse + ville`. Migration
+    # 0048 a ajouté la colonne après audit Sprint 7 ayant détecté que le
+    # frontend `biens/nouveau` envoyait déjà `titre` et que le backend Pydantic
+    # le droppait silencieusement (champ fantôme).
+    titre: Mapped[str | None] = mapped_column(String(200))
+
     # ── Relations & identité (6) ─────────────────────────────────────────────
     owner_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

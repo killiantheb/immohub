@@ -78,6 +78,11 @@ class BienBase(BaseModel):
     cp: str = Field(min_length=4, max_length=10)  # pas de regex : multi-pays futur
     canton: str | None = Field(default=None, max_length=2)  # auto-rempli si cp connu
 
+    # ── Titre (Sprint 7 Lot B — 2026-05-13) ──────────────────────────────────
+    # Label libre. Cf modèle Bien.titre + migration 0048 — corrige un champ
+    # fantôme historique (frontend l'envoyait, backend le droppait).
+    titre: str | None = Field(default=None, max_length=200)
+
     # ── Identité ──────────────────────────────────────────────────────────────
     building_name: str | None = Field(default=None, max_length=200)
     unit_number: str | None = Field(default=None, max_length=20)
@@ -220,6 +225,9 @@ class BienUpdate(BaseModel):
     ville: str | None = Field(default=None, min_length=1, max_length=100)
     cp: str | None = Field(default=None, min_length=4, max_length=10)
     canton: str | None = Field(default=None, max_length=2)
+
+    # ── Titre (Sprint 7 Lot B — 2026-05-13) ──────────────────────────────────
+    titre: str | None = Field(default=None, max_length=200)
 
     # ── Identité ──────────────────────────────────────────────────────────────
     building_name: str | None = Field(default=None, max_length=200)
