@@ -436,6 +436,11 @@ export interface Contract {
   deposit: number | null;
   signed_at: string | null;
   signed_ip: string | null;
+  // Sprint 8 — contre-signature locataire (workflow bailleur → locataire).
+  tenant_signed_at?: string | null;
+  tenant_signed_ip?: string | null;
+  fully_signed?: boolean;
+  pdf_url?: string | null;
   terminated_at: string | null;
   is_active: boolean;
   created_at: string;

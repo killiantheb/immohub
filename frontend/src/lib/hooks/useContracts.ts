@@ -8,6 +8,7 @@ export const contractKeys = {
   all: ["contracts"] as const,
   list: (filters: Record<string, unknown>) => ["contracts", "list", filters] as const,
   detail: (id: string) => ["contracts", id] as const,
+  mine: ["contracts", "me"] as const,
 };
 
 interface ContractFilters {
@@ -119,6 +120,45 @@ export function useSignContract(id: string) {
     },
     onSuccess: (updated) => {
       qc.setQueryData(contractKeys.detail(id), updated);
+      qc.invalidateQueries({ queryKey: contractKeys.all });
+    },
+  });
+}
+
+/**
+ * Sprint 8 Lot C — récupère le bail actif du locataire courant (route locataire).
+ * Backend Lot A : GET /contracts/me → renvoie le seul Contract lié au user locataire,
+ * ou null s'il n'y en a pas encore.
+ */
+export function useMyContract() {
+  const query = useQuery({
+    queryKey: contractKeys.mine,
+    queryFn: async () => {
+      const { data } = await api.get<Contract | null>("/contracts/me");
+      return data;
+    },
+    staleTime: 30_000,
+  });
+  return { contract: query.data ?? null, isLoading: query.isLoading, isError: query.isError };
+}
+
+/**
+ * Sprint 8 Lot C — contre-signature locataire.
+ * Backend Lot A : POST /contracts/{id}/countersign — exige que le bailleur ait
+ * déjà signé (signed_at != null) et que le user soit le locataire du contrat.
+ * §B.10 : le serveur enregistre tenant_signed_at + tenant_signed_ip (preuve
+ * d'acceptation contractuelle, pas une signature électronique qualifiée).
+ */
+export function useCountersignContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post<Contract>(`/contracts/${id}/countersign`);
+      return data;
+    },
+    onSuccess: (updated) => {
+      qc.setQueryData(contractKeys.mine, updated);
+      qc.setQueryData(contractKeys.detail(updated.id), updated);
       qc.invalidateQueries({ queryKey: contractKeys.all });
     },
   });
