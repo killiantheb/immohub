@@ -77,7 +77,12 @@ async def login(payload: LoginRequest, db: DbDep, _=rate_limit(10, 60)) -> AuthR
     response_model=TokenResponse,
     summary="Renouveler le JWT avec le refresh_token",
 )
-async def refresh(payload: RefreshRequest, db: DbDep) -> TokenResponse:
+async def refresh(payload: RefreshRequest, db: DbDep, _=rate_limit(10, 60)) -> TokenResponse:
+    # rate_limit 10 req/min/IP — un client web fait ~1 refresh / 50 min en
+    # nominal (TTL access_token ~ 1h). Au-delà = boucle de retry ou bot ;
+    # même cadence que /login pour empêcher l'enumeration de tokens via
+    # /refresh (pas de credentials user/pass mais un refresh_token volé
+    # serait amplifié par retry illimité).
     return await AuthService(db).refresh(payload)
 
 
