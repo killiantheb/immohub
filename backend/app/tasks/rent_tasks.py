@@ -34,9 +34,13 @@ def _run(coro):
 
 @celery_app.task(bind=True, name="tasks.generate_monthly_rents", max_retries=3)
 def generate_monthly_rents(self) -> dict:
-    """
-    Create one pending rent Transaction for every active long_term contract
-    that doesn't already have a transaction for the current month.
+    """Crée une LoyerTransaction du mois pour chaque bail actif.
+
+    Sprint 8 Lot B (2026-05-13) — refonte §B.13 : la cron écrivait
+    historiquement dans la table `transactions` (modèle legacy hors W7).
+    On bascule sur `loyer_transactions` (source de vérité Phase 1.0,
+    cf migration 0047) en partant de Locataire (statut=actif) joint au
+    Bien (statut=loue). Idempotent via (bien_id, tenant_id, mois_concerne).
     """
     try:
         return _run(_generate_monthly_rents_async())
@@ -47,73 +51,106 @@ def generate_monthly_rents(self) -> dict:
 
 async def _generate_monthly_rents_async() -> dict:
     from app.core.database import AsyncSessionLocal
-    from app.models.contract import Contract
-    from app.models.transaction import Transaction
-    from sqlalchemy import extract, select
+    from app.models.bien import Bien
+    from app.models.locataire import Locataire
+    from app.models.loyer_transaction import LoyerTransaction
+    from app.services.qr_facture import generate_qr_reference
+    from sqlalchemy import select
 
-    now = datetime.now(UTC)
-    # Due date = 5th of current month
-    due = datetime(now.year, now.month, 5, tzinfo=UTC)
+    today = date.today()
+    mois_concerne = today.replace(day=1)
+    mois_str = mois_concerne.strftime("%Y-%m")
 
     created = 0
     skipped = 0
+    created_refs: list[tuple] = []  # (loyer_tx, locataire, bien) — emails best-effort post-commit
 
     async with AsyncSessionLocal() as db:
-        contracts = (
-            (
-                await db.execute(
-                    select(Contract).where(
-                        Contract.type == "long_term",
-                        Contract.status == "active",
-                        Contract.is_active.is_(True),
-                        Contract.monthly_rent.isnot(None),
-                    )
+        rows = (
+            await db.execute(
+                select(Locataire, Bien)
+                .join(Bien, Locataire.bien_id == Bien.id)
+                .where(
+                    Locataire.statut == "actif",
+                    Bien.statut == "loue",
                 )
             )
-            .scalars()
-            .all()
-        )
+        ).all()
 
-        for contract in contracts:
-            # Check if already generated for this month
-            existing = (
-                await db.execute(
-                    select(Transaction).where(
-                        Transaction.contract_id == contract.id,
-                        Transaction.type == "rent",
-                        extract("year", Transaction.due_date) == now.year,
-                        extract("month", Transaction.due_date) == now.month,
-                    )
+        for locataire, bien in rows:
+            # Idempotence — (bien_id, tenant_id, mois_concerne)
+            existing = await db.scalar(
+                select(LoyerTransaction.id).where(
+                    LoyerTransaction.bien_id == bien.id,
+                    LoyerTransaction.tenant_id == locataire.id,
+                    LoyerTransaction.mois_concerne == mois_concerne,
                 )
-            ).scalar_one_or_none()
-
+            )
             if existing:
                 skipped += 1
                 continue
 
-            ref = f"TXN-{now.strftime('%Y%m%d')}-{str(uuid.uuid4())[:6].upper()}"
-            rent = float(contract.monthly_rent or 0)
-            charges = float(contract.charges or 0)
+            montant = locataire.loyer if locataire.loyer is not None else bien.loyer
+            if not montant or float(montant) <= 0:
+                continue
 
-            tx = Transaction(
-                reference=ref,
-                contract_id=contract.id,
-                bien_id=contract.bien_id,
-                owner_id=contract.owner_id,
-                tenant_id=contract.tenant_id,
-                type="rent",
-                status="pending",
-                amount=rent + charges,
-                due_date=due,
-                notes=f"Loyer {due.strftime('%B %Y')} — {rent:.2f}€ + {charges:.2f}€ charges",
+            montant_total = float(montant)
+            qr_ref = generate_qr_reference(bien.id, locataire.id, mois_str)
+            new_tx = LoyerTransaction(
+                bien_id=bien.id,
+                tenant_id=locataire.id,
+                owner_id=bien.owner_id,
+                montant_total=montant_total,
+                # Phase 1.0 : pas de commission Stripe Connect (§B.15).
+                # L'endpoint /loyers/generer-qr historique applique encore
+                # `ALTHY_COMMISSION_PCT` (3%) ; la cron Phase 1.0 reste à
+                # 0% pour cohérence Sunimmo (logiciel de gestion pur).
+                commission_pct=0,
+                commission_montant=0,
+                montant_reverse=montant_total,
+                qr_reference=qr_ref,
+                statut="en_attente",
+                mois_concerne=mois_concerne,
             )
-            db.add(tx)
+            db.add(new_tx)
+            created_refs.append((new_tx, locataire, bien))
             created += 1
 
         await db.commit()
 
-    logger.info("generate_monthly_rents: created=%d skipped=%d", created, skipped)
-    return {"created": created, "skipped": skipped, "month": now.strftime("%Y-%m")}
+    # Email best-effort (§B.12) — câblage Sprint 8 Lot B c2.
+    emails_sent = 0
+    emails_failed = 0
+    if created_refs:
+        try:
+            from app.services.email_service import send_qr_facture_email
+        except ImportError:
+            send_qr_facture_email = None  # type: ignore[assignment]
+
+        for tx, loc, bn in created_refs:
+            if send_qr_facture_email is None:
+                break
+            try:
+                await send_qr_facture_email(loyer_tx=tx, locataire=loc, bien=bn)
+                emails_sent += 1
+            except Exception as exc:  # noqa: BLE001 — best-effort isolé
+                logger.warning(
+                    "generate_monthly_rents: email QR-facture KO tx=%s: %s",
+                    tx.id, exc,
+                )
+                emails_failed += 1
+
+    logger.info(
+        "generate_monthly_rents: created=%d skipped=%d emails_sent=%d emails_failed=%d mois=%s",
+        created, skipped, emails_sent, emails_failed, mois_str,
+    )
+    return {
+        "created": created,
+        "skipped": skipped,
+        "emails_sent": emails_sent,
+        "emails_failed": emails_failed,
+        "mois": mois_str,
+    }
 
 
 # ── send_rent_reminders ────────────────────────────────────────────────────────
