@@ -8,7 +8,7 @@ import {
   AlertTriangle, Award, Building2, Calculator, CheckCircle2,
   ChevronDown, ChevronRight,
   Clock, Download, Eye, FileText, Lightbulb, Loader2, MapPin,
-  PiggyBank, Plus, RefreshCw, Sparkles, TrendingUp, User, UserPlus, Wrench, XCircle,
+  PiggyBank, Plus, Sparkles, TrendingUp, User, UserPlus, Wrench, XCircle,
 } from "lucide-react";
 import { InviterLocataireModal } from "@/components/biens/InviterLocataireModal";
 import {
@@ -364,21 +364,26 @@ export function TabLocataire({ bienId }: { bienId: string }) {
             </p>
           </div>
         )}
-        {/*
-          Sprint 4A (2026-05-12) — bouton "Proposer renouvellement" caché en
-          Phase 1.0 sauf si on est dans la fenêtre utile : bail en cours avec
-          une date_sortie connue et ≤ 90 jours devant (3 mois pré-fin = délai
-          de préavis CH standard). Le module de renouvellement dédié arrive
-          Phase 1.1 — d'ici là, on évite le clic mort.
-        */}
-        {daysFin !== null && daysFin > 0 && daysFin <= 90 && (
+        {/* TODO Phase 1.1 — Module Renouvellement de bail.
+            Activer ce bouton quand le module sera développé.
+            Workflow attendu :
+              - 3 mois avant date_sortie_prevue : afficher le bouton
+              - Clic → modal date + commentaire
+              - Envoi proposition au locataire (Module Proposition Dates
+                existe déjà depuis Sprint 4B, à étendre pour renouvellement)
+              - Locataire accepte / contre-propose / refuse
+              - Si accepté : update date_sortie_prevue + créer nouvel
+                enregistrement bail
+            Sprint 6 K3 (2026-05-13) : bouton désactivé Phase 1.0 car ne
+            menait qu'à /app/sphere sans logique métier dédiée — clic mort. */}
+        {/* {daysFin !== null && daysFin > 0 && daysFin <= 90 && (
           <Link
             href="/app/sphere"
             style={{ ...btnP, marginTop: "1rem", textDecoration: "none" }}
           >
             <RefreshCw size={12} /> Proposer renouvellement
           </Link>
-        )}
+        )} */}
       </Card>
 
       {/* Paiement du mois */}
