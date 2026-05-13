@@ -167,12 +167,15 @@ class Settings(BaseSettings):
     ALTHY_CREDITOR_CITY: str = "1204 Genève"
     ALTHY_CREDITOR_COUNTRY: str = "CH"
 
-    # Feature flags — rôles autorisés à l'inscription
-    # Phase 1 : proprio_solo + locataire + super_admin.
-    # Phase 3 partielle (2026-04-20) : artisan activé pour lancement marketplace (M1).
-    # Les autres rôles restent en liste d'attente (/bientot/[role]).
+    # Feature flags — rôles autorisés à l'inscription publique /auth/register.
+    # Doctrine §B.7 + §B.15 Phase 1.0 (2026-05-13) : seul proprio_solo.
+    # - locataire : arrive via /onboarding/rejoindre (token invitation), pas via /auth/register
+    # - super_admin : provisionné en DB
+    # - autres rôles : Phase 2/3 dormante, liste d'attente /bientot/[role]
+    # Quand un rôle Phase 2/3 sera réactivé, ajouter ici + retirer le commentaire
+    # ci-dessus + élargir le Literal dans backend/app/schemas/auth.py:RegisterRequest.role.
     FEATURE_FLAGS_STRICT: bool = True  # True en prod, False en staging/dev
-    ALLOWED_SIGNUP_ROLES: list[str] = ["proprio_solo", "locataire", "super_admin", "artisan"]
+    ALLOWED_SIGNUP_ROLES: list[str] = ["proprio_solo"]
 
     # Backend feature flags — Phase 2/3 (défaut OFF, active par déploiement)
     # Utilisé par `app.core.flags.require_flag()` → 503 si le flag est OFF.
@@ -182,6 +185,27 @@ class Settings(BaseSettings):
     BACKEND_FLAG_CRM: bool = False             # CRM locataires
     BACKEND_FLAG_CONTRACTS: bool = False       # contrats de bail
     BACKEND_FLAG_INTEGRATIONS: bool = False    # Google/Microsoft OAuth, calendriers
+
+    # ── Sprint 7 Lot B (2026-05-13) — gating Phase 2/3 marketplace dormante ──
+    # Doctrine §B.15 : Phase 1.0 = logiciel de gestion pure. Tous ces flags
+    # restent à False tant que la marketplace publique + scoring IA candidat
+    # + recherche artisan Stripe Connect ne sont pas réactivés Phase 2/3.
+    # Réactivation = bascule env var Railway sans toucher au code.
+    # Phase 2 — marketplace publique + scoring + candidatures
+    BACKEND_FLAG_MARKETPLACE: bool = False     # /api/v1/marketplace/* (stats, search)
+    BACKEND_FLAG_LISTINGS: bool = False        # /api/v1/listings/* (annonces publiques)
+    BACKEND_FLAG_FAVORITES: bool = False       # /api/v1/favorites/* (locataire fav listings)
+    BACKEND_FLAG_MATCHING: bool = False        # /api/v1/matching/* (algo matching candidat ↔ bien)
+    BACKEND_FLAG_SCORING: bool = False         # /api/v1/scoring/* (score IA candidature)
+    BACKEND_FLAG_NOTATIONS: bool = False       # /api/v1/notations + /api/v1/ratings (réputation acteurs)
+    BACKEND_FLAG_AGENDA: bool = False          # /api/v1/agenda (calendrier OAuth Google/Outlook)
+    BACKEND_FLAG_CANDIDATURES: bool = False    # candidatures spontanées (forward-compat — pas de router direct)
+    BACKEND_FLAG_AI_SCORING: bool = False      # IA scoring candidatures (sub-endpoints AI Phase 2)
+    BACKEND_FLAG_AI_LISTINGS: bool = False     # IA génération annonces marketplace (sub-endpoints AI Phase 2)
+    # Phase 3 — marketplace artisans + RFQ + Stripe Connect
+    BACKEND_FLAG_ARTISAN_STRIPE: bool = False  # /api/v1/profiles-artisans/* (souscription + Stripe Connect)
+    BACKEND_FLAG_RFQ: bool = False             # /api/v1/rfqs/* (appels d'offres artisans)
+    BACKEND_FLAG_MISSIONS: bool = False        # /api/v1/missions/* (fil missions artisan)
 
     @property
     def is_production(self) -> bool:
