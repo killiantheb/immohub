@@ -14,7 +14,9 @@ import type { SphereState } from '@/lib/store/sphereStore'
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type Role = 'proprio_solo' | 'agence' | 'opener' | 'artisan' | 'hunter' | 'locataire'
-type StepId = 1 | 2 | 3 | 4 | 5
+// Phase 1.0 §B.15 : Step 4 (OAuth Gmail/Outlook) retire — module Communication
+// gele derriere ENABLE_OAUTH_COMMUNICATION. Wizard reduit a 4 steps.
+type StepId = 1 | 2 | 3 | 4
 
 interface Question {
   id: string
@@ -240,40 +242,12 @@ function Step3Bien({ bien, setBien }: {
   )
 }
 
-// ── Step 4 — Email connection ─────────────────────────────────────────────────
+// ── Step 4 — Sphere + GO ──────────────────────────────────────────────────────
+// Phase 1.0 §B.15 : l'ancien Step 4 (OAuth Gmail/Outlook) a ete retire — module
+// Communication gele derriere ENABLE_OAUTH_COMMUNICATION. La sphere GO devient
+// le dernier step (4 au lieu de 5).
 
-function Step4Email({ onSkip }: { onSkip: () => void }) {
-  return (
-    <div>
-      <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 26, fontWeight: 300, color: 'var(--althy-text)', margin: '0 0 8px' }}>
-        Connectez votre messagerie
-      </h2>
-      <p style={{ fontSize: 13, color: 'var(--althy-text-3)', margin: '0 0 24px', lineHeight: 1.6 }}>
-        Althy peut lire vos emails immobiliers pour créer des actions automatiquement. Optionnel, modifiable dans les paramètres.
-      </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {[
-          { id: 'gmail',   label: 'Connecter Gmail',   icon: '📧', color: '#EA4335' },
-          { id: 'outlook', label: 'Connecter Outlook',  icon: '📩', color: '#0078D4' },
-        ].map(p => (
-          <button key={p.id} onClick={onSkip}
-            style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderRadius: 12, border: '1px solid var(--althy-border)', background: 'var(--althy-surface)', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: 'var(--althy-text)', fontFamily: 'inherit', transition: 'border-color 0.15s', textAlign: 'left' }}>
-            <span style={{ fontSize: 20 }}>{p.icon}</span>
-            {p.label}
-          </button>
-        ))}
-        <button onClick={onSkip}
-          style={{ padding: '12px 0', borderRadius: 12, border: '1px solid transparent', background: 'transparent', cursor: 'pointer', fontSize: 13, color: 'var(--althy-text-3)', fontFamily: 'inherit' }}>
-          Plus tard →
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ── Step 5 — Sphere + GO ──────────────────────────────────────────────────────
-
-function Step5Go({ firstName, sphereState, role }: { firstName: string; sphereState: SphereState; role: Role | null }) {
+function StepGo({ firstName, sphereState, role }: { firstName: string; sphereState: SphereState; role: Role | null }) {
   const roleData = ROLES.find(r => r.id === role)
   const name = firstName ? `, ${firstName}` : ''
   return (
@@ -445,15 +419,15 @@ function BienvenueContent() {
       .catch(() => {})
   }, [isAuto, sessionId])
 
-  // Animate sphere on step 5
+  // Animate sphere on final step (GO)
   useEffect(() => {
-    if (step !== 5) return
+    if (step !== 4) return
     setSphereState('speaking')
     const t = setTimeout(() => setSphereState('idle'), 3000)
     return () => clearTimeout(t)
   }, [step])
 
-  const TOTAL_STEPS = 5
+  const TOTAL_STEPS = 4
   const progress = (step / TOTAL_STEPS) * 100
 
   const questions       = role ? ROLE_QUESTIONS[role] : []
@@ -476,9 +450,11 @@ function BienvenueContent() {
     }
     await patchProfile(role ?? 'proprio_solo', data)
     setSaving(false)
-    // Les rôles non-locataire passent par la validation du scan onboarding
+    // Phase 1.0 §B.15 : /onboarding/scan (scrape Homegate/ImmoScout24) retire.
+    // - proprio_solo : direction creation du premier bien
+    // - autres roles : sphere IA qui propose des actions adaptees
     const resolvedRole = role ?? 'proprio_solo'
-    router.push(resolvedRole !== 'locataire' ? '/onboarding/scan' : '/app/sphere')
+    router.push(resolvedRole === 'proprio_solo' ? '/app/biens/nouveau' : '/app/sphere')
   }
 
   // Auto mode: show verification screen directly
@@ -524,8 +500,7 @@ function BienvenueContent() {
         {step === 1 && <Step1Role role={role} setRole={setRole} />}
         {step === 2 && role && <Step2Questions role={role} questions={questions} answers={answers} setAnswers={setAnswers} />}
         {step === 3 && <Step3Bien bien={bien} setBien={setBien} />}
-        {step === 4 && <Step4Email onSkip={next} />}
-        {step === 5 && <Step5Go firstName={firstName} sphereState={sphereState} role={role} />}
+        {step === 4 && <StepGo firstName={firstName} sphereState={sphereState} role={role} />}
 
         {/* ── Navigation ── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 32 }}>
@@ -538,15 +513,15 @@ function BienvenueContent() {
           ) : <div />}
 
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            {/* Skip — steps 3 and 4 are optional */}
-            {(step === 3 || step === 4) && (
+            {/* Skip — step 3 (premier bien) reste optionnel */}
+            {step === 3 && (
               <button onClick={next} style={{ background: 'none', border: 'none', color: 'var(--althy-text-3)', fontSize: 13, cursor: 'pointer', padding: '8px 0', textDecoration: 'underline' }}>
                 Passer
               </button>
             )}
 
-            {/* Continue / Finish */}
-            {step < 5 && step !== 4 && (
+            {/* Continue (steps 1-3) */}
+            {step < 4 && (
               <button
                 onClick={next}
                 disabled={!canContinueStep(step)}
@@ -562,7 +537,7 @@ function BienvenueContent() {
               </button>
             )}
 
-            {step === 5 && (
+            {step === 4 && (
               <button onClick={finish} disabled={saving}
                 style={{ padding: '13px 28px', borderRadius: 12, background: 'var(--althy-orange)', color: '#fff', border: 'none', fontSize: 15, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
                 {saving ? 'Préparation…' : 'Commencer avec Althy →'}
