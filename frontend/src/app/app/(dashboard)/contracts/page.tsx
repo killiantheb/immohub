@@ -18,7 +18,7 @@ import { useContracts, useDeleteContract, useSignContract } from "@/lib/hooks/us
 import type { ContractStatus, ContractType } from "@/lib/types";
 import { C } from "@/lib/design-tokens";
 import { ComingSoon } from "@/components/ComingSoon";
-import { FLAGS } from "@/lib/flags";
+import { useRole } from "@/lib/hooks/useRole";
 
 
 // ── Labels ────────────────────────────────────────────────────────────────────
@@ -57,7 +57,12 @@ function ContractStatusBadge({ status }: { status: string }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ContractsPage() {
-  if (!FLAGS.ROLE_AGENCE) {
+  // Sprint 8 Lot C — Module Bail débloqué pour proprio_solo + agence + super_admin.
+  // Doctrine §B.15 : Phase 1.0 logiciel de gestion pure → bailleur peut générer/
+  // signer un bail pour un locataire invité. Marketplace publique reste gelée.
+  const { role } = useRole();
+  const canAccess = role === "super_admin" || role === "proprio_solo" || role === "agence";
+  if (!canAccess) {
     return <ComingSoon title="Module Contrats en préparation" phase="Phase 2" />;
   }
   return <ContractsPageInner />;

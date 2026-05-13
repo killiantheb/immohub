@@ -8,7 +8,7 @@ import { useCreateContract } from "@/lib/hooks/useContracts";
 import type { ContractType } from "@/lib/types";
 import { C } from "@/lib/design-tokens";
 import { ComingSoon } from "@/components/ComingSoon";
-import { FLAGS } from "@/lib/flags";
+import { useRole } from "@/lib/hooks/useRole";
 
 const TYPE_OPTIONS: { value: ContractType; label: string }[] = [
   { value: "long_term",  label: "Longue durée" },
@@ -57,7 +57,10 @@ const sectionTitleStyle: React.CSSProperties = {
 };
 
 export default function NewContractPage() {
-  if (!FLAGS.ROLE_AGENCE) {
+  // Sprint 8 Lot C — accès bailleur (cf contracts/page.tsx).
+  const { role } = useRole();
+  const canAccess = role === "super_admin" || role === "proprio_solo" || role === "agence";
+  if (!canAccess) {
     return <ComingSoon title="Module Contrats en préparation" phase="Phase 2" />;
   }
   return <NewContractPageInner />;
