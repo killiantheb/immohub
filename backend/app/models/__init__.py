@@ -30,6 +30,7 @@ from app.models.interest import Interest
 from app.models.intervention import Devis, Intervention
 from app.models.listing import Listing
 from app.models.locataire import DossierLocataire, Locataire
+from app.models.loyer_transaction import LoyerTransaction
 from app.models.mission_ouvreur import MissionOuvreur, ProfileOuvreur
 from app.models.notification import Notification
 from app.models.opener import Mission, Opener
@@ -57,6 +58,7 @@ __all__ = [
     "BankAccount",
     "Locataire",
     "DossierLocataire",
+    "LoyerTransaction",
     "DocumentAlthy",
     "DocumentDossier",
     "Paiement",
