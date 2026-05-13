@@ -44,11 +44,15 @@ const PLAN_LABELS: Record<string, string> = {
   super_admin:     "Admin",
 };
 
+// Phase 1.0 §B.15 : suggestions limitees au scope logiciel de gestion pure.
+// L'ancienne entree "Trouver un ouvreur a Geneve" pointait sur un module ouvreurs
+// gele derriere FLAGS.ROLE_OPENER (Phase 3) — remplacee par une action EDL utile
+// au workflow de changement de locataire (cf §B.15 et audit W10).
 const SUGGESTIONS = [
   "Quels loyers sont en retard ?",
   "Génère un bail pour mon bien",
   "Résume mon mois",
-  "Trouver un ouvreur à Genève",
+  "Prépare un état des lieux",
 ];
 
 // ── OrganicSphere ─────────────────────────────────────────────────────────────
