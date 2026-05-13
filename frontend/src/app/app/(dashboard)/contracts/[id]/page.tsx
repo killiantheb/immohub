@@ -24,7 +24,7 @@ import { NotificationDraft } from "@/components/NotificationDraft";
 import { DocumentQuickGenerator } from "@/components/DocumentQuickGenerator";
 import { C } from "@/lib/design-tokens";
 import { ComingSoon } from "@/components/ComingSoon";
-import { FLAGS } from "@/lib/flags";
+import { useRole } from "@/lib/hooks/useRole";
 
 
 const CONTRACT_TYPE_TO_BAIL: Record<string, string> = {
@@ -104,7 +104,10 @@ function fmt(date: string | null | undefined) {
 }
 
 export default function ContractDetailPage() {
-  if (!FLAGS.ROLE_AGENCE) {
+  // Sprint 8 Lot C — accès bailleur (cf contracts/page.tsx).
+  const { role } = useRole();
+  const canAccess = role === "super_admin" || role === "proprio_solo" || role === "agence";
+  if (!canAccess) {
     return <ComingSoon title="Module Contrats en préparation" phase="Phase 2" />;
   }
   return <ContractDetailPageInner />;
@@ -309,15 +312,6 @@ function ContractDetailPageInner() {
                 <dd style={{ color: C.text }}>{fmt(contract.end_date)}</dd>
               )}
             </div>
-            {contract.signed_at && (
-              <div className="flex justify-between">
-                <dt style={{ color: C.text3 }}>Signé le</dt>
-                <dd style={{ display: "flex", alignItems: "center", gap: 4, color: C.green }}>
-                  <CheckCircle className="h-3.5 w-3.5" />
-                  {fmt(contract.signed_at)}
-                </dd>
-              </div>
-            )}
             {editing && (
               <div className="flex justify-between items-center">
                 <dt style={{ color: C.text3 }}>Statut</dt>
@@ -366,23 +360,79 @@ function ContractDetailPageInner() {
         </div>
       </div>
 
-      {/* Signature */}
-      {!contract.signed_at && contract.status !== "terminated" && (
-        <div style={cardStyle}>
-          <h2 style={{ fontSize: 13, fontWeight: 600, color: C.text2, marginBottom: "0.75rem" }}>Signature électronique</h2>
-          <p style={{ fontSize: 13, color: C.text3, marginBottom: "1rem" }}>
-            La signature enregistre votre adresse IP et l&apos;horodatage comme preuve de consentement.
-          </p>
+      {/* Acceptation contractuelle — §B.10 (pas une signature électronique
+          qualifiée Skribble, mais une acceptation horodatée + IP). */}
+      <div style={cardStyle}>
+        <h2 style={{ fontSize: 13, fontWeight: 600, color: C.text2, marginBottom: "0.75rem" }}>
+          Acceptation contractuelle
+        </h2>
+        <p style={{ fontSize: 13, color: C.text3, marginBottom: "1rem" }}>
+          Workflow 2 étapes : le bailleur accepte d&apos;abord, puis le locataire
+          contre-signe depuis son espace. Chaque acceptation enregistre l&apos;adresse
+          IP et l&apos;horodatage comme preuve de consentement.
+        </p>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" style={{ marginBottom: "1rem" }}>
+          {/* Bailleur */}
+          <div style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px" }}>
+            <p style={{ fontSize: 11, fontWeight: 600, color: C.text3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
+              Bailleur
+            </p>
+            {contract.signed_at ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, color: C.green, fontSize: 13, fontWeight: 600 }}>
+                <CheckCircle className="h-4 w-4" />
+                Accepté le {fmt(contract.signed_at)}
+              </div>
+            ) : (
+              <p style={{ fontSize: 13, color: C.text3 }}>En attente d&apos;acceptation</p>
+            )}
+          </div>
+
+          {/* Locataire */}
+          <div style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px" }}>
+            <p style={{ fontSize: 11, fontWeight: 600, color: C.text3, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
+              Locataire
+            </p>
+            {contract.tenant_signed_at ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, color: C.green, fontSize: 13, fontWeight: 600 }}>
+                <CheckCircle className="h-4 w-4" />
+                Contre-signé le {fmt(contract.tenant_signed_at)}
+              </div>
+            ) : (
+              <p style={{ fontSize: 13, color: C.text3 }}>
+                {contract.signed_at ? "En attente de contre-signature" : "Bail pas encore accepté par le bailleur"}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {contract.fully_signed && (
+          <div style={{
+            background: C.greenBg,
+            border: `1px solid ${C.green}`,
+            borderRadius: 10,
+            padding: "10px 14px",
+            color: C.green,
+            fontSize: 13,
+            fontWeight: 600,
+            marginBottom: "1rem",
+          }}>
+            Bail actif — les deux parties ont accepté.
+          </div>
+        )}
+
+        {!contract.signed_at && contract.status !== "terminated" && (
           <button
             onClick={() => sign.mutate()}
             disabled={sign.isPending}
             style={{ ...btnPrimaryStyle, opacity: sign.isPending ? 0.7 : 1 }}
           >
             <PenLine className="h-4 w-4" />
-            {sign.isPending ? "Signature…" : "Signer le contrat"}
+            {sign.isPending ? "Acceptation…" : "Accuser réception et accepter (bailleur)"}
           </button>
-        </div>
-      )}
+        )}
+      </div>
+
 
       {/* Danger zone */}
       <div style={{ borderRadius: 14, border: `1px solid ${C.red}`, background: C.redBg, padding: "1.5rem", opacity: 0.85 }}>
