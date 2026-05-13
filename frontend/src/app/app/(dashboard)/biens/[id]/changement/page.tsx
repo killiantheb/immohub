@@ -505,7 +505,7 @@ export default function ChangementPage() {
                   Recherche en cours
                 </div>
                 <div style={{ fontSize: 12, color: C.text3, lineHeight: 1.6 }}>
-                  L&apos;annonce a été publiée sur le marketplace. Les candidatures sont consultables depuis l&apos;onglet <strong>Locataire</strong>.
+                  Identifiez le nouveau locataire (bouche-à-oreille, réseau) puis invitez-le directement depuis l&apos;onglet <strong>Locataire</strong>.
                 </div>
               </div>
             </div>
