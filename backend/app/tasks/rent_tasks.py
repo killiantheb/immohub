@@ -317,10 +317,26 @@ def generate_monthly_quittances(self) -> dict:
 
 
 async def _generate_quittances_async() -> dict:
+    """Sprint 8 Lot B (§B.10 fix + alignement source W7) — génère PDF + upload réel.
+
+    Avant : la task créait un DocumentAlthy avec url_storage = chemin théorique
+    sans jamais uploader le PDF → fausse trace dans la DB (§B.10).
+    Après : (1) on lit depuis `loyer_transactions` (source de vérité W7,
+    cf B1/CAMT-054), (2) on génère réellement le PDF via
+    `generate_quittance_pdf`, (3) on upload via `storage.upload_pdf`, et
+    (4) on insère DocumentAlthy uniquement si l'upload a réussi.
+    En cas d'échec individuel : log + skip (best-effort, rejoué à la
+    prochaine itération de la cron).
+
+    Source DB : `loyer_transactions` (statut IN ('recu', 'reverse') car
+    après reversement Althy → propriétaire, le loyer reste « reçu »
+    pour le locataire qui en attend la quittance).
+    """
     from app.core.database import AsyncSessionLocal
     from app.models.document_althy import DocumentAlthy
-    from app.models.paiement import Paiement
-    from sqlalchemy import and_, exists, select
+    from app.services.quittance import generate_quittance_pdf
+    from app.services.storage import upload_pdf
+    from sqlalchemy import text
 
     now = datetime.now(UTC)
     # Mois précédent
@@ -328,40 +344,119 @@ async def _generate_quittances_async() -> dict:
         target_year, target_month = now.year - 1, 12
     else:
         target_year, target_month = now.year, now.month - 1
-    mois_str = f"{target_year}-{target_month:02d}"
+    mois_concerne = date(target_year, target_month, 1)
+    mois_str = mois_concerne.strftime("%Y-%m")
+    # Label métier lisible — la quittance doit afficher "Octobre 2026" et non "10/2026".
+    mois_label = mois_concerne.strftime("%B %Y").capitalize()
 
     created = 0
     skipped = 0
+    upload_failed = 0
 
     async with AsyncSessionLocal() as db:
-        # Paiements reçus du mois précédent sans quittance
-        paiements = (await db.execute(
-            select(Paiement).where(
-                and_(
-                    Paiement.mois == mois_str,
-                    Paiement.statut == "recu",
-                    ~exists().where(
-                        and_(
-                            DocumentAlthy.locataire_id == Paiement.locataire_id,
-                            DocumentAlthy.type == "quittance",
-                            DocumentAlthy.date_document >= date(target_year, target_month, 1),
-                        )
-                    ),
-                )
+        # Loyers reçus du mois cible, joints bien + owner + tenant.
+        # Idempotent via NOT EXISTS sur DocumentAlthy (type=quittance, même mois).
+        rows = (await db.execute(
+            text("""
+                SELECT lt.id              AS loyer_id,
+                       lt.bien_id         AS bien_id,
+                       lt.tenant_id       AS tenant_id,
+                       lt.owner_id        AS owner_id,
+                       lt.montant_total   AS montant_total,
+                       b.adresse          AS bien_adresse,
+                       b.charges          AS bien_charges,
+                       ou.first_name      AS owner_first_name,
+                       ou.last_name       AS owner_last_name,
+                       ou.email           AS owner_email,
+                       op.address         AS owner_address,
+                       tu.first_name      AS tenant_first_name,
+                       tu.last_name       AS tenant_last_name,
+                       tu.email           AS tenant_email
+                FROM loyer_transactions lt
+                JOIN biens b           ON b.id = lt.bien_id
+                LEFT JOIN users    ou  ON ou.id = lt.owner_id
+                LEFT JOIN profiles op  ON op.user_id = lt.owner_id
+                LEFT JOIN locataires l ON l.id = lt.tenant_id
+                LEFT JOIN users    tu  ON tu.id = l.user_id
+                WHERE lt.statut IN ('recu', 'reverse')
+                  AND lt.mois_concerne = :mois
+                  AND NOT EXISTS (
+                      SELECT 1 FROM documents d
+                      WHERE d.type = 'quittance'
+                        AND d.bien_id = lt.bien_id
+                        AND d.locataire_id = lt.tenant_id
+                        AND d.date_document = :mois
+                  )
+            """),
+            {"mois": mois_concerne},
+        )).mappings().all()
+
+        for ctx in rows:
+            montant = float(ctx["montant_total"] or 0)
+            if montant <= 0:
+                skipped += 1
+                continue
+
+            proprio_name = " ".join(filter(None, [
+                ctx["owner_first_name"], ctx["owner_last_name"]
+            ])).strip() or (
+                ctx["owner_email"].split("@")[0].capitalize() if ctx["owner_email"] else "Propriétaire"
             )
-        )).scalars().all()
+            tenant_name = " ".join(filter(None, [
+                ctx["tenant_first_name"], ctx["tenant_last_name"]
+            ])).strip() or (
+                ctx["tenant_email"].split("@")[0].capitalize() if ctx["tenant_email"] else "Locataire"
+            )
 
-        for paiement in paiements:
-            loyer_net = float(paiement.net_montant or paiement.montant)
-            mois_label = f"{target_month:02d}/{target_year}"
+            # montant_total est all-inclusive (loyer + charges si applicable, cf
+            # /loyers/generer-qr + cron B1). On affiche un seul total sans
+            # double-comptage pour ne pas surfacer une ligne charges fictive.
+            quittance_charges = 0.0
+            quittance_montant = montant
 
-            # Créer l'enregistrement document (URL placeholder — PDF généré par service docs)
+            # ── PDF ──
+            try:
+                pdf_bytes = generate_quittance_pdf(
+                    proprio_name=proprio_name,
+                    proprio_address=ctx["owner_address"] or "",
+                    tenant_name=tenant_name,
+                    bien_adresse=ctx["bien_adresse"] or "",
+                    mois_label=mois_label,
+                    montant=quittance_montant,
+                    charges=quittance_charges,
+                )
+            except Exception as exc:
+                logger.exception(
+                    "generate_monthly_quittances: PDF render KO loyer=%s: %s",
+                    ctx["loyer_id"], exc,
+                )
+                upload_failed += 1
+                continue
+
+            # ── Upload Supabase Storage ──
+            try:
+                key = await upload_pdf(
+                    user_id=str(ctx["owner_id"]),
+                    bien_id=str(ctx["bien_id"]),
+                    doc_type="quittance",
+                    mois=mois_str,
+                    pdf_bytes=pdf_bytes,
+                )
+            except Exception as exc:
+                logger.exception(
+                    "generate_monthly_quittances: upload Storage KO loyer=%s: %s",
+                    ctx["loyer_id"], exc,
+                )
+                upload_failed += 1
+                continue
+
+            # ── Enregistrement DB (uniquement si upload OK — §B.10) ──
             quittance = DocumentAlthy(
-                bien_id=paiement.bien_id,
-                locataire_id=paiement.locataire_id,
+                bien_id=ctx["bien_id"],
+                locataire_id=ctx["tenant_id"],
                 type="quittance",
-                url_storage=f"quittances/{paiement.bien_id}/{mois_str}.pdf",
-                date_document=date(target_year, target_month, 1),
+                url_storage=key,
+                date_document=mois_concerne,
                 genere_par_ia=True,
             )
             db.add(quittance)
@@ -369,8 +464,16 @@ async def _generate_quittances_async() -> dict:
 
         await db.commit()
 
-    logger.info("generate_monthly_quittances: created=%d skipped=%d mois=%s", created, skipped, mois_str)
-    return {"created": created, "skipped": skipped, "mois": mois_str}
+    logger.info(
+        "generate_monthly_quittances: created=%d skipped=%d upload_failed=%d mois=%s",
+        created, skipped, upload_failed, mois_str,
+    )
+    return {
+        "created": created,
+        "skipped": skipped,
+        "upload_failed": upload_failed,
+        "mois": mois_str,
+    }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
