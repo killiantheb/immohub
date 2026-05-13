@@ -93,6 +93,10 @@ class ContractRead(BaseModel):
     deposit: float | None
     signed_at: datetime | None
     signed_ip: str | None
+    # Sprint 8 Lot A — contre-signature locataire + statut combiné.
+    tenant_signed_at: datetime | None = None
+    tenant_signed_ip: str | None = None
+    fully_signed: bool = False
     terminated_at: datetime | None
     is_active: bool
     created_at: datetime
