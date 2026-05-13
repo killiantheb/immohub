@@ -17,13 +17,15 @@
  * ou DB drift), on affiche un état "pas encore lié" avec lien contact.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Banknote, ClipboardCheck, FileText, Home, MapPin, MessageSquare } from "lucide-react";
+import { ArrowRight, Banknote, CheckCircle, ClipboardCheck, Download, FileText, Home, MapPin, MessageSquare, PenLine } from "lucide-react";
 import { useBiensList } from "@/lib/hooks/useBiens";
+import { useMyContract } from "@/lib/hooks/useContracts";
 import { useRole } from "@/lib/hooks/useRole";
 import { ConversationBien } from "@/components/messagerie/ConversationBien";
+import { CountersignModal } from "@/components/contracts/CountersignModal";
 import { C } from "@/lib/design-tokens";
 
 export default function MonBienPage() {
@@ -204,6 +206,11 @@ export default function MonBienPage() {
         </div>
       </Link>
 
+      {/* ── Mon bail (Sprint 8 Lot C — workflow contre-signature locataire) ─── */}
+      <div style={{ marginBottom: 16 }}>
+        <MonBailSection />
+      </div>
+
       {/* ── Sections "à venir Sprint 1D" ─────────────────────────────────── */}
       <div
         style={{
@@ -212,11 +219,6 @@ export default function MonBienPage() {
           gap: 16,
         }}
       >
-        <ComingCard
-          icon={FileText}
-          title="Mon bail"
-          description="Le PDF de votre contrat de bail apparaîtra ici dès que votre bailleur l'aura téléversé."
-        />
         <ComingCard
           icon={Banknote}
           title="Mes paiements"
@@ -364,6 +366,257 @@ function Skeleton({ h = 100 }: { h?: number }) {
       }}
     />
   );
+}
+
+// ── Mon bail (Sprint 8 Lot C) ───────────────────────────────────────────────
+
+function MonBailSection() {
+  const { contract, isLoading } = useMyContract();
+  const [modalOpen, setModalOpen] = useState(false);
+
+  if (isLoading) {
+    return <Skeleton h={180} />;
+  }
+
+  if (!contract) {
+    return (
+      <div
+        style={{
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 12,
+          padding: 20,
+          boxShadow: C.shadow,
+        }}
+      >
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            background: C.prussianBg,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 12,
+          }}
+        >
+          <FileText size={18} style={{ color: C.prussian }} />
+        </div>
+        <h3
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: 16,
+            fontWeight: 500,
+            color: C.text,
+            margin: "0 0 6px",
+          }}
+        >
+          Mon bail
+        </h3>
+        <p style={{ fontSize: 13, color: C.text2, lineHeight: 1.5, margin: 0 }}>
+          Aucun bail actif. Votre bailleur préparera le document dès que possible.
+        </p>
+      </div>
+    );
+  }
+
+  const needsCountersign = Boolean(contract.signed_at) && !contract.tenant_signed_at;
+  const isFullySigned = Boolean(contract.fully_signed);
+
+  return (
+    <section
+      style={{
+        background: C.surface,
+        border: `1px solid ${C.border}`,
+        borderRadius: 14,
+        padding: 24,
+        boxShadow: C.shadow,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            background: C.prussianBg,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <FileText size={18} style={{ color: C.prussian }} />
+        </div>
+        <h2
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: 18,
+            fontWeight: 500,
+            color: C.text,
+            margin: 0,
+          }}
+        >
+          Mon bail
+        </h2>
+      </div>
+
+      <dl style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 18 }}>
+        <BailRow
+          label="Date d'entrée"
+          value={formatDate(contract.start_date)}
+        />
+        <BailRow
+          label="Date de sortie"
+          value={contract.end_date ? formatDate(contract.end_date) : "Bail à durée indéterminée"}
+        />
+        <BailRow
+          label="Loyer mensuel"
+          value={formatCHF(contract.monthly_rent)}
+        />
+        <BailRow
+          label="Charges"
+          value={formatCHF(contract.charges)}
+        />
+        <BailRow
+          label="Dépôt de garantie"
+          value={formatCHF(contract.deposit)}
+        />
+        <BailRow
+          label="Bailleur"
+          value={contract.signed_at ? `Accepté le ${formatDate(contract.signed_at)}` : "En attente"}
+        />
+      </dl>
+
+      {isFullySigned && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            background: C.greenBg,
+            border: `1px solid ${C.green}`,
+            color: C.green,
+            borderRadius: 10,
+            padding: "10px 14px",
+            fontSize: 13,
+            fontWeight: 600,
+            marginBottom: 16,
+          }}
+        >
+          <CheckCircle size={16} />
+          Bail actif depuis le {formatDate(contract.tenant_signed_at)}
+        </div>
+      )}
+
+      {needsCountersign && (
+        <div
+          style={{
+            background: C.prussianBg,
+            border: `1px solid ${C.prussianBorder}`,
+            color: C.prussian,
+            borderRadius: 10,
+            padding: "12px 14px",
+            fontSize: 13,
+            lineHeight: 1.5,
+            marginBottom: 16,
+          }}
+        >
+          Votre bailleur a accepté le bail. Lisez attentivement le document puis
+          contre-signez pour activer le contrat.
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        {needsCountersign && (
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 18px",
+              borderRadius: 10,
+              border: "none",
+              background: C.prussian,
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            <PenLine size={14} />
+            Lire et contre-signer le bail
+          </button>
+        )}
+        {contract.pdf_url && (
+          <a
+            href={contract.pdf_url}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 18px",
+              borderRadius: 10,
+              border: `1px solid ${C.border}`,
+              background: C.surface,
+              color: C.text2,
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
+            <Download size={14} />
+            Télécharger le bail PDF
+          </a>
+        )}
+      </div>
+
+      {modalOpen && (
+        <CountersignModal
+          contract={contract}
+          onClose={() => setModalOpen(false)}
+        />
+      )}
+    </section>
+  );
+}
+
+function BailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt
+        style={{
+          fontSize: 10,
+          fontWeight: 600,
+          color: C.text3,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          margin: "0 0 4px",
+        }}
+      >
+        {label}
+      </dt>
+      <dd style={{ fontSize: 14, fontWeight: 500, color: C.text, margin: 0 }}>{value}</dd>
+    </div>
+  );
+}
+
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleDateString("fr-CH", { day: "2-digit", month: "long", year: "numeric" });
+  } catch {
+    return "—";
+  }
+}
+
+function formatCHF(amount: number | null | undefined): string {
+  if (amount == null) return "—";
+  return `CHF ${amount.toLocaleString("fr-CH")}`;
 }
 
 function NotLinkedState() {
