@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { Home, RefreshCw } from 'lucide-react';
+import { C } from '@/lib/design-tokens';
 
 export default function BienError({
   error,
@@ -12,7 +13,6 @@ export default function BienError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log to monitoring without crashing
     console.error('[BienError]', error);
   }, [error]);
 
@@ -21,7 +21,7 @@ export default function BienError({
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       minHeight: '40vh', gap: 16, padding: 32, textAlign: 'center',
     }}>
-      <p style={{ fontSize: 13, color: 'var(--text-tertiary)', maxWidth: 360 }}>
+      <p style={{ fontSize: 13, color: C.text3, maxWidth: 360 }}>
         Ce bien est introuvable ou a été supprimé.
       </p>
       <div style={{ display: 'flex', gap: 10 }}>
@@ -30,8 +30,8 @@ export default function BienError({
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '9px 16px', borderRadius: 10, cursor: 'pointer',
-            background: 'var(--background-card)', border: '1px solid var(--border-subtle)',
-            fontSize: 13, color: 'var(--charcoal)',
+            background: C.surface, border: `1px solid ${C.border}`,
+            fontSize: 13, color: C.text,
           }}
         >
           <RefreshCw size={13} /> Réessayer
@@ -41,7 +41,7 @@ export default function BienError({
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '9px 16px', borderRadius: 10,
-            background: 'var(--terracotta-primary)', color: '#fff',
+            background: C.prussian, color: '#fff',
             fontSize: 13, fontWeight: 600, textDecoration: 'none',
           }}
         >
