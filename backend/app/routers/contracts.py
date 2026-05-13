@@ -1,20 +1,32 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Annotated
 
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.models.contract import Contract
 from app.models.user import User
 from app.schemas.contract import ContractCreate, ContractRead, ContractUpdate, PaginatedContracts
 from app.services.contract_service import ContractService
+from app.services.loyer_activation import activate_first_rent
 from app.services.partner_hooks import on_contract_signed
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
 DbDep = Annotated[AsyncSession, Depends(get_db)]
 AuthUserDep = Annotated[User, Depends(get_current_user)]
+
+
+def _client_ip(request: Request) -> str:
+    """Récupère l'IP réelle (X-Forwarded-For prioritaire si proxy)."""
+    fwd = request.headers.get("X-Forwarded-For")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 
 @router.get("", response_model=PaginatedContracts)
@@ -46,6 +58,33 @@ async def create_contract(
     if current_user.role not in ("proprio_solo", "agence", "super_admin"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
     contract = await ContractService(db).create(payload, current_user=current_user)
+    return ContractRead.model_validate(contract)
+
+
+@router.get("/me", response_model=ContractRead | None)
+async def get_my_contract(
+    current_user: AuthUserDep,
+    db: DbDep,
+) -> ContractRead | None:
+    """Bail actif du locataire courant (Sprint 8 Lot A — appelé par
+    /app/mon-bien côté locataire).
+
+    Retourne `null` si aucun bail n'est encore rattaché à l'utilisateur.
+    Sélection : le contrat actif (is_active=true) le plus récent dont
+    `tenant_id == current_user.id`.
+    """
+    result = await db.execute(
+        select(Contract)
+        .where(
+            Contract.tenant_id == current_user.id,
+            Contract.is_active.is_(True),
+        )
+        .order_by(Contract.created_at.desc())
+        .limit(1)
+    )
+    contract = result.scalar_one_or_none()
+    if contract is None:
+        return None
     return ContractRead.model_validate(contract)
 
 
@@ -88,15 +127,78 @@ async def sign_contract(
     current_user: AuthUserDep,
     db: DbDep,
 ) -> ContractRead:
-    """Digital signature: records timestamp and client IP."""
-    client_ip = request.client.host if request.client else "unknown"
-    # Respect X-Forwarded-For if behind a proxy
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        client_ip = forwarded.split(",")[0].strip()
+    """Acceptation contractuelle bailleur — horodatage + IP (§B.10).
+
+    Pas de signature électronique qualifiée Skribble en Phase 1.0 — c'est
+    Phase 1.1 (§B.15). Une fois le bailleur accepte, le bail reste « en
+    attente de contre-signature » : le locataire doit appeler
+    POST /contracts/{id}/countersign depuis /app/mon-bien pour activer le
+    bail (status → active + 1re loyer_transaction).
+    """
+    client_ip = _client_ip(request)
     contract = await ContractService(db).sign(contract_id, ip=client_ip, current_user=current_user)
     # Partner hook P1 : propose assurance au propriétaire (best-effort, RGPD-gated).
     await on_contract_signed(db, contract)
+    return ContractRead.model_validate(contract)
+
+
+@router.post("/{contract_id}/countersign", response_model=ContractRead)
+async def countersign_contract(
+    contract_id: str,
+    request: Request,
+    current_user: AuthUserDep,
+    db: DbDep,
+) -> ContractRead:
+    """Contre-signature locataire — clôt le workflow d'acceptation à 2 parties.
+
+    Sprint 8 Lot A. Doctrine :
+      - §B.10 : « tenant_signed_at » est une acceptation horodatée + IP,
+        pas une signature électronique qualifiée. Pas de prétention SES.
+      - §B.15 : Phase 1.0 logiciel de gestion pure — pas d'OAuth Skribble.
+
+    Workflow :
+      1. RBAC : seul `Contract.tenant_id == current_user.id` peut contre-signer.
+      2. Pré-requis : le bailleur doit avoir signé (`signed_at IS NOT NULL`).
+      3. Idempotence : 409 si `tenant_signed_at` est déjà posé.
+      4. Pose `tenant_signed_at` + `tenant_signed_ip` + status=active.
+      5. Hook `activate_first_rent` : crée la 1re loyer_transaction +
+         lie `locataires.current_contract_id` → ce contrat (cf migration
+         0049). Best-effort silencieux — l'absence de Locataire actif
+         ou de loyer ne doit pas bloquer la contre-signature.
+    """
+    contract = await ContractService(db).get(contract_id, current_user=current_user)
+    if contract is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Bail introuvable")
+
+    # RBAC strict : ni bailleur ni agence ne peuvent contre-signer à la place
+    # du locataire (sinon l'acceptation perd toute valeur probante).
+    if contract.tenant_id != current_user.id:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Vous n'êtes pas le locataire de ce bail",
+        )
+
+    if not contract.signed_at:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Le bailleur n'a pas encore accepté ce bail",
+        )
+
+    if contract.tenant_signed_at:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Vous avez déjà contre-signé ce bail",
+        )
+
+    contract.tenant_signed_at = datetime.now(UTC)
+    contract.tenant_signed_ip = _client_ip(request)
+    contract.status = "active"
+
+    # Activation loyer — même session, rollback cascadera si le commit foire.
+    await activate_first_rent(db, contract)
+
+    await db.flush()
+    await db.refresh(contract)
     return ContractRead.model_validate(contract)
 
 
