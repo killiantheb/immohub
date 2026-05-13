@@ -372,6 +372,17 @@ async def validate_document(
     doc.valide_at = datetime.now(UTC)
     doc.commentaire_rejet = None  # nettoyage défensif
     try:
+        # Sprint 6 K2 — un doc validé rend obsolètes les anciens rejetés
+        # du même type (le locataire les voit encore en UI sinon, alors
+        # qu'ils n'ont plus de valeur). Purge DB + Storage en best-effort.
+        # §B.12 : single commit pour validation + purge → atomicité.
+        # Le doc qu'on vient de passer en `valide` n'est pas concerné par
+        # le filtre `statut == 'rejete'` du service (defense in depth).
+        await purge_rejected_documents(
+            db,
+            locataire_id=doc.locataire_id,
+            type_document=doc.type_document,
+        )
         await db.commit()
     except Exception as exc:
         await db.rollback()
