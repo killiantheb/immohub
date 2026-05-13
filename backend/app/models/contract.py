@@ -4,6 +4,7 @@ from datetime import datetime
 from app.models.base import BaseModel
 from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Index, Integer, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column
 
 ContractType = Enum(
@@ -54,6 +55,15 @@ class Contract(BaseModel):
 
     signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     signed_ip: Mapped[str | None] = mapped_column(String(45))  # IPv6 max length
+
+    # Sprint 8 Lot A — contre-signature locataire (migration 0049). Le bailleur
+    # accepte d'abord via `signed_at`, puis le locataire contre-signe depuis
+    # /app/mon-bien → `tenant_signed_at` + `tenant_signed_ip`. Quand les deux
+    # sont posés, `fully_signed` est True et un hook (loyer_activation) bascule
+    # le bail en `active` + génère la 1re loyer_transaction.
+    tenant_signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    tenant_signed_ip: Mapped[str | None] = mapped_column(String(45))
+
     terminated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     # Extended fields — document generation
@@ -96,3 +106,8 @@ class Contract(BaseModel):
         Index("ix_contracts_type", "type"),
         Index("ix_contracts_start_date", "start_date"),
     )
+
+    @hybrid_property
+    def fully_signed(self) -> bool:
+        """True quand bailleur ET locataire ont accepté (cf Sprint 8 Lot A)."""
+        return bool(self.signed_at) and bool(self.tenant_signed_at)

@@ -26,6 +26,16 @@ class Locataire(BaseModel):
     user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
+    # Sprint 8 Lot A — bail actif lié (migration 0049). Posé par
+    # `services/loyer_activation.py:activate_first_rent` lors de la
+    # contre-signature locataire. SET NULL au DELETE pour ne pas casser
+    # le dossier locataire si le contrat est supprimé. L'historique des
+    # baux successifs reste accessible via Contract.tenant_id.
+    current_contract_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("contracts.id", ondelete="SET NULL"),
+        index=True,
+    )
     # Relation vers User (lecture seule côté backend, eager-loadée pour exposer
     # prenom/nom/email/phone dans LocataireRead — Sprint 6 K1 : zéro hash UUID
     # affiché côté UI bailleur).
