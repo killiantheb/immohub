@@ -340,7 +340,7 @@ export default function AdminUsersPage() {
                       </div>
                     </td>
                     <td style={{ padding: "14px 20px", fontSize: 12, color: C.text3 }}>
-                      {new Date(user.created_at).toLocaleDateString("fr-FR")}
+                      {new Date(user.created_at).toLocaleDateString("fr-CH")}
                     </td>
                     <td style={{ padding: "14px 20px" }}>
                       <div className="flex items-center justify-end gap-2">

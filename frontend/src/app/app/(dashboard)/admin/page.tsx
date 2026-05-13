@@ -35,16 +35,16 @@ import { C } from "@/lib/design-tokens";
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(n: number) {
-  return n.toLocaleString("fr-FR", {
+  return n.toLocaleString("fr-CH", {
     style: "currency",
-    currency: "EUR",
+    currency: "CHF",
     maximumFractionDigits: 0,
   });
 }
 
 function fmtShort(n: number) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M€`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}k€`;
+  if (n >= 1_000_000) return `CHF ${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `CHF ${(n / 1_000).toFixed(0)}k`;
   return fmt(n);
 }
 
@@ -202,7 +202,7 @@ export default function AdminPage() {
     ? [
         {
           label: "Utilisateurs actifs",
-          value: stats.total_users.toLocaleString("fr-FR"),
+          value: stats.total_users.toLocaleString("fr-CH"),
           sub: `+${stats.new_users_this_month} ce mois`,
           icon: Users,
           iconBg: C.orangeBg,
@@ -227,7 +227,7 @@ export default function AdminPage() {
         },
         {
           label: "Biens gérés",
-          value: stats.active_biens.toLocaleString("fr-FR"),
+          value: stats.active_biens.toLocaleString("fr-CH"),
           sub: `${stats.total_biens} au total`,
           icon: Building2,
           iconBg: C.blueBg,
@@ -235,14 +235,14 @@ export default function AdminPage() {
         },
         {
           label: "Contrats actifs",
-          value: stats.active_contracts.toLocaleString("fr-FR"),
+          value: stats.active_contracts.toLocaleString("fr-CH"),
           icon: FileText,
           iconBg: C.orangeBg,
           iconColor: C.orange,
         },
         {
           label: "Transactions en attente",
-          value: stats.pending_transactions.toLocaleString("fr-FR"),
+          value: stats.pending_transactions.toLocaleString("fr-CH"),
           sub: stats.late_transactions > 0 ? `${stats.late_transactions} en retard` : undefined,
           icon: stats.late_transactions > 0 ? AlertTriangle : Activity,
           iconBg: stats.late_transactions > 0 ? C.redBg : C.surface2,
@@ -375,15 +375,15 @@ export default function AdminPage() {
                   tickLine={false}
                 />
                 <YAxis
-                  tickFormatter={(v) => `${(v / 1000).toFixed(0)}k€`}
+                  tickFormatter={(v) => `CHF ${(v / 1000).toFixed(0)}k`}
                   tick={{ fontSize: 11, fill: "var(--text-tertiary)" }}
                   axisLine={false}
                   tickLine={false}
-                  width={42}
+                  width={58}
                 />
                 <Tooltip
                   formatter={(v, name) => [
-                    Number(v).toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }),
+                    Number(v).toLocaleString("fr-CH", { style: "currency", currency: "CHF", maximumFractionDigits: 0 }),
                     name,
                   ]}
                   contentStyle={{ borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12, background: C.surface, color: C.text }}
