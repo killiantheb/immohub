@@ -56,19 +56,19 @@ function formatMonth(m: string) {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  owner: "var(--terracotta-primary)",
-  agency: "var(--terracotta-primary)",
-  tenant: "var(--althy-green)",
-  company: "var(--althy-amber)",
-  opener: "var(--terracotta-primary)",
+  proprio_solo: "var(--althy-prussian)",
+  agence: "var(--althy-prussian)",
+  locataire: "var(--althy-green)",
+  artisan: "var(--althy-amber)",
+  opener: "var(--althy-prussian)",
   super_admin: "var(--althy-red)",
 };
 
 const ROLE_LABELS: Record<string, string> = {
-  owner: "Propriétaires",
-  agency: "Agences",
-  tenant: "Locataires",
-  company: "Entreprises",
+  proprio_solo: "Propriétaires",
+  agence: "Agences",
+  locataire: "Locataires",
+  artisan: "Artisans",
   opener: "Ouvreurs",
   super_admin: "Admins",
 };
@@ -205,8 +205,8 @@ export default function AdminPage() {
           value: stats.total_users.toLocaleString("fr-CH"),
           sub: `+${stats.new_users_this_month} ce mois`,
           icon: Users,
-          iconBg: C.orangeBg,
-          iconColor: C.orange,
+          iconBg: C.prussianBg,
+          iconColor: C.prussian,
           href: "/app/admin/users",
         },
         {
@@ -214,8 +214,8 @@ export default function AdminPage() {
           value: fmtShort(stats.revenue_this_month),
           sub: `Total : ${fmtShort(stats.revenue_total)}`,
           icon: Wallet,
-          iconBg: C.orangeBg,
-          iconColor: C.orange,
+          iconBg: C.prussianBg,
+          iconColor: C.prussian,
         },
         {
           label: "Commissions du mois",
@@ -237,8 +237,8 @@ export default function AdminPage() {
           label: "Contrats actifs",
           value: stats.active_contracts.toLocaleString("fr-CH"),
           icon: FileText,
-          iconBg: C.orangeBg,
-          iconColor: C.orange,
+          iconBg: C.prussianBg,
+          iconColor: C.prussian,
         },
         {
           label: "Transactions en attente",
@@ -269,8 +269,8 @@ export default function AdminPage() {
         <div style={{ position: "relative", zIndex: 10 }} className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <ShieldCheck style={{ width: 20, height: 20, color: C.orange }} />
-              <span style={{ fontSize: 14, fontWeight: 500, color: C.orange }}>Super Admin</span>
+              <ShieldCheck style={{ width: 20, height: 20, color: C.prussian }} />
+              <span style={{ fontSize: 14, fontWeight: 500, color: C.prussian }}>Super Admin</span>
             </div>
             <h1
               style={{
@@ -389,7 +389,7 @@ export default function AdminPage() {
                   contentStyle={{ borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12, background: C.surface, color: C.text }}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Revenus" fill={C.orange} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Revenus" fill={C.prussian} radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Commissions" fill={C.green} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -465,10 +465,10 @@ export default function AdminPage() {
       {/* Quick links */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { href: "/app/admin/users", label: "Gérer les utilisateurs", icon: Users, iconColor: C.orange, bg: C.orangeBg },
-          { href: "/app/admin/transactions", label: "Toutes les transactions", icon: Wallet, iconColor: C.orange, bg: C.orangeBg },
+          { href: "/app/admin/users", label: "Gérer les utilisateurs", icon: Users, iconColor: C.prussian, bg: C.prussianBg },
+          { href: "/app/admin/transactions", label: "Toutes les transactions", icon: Wallet, iconColor: C.prussian, bg: C.prussianBg },
           { href: "/app/admin/users?is_verified=false", label: "Comptes à vérifier", icon: ShieldCheck, iconColor: C.green, bg: C.greenBg },
-          { href: "/api/docs", label: "API Swagger", icon: Activity, iconColor: C.orange, bg: C.orangeBg },
+          { href: "/api/docs", label: "API Swagger", icon: Activity, iconColor: C.prussian, bg: C.prussianBg },
         ].map(({ href, label, icon: Icon, iconColor, bg }) => (
           <Link
             key={href}

@@ -28,22 +28,22 @@ import { C } from "@/lib/design-tokens";
 
 const ROLE_LABELS: Record<string, string> = {
   super_admin: "Super Admin",
-  agency: "Agence",
-  owner: "Propriétaire",
-  tenant: "Locataire",
+  agence: "Agence",
+  proprio_solo: "Propriétaire",
+  locataire: "Locataire",
   opener: "Ouvreur",
-  company: "Entreprise",
+  artisan: "Artisan",
 };
 
-type RoleKey = "super_admin" | "agency" | "owner" | "tenant" | "opener" | "company";
+type RoleKey = "super_admin" | "agence" | "proprio_solo" | "locataire" | "opener" | "artisan";
 
 const ROLE_BADGE_STYLES: Record<RoleKey, { bg: string; color: string }> = {
   super_admin: { bg: C.redBg, color: C.red },
-  agency: { bg: C.orangeBg, color: C.orange },
-  owner: { bg: C.orangeBg, color: C.orange },
-  tenant: { bg: C.greenBg, color: C.green },
-  opener: { bg: C.orangeBg, color: C.orange },
-  company: { bg: C.amberBg, color: C.amber },
+  agence: { bg: C.prussianBg, color: C.prussian },
+  proprio_solo: { bg: C.prussianBg, color: C.prussian },
+  locataire: { bg: C.greenBg, color: C.green },
+  opener: { bg: C.prussianBg, color: C.prussian },
+  artisan: { bg: C.amberBg, color: C.amber },
 };
 
 function RoleBadge({ role }: { role: string }) {
@@ -77,7 +77,7 @@ function RoleModal({
   const update = useUpdateUser();
   const [role, setRole] = useState(user.role);
 
-  const roles = ["super_admin", "agency", "owner", "tenant", "opener", "company"] as const;
+  const roles = ["super_admin", "agence", "proprio_solo", "locataire", "opener", "artisan"] as const;
 
   return (
     <div
@@ -116,7 +116,7 @@ function RoleModal({
                 value={r}
                 checked={role === r}
                 onChange={() => setRole(r)}
-                style={{ accentColor: C.orange }}
+                style={{ accentColor: C.prussian }}
               />
               <RoleBadge role={r} />
             </label>
@@ -146,7 +146,7 @@ function RoleModal({
             }}
             style={{
               borderRadius: 12,
-              background: C.orange,
+              background: C.prussian,
               padding: "8px 16px",
               fontSize: 14,
               fontWeight: 500,
@@ -176,7 +176,7 @@ export default function AdminUsersPage() {
   const verifyUser = useVerifyUser();
   const updateUser = useUpdateUser();
 
-  const roles = ["super_admin", "agency", "owner", "tenant", "opener", "company"];
+  const roles = ["super_admin", "agence", "proprio_solo", "locataire", "opener", "artisan"];
 
   const inputStyle = {
     borderRadius: 12,
@@ -369,7 +369,7 @@ export default function AdminUsersPage() {
                           style={{
                             borderRadius: 8,
                             padding: 6,
-                            color: C.orange,
+                            color: C.prussian,
                             background: "transparent",
                             border: "none",
                             cursor: "pointer",
