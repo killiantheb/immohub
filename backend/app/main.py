@@ -189,7 +189,12 @@ app.include_router(
     tags=["contracts"],
     dependencies=[Depends(require_flag("BACKEND_FLAG_CONTRACTS"))],
 )
-app.include_router(missions.router, prefix="/api/v1/missions", tags=["missions"])
+app.include_router(
+    missions.router,
+    prefix="/api/v1/missions",
+    tags=["missions"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_MISSIONS"))],
+)
 app.include_router(
     companies.router,
     prefix="/api/v1/companies",
@@ -198,11 +203,26 @@ app.include_router(
 )
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
 app.include_router(ai_router, prefix="/api/v1")
-app.include_router(rfq.router, prefix="/api/v1/rfqs", tags=["rfqs"])
+app.include_router(
+    rfq.router,
+    prefix="/api/v1/rfqs",
+    tags=["rfqs"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_RFQ"))],
+)
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(smart_onboarding_router, prefix="/api/v1")
-app.include_router(ratings_router, prefix="/api/v1/ratings", tags=["ratings"])
-app.include_router(favorites_router, prefix="/api/v1/favorites", tags=["favorites"])
+app.include_router(
+    ratings_router,
+    prefix="/api/v1/ratings",
+    tags=["ratings"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_NOTATIONS"))],
+)
+app.include_router(
+    favorites_router,
+    prefix="/api/v1/favorites",
+    tags=["favorites"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_FAVORITES"))],
+)
 app.include_router(
     agency_settings_router,
     prefix="/api/v1/agency",
@@ -258,14 +278,37 @@ app.include_router(
     interventions_althy_router, prefix="/api/v1/interventions-althy", tags=["interventions-althy"]
 )
 app.include_router(
-    profiles_artisans_router, prefix="/api/v1/profiles-artisans", tags=["profiles-artisans"]
+    profiles_artisans_router,
+    prefix="/api/v1/profiles-artisans",
+    tags=["profiles-artisans"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_ARTISAN_STRIPE"))],
 )
-app.include_router(scoring_router, prefix="/api/v1/scoring", tags=["scoring"])
+app.include_router(
+    scoring_router,
+    prefix="/api/v1/scoring",
+    tags=["scoring"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_SCORING"))],
+)
 app.include_router(notifications_router, prefix="/api/v1/notifications", tags=["notifications"])
-app.include_router(matching_router, prefix="/api/v1/matching", tags=["matching"])
+app.include_router(
+    matching_router,
+    prefix="/api/v1/matching",
+    tags=["matching"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_MATCHING"))],
+)
 app.include_router(geocode_router, prefix="/api/v1/geocode", tags=["geocode"])
-app.include_router(listings_router, prefix="/api/v1/listings", tags=["listings"])
-app.include_router(marketplace_router, prefix="/api/v1/marketplace", tags=["marketplace"])
+app.include_router(
+    listings_router,
+    prefix="/api/v1/listings",
+    tags=["listings"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_LISTINGS"))],
+)
+app.include_router(
+    marketplace_router,
+    prefix="/api/v1/marketplace",
+    tags=["marketplace"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_MARKETPLACE"))],
+)
 app.include_router(stripe_router, prefix="/api/v1/webhooks", tags=["stripe"])
 app.include_router(
     portail_router,
@@ -281,9 +324,19 @@ app.include_router(
 )
 app.include_router(rgpd_router, prefix="/api/v1/rgpd", tags=["rgpd"])
 app.include_router(sphere_router, prefix="/api/v1", tags=["sphere"])
-app.include_router(notations_router, prefix="/api/v1", tags=["notations"])
+app.include_router(
+    notations_router,
+    prefix="/api/v1",
+    tags=["notations"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_NOTATIONS"))],
+)
 app.include_router(factures_router, prefix="/api/v1", tags=["factures"])
-app.include_router(agenda_router, prefix="/api/v1", tags=["agenda"])
+app.include_router(
+    agenda_router,
+    prefix="/api/v1",
+    tags=["agenda"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_AGENDA"))],
+)
 
 # ── Module Communication Phase 2 (code dormant §2.4.6) ──────────────────────
 # Gated derrière settings.ENABLE_OAUTH_COMMUNICATION (default false). Tant
