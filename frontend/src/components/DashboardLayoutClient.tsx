@@ -24,6 +24,12 @@ const RESTRICTED_PAGES: Record<string, string[]> = {
   "/app/candidatures":     ["proprio_solo", "agence", "super_admin"],
   "/app/portail":          ["agence",       "super_admin"],
 
+  // RBAC frontend admin (Sprint 7 Lot C) : /app/admin et ses sous-routes
+  // (waitlist, partners, users, transactions, integration) reservees
+  // super_admin. Backend deja protege par require_role mais le frontend
+  // affichait jusqu'ici un flash de contenu avant le 403 — d'ou le guard ici.
+  "/app/admin":            ["super_admin"],
+
   // Phase 1.0 doctrine v6 (Sprint 1A — 2026-05-09) : locataire confiné à SON espace.
   // Cf docs/4-PRODUIT.md §4.7 (anti-pattern interdit "tous mes biens").
   "/app/mon-bien":         ["locataire",    "super_admin"],
