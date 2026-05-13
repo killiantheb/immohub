@@ -19,13 +19,14 @@ from typing import Annotated
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.models.locataire import Locataire
 from app.models.user import User
 from app.services.qr_facture import generate_qr_bill_pdf, generate_qr_reference
 from app.services.reconciliation import parse_camt054, reconcile_payments
 from app.services.storage import get_signed_url, upload_pdf
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
@@ -155,13 +156,26 @@ async def generer_qr_facture(
     await db.commit()
 
     # ── Nom locataire pour le PDF ──
+    # Sprint 7 A1 fix : le code historique faisait `SELECT email FROM
+    # auth.users WHERE id = :tid` avec `tid = locataires.id` (UUID interne
+    # locataire) — la table `auth.users` (Supabase) est indexée par UUID
+    # Supabase, pas par UUID locataire → la requête retournait toujours
+    # NULL et le PDF affichait "Locataire" au lieu du nom réel.
+    # Source de vérité Sprint 6 K1 : `Locataire.user` (relation
+    # lazy="selectin"). On résout proprement first_name + last_name +
+    # email comme fallback (cohérent avec frontend formatLocataireName).
     tenant_name = "Locataire"
     if tenant_id:
-        tname = (await db.execute(
-            text("SELECT email FROM auth.users WHERE id = :tid"), {"tid": str(tenant_id)},
-        )).one_or_none()
-        if tname:
-            tenant_name = tname.email.split("@")[0].capitalize()
+        loc_with_user = await db.scalar(
+            select(Locataire).where(Locataire.id == tenant_id)
+        )
+        if loc_with_user and loc_with_user.user is not None:
+            u = loc_with_user.user
+            full_name = f"{u.first_name or ''} {u.last_name or ''}".strip()
+            if full_name:
+                tenant_name = full_name
+            elif u.email:
+                tenant_name = u.email.split("@")[0].capitalize()
 
     mois_label = mois_date.strftime("%B %Y").capitalize()
     pdf_bytes  = generate_qr_bill_pdf(
