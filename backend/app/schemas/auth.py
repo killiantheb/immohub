@@ -15,7 +15,16 @@ class RegisterRequest(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
     phone:      str = ""
-    role: Literal["proprio_solo", "locataire", "agence", "opener", "artisan", "portail_proprio", "expert", "hunter", "acheteur_premium"] = "proprio_solo"
+    # Phase 1.0 doctrine §B.7 + §B.15 — seul proprio_solo s'inscrit publiquement.
+    # - locataire : arrive via /onboarding/rejoindre avec token d'invitation
+    #   (cf routers/onboarding.py). N'utilise pas /auth/register.
+    # - super_admin : provisionné en DB, jamais via signup public.
+    # - agence / artisan / opener / portail_proprio / expert / hunter /
+    #   acheteur_premium : Phase 2/3 dormante. Inscription en liste d'attente
+    #   sur /bientot/[role] (cf frontend/src/app/bientot/[role]/page.tsx).
+    # Pydantic Literal restriction = défense en profondeur en plus de
+    # settings.ALLOWED_SIGNUP_ROLES côté routeur.
+    role: Literal["proprio_solo"] = "proprio_solo"
     # Contexte onboarding — optionnels, transmis au scanner
     ville:      str = ""   # "Genève"
     agence_nom: str = ""   # "Agence Demo"
