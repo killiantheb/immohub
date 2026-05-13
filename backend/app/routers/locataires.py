@@ -150,7 +150,12 @@ async def get_locataire(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Locataire introuvable")
 
     # Le locataire lui-même peut voir son propre dossier.
-    if current_user.role not in ("admin", "super_admin") and loc.user_id != current_user.id:
+    # Sprint 7 A4 — la chaîne ("admin", "super_admin") historique
+    # contenait "admin" qui n'est pas un rôle canonique (cf
+    # security.py:30-39 — seul "super_admin" existe). Bug bénin tant
+    # qu'aucun user ne porte la string "admin", mais drift sémantique
+    # qui aurait planté toute future normalisation strict des rôles.
+    if current_user.role != "super_admin" and loc.user_id != current_user.id:
         # Sinon il faut être manager ET posséder le bien rattaché.
         _check_admin(current_user)
         bien = await db.scalar(select(Bien).where(Bien.id == loc.bien_id))
