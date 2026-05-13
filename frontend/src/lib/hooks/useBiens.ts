@@ -109,7 +109,12 @@ export interface Intervention {
   categorie: string;
   urgence: string;
   statut: "nouveau" | "en_cours" | "planifie" | "resolu";
+  /** % manuel libre 0-100, conservé pour cas d'usage artisan fin. */
   avancement: number;
+  /** Sprint 6 K6 — progression dérivée du statut côté backend
+   *  (hybrid_property) : nouveau=0, planifie=33, en_cours=66, resolu=100.
+   *  Utilisée pour la progress bar UI (déterministe). */
+  progression: number;
   date_signalement?: string | null;
   date_intervention?: string | null;
   cout?: number | null;

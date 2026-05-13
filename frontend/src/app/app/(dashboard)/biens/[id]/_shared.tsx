@@ -726,6 +726,13 @@ export function TabInterventions({ bienId }: { bienId: string }) {
             {interventions.map(inter => {
               const s = INTER_STATUT[inter.statut] ?? { label: inter.statut, color: C.text2, bg: C.border };
               const uColor = INTER_URGENCE[inter.urgence] ?? C.text2;
+              const progression = inter.progression ?? 0;
+              // Sprint 6 K6 — couleur progress bar dérivée du statut (§B.4 :
+              // Or pour pas démarré, Prussian pour en cours, Vert pour fini).
+              const progColor =
+                inter.statut === "resolu" ? C.green :
+                inter.statut === "nouveau" ? C.gold :
+                C.prussian;
               return (
                 <Card key={inter.id}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
@@ -741,10 +748,26 @@ export function TabInterventions({ bienId }: { bienId: string }) {
                       {inter.artisan_id && <p style={{ fontSize: 12, color: C.blue, marginTop: 2 }}>Artisan assigné</p>}
                       {inter.cout != null && <p style={{ fontSize: 12, color: C.text3 }}>Coût estimé: {fmtCHF(inter.cout)}</p>}
                     </div>
-                    <div style={{ textAlign: "right", minWidth: 100 }}>
-                      <p style={{ fontSize: 11, color: C.text3, marginBottom: 4 }}>{inter.avancement}%</p>
-                      <div style={{ width: 100, height: 4, borderRadius: 99, background: C.border }}>
-                        <div style={{ height: "100%", width: `${inter.avancement}%`, borderRadius: 99, background: inter.avancement === 100 ? C.green : C.prussian }} />
+                    {/* Sprint 6 K6 — progress bar proportionnelle au statut.
+                        Source : intervention.progression (hybrid_property
+                        backend : 0/33/66/100). Couleurs §B.4 :
+                          - Or (gold)      → nouveau, pas démarré
+                          - Prussian       → planifié / en cours
+                          - Vert (green)   → résolu, terminé */}
+                    <div style={{ textAlign: "right", minWidth: 140 }}>
+                      <p style={{ fontSize: 11, color: C.text3, marginBottom: 4 }}>
+                        {progression}%
+                      </p>
+                      <div style={{ width: 140, height: 6, borderRadius: 99, background: C.border, overflow: "hidden" }}>
+                        <div
+                          style={{
+                            height: "100%",
+                            width: `${progression}%`,
+                            borderRadius: 99,
+                            background: progColor,
+                            transition: "width 0.4s ease",
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
