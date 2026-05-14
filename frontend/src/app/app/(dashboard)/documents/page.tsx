@@ -1,11 +1,28 @@
 "use client";
 
+/**
+ * /app/documents — Page "Documents" (proprio_solo).
+ *
+ * Doctrine §B.15 (CLAUDE.md) :
+ *   - Le panel "Scan de facture" (OCR IA + confirmation affectation OBLF) est
+ *     Phase 2 (compta dynamique + OCR avancé, cf docs/2-ROADMAP.md §2.4.5).
+ *     Endpoints /ai/scan-facture + /ai/confirmer-facture conservés backend.
+ *   - "Mandat de gestion locative" concerne le rôle agence (Phase 2 — Lot D).
+ *   - "Dossier vendeur" appartient au flux vente (Phase 2).
+ *
+ * Phase 1.0 disponible :
+ *   - Demande de pièces (multi-profils)
+ *   - Lettre de relance (3 niveaux : amiable, mise en demeure CO 102, CO 257d)
+ *   - Réquisition de poursuite (art. 82 LP)
+ *   - Historique des documents générés
+ */
+
 import { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { DocumentQuickGenerator } from "@/components/DocumentQuickGenerator";
 import { BienContextBanner } from "@/components/biens/BienContextBanner";
-import { Camera, Upload, Check, AlertTriangle, Loader2, X } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { C } from "@/lib/design-tokens";
 
 interface GeneratedDoc {
@@ -21,7 +38,6 @@ const TYPE_LABELS: Record<string, string> = {
   bail_annee:                "Bail à l'année",
   bail_annee_avec_vente:     "Bail à l'année + vente",
   bail_saison:               "Bail saisonnier",
-  mandat_gestion:            "Mandat de gestion",
   fiche_bien:                "Fiche de présentation",
   demande_pieces_annee:      "Demande de pièces — Annuel",
   demande_pieces_saison:     "Demande de pièces — Saisonnier",
@@ -33,210 +49,10 @@ const TYPE_LABELS: Record<string, string> = {
   relance_1:                 "Relance — Rappel amiable",
   relance_2:                 "Relance — Mise en demeure",
   relance_3:                 "Relance — Résiliation CO 257d",
-  dossier_vendeur:           "Dossier vendeur",
 };
 
-const OBLF_LABELS: Record<string, string> = {
-  entretien:    "Entretien courant",
-  reparation:   "Réparations",
-  assurance:    "Assurances",
-  impots:       "Impôts & taxes",
-  frais_admin:  "Frais administratifs",
-  amortissement:"Amortissement",
-  autre:        "Autre",
-};
-
-interface ScanResult {
-  id: string;
-  montant: number | null;
-  fournisseur: string | null;
-  date_facture: string | null;
-  description: string | null;
-  categorie_oblf: string | null;
-  bien_id: string | null;
-  bien_adresse: string | null;
-  statut: string;
-  confidence: number;
-}
-
-function ScanFacturePanel() {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState<ScanResult | null>(null);
-  const [confirming, setConfirming] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleFile(file: File) {
-    setScanning(true);
-    setResult(null);
-    setError(null);
-    setConfirmed(false);
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      const { data } = await api.post<ScanResult>("/ai/scan-facture", form, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setResult(data);
-    } catch {
-      setError("Échec du scan. Vérifiez que le fichier est une image ou un PDF lisible.");
-    } finally {
-      setScanning(false);
-    }
-  }
-
-  async function handleConfirm() {
-    if (!result?.id || !result.bien_id) return;
-    setConfirming(true);
-    try {
-      await api.post("/ai/confirmer-facture", {
-        depense_id: result.id,
-        bien_id: result.bien_id,
-        categorie_oblf: result.categorie_oblf || "autre",
-      });
-      setConfirmed(true);
-    } finally {
-      setConfirming(false);
-    }
-  }
-
-  return (
-    <div style={{
-      background: C.surface, border: `1px solid ${C.border}`,
-      borderRadius: 14, padding: 20, boxShadow: C.shadow,
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-        <Camera size={18} color={C.orange} />
-        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>Scan de facture</h2>
-      </div>
-      <p style={{ margin: "0 0 14px", fontSize: 13, color: C.text3, lineHeight: 1.6 }}>
-        Photo ou PDF → Althy extrait le montant, le fournisseur, la date et propose l&apos;affectation OBLF.
-      </p>
-
-      {/* Drop zone */}
-      {!result && !scanning && (
-        <div
-          style={{
-            border: `2px dashed ${C.border}`, borderRadius: 10, padding: "24px 16px",
-            textAlign: "center", cursor: "pointer",
-          }}
-          onClick={() => fileRef.current?.click()}
-          onDragOver={e => e.preventDefault()}
-          onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
-        >
-          <Upload size={24} style={{ color: C.text3, margin: "0 auto 8px" }} />
-          <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 600, color: C.text2 }}>
-            Glisser-déposer ou cliquer pour uploader
-          </p>
-          <p style={{ margin: 0, fontSize: 11, color: C.text3 }}>JPEG · PNG · WEBP · PDF</p>
-          <input
-            ref={fileRef} type="file" style={{ display: "none" }}
-            accept="image/*,.pdf"
-            onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
-          />
-        </div>
-      )}
-
-      {scanning && (
-        <div style={{ textAlign: "center", padding: "24px 0" }}>
-          <Loader2 size={28} style={{ color: C.orange, animation: "spin 1s linear infinite", marginBottom: 8 }} />
-          <p style={{ color: C.text3, fontSize: 13 }}>Althy analyse la facture…</p>
-        </div>
-      )}
-
-      {error && (
-        <div style={{ padding: "10px 14px", borderRadius: 8, background: C.redBg, color: C.red, fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
-          <AlertTriangle size={14} /> {error}
-        </div>
-      )}
-
-      {/* Result card */}
-      {result && !confirmed && (
-        <div style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>Résultat du scan</span>
-            <span style={{
-              padding: "2px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600,
-              background: result.confidence >= 0.7 ? C.greenBg : C.amberBg,
-              color: result.confidence >= 0.7 ? C.green : C.amber,
-            }}>
-              Confiance : {Math.round(result.confidence * 100)}%
-            </span>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
-            {[
-              { label: "Montant", value: result.montant ? `CHF ${result.montant.toFixed(2)}` : "—" },
-              { label: "Fournisseur", value: result.fournisseur || "—" },
-              { label: "Date", value: result.date_facture || "—" },
-              { label: "Catégorie OBLF", value: OBLF_LABELS[result.categorie_oblf || ""] || result.categorie_oblf || "—" },
-            ].map(({ label, value }) => (
-              <div key={label} style={{ background: C.surface2, borderRadius: 8, padding: "8px 12px" }}>
-                <div style={{ fontSize: 10, color: C.text3, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 2 }}>{label}</div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{value}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Affectation proposition */}
-          <div style={{
-            padding: "10px 14px", borderRadius: 8,
-            background: C.orangeBg, border: `1px solid rgba(15,46,76,0.25)`,
-            fontSize: 13, color: C.text, marginBottom: 12,
-          }}>
-            <strong>Althy propose :</strong> Facture CHF {result.montant?.toFixed(2) ?? "?"} →{" "}
-            {OBLF_LABELS[result.categorie_oblf || ""] || result.categorie_oblf || "Autre"} →{" "}
-            {result.bien_adresse || "Bien à préciser"}
-          </div>
-
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              onClick={handleConfirm}
-              disabled={confirming}
-              style={{
-                flex: 1, padding: "9px 0", borderRadius: 8, border: "none",
-                background: C.green, color: "#fff", fontSize: 13, fontWeight: 600,
-                cursor: confirming ? "default" : "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              }}
-            >
-              {confirming ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Check size={13} />}
-              Confirmer l&apos;affectation
-            </button>
-            <button
-              onClick={() => { setResult(null); setError(null); }}
-              style={{
-                padding: "9px 14px", borderRadius: 8, border: `1px solid ${C.border}`,
-                background: C.surface, color: C.text3, fontSize: 13, cursor: "pointer",
-              }}
-            >
-              <X size={13} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {confirmed && (
-        <div style={{
-          textAlign: "center", padding: 16, borderRadius: 10,
-          background: C.greenBg, border: `1px solid rgba(46,94,34,0.2)`,
-        }}>
-          <Check size={20} color={C.green} style={{ margin: "0 auto 6px" }} />
-          <p style={{ margin: 0, fontWeight: 700, color: C.green, fontSize: 13 }}>Dépense enregistrée</p>
-          <button
-            onClick={() => { setResult(null); setConfirmed(false); }}
-            style={{ marginTop: 8, fontSize: 12, color: C.text3, background: "none", border: "none", cursor: "pointer" }}
-          >
-            Scanner une autre facture
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Action card items
+// Action card items — Phase 1.0 uniquement.
+// "Mandat de gestion locative" + "Dossier vendeur" retirés (Phase 2, cf §B.15).
 const ACTION_CARDS = [
   {
     title: "Demande de pièces",
@@ -247,16 +63,6 @@ const ACTION_CARDS = [
     title: "Lettre de relance",
     description: "3 niveaux : rappel amiable, mise en demeure (CO 102), résiliation (CO 257d).",
     generatorProps: { label: "Niveau 1", templateType: "relance_1", variant: "primary" as const },
-  },
-  {
-    title: "Mandat de gestion locative",
-    description: "Contrat entre le propriétaire et l'agence. À lier à un bien existant.",
-    generatorProps: { label: "Générer", templateType: "mandat_gestion", variant: "primary" as const },
-  },
-  {
-    title: "Dossier vendeur",
-    description: "Présentation complète du bien pour la vente : données, loyer, rendement, documents.",
-    generatorProps: { label: "Générer", templateType: "dossier_vendeur", variant: "primary" as const },
   },
   {
     title: "Réquisition de poursuite",
@@ -342,11 +148,6 @@ function DocumentsContent() {
             <DocumentQuickGenerator {...card.generatorProps} />
           </div>
         ))}
-      </div>
-
-      {/* Scan factures */}
-      <div style={{ marginBottom: "2rem" }}>
-        <ScanFacturePanel />
       </div>
 
       {/* Rappel baux */}
