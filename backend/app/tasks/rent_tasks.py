@@ -506,15 +506,28 @@ async def _reverse_loyers_async() -> dict:
     total_reverse  = 0.0
 
     async with AsyncSessionLocal() as db:
+        # Sprint 9 Lot A : colonne `users.iban` renommée `iban_legacy` par
+        # migration 0050. L'IBAN canonique vit désormais dans `bank_accounts`
+        # (cf `iban_resolver.get_effective_iban`). Pour ce reverse en Phase 1
+        # MVP (notification uniquement, pas de virement réel — cf §4.13), on
+        # JOIN directement sur `bank_accounts` principal côté SQL pour éviter
+        # d'appeler le resolver async ligne par ligne. Fallback `iban_legacy`
+        # gardé pour les users non encore re-seedés (théoriquement zéro
+        # post-0050 grâce au backfill idempotent).
         rows = (await db.execute(
             text("""
                 SELECT lt.id, lt.owner_id, lt.montant_total, lt.commission_montant,
                        lt.montant_reverse, lt.mois_concerne, lt.qr_reference,
                        lt.bien_id,
-                       u.iban as owner_iban, u.email as owner_email,
+                       COALESCE(ba.iban, u.iban_legacy) as owner_iban,
+                       u.email as owner_email,
                        u.first_name as owner_first_name
                 FROM loyer_transactions lt
                 LEFT JOIN users u ON u.id = lt.owner_id
+                LEFT JOIN bank_accounts ba
+                       ON ba.user_id = lt.owner_id
+                      AND ba.est_principal = true
+                      AND ba.is_active = true
                 WHERE lt.statut = 'recu' AND lt.date_reversement IS NULL
                 ORDER BY lt.date_reception ASC
             """)

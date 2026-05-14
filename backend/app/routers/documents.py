@@ -1151,6 +1151,10 @@ def _build_ctx(
         "website": agency_settings.get("website", "althy.ch") if agency_settings else "althy.ch",
         "logo_url": agency_settings.get("logo_url") if agency_settings else None,
         "representative": agency_settings.get("representative_name", "") if agency_settings else "",
+        # Idem owner_info — lecture legacy temporaire en attendant accès DB
+        # dans _build_ctx pour appel iban_resolver (cf migration 0050).
+        # Côté Python, l'attribut historique `iban` est conservé (mappé sur
+        # la colonne `iban_legacy`) — cf app/models/user.py.
         "iban": getattr(agency_user, "iban", "") or "",
         "bic": getattr(agency_user, "bic", "") or "",
         "bank_name": getattr(agency_user, "bank_account_holder", "") or "",
@@ -1371,6 +1375,15 @@ def _build_ctx(
             "tenant_nationality": getattr(contract, "tenant_nationality", "") or "",
         })
 
+    # ⚠️ Lecture des colonnes legacy `users.iban_legacy` / `bic_legacy` /
+    # `bank_account_holder_legacy` (renommées migration 0050, Sprint 9 Lot A).
+    # Côté Python l'attribut historique `iban` est conservé (mappé sur la
+    # colonne DB `iban_legacy` via `mapped_column("iban_legacy", …)`).
+    # _build_ctx est synchrone — pas d'accès `db` pour résoudre `bank_accounts`
+    # ici. Migration vers `iban_resolver.get_effective_iban` à programmer dans
+    # un Lot dédié (génération doc PDF + accès DB injecté). En attendant, on
+    # lit la donnée legacy seedée par 0035/0050 pour ne pas casser les
+    # templates qui consomment `owner.iban`.
     owner_info = {
         "full_name": f"{owner.first_name or ''} {owner.last_name or ''}".strip(),
         "email": owner.email or "",

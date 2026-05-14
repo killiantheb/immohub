@@ -21,6 +21,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.locataire import Locataire
 from app.models.user import User
+from app.services.iban_resolver import get_effective_iban
 from app.services.qr_facture import generate_qr_bill_pdf, generate_qr_reference
 from app.services.reconciliation import parse_camt054, reconcile_payments
 from app.services.storage import get_signed_url, upload_pdf
@@ -201,11 +202,20 @@ async def generer_qr_facture(
                 tenant_name = u.email.split("@")[0].capitalize()
 
     mois_label = mois_date.strftime("%B %Y").capitalize()
+
+    # ── Résolution IBAN canonique (Sprint 9 Lot A) ────────────────────────────
+    # Cascade : Bien.iban_compte_id → bank_accounts(est_principal) → None.
+    # Si None → fallback `settings.ALTHY_QR_IBAN` côté `generate_qr_bill_pdf`
+    # (Phase 1 MVP : Althy intermédiaire la collecte, cf docs/4-PRODUIT.md §4.13).
+    effective_ba = await get_effective_iban(db, payload.bien_id)
+    qr_iban_override = effective_ba.iban if effective_ba else None
+
     pdf_bytes  = generate_qr_bill_pdf(
         qr_reference=qr_ref, montant_total=montant_total,
         bien_adresse=bien.adresse, tenant_name=tenant_name,
         mois_label=mois_label, commission_pct=commission_pct,
         commission_montant=commission_montant, montant_reverse=montant_reverse,
+        qr_iban_override=qr_iban_override,
     )
 
     # ── Upload Supabase Storage ──

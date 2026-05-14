@@ -100,12 +100,18 @@ def generate_qr_bill_pdf(
     commission_pct: float,
     commission_montant: float,
     montant_reverse: float,
+    qr_iban_override: str | None = None,
 ) -> bytes:
     """
     Génère un PDF A4 contenant la QR-facture suisse (section paiement A5 bas de page)
     et un récapitulatif destiné au propriétaire.
+
+    `qr_iban_override` (Sprint 9 Lot A) : si fourni, prime sur
+    `settings.ALTHY_QR_IBAN`. Utilisé pour passer l'IBAN bailleur résolu via
+    `iban_resolver.get_effective_iban` quand on bascule le QR de la collecte
+    Althy intermédiaire (Phase 1 MVP) vers un encaissement direct bailleur.
     """
-    qr_iban = settings.ALTHY_QR_IBAN or "CH0000000000000000000"
+    qr_iban = qr_iban_override or settings.ALTHY_QR_IBAN or "CH0000000000000000000"
 
     spc = build_spc_payload(
         qr_iban=qr_iban,
