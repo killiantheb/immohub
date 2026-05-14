@@ -102,10 +102,14 @@ export const DASHBOARD_CONFIGS: Record<UserRole, DashboardConfig> = {
       { key: "impayes",               label: "Impayés",                 icon: AlertTriangle,endpoint: "/paiements/", urgentIf: "> 0" },
       { key: "interventions_actives", label: "Interventions en cours",  icon: Wrench,       endpoint: "/interventions-althy/" },
     ],
+    // Sprint 9 Lot D — 3 actions canoniques Phase 1.0 (proprio_solo).
+    // "Inviter un locataire" route vers /app/biens : l'utilisateur choisit
+    // ensuite le bien (pas de page d'invitation globale en Phase 1.0).
+    // "Voir mes loyers du mois" passe ?mois=current consommé par /app/finances.
     quickActions: [
-      { label: "Ajouter un bien",    action: "/app/biens/nouveau",  icon: Plus },
-      { label: "Générer quittance",  action: "/app/documents",      icon: FileText },
-      { label: "Voir les impayés",   action: "/app/finances",       icon: AlertTriangle },
+      { label: "Ajouter un bien",            action: "/app/biens/nouveau",       icon: Plus },
+      { label: "Inviter un locataire",       action: "/app/biens",               icon: UserPlus },
+      { label: "Voir mes loyers du mois",    action: "/app/finances?mois=current", icon: Banknote },
     ],
     sections: [
       { key: "actions_sphere",        title: "Actions Althy IA",        component: "actions_sphere" },
