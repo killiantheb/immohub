@@ -3,6 +3,7 @@ from app.models.agency_settings import AgencySettings
 from app.models.ai_log import AIUsageLog
 from app.models.audit_log import AuditLog
 from app.models.autonomy import AutonomySubscription
+from app.models.avenant import Avenant
 from app.models.bank_account import BankAccount
 from app.models.base import Base, BaseModel
 from app.models.bien import (
@@ -31,12 +32,14 @@ from app.models.intervention import Devis, Intervention
 from app.models.listing import Listing
 from app.models.locataire import DossierLocataire, Locataire
 from app.models.loyer_transaction import LoyerTransaction
+from app.models.mandat_gestion import MandatGestion
 from app.models.mission_ouvreur import MissionOuvreur, ProfileOuvreur
 from app.models.notification import Notification
 from app.models.opener import Mission, Opener
 from app.models.paiement import Paiement
 from app.models.profile_artisan import ProfileArtisan
 from app.models.rating import Rating
+from app.models.resiliation import Resiliation
 from app.models.scoring import ScoringLocataire
 from app.models.transaction import Transaction
 from app.models.user import User
@@ -90,4 +93,8 @@ __all__ = [
     "CRMContact",
     "CRMNote",
     "AutonomySubscription",
+    # Sprint 10 — signable documents (extension par-table, cf migration 0051)
+    "MandatGestion",
+    "Avenant",
+    "Resiliation",
 ]

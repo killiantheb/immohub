@@ -32,6 +32,14 @@ class Settings(BaseSettings):
     # Bucket privé pour les photos d'État Des Lieux (changements_locataire).
     # Photos sensibles (dégradations) → signed URLs uniquement, pas d'URL publique.
     SUPABASE_BUCKET_EDL_PHOTOS: str = "edl-photos"
+    # ── Sprint 9 — bucket `documents` historique (QR-factures, quittances) ─
+    # Variabilisé Lot 1.5 Sprint 10 pour anti-§C hardcode (cf
+    # `services/storage.py:_BUCKET` qui lit cette valeur).
+    SUPABASE_BUCKET_DOCUMENTS: str = "documents"
+    # ── Sprint 10 — bucket privé pour les documents signables (bail, mandat,
+    # avenant, résiliation, EDL, convention sortie). Signed URLs uniquement.
+    # Rétention 10 ans (CO 962). Provisionnement manuel côté Supabase (privé).
+    SUPABASE_BUCKET_SIGNABLE_DOCUMENTS: str = "signable-documents"
 
     # Redis / Celery
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -154,6 +162,31 @@ class Settings(BaseSettings):
     # retourne 404. Le code reste en repo (cf §2.4.6 doctrine « dormant Phase 2 »).
     # Réactivation Phase 2 : ENABLE_OAUTH_COMMUNICATION=true côté env Railway.
     ENABLE_OAUTH_COMMUNICATION: bool = False
+
+    # ── Skribble (Sprint 10 — signature électronique SES Phase 1.0) ───────────
+    # Cf docs/2-ROADMAP.md §2.4.16 (décision doctrinale 2026-05-14 — Skribble
+    # bascule Phase 1.0). Lot 2 Sprint 10 livrera `services/skribble_service.py`
+    # qui consomme ces variables.
+    #
+    # Plan A vs Plan B :
+    #   - SKRIBBLE_ENABLED=True  → Plan A : `/contracts/{id}/send-to-skribble`
+    #     est actif, les nouveaux baux passent par Skribble SES.
+    #   - SKRIBBLE_ENABLED=False → Plan B SES renforcée (flow Sprint 8) :
+    #     `/contracts/{id}/sign` + `/countersign` restent les endpoints actifs.
+    #     Skribble endpoints retournent 503.
+    # Le flow Sprint 8 reste TOUJOURS utilisable comme fallback admin même
+    # quand Plan A est activé (cf migration 0049 + comments contract_service.py).
+    SKRIBBLE_ENABLED: bool = False
+
+    SKRIBBLE_API_URL: str = "https://api.skribble.com/v2"
+    SKRIBBLE_USERNAME: str = ""             # compte HBM Swiss Sàrl Skribble
+    SKRIBBLE_API_KEY: str = ""              # API key (sandbox ou production)
+    SKRIBBLE_WEBHOOK_SECRET: str = ""       # HMAC vérification webhook
+    SKRIBBLE_ENVIRONMENT: str = "sandbox"   # sandbox | production
+    SKRIBBLE_DEFAULT_QUALITY: str = "SES"   # SES | AES | QES (Phase 1.0 = SES)
+    # Base URLs — défaut dérivé de FRONTEND_URL au runtime (Lot 2 service)
+    SKRIBBLE_RETURN_URL_BASE: str = ""      # vide → utilise FRONTEND_URL
+    SKRIBBLE_WEBHOOK_URL: str = ""          # vide → calculé depuis APP_ENV
 
     # Portal syndication — Althy marge 15%
     PORTAL_MARGIN_PCT: float = 15.0

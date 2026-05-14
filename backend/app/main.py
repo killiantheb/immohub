@@ -82,6 +82,12 @@ from app.routers.rgpd import router as rgpd_router
 from app.routers.scoring import router as scoring_router
 from app.routers.smart_onboarding import router as smart_onboarding_router
 from app.routers.sphere_agent import router as sphere_router
+# ── Sprint 10 routers (Lot 1.5 scaffolding — stubs 501, Lot 2/5 livre l'impl) ─
+from app.routers.avenants import router as avenants_router
+from app.routers.mandats import router as mandats_router
+from app.routers.public_approbation import router as public_approbation_router
+from app.routers.resiliations import router as resiliations_router
+from app.routers.skribble_webhooks import router as skribble_webhooks_router
 from app.routers.stripe_webhooks import router as stripe_router
 from app.routers.waitlist import router as waitlist_router
 from app.routers.whatsapp import router as whatsapp_router
@@ -360,6 +366,36 @@ app.include_router(autonomie_router, prefix="/api/v1/autonomie", tags=["autonomi
 app.include_router(waitlist_router, prefix="/api/v1", tags=["waitlist"])
 app.include_router(partners_router, prefix="/api/v1", tags=["partners"])
 app.include_router(landing_router, prefix="/api/v1", tags=["landing"])
+
+# ── Sprint 10 routers — Lot 1.5 scaffolding ─────────────────────────────────
+# Stubs montés derrière BACKEND_FLAG_CONTRACTS pour cohérence avec contracts.
+# Lot 2 (Skribble) et Lot 5 (approbation) livreront les implémentations
+# concrètes ; les stubs actuels retournent 501 (§B.10 honnête).
+#
+# Note : `skribble_webhooks_router` et `public_approbation_router` ne sont
+# PAS gated par BACKEND_FLAG_CONTRACTS car ils doivent rester accessibles
+# même quand le flag est off (webhook Skribble entrant, magic_link approbation
+# propriétaire). La logique métier interne fera les checks d'accès.
+app.include_router(
+    avenants_router,
+    prefix="/api/v1/avenants",
+    tags=["avenants"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_CONTRACTS"))],
+)
+app.include_router(
+    resiliations_router,
+    prefix="/api/v1/resiliations",
+    tags=["resiliations"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_CONTRACTS"))],
+)
+app.include_router(
+    mandats_router,
+    prefix="/api/v1/mandats",
+    tags=["mandats"],
+    dependencies=[Depends(require_flag("BACKEND_FLAG_CONTRACTS"))],
+)
+app.include_router(skribble_webhooks_router, prefix="/api/v1", tags=["skribble"])
+app.include_router(public_approbation_router, prefix="/api/v1", tags=["approbation"])
 
 
 # ── Health check ──────────────────────────────────────────────────────────────
