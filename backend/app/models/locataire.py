@@ -150,3 +150,22 @@ class DossierLocataire(BaseModel):
     # Tracking dernière action.
     last_proposed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_proposed_by: Mapped[str | None] = mapped_column(String(20))
+
+    # ── Workflow approbation propriétaire (Sprint 10 Lot 5 — migration 0052) ──
+    # cf docs/2-ROADMAP.md §2.4.16 décision #3 (Interprétation A) :
+    # Une fois le dossier locataire complet (renseignements_complets +
+    # loyer_caution_verses), l'agence (ou super_admin) pré-valide puis envoie
+    # un magic_link type='approbation_dossier' au propriétaire qui approuve
+    # ou refuse sur /approuver/[token] (no-auth bearer scope).
+    proprio_approbation_required: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    proprio_approbation_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
+    proprio_approbation_ip: Mapped[str | None] = mapped_column(String(50))
+    proprio_approbation_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
+    )
+    proprio_refus_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    proprio_refus_reason: Mapped[str | None] = mapped_column(Text)

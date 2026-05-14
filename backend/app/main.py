@@ -83,6 +83,7 @@ from app.routers.scoring import router as scoring_router
 from app.routers.smart_onboarding import router as smart_onboarding_router
 from app.routers.sphere_agent import router as sphere_router
 # ── Sprint 10 routers (Lot 1.5 scaffolding — stubs 501, Lot 2/5 livre l'impl) ─
+from app.routers.agences_dossiers import router as agences_dossiers_router
 from app.routers.avenants import router as avenants_router
 from app.routers.mandats import router as mandats_router
 from app.routers.public_approbation import router as public_approbation_router
@@ -396,6 +397,7 @@ app.include_router(
 )
 app.include_router(skribble_webhooks_router, prefix="/api/v1", tags=["skribble"])
 app.include_router(public_approbation_router, prefix="/api/v1", tags=["approbation"])
+app.include_router(agences_dossiers_router, prefix="/api/v1", tags=["approbation"])
 
 
 # ── Health check ──────────────────────────────────────────────────────────────
