@@ -1,24 +1,35 @@
-"""Modèle SQLAlchemy — table avenants (Sprint 10).
+"""Modèle SQLAlchemy — table avenants (Sprint 10 Lot 2).
 
 Source de vérité schéma DB : migration 0051 §E.
 
 Extension par-table (vs polymorphic SignableDocument) — cf AUDIT_SPRINT10.md §3.5.
 
-Stub Lot 1.5 scaffolding — colonnes alignées sur la migration 0051. Les
-relationships avec Contract + hybrid `fully_signed` + workflow états sont
-livrées par Lot 2.
+Workflow états (cf CHECK constraint migration 0051) :
+  draft → pending_signatures → signed → terminated
+
+Skribble webhook (Lot 2 §C) muta `skribble_status` selon les événements reçus :
+  - signature_request.created    → skribble_status='created'
+  - signature_request.signed     → skribble_status='partial_signed' (un signataire OK)
+  - signature_request.completed  → skribble_status='completed' + status='signed' +
+                                    signed_at_locataire + signed_at_agence posés
+  - signature_request.declined   → skribble_status='declined'
+  - signature_request.expired    → skribble_status='expired'
 """
 
 from __future__ import annotations
 
 import uuid
 from datetime import date, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from app.models.base import BaseModel
 from sqlalchemy import Date, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from app.models.contract import Contract
 
 
 class Avenant(BaseModel):
@@ -49,3 +60,14 @@ class Avenant(BaseModel):
     skribble_status: Mapped[str | None] = mapped_column(String(50))
     skribble_signed_pdf_url: Mapped[str | None] = mapped_column(Text)
     draft_pdf_url: Mapped[str | None] = mapped_column(Text)
+
+    contract: Mapped[Contract] = relationship(
+        "Contract",
+        foreign_keys=[contract_id],
+        lazy="selectin",
+    )
+
+    @hybrid_property
+    def fully_signed(self) -> bool:
+        """True quand locataire ET agence-mandataire ont signé l'avenant."""
+        return bool(self.signed_at_locataire) and bool(self.signed_at_agence)

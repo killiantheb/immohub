@@ -221,3 +221,49 @@ async def get_contract_pdf(
 ):
     """Generate and stream the contract as a PDF."""
     return await ContractService(db).generate_pdf(contract_id, current_user=current_user)
+
+
+@router.post("/{contract_id}/send-to-skribble", response_model=ContractRead)
+async def send_contract_to_skribble_endpoint(
+    contract_id: str,
+    current_user: AuthUserDep,
+    db: DbDep,
+) -> ContractRead:
+    """Plan A — envoi du bail en signature Skribble SES (Sprint 10).
+
+    §2.4.16 doctrine : Skribble bascule Phase 1.0. Si
+    `settings.SKRIBBLE_ENABLED=False`, retourne 503 et l'UI doit
+    rediriger vers Plan B (POST /sign + /countersign Sprint 8).
+
+    RBAC : `proprio_solo` (owner) | `agence` (mandataire) | `super_admin`.
+    """
+    import uuid as _uuid
+
+    from app.services.signature_orchestrator import send_contract_to_skribble
+
+    try:
+        cid = _uuid.UUID(contract_id)
+    except ValueError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Contrat introuvable")
+
+    contract = await db.get(Contract, cid)
+    if contract is None or not contract.is_active:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Contrat introuvable")
+
+    if current_user.role not in ("proprio_solo", "agence", "super_admin"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
+    if current_user.role != "super_admin" and (
+        contract.owner_id != current_user.id and contract.agency_id != current_user.id
+    ):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé")
+
+    if contract.signed_at is not None or contract.tenant_signed_at is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Bail déjà signé via Plan B Sprint 8 — utiliser le flux existant",
+        )
+
+    await send_contract_to_skribble(db, cid)
+    await db.flush()
+    await db.refresh(contract)
+    return ContractRead.model_validate(contract)
