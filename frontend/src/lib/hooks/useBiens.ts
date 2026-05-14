@@ -656,7 +656,7 @@ export function useLocataires(
     queryFn: async () => {
       const params: Record<string, string> = { bien_id: bienId };
       if (statut) params.statut = statut;
-      const { data } = await api.get<Locataire[]>("/locataires/", { params });
+      const { data } = await api.get<Locataire[]>("/locataires", { params });
       return data;
     },
     enabled: Boolean(bienId) && options?.enabled !== false,
@@ -716,7 +716,7 @@ export function usePaiements(bienId: string) {
   return useQuery({
     queryKey: bienKeys.paiements(bienId),
     queryFn: async () => {
-      const { data } = await api.get<Paiement[]>("/paiements/", {
+      const { data } = await api.get<Paiement[]>("/paiements", {
         params: { bien_id: bienId, size: 50 },
       });
       return data;
@@ -732,7 +732,7 @@ export function useInterventions(bienId: string) {
   return useQuery({
     queryKey: bienKeys.interventions(bienId),
     queryFn: async () => {
-      const { data } = await api.get<Intervention[]>("/interventions-althy/", {
+      const { data } = await api.get<Intervention[]>("/interventions-althy", {
         params: { bien_id: bienId },
       });
       return data;

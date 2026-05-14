@@ -171,7 +171,7 @@ class DepenseCreate(BaseModel):
     media_type:     str | None = None
 
 
-@router.post("/depenses/", status_code=status.HTTP_201_CREATED)
+@router.post("/depenses", status_code=status.HTTP_201_CREATED)
 async def creer_depense(
     payload: DepenseCreate,
     current_user: AuthDep,
@@ -238,7 +238,7 @@ async def creer_depense(
 
 # ── GET /depenses/ ────────────────────────────────────────────────────────────
 
-@router.get("/depenses/")
+@router.get("/depenses")
 async def lister_depenses(
     current_user: AuthDep,
     db: DbDep,

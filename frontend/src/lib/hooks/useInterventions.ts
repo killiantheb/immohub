@@ -107,7 +107,7 @@ export function useInterventionsByBien(
   return useQuery({
     queryKey: [...interventionKeys.byBien(bienId), filters],
     queryFn: async () => {
-      const { data } = await api.get<Intervention[]>("/interventions-althy/", {
+      const { data } = await api.get<Intervention[]>("/interventions-althy", {
         params,
       });
       return data;

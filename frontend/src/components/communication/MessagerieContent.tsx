@@ -117,7 +117,7 @@ export function MessagerieContent() {
       .catch(() => {})
       .finally(() => setLoading(false));
 
-    api.get<EmailItem[]>("/messagerie/")
+    api.get<EmailItem[]>("/messagerie")
       .then(r => setEmails(r.data))
       .catch(() => {});
   }, []);
@@ -148,7 +148,7 @@ export function MessagerieContent() {
       await api.post("/messagerie/synchroniser");
       setSyncToast("Synchronisation en cours, cela peut prendre quelques minutes.");
       setTimeout(() => setSyncToast(null), 6000);
-      const r = await api.get<EmailItem[]>("/messagerie/");
+      const r = await api.get<EmailItem[]>("/messagerie");
       setEmails(r.data);
     } catch {
       setSyncToast("Erreur lors de la synchronisation.");

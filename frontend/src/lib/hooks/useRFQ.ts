@@ -80,7 +80,7 @@ export function useCreateRFQ() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: RFQCreate) => {
-      const { data } = await api.post<RFQ>("/rfqs/", payload);
+      const { data } = await api.post<RFQ>("/rfqs", payload);
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.all }),

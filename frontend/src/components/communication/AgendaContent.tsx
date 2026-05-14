@@ -84,7 +84,7 @@ export function AgendaContent() {
   useEffect(() => {
     Promise.all([
       api.get<OAuthStatus[]>("/oauth/statut").then(r => setStatuts(r.data)).catch(() => {}),
-      api.get<CalendarEvent[]>("/agenda/").then(r => setEvents(r.data)).catch(() => {}),
+      api.get<CalendarEvent[]>("/agenda").then(r => setEvents(r.data)).catch(() => {}),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -107,7 +107,7 @@ export function AgendaContent() {
       await api.post("/agenda/synchroniser");
       setSyncToast("Synchronisation en cours, cela peut prendre quelques minutes.");
       setTimeout(() => setSyncToast(null), 6000);
-      const r = await api.get<CalendarEvent[]>("/agenda/");
+      const r = await api.get<CalendarEvent[]>("/agenda");
       setEvents(r.data);
     } catch {
       setSyncToast("Erreur lors de la synchronisation.");

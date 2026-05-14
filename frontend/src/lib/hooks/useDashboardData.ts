@@ -38,7 +38,7 @@ export function useManagerDashboard() {
   const locatairesActifs = useQuery({
     queryKey: ["dashboard", "locataires-actifs"],
     queryFn: async () => {
-      const { data } = await api.get<Locataire[]>("/locataires/", {
+      const { data } = await api.get<Locataire[]>("/locataires", {
         params: { statut: "actif", size: 100 },
       });
       return data;
@@ -49,7 +49,7 @@ export function useManagerDashboard() {
   const paiementsMois = useQuery({
     queryKey: ["dashboard", "paiements", moisCourant],
     queryFn: async () => {
-      const { data } = await api.get<Paiement[]>("/paiements/", {
+      const { data } = await api.get<Paiement[]>("/paiements", {
         params: { mois: moisCourant, size: 100 },
       });
       return data;
@@ -60,7 +60,7 @@ export function useManagerDashboard() {
   const interventions = useQuery({
     queryKey: ["dashboard", "interventions"],
     queryFn: async () => {
-      const { data } = await api.get<Intervention[]>("/interventions-althy/", {
+      const { data } = await api.get<Intervention[]>("/interventions-althy", {
         params: { size: 50 },
       });
       return data;
@@ -210,7 +210,7 @@ export function useArtisanDashboard() {
   const interventions = useQuery({
     queryKey: ["dashboard", "artisan", "interventions"],
     queryFn: async () => {
-      const { data } = await api.get<Intervention[]>("/interventions-althy/", { params: { size: 100 } });
+      const { data } = await api.get<Intervention[]>("/interventions-althy", { params: { size: 100 } });
       return data;
     },
     staleTime: 30_000,
@@ -219,7 +219,7 @@ export function useArtisanDashboard() {
   const paiements = useQuery({
     queryKey: ["dashboard", "artisan", "paiements"],
     queryFn: async () => {
-      const { data } = await api.get<Paiement[]>("/paiements/", { params: { size: 100 } });
+      const { data } = await api.get<Paiement[]>("/paiements", { params: { size: 100 } });
       return data;
     },
     staleTime: 30_000,
@@ -263,7 +263,7 @@ export function useTenantDashboard() {
   const monLocataire = useQuery({
     queryKey: ["dashboard", "tenant", "locataire"],
     queryFn: async () => {
-      const { data } = await api.get<Locataire[]>("/locataires/", {
+      const { data } = await api.get<Locataire[]>("/locataires", {
         params: { statut: "actif", size: 1 },
       });
       return data[0] ?? null;
@@ -287,7 +287,7 @@ export function useTenantDashboard() {
   const documents = useQuery({
     queryKey: ["dashboard", "tenant", "docs", bienId],
     queryFn: async () => {
-      const { data } = await api.get<DocumentAlthy[]>("/docs-althy/", {
+      const { data } = await api.get<DocumentAlthy[]>("/docs-althy", {
         params: { bien_id: bienId, locataire_id: locataireId, size: 50 },
       });
       return data;
@@ -299,7 +299,7 @@ export function useTenantDashboard() {
   const paiementMois = useQuery({
     queryKey: ["dashboard", "tenant", "paiement", moisCourant],
     queryFn: async () => {
-      const { data } = await api.get<Paiement[]>("/paiements/", {
+      const { data } = await api.get<Paiement[]>("/paiements", {
         params: { locataire_id: locataireId, mois: moisCourant },
       });
       return data[0] ?? null;

@@ -77,7 +77,7 @@ export function NotationModal({ acteur, contexteType = "mission", contexteId, on
       if (contexteId) body.contexte_id = contexteId;
       if (comment.trim()) body.commentaire = comment.trim();
 
-      const res = await api.post<{ success: boolean; nouvelle_moyenne: number }>("/notations/", body);
+      const res = await api.post<{ success: boolean; nouvelle_moyenne: number }>("/notations", body);
       setMoyenne(res.data.nouvelle_moyenne);
       setDone(true);
       onDone?.(res.data.nouvelle_moyenne);

@@ -342,19 +342,19 @@ function useUnifiedData(role: UserRole | null): UnifiedData {
 
   const locatairesQ = useQuery({
     queryKey: ["ud", "locataires"],
-    queryFn: async () => { const { data } = await api.get<Locataire[]>("/locataires/", { params: { statut: "actif", size: 100 } }); return data; },
+    queryFn: async () => { const { data } = await api.get<Locataire[]>("/locataires", { params: { statut: "actif", size: 100 } }); return data; },
     enabled: isManager, staleTime: 60_000,
   });
 
   const paiementsManagerQ = useQuery({
     queryKey: ["ud", "paiements-manager", moisCourant],
-    queryFn: async () => { const { data } = await api.get<Paiement[]>("/paiements/", { params: { mois: moisCourant, size: 100 } }); return data; },
+    queryFn: async () => { const { data } = await api.get<Paiement[]>("/paiements", { params: { mois: moisCourant, size: 100 } }); return data; },
     enabled: isManager, staleTime: 60_000,
   });
 
   const interventionsManagerQ = useQuery({
     queryKey: ["ud", "interventions-manager"],
-    queryFn: async () => { const { data } = await api.get<Intervention[]>("/interventions-althy/", { params: { size: 50 } }); return data; },
+    queryFn: async () => { const { data } = await api.get<Intervention[]>("/interventions-althy", { params: { size: 50 } }); return data; },
     enabled: isManager, staleTime: 60_000,
   });
 
@@ -367,7 +367,7 @@ function useUnifiedData(role: UserRole | null): UnifiedData {
   // ── Tenant queries ───────────────────────────────────────────────────────────
   const monLocataireQ = useQuery({
     queryKey: ["ud", "mon-locataire"],
-    queryFn: async () => { const { data } = await api.get<Locataire[]>("/locataires/", { params: { statut: "actif", size: 1 } }); return data[0] ?? null; },
+    queryFn: async () => { const { data } = await api.get<Locataire[]>("/locataires", { params: { statut: "actif", size: 1 } }); return data[0] ?? null; },
     enabled: isTenant, staleTime: 60_000,
   });
 
@@ -382,26 +382,26 @@ function useUnifiedData(role: UserRole | null): UnifiedData {
 
   const docsQ = useQuery({
     queryKey: ["ud", "docs", bienId],
-    queryFn: async () => { const { data } = await api.get<DocumentAlthy[]>("/docs-althy/", { params: { bien_id: bienId, locataire_id: locId, size: 50 } }); return data; },
+    queryFn: async () => { const { data } = await api.get<DocumentAlthy[]>("/docs-althy", { params: { bien_id: bienId, locataire_id: locId, size: 50 } }); return data; },
     enabled: isTenant && Boolean(bienId), staleTime: 60_000,
   });
 
   const paiementMoisQ = useQuery({
     queryKey: ["ud", "paiement-mois", moisCourant],
-    queryFn: async () => { const { data } = await api.get<Paiement[]>("/paiements/", { params: { locataire_id: locId, mois: moisCourant } }); return data[0] ?? null; },
+    queryFn: async () => { const { data } = await api.get<Paiement[]>("/paiements", { params: { locataire_id: locId, mois: moisCourant } }); return data[0] ?? null; },
     enabled: isTenant && Boolean(locId), staleTime: 30_000,
   });
 
   // ── Artisan queries ──────────────────────────────────────────────────────────
   const artisanInterQ = useQuery({
     queryKey: ["ud", "artisan-inter"],
-    queryFn: async () => { const { data } = await api.get<Intervention[]>("/interventions-althy/", { params: { size: 100 } }); return data; },
+    queryFn: async () => { const { data } = await api.get<Intervention[]>("/interventions-althy", { params: { size: 100 } }); return data; },
     enabled: isArtisan, staleTime: 30_000,
   });
 
   const artisanPaiQ = useQuery({
     queryKey: ["ud", "artisan-pai", moisCourant],
-    queryFn: async () => { const { data } = await api.get<Paiement[]>("/paiements/", { params: { size: 100 } }); return data; },
+    queryFn: async () => { const { data } = await api.get<Paiement[]>("/paiements", { params: { size: 100 } }); return data; },
     enabled: isArtisan, staleTime: 30_000,
   });
 

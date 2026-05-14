@@ -42,7 +42,7 @@ export function useCompanies() {
   return useQuery({
     queryKey: keys.list(),
     queryFn: async () => {
-      const { data } = await api.get<Company[]>("/companies/");
+      const { data } = await api.get<Company[]>("/companies");
       return data;
     },
     staleTime: 60_000,
@@ -53,7 +53,7 @@ export function useCreateCompany() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: CompanyCreate) => {
-      const { data } = await api.post<Company>("/companies/", payload);
+      const { data } = await api.post<Company>("/companies", payload);
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.all }),

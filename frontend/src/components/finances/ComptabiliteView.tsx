@@ -89,7 +89,7 @@ function ScanSection() {
     if (!edited) return;
     setSaving(true);
     try {
-      await api.post("/depenses/", {
+      await api.post("/depenses", {
         bien_id:        bienId || null,
         montant:        edited.montant,
         date_facture:   edited.date_iso,
