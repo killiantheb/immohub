@@ -1465,13 +1465,17 @@ export function UnifiedDashboard() {
       </div>
 
       <div style={{ padding: "2rem 3rem", maxWidth: 1280 }}>
-        {/* Greeting */}
+        {/* Greeting — §B.11 message honnete adapte au nombre de biens reel. */}
         <div style={{ marginBottom: "2rem" }}>
           <h1 style={{ fontSize: 48, fontWeight: 600, fontFamily: "var(--font-serif)", color: "var(--charcoal)", marginBottom: 6, lineHeight: 1.1 }}>
             Bonjour{firstName ? `, ${firstName}` : ""}
           </h1>
           <p style={{ fontSize: 15, color: "var(--text-secondary)" }} suppressHydrationWarning>
-            Voici un aperçu de vos {nbBiens} biens — {moisAnnee}
+            {nbBiens === 0
+              ? `Aucun bien enregistré pour le moment — ${moisAnnee}`
+              : nbBiens === 1
+                ? `Voici un aperçu de votre bien — ${moisAnnee}`
+                : `Voici un aperçu de vos ${nbBiens} biens — ${moisAnnee}`}
           </p>
         </div>
 
