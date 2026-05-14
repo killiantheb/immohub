@@ -1,15 +1,23 @@
 "use client";
 
+/**
+ * /app/biens — Liste des biens du propriétaire connecté.
+ *
+ * Doctrine §B.15 (CLAUDE.md) : Phase 1.0 = gestion pure, pas de favoris cross-marketplace
+ * (favoris locataires = surface Phase 2, cf docs/2-ROADMAP.md §2.4.5).
+ *
+ * Note : la décision du toggle Liste/Carte par défaut est traitée dans le Lot C
+ * (refonte navigation). Lot B retire seulement le défaut "carte ouverte" — la liste
+ * est affichée par défaut, l'utilisateur peut activer la carte via le bouton.
+ */
+
 import Link from "next/link";
-import { useState, useEffect, Suspense, useMemo } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Plus, Building2, Home, MapPin, Search, Heart, Map as MapIcon } from "lucide-react";
+import { useState, Suspense, useMemo } from "react";
+import { Plus, Building2, Home, MapPin, Search, Map as MapIcon } from "lucide-react";
 import { useBiensList } from "@/lib/hooks/useBiens";
-import { api } from "@/lib/api";
 import type { BienImage, BienListItem, BienStatut } from "@/lib/types";
 import { AlthyMap, type AlthyMapMarker } from "@/components/map/AlthyMap";
 import { C } from "@/lib/design-tokens";
-import { FLAGS } from "@/lib/flags";
 
 // ── Coordonnées par ville (fallback) ──────────────────────────────────────────
 
@@ -37,26 +45,7 @@ function cityCoords(city: string | null | undefined): [number, number] | null {
   return null;
 }
 
-// ── Type local favoris (shape aplatie FavoriteRead backend, non exportée) ─────
-// Aligné sur backend/app/routers/favorites.py :: FavoriteRead. Distinct de
-// BienListItem — les favoris sont dénormalisés (pas d'images, champs préfixés
-// bien_*) et on préserve l'id du favori pour le DELETE /favorites/{favorite_id}.
-
-type FavoriteItem = {
-  id: string;                   // id du FAVORI (≠ bien_id)
-  bien_id: string;
-  notes: string | null;
-  created_at: string;
-  bien_adresse: string | null;
-  bien_ville: string | null;
-  bien_type: string | null;
-  loyer: number | null;
-  rooms: number | null;
-  surface: number | null;
-  bien_statut: string | null;
-};
-
-// ── Shape affichable BienCard — sous-ensemble partagé biens liste + favoris ───
+// ── Shape affichable BienCard ─────────────────────────────────────────────────
 
 type DisplayBien = {
   id: string;
@@ -68,7 +57,6 @@ type DisplayBien = {
   surface: number | null;
   rooms: number | null;
   images: BienImage[];
-  favorite_id?: string;         // rempli uniquement sur l'onglet Favoris
 };
 
 function adaptBien(b: BienListItem): DisplayBien {
@@ -82,21 +70,6 @@ function adaptBien(b: BienListItem): DisplayBien {
     surface:  b.surface,
     rooms:    b.rooms,
     images:   b.images,
-  };
-}
-
-function adaptFavorite(f: FavoriteItem): DisplayBien {
-  return {
-    id:          f.bien_id,
-    adresse:     f.bien_adresse ?? "",
-    ville:       f.bien_ville,
-    type:        f.bien_type ?? "autre",
-    statut:      f.bien_statut ?? "vacant",
-    loyer:       f.loyer,
-    surface:     f.surface,
-    rooms:       f.rooms,
-    images:      [],              // endpoint /favorites ne renvoie pas les photos
-    favorite_id: f.id,
   };
 }
 
@@ -123,15 +96,7 @@ const STATUS_STYLE: Record<BienStatut, { label: string; bg: string; fg: string }
 
 // ── BienCard ──────────────────────────────────────────────────────────────────
 
-function BienCard({
-  bien,
-  isFav,
-  onToggleFavorite,
-}: {
-  bien: DisplayBien;
-  isFav: boolean;
-  onToggleFavorite: (e: React.MouseEvent, bien: DisplayBien) => void;
-}) {
+function BienCard({ bien }: { bien: DisplayBien }) {
   const st = STATUS_STYLE[bien.statut as BienStatut] ?? { label: bien.statut, bg: "var(--border-subtle)", fg: C.text3 };
   const cover = bien.images.find(i => i.is_cover)?.url ?? bien.images[0]?.url;
 
@@ -174,31 +139,6 @@ function BienCard({
           }}>
             {st.label}
           </span>
-
-          {/* Favorite button — masqué tant que FLAGS.FAVORITES off (BUG 3) */}
-          {FLAGS.FAVORITES && (
-          <button
-            onClick={e => onToggleFavorite(e, bien)}
-            title={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
-            style={{
-              position: "absolute", top: 8, left: 10,
-              background: "rgba(255,255,255,0.88)",
-              border: "none", borderRadius: "50%",
-              width: 30, height: 30, cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              backdropFilter: "blur(4px)",
-              transition: "transform 0.15s",
-            }}
-            onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.15)")}
-            onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
-          >
-            <Heart
-              size={14}
-              fill={isFav ? "var(--terracotta-primary)" : "none"}
-              color={isFav ? "var(--terracotta-primary)" : "var(--text-tertiary)"}
-            />
-          </button>
-          )}
         </div>
 
         {/* Content */}
@@ -236,58 +176,12 @@ const FILTRES: { key: BienStatut | ""; label: string }[] = [
   { key: "en_travaux", label: "Rénovation"  },
 ];
 
-// Favoris = feature Phase 2 (marketplace). Tant que FLAGS.FAVORITES est
-// off, on masque l'onglet pour ne pas exposer une feature non fonctionnelle
-// (cf BUG 3 Sprint 9 Lot E + doctrine §B.15).
-const TABS = (
-  FLAGS.FAVORITES
-    ? [
-        { key: "tous",    label: "Tous mes biens" },
-        { key: "favoris", label: "Favoris"        },
-      ]
-    : [
-        { key: "tous",    label: "Tous mes biens" },
-      ]
-);
-
 function BiensPageInner() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const tab = searchParams.get("tab") || "tous";
-
   const [filtre,     setFiltre]     = useState<BienStatut | "">("");
   const [search,     setSearch]     = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [showMap,    setShowMap]    = useState(true);
-
-  // Favoris — bien_id → favorite_id pour permettre DELETE /favorites/{favorite_id}
-  const [favoriteBienIds, setFavoriteBienIds] = useState<Set<string>>(new Set());
-  const [favMap,          setFavMap]          = useState<Map<string, string>>(new Map());
-  const [favorites,       setFavorites]       = useState<FavoriteItem[]>([]);
-  const [favLoading,      setFavLoading]      = useState(false);
-
-  useEffect(() => {
-    // Favoris = feature Phase 2 (marketplace). Si BACKEND_FLAG_FAVORITES
-    // est off, l'endpoint /favorites retourne 503 — on évite l'appel.
-    // Sprint 9 Lot E BUG 3 : ne pas polluer la console Sunimmo de 503.
-    if (!FLAGS.FAVORITES) {
-      setFavLoading(false);
-      return;
-    }
-    setFavLoading(true);
-    api.get<FavoriteItem[] | { items?: FavoriteItem[]; data?: FavoriteItem[] }>("/favorites")
-      .then(r => {
-        const raw = r.data;
-        const items: FavoriteItem[] = Array.isArray(raw)
-          ? raw
-          : (raw as { items?: FavoriteItem[] }).items ?? (raw as { data?: FavoriteItem[] }).data ?? [];
-        setFavorites(items);
-        setFavoriteBienIds(new Set(items.map(f => f.bien_id)));
-        setFavMap(new Map(items.map(f => [f.bien_id, f.id])));
-      })
-      .catch(err => console.error("GET /favorites failed", err))
-      .finally(() => setFavLoading(false));
-  }, []);
+  // Carte fermée par défaut — Lot C arbitrera le toggle final liste/carte.
+  const [showMap,    setShowMap]    = useState(false);
 
   const { data, isLoading } = useBiensList(filtre ? { statut: filtre } : {});
 
@@ -301,62 +195,9 @@ function BiensPageInner() {
     })
     .map(adaptBien);
 
-  const filteredFavorites: DisplayBien[] = favorites
-    .filter(f => {
-      if (!search) return true;
-      const q = search.toLowerCase();
-      return (f.bien_adresse ?? "").toLowerCase().includes(q)
-        || (f.bien_ville ?? "").toLowerCase().includes(q);
-    })
-    .map(adaptFavorite);
-
-  function setTab(key: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", key);
-    router.push(`/app/biens?${params.toString()}`);
-  }
-
-  async function toggleFavorite(e: React.MouseEvent, bien: DisplayBien) {
-    e.preventDefault();
-    e.stopPropagation();
-    // BUG 3 Sprint 9 Lot E : flag off → on no-op. Le bouton n'est en
-    // principe pas rendu (cf BienCard), mais ceinture + bretelles.
-    if (!FLAGS.FAVORITES) return;
-    const isFav = favoriteBienIds.has(bien.id);
-
-    if (isFav) {
-      const favoriteId = favMap.get(bien.id);
-      const removed = favorites.find(f => f.bien_id === bien.id);
-      // Optimistic remove
-      setFavoriteBienIds(prev => { const s = new Set(prev); s.delete(bien.id); return s; });
-      setFavMap(prev => { const m = new Map(prev); m.delete(bien.id); return m; });
-      setFavorites(prev => prev.filter(f => f.bien_id !== bien.id));
-      try {
-        if (!favoriteId) throw new Error(`favorite_id absent pour bien ${bien.id}`);
-        await api.delete(`/favorites/${favoriteId}`);
-      } catch (err) {
-        console.error("DELETE /favorites failed", err);
-        setFavoriteBienIds(prev => new Set([...prev, bien.id]));
-        if (favoriteId) setFavMap(prev => new Map(prev).set(bien.id, favoriteId));
-        if (removed) setFavorites(prev => [...prev, removed]);
-      }
-    } else {
-      // Optimistic add (favorite_id inconnu tant que le POST n'a pas répondu)
-      setFavoriteBienIds(prev => new Set([...prev, bien.id]));
-      try {
-        const { data: created } = await api.post<FavoriteItem>("/favorites", { bien_id: bien.id });
-        setFavMap(prev => new Map(prev).set(bien.id, created.id));
-        setFavorites(prev => [...prev, created]);
-      } catch (err) {
-        console.error("POST /favorites failed", err);
-        setFavoriteBienIds(prev => { const s = new Set(prev); s.delete(bien.id); return s; });
-      }
-    }
-  }
-
-  const displayList     = tab === "favoris" ? filteredFavorites : filtered;
-  const displayLoading  = tab === "favoris" ? favLoading        : isLoading;
-  const totalCount      = tab === "favoris" ? favorites.length  : biens.length;
+  const displayList     = filtered;
+  const displayLoading  = isLoading;
+  const totalCount      = biens.length;
 
   // Markers carte
   const mapMarkers = useMemo<AlthyMapMarker[]>(() => {
@@ -383,7 +224,7 @@ function BiensPageInner() {
           <p style={{ margin: "4px 0 0", fontSize: 13, color: C.text3 }}>
             {displayLoading
               ? "Chargement…"
-              : `${totalCount} bien${totalCount !== 1 ? "s" : ""}${tab === "favoris" ? " en favori" : " enregistré"}${totalCount !== 1 ? "s" : ""}`}
+              : `${totalCount} bien${totalCount !== 1 ? "s" : ""} enregistré${totalCount !== 1 ? "s" : ""}`}
           </p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -409,83 +250,35 @@ function BiensPageInner() {
         </div>
       </div>
 
-      {/* ── Tabs ── */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "1px solid var(--border-subtle)", paddingBottom: 0 }}>
-        {TABS.map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            style={{
-              padding: "8px 18px",
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              fontSize: 13,
-              fontWeight: tab === t.key ? 700 : 500,
-              color: tab === t.key ? C.orange : C.text3,
-              borderBottom: `2px solid ${tab === t.key ? C.orange : "transparent"}`,
-              marginBottom: -1,
-              transition: "color 0.15s",
-            }}
-          >
-            {t.label}
-            {t.key === "favoris" && favorites.length > 0 && (
-              <span style={{
-                marginLeft: 6, fontSize: 10, fontWeight: 700,
-                background: C.orangeBg, color: C.orange,
-                padding: "1px 6px", borderRadius: 10,
-              }}>
-                {favorites.length}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Filters + Search (hidden on Favoris tab) ── */}
-      {tab === "tous" && (
-        <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {FILTRES.map(f => (
-              <button
-                key={f.key}
-                onClick={() => setFiltre(f.key)}
-                style={{
-                  padding: "6px 14px", borderRadius: 20, cursor: "pointer",
-                  border: `1px solid ${filtre === f.key ? C.orange : "var(--border-subtle)"}`,
-                  background: filtre === f.key ? C.orangeBg : C.surface,
-                  color: filtre === f.key ? C.orange : C.text3,
-                  fontSize: 12, fontWeight: 600,
-                }}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", background: C.surface, border: "1px solid var(--border-subtle)", borderRadius: 10, flex: 1, minWidth: 200 }}>
-            <Search size={13} color="var(--text-tertiary)" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Rechercher par adresse ou ville…"
-              style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: C.text, fontFamily: "inherit" }}
-            />
-          </div>
+      {/* ── Filters + Search ── */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {FILTRES.map(f => (
+            <button
+              key={f.key}
+              onClick={() => setFiltre(f.key)}
+              style={{
+                padding: "6px 14px", borderRadius: 20, cursor: "pointer",
+                border: `1px solid ${filtre === f.key ? C.orange : "var(--border-subtle)"}`,
+                background: filtre === f.key ? C.orangeBg : C.surface,
+                color: filtre === f.key ? C.orange : C.text3,
+                fontSize: 12, fontWeight: 600,
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
-      )}
-
-      {/* Search bar on Favoris tab */}
-      {tab === "favoris" && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", background: C.surface, border: "1px solid var(--border-subtle)", borderRadius: 10, marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", background: C.surface, border: "1px solid var(--border-subtle)", borderRadius: 10, flex: 1, minWidth: 200 }}>
           <Search size={13} color="var(--text-tertiary)" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher parmi vos favoris…"
+            placeholder="Rechercher par adresse ou ville…"
             style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13, color: C.text, fontFamily: "inherit" }}
           />
         </div>
-      )}
+      </div>
 
       {/* ── Layout split liste + carte ── */}
       <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
@@ -500,42 +293,23 @@ function BiensPageInner() {
             </div>
           ) : displayList.length === 0 ? (
             <div style={{ background: C.surface, border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "56px 24px", textAlign: "center" }}>
-              {tab === "favoris" ? (
-                <>
-                  <Heart size={40} color="var(--border-subtle)" style={{ margin: "0 auto 16px" }} />
-                  <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600, color: C.text }}>
-                    {search ? "Aucun résultat" : "Aucun favori enregistré"}
-                  </h3>
-                  <p style={{ margin: 0, fontSize: 13, color: C.text3 }}>
-                    {search ? "Essayez un autre terme." : "Cliquez sur le cœur d'un bien pour l'ajouter à vos favoris."}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <Building2 size={40} color="var(--border-subtle)" style={{ margin: "0 auto 16px" }} />
-                  <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600, color: C.text }}>
-                    {search ? "Aucun résultat" : "Aucun bien enregistré"}
-                  </h3>
-                  <p style={{ margin: "0 0 20px", fontSize: 13, color: C.text3 }}>
-                    {search ? "Essayez un autre terme de recherche." : "Ajoutez votre premier bien pour commencer."}
-                  </p>
-                  {!search && (
-                    <Link href="/app/biens/nouveau" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 20px", borderRadius: 10, background: C.orange, color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
-                      <Plus size={14} /> Ajouter un bien
-                    </Link>
-                  )}
-                </>
+              <Building2 size={40} color="var(--border-subtle)" style={{ margin: "0 auto 16px" }} />
+              <h3 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600, color: C.text }}>
+                {search ? "Aucun résultat" : "Aucun bien enregistré"}
+              </h3>
+              <p style={{ margin: "0 0 20px", fontSize: 13, color: C.text3 }}>
+                {search ? "Essayez un autre terme de recherche." : "Ajoutez votre premier bien pour commencer."}
+              </p>
+              {!search && (
+                <Link href="/app/biens/nouveau" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 20px", borderRadius: 10, background: C.orange, color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
+                  <Plus size={14} /> Ajouter un bien
+                </Link>
               )}
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
               {displayList.map(b => (
-                <BienCard
-                  key={b.id}
-                  bien={b}
-                  isFav={favoriteBienIds.has(b.id)}
-                  onToggleFavorite={toggleFavorite}
-                />
+                <BienCard key={b.id} bien={b} />
               ))}
             </div>
           )}
