@@ -10,10 +10,15 @@ export type AppRole = UserRole;
 export { ROLE_LABELS };
 
 /** Sections accessibles par rôle (mirrors backend ROLE_SECTIONS) */
+// Sprint 9 Lot C (2026-05-14) : section "locataires" ajoutée pour la vue
+// unifiée locataires-actifs + candidatures-passées Phase 1.0. Les sections
+// Phase 2 (carte, candidatures, interventions) restent autorisées côté
+// rôle pour conserver l'accès URL direct au code dormant — elles sont
+// simplement retirées de la sidebar dans DashboardSidebar.tsx (cf §B.15).
 export const ROLE_SECTIONS: Record<UserRole, string[]> = {
   super_admin:      ["*"],
-  proprio_solo:     ["dashboard", "sphere", "carte", "biens", "candidatures", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "ouvreurs", "vente", "settings", "communication", "profile"],
-  agence:           ["dashboard", "sphere", "carte", "biens", "candidatures", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail", "ouvreurs", "vente", "settings", "communication", "artisans", "onboarding", "profile"],
+  proprio_solo:     ["dashboard", "sphere", "carte", "biens", "locataires", "candidatures", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "ouvreurs", "vente", "settings", "communication", "profile"],
+  agence:           ["dashboard", "sphere", "carte", "biens", "locataires", "candidatures", "finances", "interventions", "crm", "listings", "hunters", "comptabilite", "abonnement", "documents", "portail", "ouvreurs", "vente", "settings", "communication", "artisans", "onboarding", "profile"],
   portail_proprio:  ["dashboard", "carte", "biens", "finances", "documents", "settings", "communication", "profile"],
   opener:           ["dashboard", "sphere", "carte", "ouvreurs", "interventions", "finances", "abonnement", "settings", "communication", "profile"],
   artisan:          ["dashboard", "sphere", "carte", "interventions", "finances", "abonnement", "artisans", "settings", "communication", "profile"],

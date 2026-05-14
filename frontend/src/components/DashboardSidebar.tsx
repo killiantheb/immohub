@@ -20,14 +20,13 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Mail,
-  User,
   FileText,
   LayoutGrid,
   Wrench,
   FileCheck,
   Users,
   Compass,
-  Map,
+  Home,
 } from "lucide-react";
 
 // ── Nav items ─────────────────────────────────────────────────────────────────
@@ -52,18 +51,18 @@ function buildNavSet(role: string | null, planId: string | null): NavSet {
 
   // Atomes partagés
   const althy:         NavItem = { label: "Althy IA",          href: "/app/sphere",         icon: ic(Sparkles),          section: "sphere" };
+  const tableauBord:   NavItem = { label: "Tableau de bord",   href: "/app",                 icon: ic(LayoutGrid),        section: "dashboard" };
   const biens:         NavItem = { label: "Biens",              href: "/app/biens",           icon: ic(Building2),         section: "biens" };
-  const carte:         NavItem = { label: "Carte",              href: "/app/carte",           icon: ic(Map),               section: "carte" };
+  const locataires:    NavItem = { label: "Locataires",         href: "/app/locataires",      icon: ic(Users),             section: "locataires" };
   const finances:      NavItem = { label: "Finances",           href: "/app/finances",        icon: ic(LineChart),         section: "finances" };
   const documents:     NavItem = { label: "Documents",          href: "/app/documents",       icon: ic(FileText),          section: "documents" };
   const communication: NavItem = { label: "Communication",      href: "/app/communication",   icon: ic(Mail),              section: "communication" };
   const missions:      NavItem = { label: "Missions",           href: "/app/artisans",        icon: ic(HardHat),           section: "artisans" };
   const interventions: NavItem = { label: "Interventions",      href: "/app/interventions",   icon: ic(Wrench),            section: "interventions" };
-  const candidatures:  NavItem = { label: "Candidatures",       href: "/app/candidatures",    icon: ic(Users),             section: "candidatures" };
   const mesCandid:     NavItem = { label: "Mes candidatures",   href: "/app/mes-candidatures",icon: ic(FileCheck),         section: "mes_candidatures" };
   const portail:       NavItem = { label: "Portail proprios",   href: "/app/portail",         icon: ic(Users2),            section: "portail" };
-  const profile:       NavItem = { label: "Mon profil",         href: "/app/profil",          icon: ic(User),              section: "profile" };
   const settings:      NavItem = { label: "Paramètres",         href: "/app/settings",        icon: ic(SlidersHorizontal), section: "settings" };
+  const monLogement:   NavItem = { label: "Mon logement",       href: "/app/mon-bien",        icon: ic(Home),              section: "mon_bien" };
 
   // Althy Autonomie — entrée dédiée selon le plan de l'utilisateur
   const autonomieActive: NavItem = {
@@ -84,65 +83,74 @@ function buildNavSet(role: string | null, planId: string | null): NavSet {
     : planId === "invite"  ? autonomieInvite
     : null;
 
+  // Sprint 9 Lot C — Phase 1.0 strict (CLAUDE.md §B.15) :
+  //   - Items retirés de la sidebar : Carte (redondant avec toggle dans /biens),
+  //     Candidatures (Phase 2 marketplace), Interventions (intégré fiche bien),
+  //     Mon profil (déplacé dans le dropdown UserMenu top-right).
+  //   - Items conservés : Althy IA (1er), Tableau de bord, Biens, Locataires,
+  //     Finances, Documents, Administration (super_admin).
+  //   - Pages dormantes Phase 2 toujours accessibles par URL directe (code
+  //     conservé pour réactivation) — leurs sections restent autorisées dans
+  //     ROLE_SECTIONS, elles disparaissent juste de la nav visible.
   switch (role) {
     case "proprio_solo":
       return {
         main: [
           althy,
+          tableauBord,
           biens,
-          carte,
-          candidatures,
-          interventions,
+          locataires,
           finances,
           documents,
           communication,
           ...(autonomieItem ? [autonomieItem] : []),
         ],
-        bottom: [profile, settings],
+        bottom: [settings],
       };
 
     case "locataire":
       return {
-        main:   [althy, { ...biens, label: "Mon logement" }, mesCandid, { ...documents, label: "Mes documents" }],
-        bottom: [profile],
+        main:   [althy, tableauBord, monLogement, mesCandid, { ...documents, label: "Mes documents" }],
+        bottom: [],
       };
 
     case "artisan":
       return {
-        main:   [althy, missions, interventions, { ...finances, label: "Mes revenus" }, communication],
-        bottom: [profile],
+        main:   [althy, tableauBord, missions, interventions, { ...finances, label: "Mes revenus" }, communication],
+        bottom: [],
       };
 
     case "agence":
       return {
-        main:   [althy, biens, carte, candidatures, interventions, finances, documents, communication, portail],
-        bottom: [profile, settings],
+        main:   [althy, tableauBord, biens, locataires, finances, documents, communication, portail],
+        bottom: [settings],
       };
 
     case "portail_proprio":
       return {
         main:   [
+          tableauBord,
           { ...biens,         label: "Mes biens" },
           { ...documents,     label: "Mes documents" },
           { ...communication, label: "Messagerie agence" },
         ],
-        bottom: [profile],
+        bottom: [],
       };
 
     case "super_admin":
       return {
         main:   [
-          althy, biens, carte, candidatures, interventions, finances, documents, communication, portail,
+          althy, tableauBord, biens, locataires, finances, documents, communication, portail,
           { label: "Administration", href: "/app/admin", icon: ic(LayoutGrid), section: "admin" },
         ],
-        bottom: [profile, settings],
+        bottom: [settings],
       };
 
     default:
       // opener, expert, hunter, acheteur_premium
       return {
-        main:   [althy, biens, finances, documents, communication],
-        bottom: [profile, settings],
+        main:   [althy, tableauBord, biens, finances, documents, communication],
+        bottom: [settings],
       };
   }
 }
@@ -345,15 +353,17 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: SidebarP
       style={S.sidebar(w)}
       className={`althy-sidebar${mobileOpen ? " althy-sidebar--open" : ""}`}
     >
-      {/* ── Brand ── */}
+      {/* ── Brand — toujours cliquable (retour Tableau de bord) ── */}
       <div style={S.brand(collapsed)}>
-        {!collapsed ? (
-          <Link href="/app" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-            <AlthyLogo variant="full" size={32} />
-          </Link>
-        ) : (
-          <AlthyLogo variant="mark" size={40} />
-        )}
+        <Link
+          href="/app"
+          aria-label="Retour au tableau de bord Althy"
+          style={{ display: "flex", alignItems: "center", textDecoration: "none" }}
+        >
+          {!collapsed
+            ? <AlthyLogo variant="full" size={32} />
+            : <AlthyLogo variant="mark" size={40} />}
+        </Link>
         <button
           onClick={() => setCollapsed(c => !c)}
           style={S.collapseBtn}
