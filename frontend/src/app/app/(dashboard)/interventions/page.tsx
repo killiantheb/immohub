@@ -1,297 +1,191 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import {
-  MapPin, Loader2, Wrench, Plus, ChevronRight, AlertTriangle, Sparkles, FileText,
-} from "lucide-react";
+/**
+ * /app/interventions — Vue agrégée "Mes interventions" (proprio_solo).
+ *
+ * Phase 1.0 = gestion pure. La marketplace artisans (RFQ + comparaison IA + commission
+ * Althy 10 %) est code dormant Phase 2 (cf CLAUDE.md §B.15 + docs/2-ROADMAP.md §2.4.5).
+ * Cette page liste UNIQUEMENT les interventions réelles créées depuis la fiche bien
+ * (`/biens/{id}` → onglet Interventions), via `GET /api/v1/interventions-althy/`.
+ *
+ * Les onglets RFQ (Tous/Publiés/Devis reçus/Acceptés/En cours/Terminés), la modale
+ * "Comparer IA" et les CTAs "Décrire des travaux → /app/artisans/devis" ont été
+ * retirés. Le code RFQ backend/frontend reste accessible via URL directe pour
+ * réactivation Phase 2.
+ */
+
+import { Suspense } from "react";
+import Link from "next/link";
+import { Wrench, MapPin, Loader2, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { RFQStatus } from "@/lib/types";
-import { useRFQs } from "@/lib/hooks/useRFQ";
-import Link from "next/link";
+import type { Intervention, InterventionStatut, InterventionUrgence } from "@/lib/types";
 import { BienContextBanner } from "@/components/biens/BienContextBanner";
 import { C } from "@/lib/design-tokens";
 
-// ── Devis Comparison Modal ────────────────────────────────────────────────────
+// ── Config statuts / urgences ────────────────────────────────────────────────
 
-interface CompareResult {
-  rfq_id: string;
-  nb_devis: number;
-  rapport: string;
-  recommandation: string;
-  cached: boolean;
-}
-
-function CompareModal({ rfqId, onClose }: { rfqId: string; onClose: () => void }) {
-  const { data, isLoading, error } = useQuery<CompareResult>({
-    queryKey: ["compare-devis", rfqId],
-    queryFn: () => api.post(`/rfqs/${rfqId}/compare-devis`).then(r => r.data),
-    staleTime: Infinity,
-    retry: false,
-  });
-
-  return (
-    <div
-      style={{
-        position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000,
-        display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: C.surface, borderRadius: 20, padding: 32,
-          width: "100%", maxWidth: 640, maxHeight: "80vh",
-          overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-          <Sparkles size={20} color={C.orange} />
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.text }}>
-            Analyse IA des devis
-          </h2>
-          {data?.cached && (
-            <span style={{
-              marginLeft: "auto", padding: "2px 10px", borderRadius: 20,
-              background: C.greenBg, color: C.green, fontSize: 11, fontWeight: 600,
-            }}>
-              Mis en cache
-            </span>
-          )}
-        </div>
-
-        {isLoading && (
-          <div style={{ textAlign: "center", padding: 40 }}>
-            <Loader2 size={28} style={{ color: C.orange, animation: "spin 1s linear infinite", marginBottom: 12 }} />
-            <p style={{ color: C.text3, fontSize: 14 }}>Althy analyse les devis…</p>
-          </div>
-        )}
-
-        {error && (
-          <div style={{
-            padding: 16, borderRadius: 10, background: C.redBg,
-            border: `1px solid ${C.red}`, color: C.red, fontSize: 13,
-            display: "flex", alignItems: "center", gap: 8,
-          }}>
-            <AlertTriangle size={14} />
-            Au moins 2 devis sont requis pour lancer la comparaison.
-          </div>
-        )}
-
-        {data && (
-          <>
-            <div style={{
-              padding: "12px 16px", borderRadius: 10, marginBottom: 20,
-              background: C.orangeBg, border: `1px solid rgba(15,46,76,0.25)`,
-            }}>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: C.orange }}>
-                {data.recommandation}
-              </p>
-            </div>
-
-            <div style={{
-              fontSize: 13, color: C.text2, lineHeight: 1.7,
-              whiteSpace: "pre-wrap",
-            }}>
-              {data.rapport}
-            </div>
-
-            <p style={{ marginTop: 16, fontSize: 11, color: C.text3 }}>
-              {data.nb_devis} devis analysés · Commission Althy : 10 % sur le devis retenu
-            </p>
-          </>
-        )}
-
-        <button
-          onClick={onClose}
-          style={{
-            marginTop: 20, width: "100%", padding: "10px 0",
-            background: C.surface2, border: `1px solid ${C.border}`,
-            borderRadius: 10, fontSize: 13, fontWeight: 600, color: C.text2, cursor: "pointer",
-          }}
-        >
-          Fermer
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ── Artisan / Devis Tab ───────────────────────────────────────────────────────
-
-const RFQ_STATUS_TABS: { value: RFQStatus | ""; label: string }[] = [
-  { value: "", label: "Tous" },
-  { value: "published", label: "Publiés" },
-  { value: "quotes_received", label: "Devis reçus" },
-  { value: "accepted", label: "Acceptés" },
-  { value: "in_progress", label: "En cours" },
-  { value: "completed", label: "Terminés" },
-];
-
-const RFQ_STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
-  draft:           { label: "Brouillon",   bg: C.surface2, color: C.text3 },
-  published:       { label: "Publié",      bg: C.blueBg,   color: C.blue },
-  quotes_received: { label: "Devis reçus", bg: C.amberBg,  color: C.amber },
-  accepted:        { label: "Accepté",     bg: C.orangeBg, color: C.orange },
-  in_progress:     { label: "En cours",    bg: C.amberBg,  color: C.amber },
-  completed:       { label: "Terminé",     bg: C.greenBg,  color: C.green },
-  rated:           { label: "Noté",        bg: C.greenBg,  color: C.green },
-  cancelled:       { label: "Annulé",      bg: C.redBg,    color: C.red },
+const STATUT_CONFIG: Record<InterventionStatut, { label: string; bg: string; fg: string }> = {
+  nouveau:   { label: "Nouveau",    bg: C.blueBg,   fg: C.blue },
+  planifie:  { label: "Planifié",   bg: C.amberBg,  fg: C.amber },
+  en_cours:  { label: "En cours",   bg: C.amberBg,  fg: C.amber },
+  resolu:    { label: "Résolu",     bg: C.greenBg,  fg: C.green },
 };
 
-function ArtisanTab() {
-  const [rfqFilter, setRfqFilter] = useState<RFQStatus | "">("");
-  const [compareRfqId, setCompareRfqId] = useState<string | null>(null);
-  const { data, isLoading } = useRFQs(rfqFilter as RFQStatus | undefined);
+const URGENCE_CONFIG: Record<InterventionUrgence, { label: string; fg: string }> = {
+  faible:       { label: "Faible",         fg: C.text3 },
+  moderee:      { label: "Modérée",        fg: C.blue },
+  urgente:      { label: "Urgente",        fg: C.amber },
+  tres_urgente: { label: "Très urgente",   fg: C.red },
+};
 
-  return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <p style={{ margin: 0, fontSize: 14, color: C.text3 }}>
-          Décrivez vos travaux — Althy contacte 3-5 artisans et compare les devis
+// ── Mes interventions (vue agrégée) ──────────────────────────────────────────
+
+interface InterventionWithBien extends Intervention {
+  bien?: {
+    id: string;
+    adresse?: string | null;
+    ville?: string | null;
+  };
+}
+
+function MesInterventions() {
+  const { data, isLoading, error } = useQuery<InterventionWithBien[]>({
+    queryKey: ["interventions", "mine", "aggregated"],
+    queryFn: async () => {
+      const { data } = await api.get<InterventionWithBien[]>("/interventions-althy/", {
+        params: { size: 100 },
+      });
+      return data;
+    },
+    staleTime: 30_000,
+  });
+
+  if (isLoading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", padding: 60 }}>
+        <Loader2 size={24} style={{ color: C.prussian, animation: "spin 1s linear infinite" }} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        style={{
+          padding: 16, borderRadius: 10, background: C.redBg,
+          border: `1px solid ${C.red}`, color: C.red, fontSize: 13,
+          display: "flex", alignItems: "center", gap: 8,
+        }}
+      >
+        <AlertTriangle size={14} />
+        Impossible de charger vos interventions. Réessayez plus tard.
+      </div>
+    );
+  }
+
+  const items = data ?? [];
+
+  if (items.length === 0) {
+    return (
+      <div
+        style={{
+          textAlign: "center", padding: "56px 24px",
+          border: `2px dashed ${C.border}`, borderRadius: 16,
+          background: C.surface,
+        }}
+      >
+        <Wrench size={36} style={{ color: C.text3, margin: "0 auto 12px" }} />
+        <p style={{ fontWeight: 600, color: C.text2, margin: "0 0 4px", fontSize: 15 }}>
+          Aucune intervention enregistrée
+        </p>
+        <p style={{ fontSize: 13, color: C.text3, margin: "0 0 16px" }}>
+          Les interventions sont créées depuis la fiche d&apos;un bien (onglet Interventions).
         </p>
         <Link
-          href="/app/artisans/devis"
+          href="/app/biens"
           style={{
-            display: "flex", alignItems: "center", gap: 6,
-            padding: "8px 16px", borderRadius: 8,
-            background: C.orange, color: "#fff",
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "9px 18px", borderRadius: 9,
+            background: C.prussian, color: "#fff",
             fontSize: 13, fontWeight: 600, textDecoration: "none",
           }}
         >
-          <Plus size={14} /> Décrire des travaux
+          Voir mes biens
         </Link>
       </div>
+    );
+  }
 
-      <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, marginBottom: 20 }}>
-        {RFQ_STATUS_TABS.map(tab => (
-          <button
-            key={tab.value}
-            onClick={() => setRfqFilter(tab.value)}
-            style={{
-              padding: "5px 14px", borderRadius: 20, border: "none", whiteSpace: "nowrap" as const,
-              fontSize: 12, fontWeight: 600, cursor: "pointer",
-              background: rfqFilter === tab.value ? C.orange : C.surface2,
-              color: rfqFilter === tab.value ? "#fff" : C.text3,
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {isLoading && (
-        <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
-          <Loader2 size={24} style={{ color: C.orange, animation: "spin 1s linear infinite" }} />
-        </div>
-      )}
-
-      {data?.items.length === 0 && !isLoading && (
-        <div style={{
-          textAlign: "center", padding: "48px 24px",
-          border: `2px dashed ${C.border}`, borderRadius: 16,
-        }}>
-          <Wrench size={36} style={{ color: C.text3, margin: "0 auto 12px" }} />
-          <p style={{ fontWeight: 600, color: C.text2, margin: "0 0 4px" }}>Aucun appel d&apos;offres</p>
-          <p style={{ fontSize: 13, color: C.text3, margin: "0 0 16px" }}>
-            Décrivez vos travaux et Althy contacte les artisans de la zone
-          </p>
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {items.map((inter) => {
+        const statut = STATUT_CONFIG[inter.statut] ?? STATUT_CONFIG.nouveau;
+        const urgence = URGENCE_CONFIG[inter.urgence] ?? URGENCE_CONFIG.faible;
+        const lieu = inter.bien
+          ? [inter.bien.adresse, inter.bien.ville].filter(Boolean).join(" · ")
+          : null;
+        return (
           <Link
-            href="/app/artisans/devis"
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              padding: "8px 18px", borderRadius: 8,
-              background: C.orange, color: "#fff",
-              fontSize: 13, fontWeight: 600, textDecoration: "none",
-            }}
+            key={inter.id}
+            href={`/app/biens/${inter.bien_id}`}
+            style={{ textDecoration: "none", color: "inherit" }}
           >
-            <Plus size={14} /> Premier appel d&apos;offres
-          </Link>
-        </div>
-      )}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {data?.items.map(rfq => {
-          const cfg = RFQ_STATUS_CONFIG[rfq.status] ?? RFQ_STATUS_CONFIG.draft;
-          const hasMultipleQuotes = rfq.quotes.length >= 2;
-          return (
             <div
-              key={rfq.id}
               style={{
-                background: C.surface, border: `1px solid ${C.border}`,
-                borderRadius: 14, padding: 20, boxShadow: C.shadow,
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: 14,
+                padding: 18,
+                boxShadow: C.shadow,
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                cursor: "pointer",
+                transition: "border-color 0.15s, box-shadow 0.15s",
               }}
             >
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                    <span style={{ fontWeight: 700, fontSize: 15, color: C.text }}>{rfq.title}</span>
-                    <span style={{
-                      padding: "2px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600,
-                      background: cfg.bg, color: cfg.color,
-                    }}>
-                      {cfg.label}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", gap: 12, fontSize: 12, color: C.text3 }}>
-                    {rfq.city && (
-                      <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                        <MapPin size={11} />{rfq.city}
-                      </span>
-                    )}
-                    <span>{new Date(rfq.created_at).toLocaleDateString("fr-CH")}</span>
-                    {rfq.quotes.length > 0 && (
-                      <span style={{ fontWeight: 600, color: C.orange, display: "flex", alignItems: "center", gap: 3 }}>
-                        <FileText size={11} />
-                        {rfq.quotes.length} devis
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
-                  {hasMultipleQuotes && (
-                    <button
-                      onClick={() => setCompareRfqId(rfq.id)}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 6,
-                        padding: "7px 14px", borderRadius: 8, border: "none",
-                        background: `linear-gradient(135deg, ${C.orange}, #e85c2c)`,
-                        color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer",
-                        whiteSpace: "nowrap" as const,
-                      }}
-                    >
-                      <Sparkles size={12} /> Comparer IA
-                    </button>
-                  )}
-                  <Link
-                    href="/app/artisans/devis"
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 700, fontSize: 15, color: C.text }}>
+                    {inter.titre}
+                  </span>
+                  <span
                     style={{
-                      display: "flex", alignItems: "center", gap: 4,
-                      fontSize: 12, color: C.text3, textDecoration: "none",
+                      padding: "2px 10px", borderRadius: 20,
+                      fontSize: 11, fontWeight: 600,
+                      background: statut.bg, color: statut.fg,
                     }}
                   >
-                    Voir <ChevronRight size={12} />
-                  </Link>
+                    {statut.label}
+                  </span>
+                  <span style={{ fontSize: 11, color: urgence.fg, fontWeight: 600 }}>
+                    {urgence.label}
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 12, fontSize: 12, color: C.text3, flexWrap: "wrap" }}>
+                  {lieu && (
+                    <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                      <MapPin size={11} />
+                      {lieu}
+                    </span>
+                  )}
+                  {inter.date_signalement && (
+                    <span>
+                      Signalée le {new Date(inter.date_signalement).toLocaleDateString("fr-CH")}
+                    </span>
+                  )}
+                  {inter.cout != null && (
+                    <span style={{ fontWeight: 600, color: C.text2 }}>
+                      CHF {inter.cout.toLocaleString("fr-CH")}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
-          );
-        })}
-      </div>
-
-      <div style={{
-        marginTop: 20, padding: "12px 16px", borderRadius: 10,
-        background: C.surface2, border: `1px solid ${C.border}`,
-        fontSize: 12, color: C.text3,
-      }}>
-        Commission Althy : 10 % sur le devis accepté — déduite automatiquement via Stripe.
-      </div>
-
-      {compareRfqId && (
-        <CompareModal rfqId={compareRfqId} onClose={() => setCompareRfqId(null)} />
-      )}
+          </Link>
+        );
+      })}
     </div>
   );
 }
@@ -307,18 +201,20 @@ export default function InterventionsPage() {
       </Suspense>
 
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{
-          fontSize: 28, fontWeight: 700, color: C.text,
-          margin: "0 0 6px", letterSpacing: "-0.02em",
-        }}>
-          Artisans &amp; devis
+        <h1
+          style={{
+            fontSize: 28, fontWeight: 700, color: C.text,
+            margin: "0 0 6px", letterSpacing: "-0.02em",
+          }}
+        >
+          Mes interventions
         </h1>
         <p style={{ margin: 0, fontSize: 14, color: C.text3 }}>
-          Décrivez vos travaux · Althy contacte les artisans de la zone
+          Suivi des interventions enregistrées sur vos biens.
         </p>
       </div>
 
-      <ArtisanTab />
+      <MesInterventions />
     </div>
   );
 }
