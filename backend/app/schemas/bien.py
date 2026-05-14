@@ -363,6 +363,21 @@ class BienRead(BienBase):
     updated_at: datetime
 
 
+class BienIbanUpdate(BaseModel):
+    """Body PATCH /biens/{id}/iban (Sprint 9 Lot A).
+
+    Assigne (ou retire si `null`) un compte bancaire spécifique à un bien.
+    Source de vérité canonique : `bank_accounts`. La résolution finale pour
+    QR-facture passe par `iban_resolver.get_effective_iban` (cascade :
+    bien.iban_compte_id → est_principal → None).
+    """
+
+    bank_account_id: uuid.UUID | None = Field(
+        default=None,
+        description="UUID d'un bank_accounts.id du propriétaire, ou null pour retirer l'override.",
+    )
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Images
 # ══════════════════════════════════════════════════════════════════════════════

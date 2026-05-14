@@ -22,12 +22,15 @@ from typing import Annotated
 
 from app.core.database import get_db
 from app.core.security import get_current_user
+from app.models.bank_account import BankAccount
+from app.models.bien import Bien
 from app.models.user import User
 from app.schemas.bien import (
     AuditLogResponse,
     BienCreate,
     BienDetail,
     BienDocumentRead,
+    BienIbanUpdate,
     BienImageRead,
     BienImagesReorderRequest,
     BienImageUpdate,
@@ -52,6 +55,7 @@ from fastapi import (
     UploadFile,
     status,
 )
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
@@ -154,6 +158,71 @@ async def delete_bien(
         )
 
     return {"message": result["message"]}
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# IBAN — assignation d'un compte bancaire spécifique au bien (Sprint 9 Lot A)
+# ═════════════════════════════════════════════════════════════════════════════
+
+
+@router.patch("/{bien_id}/iban", response_model=BienRead)
+async def update_bien_iban(
+    bien_id: uuid.UUID,
+    payload: BienIbanUpdate,
+    current_user: AuthDep,
+    db: DbDep,
+) -> BienRead:
+    """Assigne (ou retire si `bank_account_id` null) un BankAccount au bien.
+
+    Source de vérité Sprint 9 Lot A : `bank_accounts` est la table canonique
+    IBAN bailleur. Cet endpoint permet de surcharger, pour un bien donné,
+    le compte bancaire utilisé en cascade par `iban_resolver.get_effective_iban`.
+
+    RBAC :
+      - super_admin → toujours autorisé
+      - owner / created_by / agency_id du bien → autorisé
+      - autres rôles (notamment locataire) → 403
+
+    Validation : si `bank_account_id` est fourni, il doit pointer vers un
+    `bank_accounts` actif appartenant au propriétaire du bien.
+    """
+    bien = (
+        await db.execute(select(Bien).where(Bien.id == bien_id))
+    ).scalar_one_or_none()
+    if bien is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Bien introuvable.")
+
+    # Inline _can_write (la version `bien_service._can_write` est privée).
+    if current_user.role != "super_admin":
+        uid = current_user.id
+        if not (
+            bien.owner_id == uid
+            or bien.created_by_id == uid
+            or bien.agency_id == uid
+        ):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Accès refusé.")
+
+    # Validation FK : le compte doit appartenir au propriétaire du bien.
+    if payload.bank_account_id is not None:
+        ba = (
+            await db.execute(
+                select(BankAccount).where(
+                    BankAccount.id == payload.bank_account_id,
+                    BankAccount.user_id == bien.owner_id,
+                    BankAccount.is_active.is_(True),
+                )
+            )
+        ).scalar_one_or_none()
+        if ba is None:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "Compte bancaire introuvable, inactif, ou non détenu par le propriétaire du bien.",
+            )
+
+    bien.iban_compte_id = payload.bank_account_id
+    await db.commit()
+    await db.refresh(bien)
+    return BienRead.model_validate(bien)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
