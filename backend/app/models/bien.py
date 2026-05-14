@@ -49,6 +49,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
+    from app.models.bank_account import BankAccount
     from app.models.bien_annexe import BienAnnexe
     from app.models.bien_compteur import BienCompteur
     from app.models.bien_contact import BienContact
@@ -312,6 +313,20 @@ class Bien(BaseModel):
     # nLPD §6.2 — donnée sensible (accès physique au bâtiment).
     code_digicode_encrypted: Mapped[str | None] = mapped_column(Text)
 
+    # ── Override compte bancaire par bien (Sprint 9 Lot A, migration 0050) ──
+    # FK NULL-able vers `bank_accounts.id`. Si défini, surcharge le compte
+    # bancaire principal du propriétaire pour ce bien spécifique (utile en
+    # cas de multi-régies par bailleur, ou de compte caution séparé).
+    # Résolution canonique via `iban_resolver.get_effective_iban` :
+    #     bien.iban_compte_id → bank_accounts(user_id=owner) WHERE est_principal=true → None
+    # ON DELETE SET NULL : si le compte référencé est supprimé, le bien
+    # retombe sur le compte principal du propriétaire sans casser la FK.
+    iban_compte_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("bank_accounts.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
     # ── Relations sous-tables (PR-A11.A.6.a) ────────────────────────────────
     # Doctrine "slices canoniques" (cf 3-ARCHITECTURE.md §3.3) : pas de
     # lazy="selectin". Source de vérité = endpoint REST dédié
@@ -355,6 +370,7 @@ class Bien(BaseModel):
         Index("ix_biens_canton", "canton"),
         Index("ix_biens_ville", "ville"),
         Index("ix_biens_cp", "cp"),
+        Index("ix_biens_iban_compte_id", "iban_compte_id"),
         CheckConstraint(
             "classe_energetique IS NULL OR classe_energetique ~ '^[A-G]$'",
             name="biens_classe_energetique_fmt",
