@@ -1158,6 +1158,8 @@ const DEVISE_OPTIONS = [
 function TabComptabilite() {
   const { show, Toast } = useToast();
   const [saving, setSaving] = useState(false);
+  // Phase 1.0 : export_auto, export_format, export_email gelés (Phase 1.1).
+  // Defaults via COMPTABILITE_DEFAULTS (Lot E §B.2) — UI freeze appliqué plus bas.
   const [f, setF] = useState({ ...COMPTABILITE_DEFAULTS });
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
   const [newCategory, setNewCategory] = useState("");
@@ -1166,7 +1168,15 @@ function TabComptabilite() {
   async function save() {
     setSaving(true);
     try {
-      await api.patch("/auth/me", { fiscal_year_start: f.fiscal_year_start, devise: f.devise, export_format: f.export_format, export_auto: f.export_auto, export_email: f.export_email || undefined, invoice_logo: f.invoice_logo, invoice_conditions: f.invoice_conditions, expense_categories: categories });
+      // Phase 1.0 (doctrine §B.15) : export_auto et export_format figés
+      // côté UI mais on n'envoie pas leur valeur transitoire (Phase 1.1).
+      await api.patch("/auth/me", {
+        fiscal_year_start: f.fiscal_year_start,
+        devise: f.devise,
+        invoice_logo: f.invoice_logo,
+        invoice_conditions: f.invoice_conditions,
+        expense_categories: categories,
+      });
       show("Paramètres comptables sauvegardés");
     } catch { /* noop */ } finally { setSaving(false); }
   }
@@ -1211,7 +1221,12 @@ function TabComptabilite() {
       <Card>
         <SectionTitle>Format des factures générées</SectionTitle>
         <FormStack>
-          <Toggle label="Inclure le logo agence/propriétaire" value={f.invoice_logo} onChange={v => set("invoice_logo", v)} />
+          <Toggle
+            label="Inclure le logo agence/propriétaire"
+            hint="Le logo est téléversé via Settings > Identité."
+            value={f.invoice_logo}
+            onChange={v => set("invoice_logo", v)}
+          />
           <Field label="Conditions de paiement" value={f.invoice_conditions} onChange={v => set("invoice_conditions", v)} placeholder="Paiement à 30 jours" />
         </FormStack>
       </Card>
@@ -1231,7 +1246,7 @@ function TabComptabilite() {
           </div>
           <div style={{ display: "flex", gap: "0.75rem" }}>
             <input value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="Nouvelle catégorie…" onKeyDown={e => { if (e.key === "Enter" && newCategory.trim()) { setCategories(prev => [...prev, newCategory.trim()]); setNewCategory(""); } }} style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: 13, fontFamily: "inherit", outline: "none" }} />
-            <button onClick={() => { if (newCategory.trim()) { setCategories(prev => [...prev, newCategory.trim()]); setNewCategory(""); } }} style={{ padding: "10px 16px", borderRadius: 10, background: C.orange, border: "none", color: "#fff", cursor: "pointer" }}>
+            <button onClick={() => { if (newCategory.trim()) { setCategories(prev => [...prev, newCategory.trim()]); setNewCategory(""); } }} style={{ padding: "10px 16px", borderRadius: 10, background: C.prussian, border: "none", color: "#fff", cursor: "pointer" }}>
               <Plus size={16} />
             </button>
           </div>
@@ -1241,20 +1256,10 @@ function TabComptabilite() {
       <Card>
         <SectionTitle>Export automatique mensuel</SectionTitle>
         <FormStack>
-          <Toggle label="Envoyer un export mensuel automatique" hint="À votre expert-comptable ou à vous-même" value={f.export_auto} onChange={v => set("export_auto", v)} />
-          {f.export_auto && (
-            <Field label="Email destinataire" value={f.export_email} onChange={v => set("export_email", v)} type="email" placeholder="comptable@cabinet.ch" />
-          )}
-          <div>
-            <FieldLabel>Format d'export</FieldLabel>
-            <div style={{ display: "flex", gap: "0.75rem", marginTop: 6 }}>
-              {[{ v: "pdf", l: "PDF" }, { v: "excel", l: "Excel" }, { v: "csv", l: "CSV" }].map(o => (
-                <button key={o.v} onClick={() => set("export_format", o.v)} style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1px solid ${f.export_format === o.v ? C.orange : C.border}`, background: f.export_format === o.v ? C.orangeBg : C.surface, color: f.export_format === o.v ? C.orange : C.text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-                  {o.l}
-                </button>
-              ))}
-            </div>
-          </div>
+          <DisabledToggle
+            label="Envoyer un export mensuel automatique"
+            hint="Bientôt — Phase 1.1. L'export manuel reste disponible dans Finances > Année comptable."
+          />
         </FormStack>
       </Card>
 
