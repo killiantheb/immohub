@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Banknote, Bell, Building2, Calculator, CreditCard, Download, Eye, EyeOff,
-  Globe, Link2, Loader2, Lock, MapPin, Plus, Shield, Trash2, User, Users, X,
+  Link2, Loader2, MapPin, Plus, Shield, Trash2, User, Users, X,
 } from "lucide-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useRole } from "@/lib/hooks/useRole";
 import { ZoneMap } from "@/components/map";
@@ -1079,142 +1079,48 @@ function TabEquipe() {
 // ──────────────────────────────────────────────────────────────────────────────
 // TAB 7 — INTÉGRATIONS
 // ──────────────────────────────────────────────────────────────────────────────
-const PORTALS = [
-  { key: "on_homegate",  name: "Homegate",    price: "Tarif Homegate",    note: "4% Althy si flux via plateforme" },
-  { key: "on_immoscout", name: "ImmoScout24", price: "Tarif ImmoScout",   note: "4% Althy si flux via plateforme" },
-  { key: "on_comparis",  name: "Comparis",    price: "Tarif Comparis",    note: "4% Althy si flux via plateforme" },
-  { key: "on_anibis",    name: "Anibis",      price: "Tarif Anibis",      note: "4% Althy si flux via plateforme" },
-  { key: "on_airbnb",    name: "Airbnb",      price: "Commission Airbnb", note: "4% Althy sur réservations reçues" },
-  { key: "on_booking",   name: "Booking.com", price: "Commission Booking",note: "4% Althy sur réservations reçues" },
-];
-const SOCIAL_PROVIDERS = [
-  { key: "instagram", name: "Instagram", icon: "📸" },
-  { key: "facebook", name: "Facebook", icon: "📘" },
-  { key: "linkedin", name: "LinkedIn", icon: "💼" },
-  { key: "tiktok", name: "TikTok", icon: "🎵", note: "An 2" },
-];
+// Doctrine §B.15 (Phase 1.0 stricte) : seul WhatsApp via wa.me est exposé.
+// Les surfaces OAuth Gmail/Outlook + Agenda + Portails immo + Réseaux sociaux
+// sont entièrement masquées (flag OAUTH_COMMUNICATION déjà false côté
+// flags.ts + page /app/communication redirige /app). Réactivation Phase 2.
 
 function TabIntegrations() {
-  const { show, Toast } = useToast();
-  const qc = useQueryClient();
-  const { data: integrations } = useQuery({ queryKey: ["integrations"], queryFn: async () => { const { data } = await api.get("/auth/integrations"); return data; }, staleTime: 30_000, retry: false });
-
-  const connectMut = useMutation({
-    mutationFn: ({ provider }: { provider: string }) => api.post(`/auth/integrations/${provider}/connect`),
-    onSuccess: (data, { provider }) => { if (data.data?.auth_url) window.location.href = data.data.auth_url; qc.invalidateQueries({ queryKey: ["integrations"] }); },
-  });
-  const disconnectMut = useMutation({
-    mutationFn: ({ provider }: { provider: string }) => api.delete(`/auth/integrations/${provider}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["integrations"] }); show("Intégration déconnectée"); },
-  });
-
-  const connected = (provider: string) => integrations?.items?.find((i: { provider: string }) => i.provider === provider);
-  const [portals, setPortals] = useState<Record<string, boolean>>({});
+  const { Toast } = useToast();
 
   return (
     <FormStack>
       <Toast />
-      {/* Email */}
-      <Card>
-        <SectionTitle>Email</SectionTitle>
-        <FormStack>
-          {[{ key: "gmail", label: "Gmail" }, { key: "outlook", label: "Outlook / Microsoft" }].map(p => {
-            const conn = connected(p.key);
-            return (
-              <div key={p.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{p.label}</p>
-                  {conn ? <p style={{ fontSize: 11, color: C.green }}>Connecté : {conn.email}</p> : <p style={{ fontSize: 11, color: C.text3 }}>Non connecté</p>}
-                </div>
-                {conn
-                  ? <button onClick={() => disconnectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: C.redBg, border: `1px solid ${C.red}`, color: C.red, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Déconnecter</button>
-                  : <button onClick={() => connectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: C.orangeBg, border: `1px solid ${C.orange}`, color: C.orange, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Connecter</button>
-                }
-              </div>
-            );
-          })}
-        </FormStack>
-      </Card>
 
-      {/* Agenda */}
-      <Card>
-        <SectionTitle>Agenda</SectionTitle>
-        <FormStack>
-          {[{ key: "google_calendar", label: "Google Calendar" }, { key: "outlook_calendar", label: "Outlook Calendar" }].map(p => {
-            const conn = connected(p.key);
-            return (
-              <div key={p.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{p.label}</p>
-                  {conn ? <p style={{ fontSize: 11, color: C.green }}>Synchronisé</p> : <p style={{ fontSize: 11, color: C.text3 }}>Non connecté</p>}
-                </div>
-                {conn
-                  ? <button onClick={() => disconnectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: C.redBg, border: `1px solid ${C.red}`, color: C.red, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Déconnecter</button>
-                  : <button onClick={() => connectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: C.orangeBg, border: `1px solid ${C.orange}`, color: C.orange, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Connecter</button>
-                }
-              </div>
-            );
-          })}
-        </FormStack>
-      </Card>
-
-      {/* WhatsApp */}
+      {/* WhatsApp — seule intégration exposée Phase 1.0 */}
       <Card>
         <SectionTitle>WhatsApp</SectionTitle>
         <div style={{ padding: "1rem", background: C.greenBg, borderRadius: 12, border: `1px solid ${C.green}` }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: C.green, marginBottom: 4 }}>Phase 1 — Aucune connexion requise</p>
-          <p style={{ fontSize: 12, color: C.text2 }}>Les liens WhatsApp (<code>wa.me/</code>) sont générés automatiquement depuis votre numéro de téléphone enregistré dans le profil.</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: C.green, marginBottom: 4 }}>Phase 1.0 — Aucune connexion requise</p>
+          <p style={{ fontSize: 12, color: C.text2 }}>
+            WhatsApp est activé automatiquement via votre numéro de téléphone
+            renseigné dans <strong>Identité</strong>. Les liens <code>wa.me/</code>
+            sont générés à la demande depuis l'application Althy.
+          </p>
         </div>
       </Card>
 
-      {/* Portails */}
+      {/* ComingSoon — toutes autres intégrations */}
       <Card>
-        <SectionTitle>Portails immobiliers</SectionTitle>
-        <p style={{ fontSize: 11, color: C.text3, marginBottom: "0.75rem" }}>Althy prélève 4% sur les paiements reçus via la plateforme. Paiement direct au portail : facturation séparée des 4%.</p>
-        <FormStack>
-          {PORTALS.map(p => (
-            <div key={p.key} style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-              <div>
-                <p style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{p.name}</p>
-                <p style={{ fontSize: 11, color: C.orange, fontWeight: 600 }}>{p.price}</p>
-                <p style={{ fontSize: 10, color: C.text3 }}>{p.note}</p>
-              </div>
-              <button onClick={() => setPortals(prev => ({ ...prev, [p.key]: !prev[p.key] }))} style={{ width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer", background: portals[p.key] ? C.orange : C.border, position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
-                <span style={{ position: "absolute", top: 3, left: portals[p.key] ? 22 : 3, width: 18, height: 18, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
-              </button>
-            </div>
-          ))}
-        </FormStack>
-      </Card>
-
-      {/* Réseaux sociaux */}
-      <Card>
-        <SectionTitle>Réseaux sociaux</SectionTitle>
-        <FormStack>
-          {SOCIAL_PROVIDERS.map(p => {
-            const conn = connected(p.key);
-            return (
-              <div key={p.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 20 }}>{p.icon}</span>
-                  <div>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{p.name} {p.note ? <span style={{ fontSize: 10, color: C.text3 }}>({p.note})</span> : null}</p>
-                    {conn
-                      ? <p style={{ fontSize: 11, color: C.green }}>Connecté · Dernière publi. : {conn.last_post ? new Date(conn.last_post).toLocaleDateString("fr-CH") : "—"}</p>
-                      : <p style={{ fontSize: 11, color: C.text3 }}>Non connecté</p>
-                    }
-                  </div>
-                </div>
-                {p.note === "An 2"
-                  ? <Badge>Bientôt</Badge>
-                  : conn
-                    ? <button onClick={() => disconnectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: C.redBg, border: `1px solid ${C.red}`, color: C.red, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Déconnecter</button>
-                    : <button onClick={() => connectMut.mutate({ provider: p.key })} style={{ padding: "7px 14px", borderRadius: 8, background: C.orangeBg, border: `1px solid ${C.orange}`, color: C.orange, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Connecter</button>
-                }
-              </div>
-            );
-          })}
-        </FormStack>
+        <SectionTitle>Autres intégrations</SectionTitle>
+        <div style={{ padding: "1rem", background: C.surface2, borderRadius: 12, border: `1px solid ${C.border}` }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: C.text2, marginBottom: 8 }}>
+            Bientôt — Phase 1.1+
+          </p>
+          <p style={{ fontSize: 12, color: C.text3, marginBottom: 12 }}>
+            Les intégrations suivantes seront disponibles dans les phases à venir :
+          </p>
+          <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12, color: C.text3, lineHeight: 1.7 }}>
+            <li><strong>Email Gmail / Outlook</strong> (OAuth, Phase 2)</li>
+            <li><strong>Agenda Google / Outlook Calendar</strong> (Phase 2)</li>
+            <li><strong>Portails immobiliers</strong> — Homegate, ImmoScout24, Anibis, Comparis (Phase 2 marketplace)</li>
+            <li><strong>Réseaux sociaux</strong> — Instagram, Facebook, LinkedIn (Phase 3 marketing)</li>
+          </ul>
+        </div>
       </Card>
     </FormStack>
   );
