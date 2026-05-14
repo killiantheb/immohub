@@ -1,0 +1,27 @@
+Bonjour {owner_name},
+
+Un dossier locataire pré-validé attend votre approbation pour votre bien :
+{bien_address}
+
+Candidat : {candidate_full_name}
+
+Synthèse du dossier :
+{candidate_dossier_summary}
+
+Loyer mensuel proposé : CHF {monthly_rent}
+
+Votre approbation déclenchera la création du bail et l'envoi en signature
+électronique au candidat. Cette demande expire le {expires_at_formatted}.
+
+→ Approuver le candidat :
+{approval_link}
+
+→ Refuser ce candidat :
+{deny_link}
+
+Cette synthèse est anonymisée selon les règles LPD — les pièces justificatives
+complètes restent consultables dans votre espace Althy.
+
+—
+{althy_creditor_name} · l'assistant immobilier suisse
+{emails_from}

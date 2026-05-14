@@ -1,0 +1,17 @@
+{agency_name},
+
+Le locataire a signé le bail {contract_reference}. Il vous reste à apposer votre
+contre-signature en tant qu'agence-mandataire.
+
+Historique des signatures :
+{signed_by_summary}
+
+→ Contre-signer le bail :
+{skribble_signing_url}
+
+Une fois votre contre-signature apposée, le bail sera marqué actif et la
+première loyer_transaction sera automatiquement générée.
+
+—
+{althy_creditor_name} · l'assistant immobilier suisse
+{emails_from}

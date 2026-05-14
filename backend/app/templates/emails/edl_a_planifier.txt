@@ -1,0 +1,16 @@
+État des lieux à planifier
+
+Un état des lieux ({phase}) doit être organisé pour {bien_address}.
+
+Date proposée : {date_suggestion_formatted}
+
+→ Confirmer ou proposer une autre date :
+{planning_link}
+
+L'état des lieux se remplit conjointement bailleur ↔ locataire dans l'application,
+pièce par pièce, avec photos à l'appui. Le document final est signé électroniquement
+par les 2 parties.
+
+—
+{althy_creditor_name} · l'assistant immobilier suisse
+{emails_from}

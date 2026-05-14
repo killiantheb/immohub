@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bail signé · Althy</title>
+</head>
+<body style="margin:0;padding:0;background:#F5F1E8;font-family:Helvetica,Arial,sans-serif;color:#0F2E4C;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5F1E8;padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FFFFFF;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(15,46,76,0.08);">
+        <tr><td style="background:#0F2E4C;padding:28px 32px;text-align:center;">
+          <span style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:300;color:#C9A961;letter-spacing:6px;">ALTHY</span>
+          <div style="height:2px;width:48px;background:#C9A961;margin:12px auto 0;"></div>
+        </td></tr>
+
+        <tr><td style="padding:36px 36px 16px 36px;">
+          <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:400;color:#0F2E4C;margin:0 0 20px 0;">
+            Bonjour {tenant_name},
+          </h1>
+
+          <p style="font-size:15px;line-height:1.65;color:#0F2E4C;margin:0 0 16px 0;">
+            Toutes les parties ont signé le bail. Il est désormais actif.
+          </p>
+
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 24px 0;background:#F5F1E8;border-radius:8px;">
+            <tr><td style="padding:20px 24px;">
+              <p style="font-size:11px;line-height:1.4;color:#7A8A9C;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 6px 0;">
+                Référence
+              </p>
+              <p style="font-family:'Courier New',monospace;font-size:13px;color:#0F2E4C;margin:0 0 16px 0;font-weight:600;">
+                {contract_reference}
+              </p>
+              <p style="font-size:11px;line-height:1.4;color:#7A8A9C;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 6px 0;">
+                Bien
+              </p>
+              <p style="font-size:14px;line-height:1.5;color:#0F2E4C;margin:0 0 16px 0;font-weight:600;">
+                {bien_address}
+              </p>
+              <p style="font-size:11px;line-height:1.4;color:#7A8A9C;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 6px 0;">
+                Date d'entrée
+              </p>
+              <p style="font-size:14px;line-height:1.5;color:#0F2E4C;margin:0;font-weight:600;">
+                {start_date_formatted}
+              </p>
+            </td></tr>
+          </table>
+
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 24px 0;">
+            <tr><td align="center">
+              <a href="{signed_pdf_url}"
+                 style="display:inline-block;padding:14px 36px;background:#0F2E4C;color:#FFFFFF;
+                        border-radius:8px;font-size:15px;font-weight:600;text-decoration:none;
+                        border:1px solid #0F2E4C;letter-spacing:0.02em;">
+                Télécharger le bail signé
+              </a>
+            </td></tr>
+          </table>
+
+          <p style="font-size:14px;line-height:1.65;color:#3D5470;margin:0 0 8px 0;font-weight:600;">
+            Prochaines étapes :
+          </p>
+          <div style="font-size:13px;line-height:1.65;color:#3D5470;margin:0 0 16px 0;">
+            {prochaines_etapes}
+          </div>
+
+          <p style="font-size:12px;line-height:1.6;color:#7A8A9C;margin:0;">
+            Le bail signé est conservé 10 ans dans nos archives (art. 962 CO).
+          </p>
+        </td></tr>
+
+        <tr><td style="background:#F5F1E8;padding:20px 32px;border-top:1px solid #E5DFD0;text-align:center;">
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#C9A961;letter-spacing:3px;margin-bottom:6px;">ALTHY</div>
+          <p style="font-size:11px;line-height:1.6;color:#7A8A9C;margin:0;">
+            {althy_creditor_name} · l'assistant immobilier suisse<br>
+            <a href="mailto:{emails_from}" style="color:#7A8A9C;text-decoration:none;">{emails_from}</a>
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

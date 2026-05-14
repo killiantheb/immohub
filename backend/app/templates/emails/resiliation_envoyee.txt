@@ -1,0 +1,15 @@
+Bonjour {recipient_name},
+
+La résiliation du bail {contract_reference} est enregistrée.
+
+Date de résiliation : {date_resiliation_formatted}
+Préavis respecté : {respect_preavis_bool}
+
+{message_co_266l}
+
+L'état des lieux de sortie sera planifié séparément. Vous recevrez une invitation
+à co-remplir l'EDL le moment venu.
+
+—
+{althy_creditor_name} · l'assistant immobilier suisse
+{emails_from}

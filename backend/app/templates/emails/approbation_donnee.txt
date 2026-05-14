@@ -1,0 +1,14 @@
+Bonjour {owner_name},
+
+Votre approbation pour le candidat {candidate_name} sur {bien_address} a bien été
+enregistrée.
+
+Prochaines étapes :
+{next_steps}
+
+Vous serez notifié à chaque étape (envoi en signature, signature locataire,
+signature finale agence-mandataire).
+
+—
+{althy_creditor_name} · l'assistant immobilier suisse
+{emails_from}

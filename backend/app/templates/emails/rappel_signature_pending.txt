@@ -1,0 +1,17 @@
+Bonjour {recipient_name},
+
+Un document ({document_type}) attend votre signature électronique depuis
+{days_since_sent} jours.
+
+La signature électronique Skribble prend quelques minutes via votre smartphone
+(un code SMS sera envoyé à votre numéro de téléphone).
+
+→ Signer maintenant :
+{skribble_signing_url}
+
+Si vous rencontrez un problème pour signer ou si ce document n'est plus
+d'actualité, contactez votre interlocuteur Sunimmo ou répondez à cet email.
+
+—
+{althy_creditor_name} · l'assistant immobilier suisse
+{emails_from}

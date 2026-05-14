@@ -1,0 +1,19 @@
+Bonjour {tenant_name},
+
+Le bail concernant {bien_address} est prêt à être signé.
+
+Référence bail : {contract_reference}
+Bien concerné : {bien_address}
+
+La signature électronique se fait via Skribble. En cliquant sur le lien ci-dessous,
+vous recevrez un code SMS à votre numéro de téléphone pour valider votre identité.
+
+→ Signer le bail :
+{skribble_signing_url}
+
+Ce lien expire le {expires_at_formatted}. Une fois signé par vous, le bail sera
+transmis à l'agence-mandataire pour contre-signature.
+
+—
+{althy_creditor_name} · l'assistant immobilier suisse
+{emails_from}

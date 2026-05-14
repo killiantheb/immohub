@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Approbation enregistrée · Althy</title>
+</head>
+<body style="margin:0;padding:0;background:#F5F1E8;font-family:Helvetica,Arial,sans-serif;color:#0F2E4C;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5F1E8;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FFFFFF;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(15,46,76,0.08);">
+          <tr>
+            <td style="background:#0F2E4C;padding:28px 32px;text-align:center;">
+              <span style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:300;color:#C9A961;letter-spacing:6px;">ALTHY</span>
+              <div style="height:2px;width:48px;background:#C9A961;margin:12px auto 0;"></div>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:36px 36px 24px 36px;">
+              <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:400;color:#0F2E4C;margin:0 0 20px 0;">
+                Bonjour {owner_name},
+              </h1>
+
+              <p style="font-size:15px;line-height:1.65;color:#0F2E4C;margin:0 0 16px 0;">
+                Votre approbation pour le candidat <strong>{candidate_name}</strong> sur
+                <strong>{bien_address}</strong> a bien été enregistrée.
+              </p>
+
+              <p style="font-size:14px;line-height:1.65;color:#3D5470;margin:0 0 20px 0;">
+                Prochaines étapes :
+              </p>
+
+              <ol style="font-size:14px;line-height:1.8;color:#3D5470;margin:0 0 24px 0;padding-left:20px;">
+                {next_steps}
+              </ol>
+
+              <p style="font-size:13px;line-height:1.6;color:#7A8A9C;margin:0;">
+                Vous serez notifié à chaque étape (envoi en signature, signature locataire,
+                signature finale agence-mandataire).
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background:#F5F1E8;padding:20px 32px;border-top:1px solid #E5DFD0;text-align:center;">
+              <div style="font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#C9A961;letter-spacing:3px;margin-bottom:6px;">ALTHY</div>
+              <p style="font-size:11px;line-height:1.6;color:#7A8A9C;margin:0;">
+                {althy_creditor_name} · l'assistant immobilier suisse<br>
+                <a href="mailto:{emails_from}" style="color:#7A8A9C;text-decoration:none;">{emails_from}</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

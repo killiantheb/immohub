@@ -1,0 +1,16 @@
+Bonjour {tenant_name},
+
+Un avenant à votre bail {contract_reference} est prêt à être signé.
+
+Type d'avenant : {avenant_type_label}
+Objet : {avenant_objet}
+
+→ Signer l'avenant :
+{skribble_signing_url}
+
+La signature électronique Skribble nécessite un code SMS à votre numéro de
+téléphone pour valider votre identité.
+
+—
+{althy_creditor_name} · l'assistant immobilier suisse
+{emails_from}
