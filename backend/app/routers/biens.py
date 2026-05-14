@@ -397,3 +397,35 @@ async def get_bien_potentiel_v2(
     expertise formelle. Cf docs/6-LEGAL.md §6.10.
     """
     return await BienService(db).get_potentiel_ia_v2(bien_id, current_user)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Loyers — génération batch annuelle (Sprint 9 Lot E — BUG 2 prod)
+# ═════════════════════════════════════════════════════════════════════════════
+# Le frontend appelle POST /api/v1/biens/{bien_id}/generer-annee?annee=N
+# (cf frontend/src/lib/api/loyers.ts:78). La route logique est nested sous
+# /biens/{bien_id}/ car c'est une action sur le bien. L'implémentation
+# délègue à `generer_loyers_annee` dans `routers/loyers.py` pour rester DRY.
+
+@router.post(
+    "/{bien_id}/generer-annee",
+    status_code=status.HTTP_201_CREATED,
+    summary="Génère les 12 loyer_transactions d'une année pour ce bien",
+)
+async def generer_annee_bien(
+    bien_id: uuid.UUID,
+    annee: int,
+    current_user: AuthDep,
+    db: DbDep,
+):
+    """Wrapper RESTful : délègue à `routers/loyers.generer_loyers_annee`.
+
+    Phase 1.0 §B.15 : pas de commission Stripe Connect (commission_pct=0).
+    Idempotent : skip les mois déjà créés.
+    """
+    from app.routers.loyers import (
+        GenererAnneeRequest,
+        generer_loyers_annee,
+    )
+    payload = GenererAnneeRequest(bien_id=bien_id, annee=annee)
+    return await generer_loyers_annee(payload, current_user, db)
