@@ -1157,17 +1157,25 @@ def _build_ctx(
         "legal_city": agency_settings.get("city", bien.ville if bien else "") if agency_settings else (bien.ville if bien else ""),
     }
 
-    tenant_info: dict = {}
+    # Defaults safes : aucun builder ne doit KeyError sur tenant/property/contract.
+    tenant_info: dict = {
+        "civility": "",
+        "full_name": "",
+        "email": "",
+        "phone": "",
+        "address": "",
+        "city": "",
+        "zip": "",
+        "nationality": "",
+        "dob": "",
+    }
     if tenant:
-        tenant_info = {
+        tenant_info.update({
             "civility": "M." if (tenant.first_name or "").endswith("s") is False else "Mme",
             "full_name": f"{tenant.first_name or ''} {tenant.last_name or ''}".strip(),
             "email": tenant.email or "",
             "phone": tenant.phone or "",
-            "address": "",
-            "nationality": "",
-            "dob": "",
-        }
+        })
     if contract:
         if hasattr(contract, "tenant_address") and contract.tenant_address:
             tenant_info["address"] = contract.tenant_address
@@ -1181,9 +1189,51 @@ def _build_ctx(
     # des templates HTML. Les valeurs, elles, viennent du nouveau modèle Bien.
     # Les champs out-of-scope (saisonnier, vente, linen, tourist tax) sont
     # figés en defaults — voir SPRINT_LOG.md "Fonctionnalités retirées du scope Phase 1".
-    prop_info: dict = {}
+    # Defaults safes : tous les builders f-string accèdent à prop['address']
+    # / prop['city'] / prop['zip_code'] sans .get(), donc on garantit la clé.
+    prop_info: dict = {
+        "address": "",
+        "city": "",
+        "zip_code": "",
+        "canton": "VS",
+        "surface": None,
+        "rooms": None,
+        "bedrooms": None,
+        "bathrooms": None,
+        "floor": None,
+        "year_built": None,
+        "description": "",
+        "building_name": "",
+        "unit_number": "",
+        "reference_number": "",
+        "monthly_rent": 0.0,
+        "charges": 0.0,
+        "deposit": 0.0,
+        "is_furnished": False,
+        "has_parking": False,
+        "has_balcony": False,
+        "has_terrace": False,
+        "has_garden": False,
+        "has_storage": False,
+        "has_fireplace": False,
+        "has_laundry": False,
+        "pets_allowed": False,
+        "smoking_allowed": False,
+        "keys_count": 3,
+        "status": "",
+        "type_label": "Bien",
+        "status_label": "Disponible",
+        "cover_url": extra.get("cover_url"),
+        "linen_provided": False,
+        "price_sale": None,
+        "is_for_sale": False,
+        "tourist_tax_amount": None,
+        "nearby_landmarks": "",
+        "prix_nuit_basse": None,
+        "prix_nuit_haute": None,
+    }
     if bien:
-        prop_info = {
+        prop_info.update({
             # Localisation
             "address": bien.adresse,
             "city": bien.ville,
@@ -1239,12 +1289,50 @@ def _build_ctx(
             "nearby_landmarks": "",
             "prix_nuit_basse": None,
             "prix_nuit_haute": None,
-        }
+        })
 
-    contract_info: dict = {}
+    contract_info: dict = {
+        "reference": "",
+        "monthly_rent": None,
+        "charges": None,
+        "deposit": None,
+        "start_date_long": "…",
+        "end_date_long": "…",
+        "is_furnished": False,
+        "payment_day": 5,
+        "notice_period_months": 3,
+        "notice_deadline_date": "",
+        "partial_period_days": None,
+        "partial_period_rent": None,
+        "partial_period_label": "",
+        "charges_label": "charges comprises",
+        "tourist_tax_amount": None,
+        "cleaning_fee_hourly": 42,
+        "linen_fee_included": False,
+        "reminder_fee": 35,
+        "late_interest_rate": 6,
+        "mortgage_rate_ref": None,
+        "cpi_index_ref": None,
+        "deposit_type": "gocaution",
+        "deposit_payment_deadline_days": 10,
+        "early_termination_fee": 270,
+        "payment_communication": "",
+        "subletting_allowed": False,
+        "animals_allowed": False,
+        "smoking_allowed": False,
+        "is_for_sale": False,
+        "signed_at_city": prop_info.get("city", ""),
+        "signed_date": extra.get("signed_date", ""),
+        "canton": prop_info.get("canton", "VS"),
+        "bank_name": "",
+        "bank_iban": "",
+        "bank_bic": "",
+        "occupants_count": 1,
+        "tenant_nationality": "",
+    }
     if contract:
-        contract_info = {
-            "reference": contract.reference,
+        contract_info.update({
+            "reference": contract.reference or "",
             "monthly_rent": float(contract.monthly_rent) if contract.monthly_rent else None,
             "charges": float(contract.charges) if contract.charges else None,
             "deposit": float(contract.deposit) if contract.deposit else None,
@@ -1279,9 +1367,9 @@ def _build_ctx(
             "bank_name": getattr(contract, "bank_name", "") or "",
             "bank_iban": getattr(contract, "bank_iban", "") or "",
             "bank_bic": getattr(contract, "bank_bic", "") or "",
-            "occupants_count": getattr(contract, "occupants_count", 1),
+            "occupants_count": getattr(contract, "occupants_count", 1) or 1,
             "tenant_nationality": getattr(contract, "tenant_nationality", "") or "",
-        }
+        })
 
     owner_info = {
         "full_name": f"{owner.first_name or ''} {owner.last_name or ''}".strip(),
@@ -1301,6 +1389,8 @@ def _build_ctx(
         "contract": contract_info,
         "owner": owner_info,
         "claims": extra.get("claims", []),
+        "extra": extra,
+        "today": _fmt_date_long(datetime.now()),
     }
 
 
@@ -1367,10 +1457,14 @@ async def generate_document(
 ) -> dict:
     """Generate a document and store it. Returns the generated document with HTML."""
 
-    # Load contract
+    # Load contract — UUID malformé → 422 (FastAPI default sur ValueError loop)
     contract: Contract | None = None
     if payload.contract_id:
-        res = await db.execute(select(Contract).where(Contract.id == uuid_lib.UUID(payload.contract_id)))
+        try:
+            contract_uuid = uuid_lib.UUID(payload.contract_id)
+        except (ValueError, AttributeError) as exc:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, f"contract_id invalide: {exc}")
+        res = await db.execute(select(Contract).where(Contract.id == contract_uuid))
         contract = res.scalar_one_or_none()
         if not contract:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Contrat introuvable")
@@ -1379,7 +1473,11 @@ async def generate_document(
     bien: Bien | None = None
     bien_id = payload.bien_id or (str(contract.bien_id) if contract else None)
     if bien_id:
-        res = await db.execute(select(Bien).where(Bien.id == uuid_lib.UUID(bien_id)))
+        try:
+            bien_uuid = uuid_lib.UUID(bien_id)
+        except (ValueError, AttributeError) as exc:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, f"bien_id invalide: {exc}")
+        res = await db.execute(select(Bien).where(Bien.id == bien_uuid))
         bien = res.scalar_one_or_none()
 
     # Load tenant
@@ -1405,27 +1503,36 @@ async def generate_document(
         if found:
             owner = found
 
-    # Agency settings (try to load)
+    # Agency settings (try to load).
+    # NB §B.12 : la session SQLA est partagée avec le save final du `doc`. On
+    # isole donc la lecture dans une session dédiée pour qu'un éventuel échec
+    # (ex: table absente en staging) ne corrompe pas la transaction utilisateur.
     agency_settings: dict | None = None
     try:
+        from app.core.database import AsyncSessionLocal
         from app.models.agency_settings import AgencySettings
         eff_agency_id = agency_id or (current_user.id if current_user.role == "agence" else None)
         if eff_agency_id:
-            res = await db.execute(select(AgencySettings).where(AgencySettings.agency_id == eff_agency_id))
-            settings_obj = res.scalar_one_or_none()
+            async with AsyncSessionLocal() as _s:
+                res = await _s.execute(
+                    select(AgencySettings).where(AgencySettings.user_id == eff_agency_id)
+                )
+                settings_obj = res.scalar_one_or_none()
             if settings_obj:
                 agency_settings = {
                     "agency_name": settings_obj.agency_name,
-                    "notification_email": settings_obj.notification_email,
-                    "logo_url": settings_obj.logo_url,
-                    "representative_name": settings_obj.representative_name,
-                    "address": settings_obj.address if hasattr(settings_obj, "address") else "",
-                    "city": settings_obj.city if hasattr(settings_obj, "city") else "",
-                    "phone": settings_obj.phone if hasattr(settings_obj, "phone") else "",
-                    "website": settings_obj.website if hasattr(settings_obj, "website") else "althy.ch",
+                    "notification_email": settings_obj.agency_email,
+                    "logo_url": settings_obj.agency_logo_url,
+                    "representative_name": settings_obj.agency_name,
+                    "address": settings_obj.agency_address or "",
+                    "city": "",  # pas de colonne dédiée — vide par défaut
+                    "phone": settings_obj.agency_phone or "",
+                    "website": settings_obj.agency_website or "althy.ch",
                 }
     except Exception:
-        pass
+        # Best-effort : si la lecture échoue (table absente, AttributeError),
+        # on continue sans agency_settings. Le builder fait son fallback.
+        agency_settings = None
 
     # Load cover image URL for the bien
     extra_with_cover = dict(payload.extra)
@@ -1450,46 +1557,57 @@ async def generate_document(
 
     ctx = _build_ctx(contract, bien, owner, tenant, agency_user, agency_settings, extra_with_cover)
 
-    # Generate body HTML
+    # Generate body HTML.
+    # §B.10 : on remonte une 400 explicite si un builder râle (KeyError / Value
+    # Error) plutôt qu'un 500 + ExceptionGroup TaskGroup opaque côté Railway.
     ttype = payload.template_type
     body_html: str
-
-    if ttype == "bail_annee":
-        body_html = _build_bail_annee(ctx, with_sale_clause=False)
-    elif ttype == "bail_annee_avec_vente":
-        body_html = _build_bail_annee(ctx, with_sale_clause=True)
-    elif ttype == "bail_saison":
-        body_html = _build_bail_saison(ctx)
-    elif ttype == "mandat_gestion":
-        body_html = _build_mandat_gestion(ctx)
-    elif ttype == "fiche_bien":
-        body_html = _build_fiche_bien(ctx)
-    elif ttype.startswith("demande_pieces"):
-        profile_map = {
-            "demande_pieces_annee": "annee",
-            "demande_pieces_saison": "saison",
-            "demande_pieces_nuitee": "nuitee",
-            "demande_pieces_societe": "societe",
-            "demande_pieces_commercial": "commercial",
-        }
-        body_html = _build_demande_pieces(ctx, profile=profile_map.get(ttype, payload.profile))
-    elif ttype == "requisition_poursuite":
-        body_html = _build_requisition_poursuite(ctx)
-    elif ttype == "quittance_loyer":
-        ctx["extra"] = payload.extra
-        body_html = _build_quittance(ctx)
-    elif ttype in ("relance_1", "relance_2", "relance_3"):
-        niveau = int(ttype[-1])
-        ctx["montant"] = payload.extra.get("montant", "…")
-        ctx["periode"] = payload.extra.get("periode", "…")
-        body_html = _build_relance(ctx, niveau=niveau)
-    elif ttype == "dossier_vendeur":
-        ctx["property"]["sale_price"] = payload.extra.get("sale_price")
-        ctx["property"]["price_per_sqm"] = payload.extra.get("price_per_sqm", "…")
-        ctx["property"]["ppe_charges"] = payload.extra.get("ppe_charges")
-        body_html = _build_dossier_vendeur(ctx)
-    else:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Type de document inconnu: {ttype}")
+    try:
+        if ttype == "bail_annee":
+            body_html = _build_bail_annee(ctx, with_sale_clause=False)
+        elif ttype == "bail_annee_avec_vente":
+            body_html = _build_bail_annee(ctx, with_sale_clause=True)
+        elif ttype == "bail_saison":
+            body_html = _build_bail_saison(ctx)
+        elif ttype == "mandat_gestion":
+            body_html = _build_mandat_gestion(ctx)
+        elif ttype == "fiche_bien":
+            body_html = _build_fiche_bien(ctx)
+        elif ttype.startswith("demande_pieces"):
+            profile_map = {
+                "demande_pieces_annee": "annee",
+                "demande_pieces_saison": "saison",
+                "demande_pieces_nuitee": "nuitee",
+                "demande_pieces_societe": "societe",
+                "demande_pieces_commercial": "commercial",
+            }
+            body_html = _build_demande_pieces(ctx, profile=profile_map.get(ttype, payload.profile))
+        elif ttype == "requisition_poursuite":
+            body_html = _build_requisition_poursuite(ctx)
+        elif ttype == "quittance_loyer":
+            ctx["extra"] = payload.extra
+            body_html = _build_quittance(ctx)
+        elif ttype in ("relance_1", "relance_2", "relance_3"):
+            niveau = int(ttype[-1])
+            ctx["montant"] = payload.extra.get("montant", "…")
+            ctx["periode"] = payload.extra.get("periode", "…")
+            body_html = _build_relance(ctx, niveau=niveau)
+        elif ttype == "dossier_vendeur":
+            ctx["property"]["sale_price"] = payload.extra.get("sale_price")
+            ctx["property"]["price_per_sqm"] = payload.extra.get("price_per_sqm", "…")
+            ctx["property"]["ppe_charges"] = payload.extra.get("ppe_charges")
+            body_html = _build_dossier_vendeur(ctx)
+        else:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Type de document inconnu: {ttype}")
+    except HTTPException:
+        raise
+    except (KeyError, ValueError, TypeError, AttributeError) as exc:
+        # Donnée manquante côté ctx (contrat sans locataire, bien sans adresse,
+        # extra mal formé). On surface au front un message clair.
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Données insuffisantes pour générer ce document ({ttype}): {exc}",
+        )
 
     title_map = {
         "bail_annee": "Bail à l'année",
