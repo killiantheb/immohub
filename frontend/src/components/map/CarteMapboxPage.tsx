@@ -1,48 +1,33 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+/**
+ * /app/carte — Carte des biens du propriétaire connecté.
+ *
+ * Doctrine §B.15 (CLAUDE.md) : Phase 1.0 = gestion pure. La marketplace publique
+ * (stats "204 biens · 5 villes · 4.7 ★", recherche Sphère IA cross-locale,
+ * CTA "Voir les biens disponibles") est code dormant Phase 2 (cf
+ * docs/2-ROADMAP.md §2.4.5).
+ *
+ * Cette page affiche désormais uniquement les biens du user connecté
+ * (GET /biens via useBiensList), avec un pin par ville (fallback CITY_LOOKUP).
+ * Chaque pin cliquable mène vers /app/biens/{id}.
+ */
+
+import { useEffect, useMemo, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Link from "next/link";
-import { Loader2, Search, X } from "lucide-react";
-import { api } from "@/lib/api";
-import { AlthySphereCore } from "@/components/sphere/AlthySphereCore";
-import { useAuthStore } from "@/lib/store/authStore";
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-interface ParseResult {
-  ville: string;
-  lng: number;
-  lat: number;
-  filtres: {
-    type_bien?: string;
-    budget_max?: number;
-    nb_pieces?: number;
-    type_transaction?: string;
-  };
-}
+import { MapPin } from "lucide-react";
+import { useBiensList } from "@/lib/hooks/useBiens";
+import type { BienListItem } from "@/lib/types";
+import { C } from "@/lib/design-tokens";
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 // Mapbox GL requires hex — do not replace with CSS var
 const PRUSSIAN = "#0F2E4C";
 const ACTIVE_CANTONS = ["Genève", "Vaud", "Valais", "Fribourg", "Neuchâtel", "Jura"];
 
-const ACTIVE_CITIES = [
-  { id: "geneve",    name: "Genève",    lng: 6.143, lat: 46.204, biens: 47 },
-  { id: "lausanne",  name: "Lausanne",  lng: 6.632, lat: 46.519, biens: 83 },
-  { id: "fribourg",  name: "Fribourg",  lng: 7.161, lat: 46.806, biens: 31 },
-  { id: "neuchatel", name: "Neuchâtel", lng: 6.931, lat: 46.992, biens: 24 },
-  { id: "sion",      name: "Sion",      lng: 7.359, lat: 46.233, biens: 19 },
-] as const;
-
-const INACTIVE_CITIES = [
-  { id: "berne",  name: "Berne",  lng: 7.447, lat: 46.948 },
-  { id: "zurich", name: "Zürich", lng: 8.541, lat: 47.376 },
-  { id: "bale",   name: "Bâle",   lng: 7.589, lat: 47.560 },
-] as const;
-
-/** Fallback local si l'API échoue */
+/** Fallback local pour géolocaliser un bien à partir de sa ville. */
 const CITY_LOOKUP: Record<string, [number, number]> = {
   "genève":    [6.143, 46.204], "geneve":    [6.143, 46.204], "geneva":    [6.143, 46.204],
   "lausanne":  [6.632, 46.519],
@@ -55,7 +40,22 @@ const CITY_LOOKUP: Record<string, [number, number]> = {
   "lugano":    [8.951, 46.004], "lucerne":   [8.307, 47.050],
   "montreux":  [6.911, 46.433], "nyon":      [6.239, 46.383],
   "morges":    [6.499, 46.512], "verbier":   [7.225, 46.097],
+  "vevey":     [6.844, 46.461], "yverdon":   [6.641, 46.778],
+  "renens":    [6.589, 46.537], "carouge":   [6.140, 46.185],
+  "meyrin":    [6.079, 46.233], "crans-montana": [7.482, 46.310],
 };
+
+function cityCoords(city: string | null | undefined): [number, number] | null {
+  if (!city) return null;
+  const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const direct = CITY_LOOKUP[city.toLowerCase()];
+  if (direct) return direct;
+  const targetKey = norm(city);
+  for (const [k, v] of Object.entries(CITY_LOOKUP)) {
+    if (norm(k) === targetKey) return v;
+  }
+  return null;
+}
 
 // ── CSS injecté ───────────────────────────────────────────────────────────────
 
@@ -72,75 +72,35 @@ const STYLES = `
     .althy-carte-wrap { margin: -66px -12px -2.5rem; height: calc(100vh - 54px); }
   }
 
-  /* ── Marker actif ── */
-  .althy-pin-active { position: relative; width: 36px; height: 36px; cursor: pointer; transition: transform 0.3s, opacity 0.3s; }
-  .althy-pin-active__pulse { position: absolute; inset: 0; border-radius: 50%; background: rgba(15,46,76,0.28); animation: althy-ping 2.2s ease-out infinite; }
-  .althy-pin-active__dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 15px; height: 15px; border-radius: 50%; background: #0F2E4C; border: 2.5px solid #fff; box-shadow: 0 2px 10px rgba(15,46,76,0.55); transition: width 0.3s, height 0.3s, box-shadow 0.3s; }
-  @keyframes althy-ping { 0% { transform: scale(0.7); opacity: 0.7; } 70% { transform: scale(2.4); opacity: 0; } 100% { transform: scale(0.7); opacity: 0; } }
+  /* ── Pin bien (Prussian, §B.4) ── */
+  .althy-pin-bien { position: relative; width: 32px; height: 32px; cursor: pointer; transition: transform 0.18s; }
+  .althy-pin-bien:hover { transform: scale(1.12); }
+  .althy-pin-bien__dot { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 14px; height: 14px; border-radius: 50%; background: #0F2E4C; border: 2.5px solid #fff; box-shadow: 0 2px 10px rgba(15,46,76,0.45); }
 
-  /* ── States filtres ── */
-  .althy-pin-active.pin-dimmed { opacity: 0.25; pointer-events: none; }
-  .althy-pin-active.pin-selected { transform: scale(1.4); }
-  .althy-pin-active.pin-selected .althy-pin-active__dot { width: 18px; height: 18px; box-shadow: 0 0 0 4px rgba(15,46,76,0.25), 0 2px 12px rgba(15,46,76,0.6); }
-
-  /* ── Marker inactif ── */
-  .althy-pin-inactive { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
-  .althy-pin-inactive__dot { width: 11px; height: 11px; border-radius: 50%; background: #BDB5AB; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.14); }
-
-  /* ── Popup ── */
   .mapboxgl-popup-content { border-radius: 14px !important; padding: 14px !important; box-shadow: 0 6px 24px rgba(0,0,0,0.11) !important; border: 1px solid #EAE3D9 !important; font-family: Inter, DM Sans, sans-serif !important; }
   .mapboxgl-popup-tip { border-top-color: #fff !important; }
 `;
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function filtresToLabel(filtres: ParseResult["filtres"]): string[] {
-  const labels: string[] = [];
-  if (filtres.type_transaction) labels.push(
-    filtres.type_transaction === "location" ? "Location" :
-    filtres.type_transaction === "vente" ? "Vente" : "Saisonnier"
-  );
-  if (filtres.type_bien) labels.push(
-    filtres.type_bien.charAt(0).toUpperCase() + filtres.type_bien.slice(1)
-  );
-  if (filtres.nb_pieces) labels.push(`${filtres.nb_pieces} pièce${filtres.nb_pieces > 1 ? "s" : ""}`);
-  if (filtres.budget_max) labels.push(
-    `≤ CHF ${filtres.budget_max.toLocaleString("fr-CH")}`
-  );
-  return labels;
-}
 
 // ── Composant ─────────────────────────────────────────────────────────────────
 
 export default function CarteMapboxPage() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef       = useRef<mapboxgl.Map | null>(null);
-  const pinElsRef    = useRef<Map<string, HTMLElement>>(new Map());
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
 
-  const [search, setSearch]       = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [apiError, setApiError]   = useState(false);
-  const [result, setResult]       = useState<ParseResult | null>(null);
+  const { data, isLoading } = useBiensList({ size: 200 });
+  const biens: BienListItem[] = useMemo(() => data?.items ?? [], [data]);
 
-  const { user } = useAuthStore();
-  const initials = (user?.user_metadata?.full_name as string | undefined)
-    ?.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()
-    ?? "?";
-
-  // Stats dérivées des données ACTIVE_CITIES
-  const totalBiens  = ACTIVE_CITIES.reduce((s, c) => s + c.biens, 0);
-  const nbVilles    = ACTIVE_CITIES.length;
-
-  // ── Initialisation Mapbox ────────────────────────────────────────────────
+  // Init Mapbox (une seule fois)
   useEffect(() => {
     if (!containerRef.current) return;
     mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style:     "mapbox://styles/mapbox/light-v11",
-      center:    [7.5, 46.8],
-      zoom:      7.2,
+      style: "mapbox://styles/mapbox/light-v11",
+      center: [7.5, 46.8],
+      zoom: 7.2,
       attributionControl: false,
     });
 
@@ -153,332 +113,226 @@ export default function CarteMapboxPage() {
       map.addLayer({
         id: "cantons-fill", type: "fill", source: "cantons",
         filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-        paint: { "fill-color": PRUSSIAN, "fill-opacity": 0.10 },
+        paint: { "fill-color": PRUSSIAN, "fill-opacity": 0.08 },
       });
       map.addLayer({
         id: "cantons-line", type: "line", source: "cantons",
         filter: ["in", ["get", "name"], ["literal", ACTIVE_CANTONS]],
-        paint: { "line-color": PRUSSIAN, "line-width": 2 },
-      });
-
-      // Punaises actives — on stocke la ref DOM pour pouvoir les animer
-      ACTIVE_CITIES.forEach(city => {
-        const el = document.createElement("div");
-        el.className = "althy-pin-active";
-        el.dataset.cityId = city.id;
-        el.innerHTML = `<div class="althy-pin-active__pulse"></div><div class="althy-pin-active__dot"></div>`;
-        pinElsRef.current.set(city.id, el);
-
-        const popup = new mapboxgl.Popup({ offset: 20, closeButton: false, maxWidth: "230px" })
-          .setHTML(`
-            <div>
-              <p style="font-weight:700;font-size:14px;color:#1A1612;margin:0 0 4px">${city.name}</p>
-              <p style="font-size:12px;color:#8A7A6A;margin:0 0 10px">${city.biens} biens disponibles</p>
-              <a href="/app/biens?ville=${city.id}" style="display:block;background:#0F2E4C;color:#fff;text-align:center;padding:7px 14px;border-radius:9px;font-size:12px;font-weight:600;text-decoration:none;">
-                Voir les biens →
-              </a>
-            </div>
-          `);
-
-        new mapboxgl.Marker({ element: el })
-          .setLngLat([city.lng, city.lat])
-          .setPopup(popup)
-          .addTo(map);
-      });
-
-      // Punaises inactives
-      INACTIVE_CITIES.forEach(city => {
-        const el = document.createElement("div");
-        el.className = "althy-pin-inactive";
-        el.innerHTML = `<div class="althy-pin-inactive__dot" title="${city.name} — bientôt disponible"></div>`;
-        new mapboxgl.Marker({ element: el }).setLngLat([city.lng, city.lat]).addTo(map);
+        paint: { "line-color": PRUSSIAN, "line-width": 1.5 },
       });
     });
 
-    return () => { map.remove(); mapRef.current = null; };
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
   }, []);
 
-  // ── Application des filtres sur les punaises ─────────────────────────────
-  const applyPinFilters = useCallback((villeResult: string | null) => {
-    if (!villeResult) {
-      // Reset : toutes les punaises normales
-      pinElsRef.current.forEach(el => {
-        el.classList.remove("pin-dimmed", "pin-selected");
-      });
-      return;
-    }
+  // Sync markers avec les biens
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
 
-    const matchedId = ACTIVE_CITIES.find(
-      c => c.name.toLowerCase() === villeResult.toLowerCase() ||
-           c.id === villeResult.toLowerCase()
-    )?.id ?? null;
+    // Cleanup markers précédents
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = [];
 
-    pinElsRef.current.forEach((el, id) => {
-      el.classList.remove("pin-dimmed", "pin-selected");
-      if (matchedId) {
-        if (id === matchedId) {
-          el.classList.add("pin-selected");
-        } else {
-          el.classList.add("pin-dimmed");
-        }
-      }
+    biens.forEach((bien) => {
+      const coords = cityCoords(bien.ville);
+      if (!coords) return;
+
+      const el = document.createElement("div");
+      el.className = "althy-pin-bien";
+      el.innerHTML = `<div class="althy-pin-bien__dot"></div>`;
+
+      const popup = new mapboxgl.Popup({ offset: 18, closeButton: false, maxWidth: "240px" })
+        .setHTML(`
+          <div>
+            <p style="font-weight:700;font-size:14px;color:#1A1612;margin:0 0 4px">
+              ${escapeHtml(bien.adresse || "Adresse non renseignée")}
+            </p>
+            <p style="font-size:12px;color:#8A7A6A;margin:0 0 10px">
+              ${escapeHtml(bien.ville ?? "")}${bien.loyer ? ` · CHF ${bien.loyer.toLocaleString("fr-CH")}/mois` : ""}
+            </p>
+            <a href="/app/biens/${bien.id}" style="display:block;background:#0F2E4C;color:#fff;text-align:center;padding:7px 14px;border-radius:9px;font-size:12px;font-weight:600;text-decoration:none;">
+              Voir le bien →
+            </a>
+          </div>
+        `);
+
+      const marker = new mapboxgl.Marker({ element: el })
+        .setLngLat(coords)
+        .setPopup(popup)
+        .addTo(map);
+
+      markersRef.current.push(marker);
     });
-  }, []);
 
-  // ── Soumission de la recherche ────────────────────────────────────────────
-  const handleSearch = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    const query = search.trim();
-    if (!query) return;
-
-    setIsLoading(true);
-    setApiError(false);
-
-    try {
-      const { data } = await api.post<ParseResult>(
-        "/sphere/parse-location",
-        { query }
-      );
-
-      setResult(data);
-
-      // flyTo vers les coordonnées retournées par Claude
-      if (mapRef.current) {
-        mapRef.current.flyTo({
-          center:   [data.lng, data.lat],
-          zoom:     12,
-          duration: 1800,
-          essential: true,
-        });
+    // Centre la vue sur les biens (si au moins 1)
+    if (biens.length > 0) {
+      const validCoords = biens
+        .map((b) => cityCoords(b.ville))
+        .filter((c): c is [number, number] => c !== null);
+      if (validCoords.length === 1) {
+        map.flyTo({ center: validCoords[0], zoom: 11, duration: 1200 });
+      } else if (validCoords.length > 1) {
+        const bounds = new mapboxgl.LngLatBounds();
+        validCoords.forEach((c) => bounds.extend(c));
+        map.fitBounds(bounds, { padding: 80, maxZoom: 11, duration: 1200 });
       }
-
-      // Highlight punaise de la ville trouvée
-      applyPinFilters(data.ville);
-
-    } catch {
-      // Fallback local si l'API est indisponible
-      setApiError(true);
-      const key = query.toLowerCase();
-      const coords = CITY_LOOKUP[key];
-      if (coords && mapRef.current) {
-        mapRef.current.flyTo({ center: coords, zoom: 12, duration: 1800, essential: true });
-      }
-      setTimeout(() => setApiError(false), 3000);
-    } finally {
-      setIsLoading(false);
     }
-  }, [search, applyPinFilters]);
+  }, [biens]);
 
-  // ── Reset des filtres ─────────────────────────────────────────────────────
-  const handleReset = useCallback(() => {
-    setResult(null);
-    setSearch("");
-    applyPinFilters(null);
-    if (mapRef.current) {
-      mapRef.current.flyTo({ center: [7.5, 46.8], zoom: 7.2, duration: 1600, essential: true });
-    }
-  }, [applyPinFilters]);
-
-  // ── Render ────────────────────────────────────────────────────────────────
-  const filterLabels = result ? filtresToLabel(result.filtres) : [];
+  const nbBiensCarte = biens.filter((b) => cityCoords(b.ville) !== null).length;
+  const nbBiensTotal = biens.length;
+  const hasBiens = nbBiensTotal > 0;
 
   return (
     <>
       <style>{STYLES}</style>
 
       <div className="althy-carte-wrap">
-        {/* ── Fond carte ─────────────────────────────────────────────── */}
+        {/* Fond carte */}
         <div ref={containerRef} style={{ position: "absolute", inset: 0 }} />
 
-        {/* ── Topbar overlay ─────────────────────────────────────────── */}
-        <header style={{
-          position: "absolute", top: 0, left: 0, right: 0, zIndex: 20,
-          background: "rgba(250,248,245,0.90)", backdropFilter: "blur(14px)",
-          borderBottom: "1px solid var(--althy-border, #EAE3D9)",
-          display: "flex", alignItems: "center", gap: 16, padding: "10px 20px",
-        }}>
-          {/* Logo */}
-          <Link href="/" style={{
-            flexShrink: 0, textDecoration: "none",
-            fontFamily: "var(--font-serif)",
-            fontWeight: 300, fontSize: 22, letterSpacing: "5px",
-            color: "var(--althy-orange)",
-          }}>
-            ALTHY
-          </Link>
-
-          {/* Barre de recherche connectée à la Sphère IA */}
-          <form
-            onSubmit={handleSearch}
-            style={{ flex: 1, maxWidth: 460, margin: "0 auto", position: "relative" }}
-          >
-            {isLoading ? (
-              <Loader2
-                size={15}
-                style={{
-                  position: "absolute", left: 12, top: "50%",
-                  transform: "translateY(-50%)",
-                  color: PRUSSIAN, animation: "spin 1s linear infinite",
-                  pointerEvents: "none",
-                }}
-              />
-            ) : (
-              <Search
-                size={15}
-                style={{
-                  position: "absolute", left: 12, top: "50%",
-                  transform: "translateY(-50%)",
-                  color: apiError ? "#DC2626" : "var(--althy-text-3, #8A7A6A)",
-                  pointerEvents: "none",
-                }}
-              />
-            )}
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Ex : studio Lausanne moins de 1500 CHF"
-              disabled={isLoading}
-              style={{
-                width: "100%", boxSizing: "border-box",
-                padding: "9px 16px 9px 34px",
-                borderRadius: 24,
-                border: `1.5px solid ${apiError ? "#DC2626" : "var(--althy-border, #EAE3D9)"}`,
-                background: "#fff",
-                fontSize: 13, color: "var(--althy-text, #1A1612)",
-                outline: "none", transition: "border-color 0.2s",
-                opacity: isLoading ? 0.7 : 1,
-              }}
-            />
-            {apiError && (
-              <span style={{
-                position: "absolute", right: 12, top: "50%",
-                transform: "translateY(-50%)",
-                fontSize: 11, color: "#DC2626",
-              }}>
-                Indisponible
-              </span>
-            )}
-          </form>
-
-          {/* Bouton Sphère IA */}
-          <Link href="/app/sphere" style={{
-            flexShrink: 0, display: "flex", alignItems: "center", gap: 8,
-            padding: "7px 16px", borderRadius: 20,
-            background: "var(--althy-orange-bg)",
-            color: "var(--althy-orange)",
-            border: "1px solid rgba(15,46,76,0.25)",
-            textDecoration: "none",
-            fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
-          }}>
-            <AlthySphereCore state="idle" size={16} />
-            Althy IA
-          </Link>
-
-          {/* Avatar utilisateur */}
-          <div style={{
-            flexShrink: 0, width: 34, height: 34, borderRadius: "50%",
-            background: "var(--althy-orange)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 12, fontWeight: 700, color: "#fff",
-            cursor: "default",
-          }}>
-            {initials}
-          </div>
-        </header>
-
-        {/* ── Bandeau résultat IA ─────────────────────────────────────── */}
-        {result && (
-          <div style={{
-            position: "absolute", top: 56, left: 0, right: 0, zIndex: 19,
-            background: "rgba(250,248,245,0.88)", backdropFilter: "blur(10px)",
+        {/* Header overlay (titre + counter) */}
+        <header
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 20,
+            background: "rgba(250,248,245,0.92)",
+            backdropFilter: "blur(14px)",
             borderBottom: "1px solid var(--althy-border, #EAE3D9)",
-            padding: "6px 20px",
-            display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
-          }}>
-            <span style={{ fontSize: 12, color: PRUSSIAN, fontWeight: 700 }}>
-              Althy IA
-            </span>
-            <span style={{ fontSize: 12, color: "#8A7A6A" }}>
-              {result.ville}
-            </span>
-            {filterLabels.map(label => (
-              <span key={label} style={{
-                fontSize: 11, fontWeight: 600, padding: "2px 8px",
-                borderRadius: 10, background: `${PRUSSIAN}14`, color: PRUSSIAN,
-                border: `1px solid ${PRUSSIAN}28`,
-              }}>
-                {label}
-              </span>
-            ))}
-            <button
-              onClick={handleReset}
+            padding: "12px 24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+          }}
+        >
+          <div>
+            <h1
               style={{
-                marginLeft: "auto", display: "flex", alignItems: "center", gap: 4,
-                background: "none", border: "none", cursor: "pointer",
-                fontSize: 11, color: "#8A7A6A", padding: 4,
+                margin: 0,
+                fontFamily: "var(--font-serif)",
+                fontSize: 22,
+                fontWeight: 300,
+                color: C.text,
+                letterSpacing: "-0.01em",
               }}
             >
-              <X size={12} />
-              Réinitialiser
-            </button>
+              Mes biens — Carte
+            </h1>
+            <p style={{ margin: "2px 0 0", fontSize: 12, color: C.text3 }}>
+              {isLoading
+                ? "Chargement…"
+                : `${nbBiensCarte} bien${nbBiensCarte !== 1 ? "s" : ""} affiché${nbBiensCarte !== 1 ? "s" : ""}${
+                    nbBiensTotal > nbBiensCarte
+                      ? ` (${nbBiensTotal - nbBiensCarte} sans ville reconnue)`
+                      : ""
+                  }`}
+            </p>
+          </div>
+
+          <Link
+            href="/app/biens"
+            style={{
+              flexShrink: 0,
+              padding: "8px 16px",
+              borderRadius: 9,
+              background: C.surface,
+              border: `1px solid ${C.border}`,
+              color: C.text2,
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
+            Liste des biens
+          </Link>
+        </header>
+
+        {/* EmptyState centré (uniquement si pas de biens) */}
+        {!isLoading && !hasBiens && (
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 10,
+              background: "rgba(255,255,255,0.95)",
+              backdropFilter: "blur(12px)",
+              border: `1px solid ${C.border}`,
+              borderRadius: 16,
+              padding: "32px 28px",
+              textAlign: "center",
+              maxWidth: 360,
+              boxShadow: "0 8px 32px rgba(15,46,76,0.12)",
+            }}
+          >
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                background: C.prussianBg,
+                border: `1px solid ${C.prussianBorder}`,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 14,
+              }}
+            >
+              <MapPin size={22} color={C.prussian} />
+            </div>
+            <p
+              style={{
+                margin: "0 0 6px",
+                fontSize: 16,
+                fontWeight: 700,
+                color: C.text,
+              }}
+            >
+              Aucun bien à afficher
+            </p>
+            <p style={{ margin: "0 0 18px", fontSize: 13, color: C.text3, lineHeight: 1.5 }}>
+              Ajoutez votre premier bien pour le voir apparaître sur la carte.
+            </p>
+            <Link
+              href="/app/biens/nouveau"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "10px 20px",
+                borderRadius: 9,
+                background: C.prussian,
+                color: "#fff",
+                fontSize: 13,
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              Ajouter un bien
+            </Link>
           </div>
         )}
-
-        {/* ── Stats flottantes haut gauche ───────────────────────────── */}
-        <div style={{
-          position: "absolute",
-          top: result ? 100 : 74,
-          left: 20, zIndex: 10,
-          transition: "top 0.3s",
-          background: "rgba(255,255,255,0.92)",
-          backdropFilter: "blur(12px)",
-          border: "0.5px solid var(--althy-border)",
-          borderRadius: 12,
-          padding: "12px 16px",
-          display: "flex", alignItems: "center", gap: 20,
-        }}>
-          {[
-            { valeur: String(totalBiens), label: "Biens" },
-            { valeur: String(nbVilles),   label: "Villes actives" },
-            { valeur: "4.7 ★",           label: "Note moyenne" },
-          ].map((stat, i) => (
-            <div key={stat.label} style={{ display: "flex", alignItems: "center", gap: i < 2 ? 20 : 0 }}>
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: "var(--althy-orange)", lineHeight: 1 }}>
-                  {stat.valeur}
-                </div>
-                <div style={{ fontSize: 10.5, color: "var(--althy-text-3)", marginTop: 2 }}>
-                  {stat.label}
-                </div>
-              </div>
-              {i < 2 && (
-                <div style={{ width: 1, height: 28, background: "var(--althy-border)", flexShrink: 0 }} />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* ── CTA bas centré ─────────────────────────────────────────── */}
-        <div style={{
-          position: "absolute", bottom: 32,
-          left: "50%", transform: "translateX(-50%)", zIndex: 10,
-        }}>
-          <Link href="/app/biens" style={{
-            display: "inline-flex", flexDirection: "column", alignItems: "center",
-            background: "#1A1612", color: "#FAFAF8",
-            padding: "14px 32px", borderRadius: 32,
-            textDecoration: "none",
-            boxShadow: "0 8px 32px rgba(26,22,18,0.22)",
-            whiteSpace: "nowrap",
-          }}>
-            <span style={{ fontSize: 14, fontWeight: 600 }}>Voir les biens disponibles →</span>
-            <span style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>
-              {totalBiens} biens · Prix dès CHF 850/mois
-            </span>
-          </Link>
-        </div>
       </div>
     </>
   );
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
