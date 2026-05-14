@@ -147,8 +147,26 @@ function TabIdentite() {
   const { role, isAgence, isProprioSolo, isMarketplace, isHunter } = useRole();
   const qc = useQueryClient();
   const { show, Toast } = useToast();
+  const [emailChanging, setEmailChanging] = useState(false);
 
   const { data: me } = useQuery({ queryKey: ["settings", "me"], queryFn: async () => { const { data } = await api.get("/auth/me"); return data; }, staleTime: 30_000 });
+
+  async function requestEmailChange() {
+    if (!me?.email) return;
+    if (!confirm(
+      "Pour changer votre adresse email, un lien de réinitialisation va être envoyé à " +
+      me.email + ". Continuer ?"
+    )) return;
+    setEmailChanging(true);
+    try {
+      await api.post("/auth/request-email-change", { current_email: me.email });
+      show("Email envoyé — vérifiez votre boîte de réception");
+    } catch {
+      show("Erreur — réessayez ou contactez support@althy.ch");
+    } finally {
+      setEmailChanging(false);
+    }
+  }
   const { data: profileDetail } = useQuery({
     queryKey: ["settings", "profile-detail"],
     queryFn: async () => { const { data } = await api.get("/profiles-artisans/me"); return data; },
@@ -280,7 +298,27 @@ function TabIdentite() {
             <Field label="Prénom *" value={f.first_name} onChange={v => set("first_name", v)} placeholder="Marie" />
             <Field label="Nom *" value={f.last_name} onChange={v => set("last_name", v)} placeholder="Dupont" />
           </Row>
-          <Field label="Email" value={me?.email ?? ""} readOnly hint="Modifiable via la page de connexion Supabase" />
+          <div>
+            <Field label="Email" value={me?.email ?? ""} readOnly hint="Pour modifier votre email, cliquez ci-dessous : vous recevrez un lien de confirmation." />
+            <button
+              onClick={requestEmailChange}
+              disabled={emailChanging || !me?.email}
+              style={{
+                marginTop: 8,
+                padding: "8px 16px",
+                borderRadius: 10,
+                background: C.prussianBg,
+                border: `1px solid ${C.prussian}`,
+                color: C.prussian,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: emailChanging ? "not-allowed" : "pointer",
+                opacity: emailChanging ? 0.6 : 1,
+              }}
+            >
+              {emailChanging ? "Envoi…" : "Changer mon email"}
+            </button>
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: "0.75rem" }}>
             <SelectField label="Indicatif" value={f.phone_prefix} onChange={v => set("phone_prefix", v)} options={[
               { value: "+41", label: "🇨🇭 +41" }, { value: "+33", label: "🇫🇷 +33" },
