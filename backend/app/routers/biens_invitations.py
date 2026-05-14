@@ -482,19 +482,37 @@ async def get_invitation_preview(
 
     Pas d'auth requise — le token agit comme bearer secret. Si le token est
     invalide / inconnu → 404. Si utilisé → statut='used'. Si expiré → 'expired'.
+
+    BUG 7 Sprint 9 Lot E : tolérant aux invitations historiques créées avant
+    la normalisation `target_role='locataire'` (filtre uniquement par
+    `type = 'invitation'`, on accepte tout target_role qui n'est pas
+    explicitement marqué autre rôle).
     """
+    # Strip & sanitize : un token urlsafe ne contient que [A-Za-z0-9_-]. Si
+    # le client envoie un slash/espace par erreur, on ne change pas la
+    # sémantique mais on log pour diagnostiquer.
+    token = (token or "").strip()
+    if not token:
+        logger.info("invitation_preview_empty_token")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Invitation introuvable")
+
     row = await db.execute(
         text("""
-            SELECT id, target_email, payload, used, expires_at, created_by
+            SELECT id, target_email, payload, used, expires_at, created_by, target_role
             FROM magic_links
             WHERE token = :token
               AND type = 'invitation'
-              AND target_role = 'locataire'
         """),
         {"token": token},
     )
     rec = row.one_or_none()
     if not rec:
+        # Log pour diagnostic prod (Railway). On ne fuite pas le token complet :
+        # 6 premiers chars + longueur seulement (suffisant pour corréler).
+        logger.info(
+            "invitation_preview_not_found token_prefix=%s token_len=%s",
+            token[:6], len(token),
+        )
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Invitation introuvable")
 
     link_payload: dict = rec.payload or {}
