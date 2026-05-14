@@ -401,10 +401,12 @@ Signé le: {contract.signed_at.strftime("%d/%m/%Y %H:%M") if contract.signed_at 
     row("Dépôt de garantie", f"{float(contract.deposit):,.2f} CHF" if contract.deposit else "—")
     pdf.ln(8)
 
-    # §B.10 — on n'utilise pas le terme « signature électronique » qui
-    # impliquerait une signature qualifiée (SES/QES, Skribble). Phase 1.0 =
-    # acceptation contractuelle horodatée + IP. Workflow à 2 parties :
+    # §B.10 — section dédiée à l'acceptation contractuelle horodatée
+    # (Plan B SES renforcée, flow Sprint 8). Workflow à 2 parties :
     # bailleur d'abord (`signed_at`), puis locataire (`tenant_signed_at`).
+    # Le PDF Skribble Plan A (Sprint 10, cf docs/2-ROADMAP.md §2.4.16)
+    # remplace ce template via `contracts.skribble_signed_pdf_url` quand
+    # `settings.SKRIBBLE_ENABLED=True` et que `skribble_status='completed'`.
     section("Acceptation contractuelle")
     landlord_dt = getattr(contract, "signed_at", None)
     tenant_dt = getattr(contract, "tenant_signed_at", None)

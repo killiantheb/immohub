@@ -75,8 +75,9 @@
 - `proprio_solo` — propriétaire-bailleur autogéré (cible Phase 1.0).
 - `locataire` — accès **dédié à SON bien** (lecture seule sur bail, paiements, documents, messagerie 1:1 avec bailleur). PAS d'accès à une marketplace ni à d'autres biens.
 - `super_admin` — Killian + admin technique (gestion partenaires, waitlist).
+- `agence` — **provisionné en DB par super_admin uniquement** (décision doctrinale 2026-05-14 Sprint 10). Sunimmo Riviera est l'unique agence Phase 1.0. `ALLOWED_SIGNUP_ROLES = ["proprio_solo"]` reste strict (pas de signup agence public). L'agence peut être mandataire d'un propriétaire (mandat de gestion signé) — `commission_pct_*` stockées en donnée contractuelle pour le PDF mandat, **aucun tracking transactionnel Althy** (pas de Stripe Connect, pas de prélèvement, pas de webhook commission). Cf §2.4.16 décisions doctrinales Sprint 10.
 
-Tous les autres rôles (`agence`, `portail_proprio`, `artisan`, `opener`, `expert`, `hunter`, `acheteur_premium`) restent en `ComingSoon` Phase 2+.
+Tous les autres rôles (`portail_proprio`, `artisan`, `opener`, `expert`, `hunter`, `acheteur_premium`) restent en `ComingSoon` Phase 2+.
 
 ### 2.4.3 Les 5 modules Phase 1.0
 
@@ -85,7 +86,7 @@ Tous les autres rôles (`agence`, `portail_proprio`, `artisan`, `opener`, `exper
 | 1 | **Bien** (création express + fiche complète + modif/archivage) | 🔄 EN COURS (sprint 12) | §2.4.7 + `docs/session12/SPRINT-bien-complet.md` |
 | 2 | **Invitation Locataire** (lien/QR/email → compte locataire auto-link bien) | 🆕 NOUVEAU | Sprint 13 (à ouvrir post-sprint 12) |
 | 3 | **Espace Locataire** (vue dédiée à SON bien, SES paiements, SES docs) | 🆕 NOUVEAU | Sprint 13 |
-| 4 | **Bail** (upload PDF Phase 1.0 + signature Skribble Phase 1.1) | 🆕 NOUVEAU | Sprint 14 |
+| 4 | **Bail** (upload PDF + signature électronique Skribble SES — bascule Phase 1.0 doctrine 2026-05-14, cf §2.4.16) | 🆕 NOUVEAU | Sprint 10 (était Sprint 14) |
 | 5 | **Communication minimale** (messagerie interne 1:1 + email Resend) | 🟡 partiel | Sprint 13 (refonte minimale) |
 | 6 | **Loyer minimal** (suivi mensuel + statut payé/impayé manuel) | 🆕 NOUVEAU | Sprint 14 |
 
@@ -194,7 +195,7 @@ Plutôt que de supprimer du code écrit, on le **conserve dormant** pour réacti
   - Upload PDF du bail signé physiquement (storage Supabase bucket `documents`, type `bail`).
   - Champs structurés : date entrée, date sortie (si CDD), montant loyer + charges, fréquence, IBAN proprio.
   - Visible par le locataire dans son espace.
-  - **Signature électronique Skribble = Phase 1.1** (juin/juillet 2026).
+  - **Signature électronique Skribble SES = Phase 1.0** (décision doctrinale 2026-05-14, basculé depuis Phase 1.1 — cf §2.4.16). Cible : Sprint 10 (mai 2026), couvre bail + avenant + résiliation + mandat de gestion + EDL. Le flow Sprint 8 (`signed_at` + `tenant_signed_at` + IP horodatée) reste opérationnel comme **Plan B SES renforcée** si KYC Skribble traîne.
 - **Module Loyer minimal** :
   - Génération automatique des échéances mensuelles à partir du bail.
   - Statut manuel : `pending` → `paid` (clic 1 bouton bailleur) ou `late`.
@@ -331,6 +332,76 @@ Sprints identifiés suite à l'incident `bug-invitation-001` (mismatch `users.em
 - Refacto `_supa_post` → dataclass typée `SupaResponse(status_code, data, raw_text)` (au lieu de `dict` brut + `HTTPException`-as-control-flow).
 - Logs d'audit auth complets dans `audit_logs` (qui invite qui sur quel bien, quand, depuis quelle IP).
 - Cleanup périodique des `auth.users` orphelins (job hebdo cron — détection `LEFT JOIN users ON users.supabase_uid = auth.users.id` `WHERE users.id IS NULL`).
+
+### 2.4.16 Sprint 10 décisions doctrinales (2026-05-14)
+
+Trois décisions doctrinales actées par Killian le 14 mai 2026, conditionnant l'ouverture du **Sprint 10 — Bail + CGUL + Skribble + EDL + Approbation propriétaire** (J-17 avant gate Sunimmo 01/06/2026). Ces décisions sont la **source de vérité** : elles complètent la doctrine §B.7 + §B.15 de [`CLAUDE.md`](../CLAUDE.md) et amendent §2.4.2 + §2.4.3 + §2.4.5 + §2.4.9 ci-dessus.
+
+#### Décision #1 — Skribble SES bascule Phase 1.0 (était Phase 1.1)
+
+**Avant 2026-05-14** : la signature électronique qualifiée Skribble était fléchée Phase 1.1. La migration `0049_contract_countersign_link.py` et les services Sprint 8 (`contract_service.sign`, `routers/contracts.countersign`, `CountersignModal.tsx`) le mentionnaient explicitement en commentaire.
+
+**Après 2026-05-14** : Skribble SES (Simple Electronic Signature, art. 14 al. 1 CO) bascule en Phase 1.0 et couvre **5 documents Sprint 10** :
+1. Bail d'habitation (6 pages template Sunimmo)
+2. Avenant au bail
+3. Résiliation (CO 266l, hors formule officielle cantonale qui reste Phase 1.1)
+4. Mandat de gestion (agence ↔ propriétaire)
+5. EDL entrée/sortie + Convention de sortie
+
+**Plan B SES renforcée** : le flow Sprint 8 (`signed_at` + `tenant_signed_at` + IP horodatée + nom saisi + User-Agent + horodatage UTC) reste en place comme fallback admin et comme mode dégradé si :
+- Le compte HBM Swiss Sàrl n'a pas encore terminé le KYC Skribble production
+- Skribble est down (5xx prolongé)
+- Un signataire ne peut pas accéder au flow Skribble (cas exotique)
+
+Le flag `settings.SKRIBBLE_ENABLED: bool = False` par défaut active Plan B ; bascule à `True` en env Railway active Plan A Skribble. Aucune migration de données nécessaire pour bascule A→B ou B→A (les colonnes `skribble_*` restent NULL en mode Plan B).
+
+Cohérence légale : SES suisse (art. 14 al. 1 CO) suffit pour les baux d'habitation civils. La QES (signature qualifiée Skribble) reste reportée à un sprint ultérieur si Sunimmo ou un client tiers en exprime le besoin (bail commercial long terme, mandat de gestion sur immeuble institutionnel, etc.).
+
+#### Décision #2 — Rôle `agence` confirmé Phase 1.0 (Sunimmo Riviera uniquement)
+
+**Avant 2026-05-14** : §B.7 doctrine 2026-05-09 listait Phase 1.0 = `proprio_solo + locataire + super_admin` uniquement. Le code (`backend/app/models/user.py` enum + `routers/contracts.py:58` + `routers/biens_invitations.py:50` `MANAGER_ROLES`) acceptait déjà `agence` mais sans cadrage doctrinal explicite.
+
+**Après 2026-05-14** : le rôle `agence` est officiellement Phase 1.0 mais **provisionné en DB par super_admin uniquement**. `ALLOWED_SIGNUP_ROLES = ["proprio_solo"]` reste strict (pas de signup agence via `/auth/register`). Une agence peut être mandataire d'un propriétaire via la nouvelle table `mandats_gestion` (migration 0051 Sprint 10).
+
+**Mandat de gestion = data contractuelle pure, pas tracking transactionnel** :
+- Les colonnes `commission_pct_annee` (défaut 10 %), `commission_pct_saison` (15 %), `commission_pct_semaine` (20 %) stockent la commission contractuelle entre Sunimmo et le propriétaire, **apparaissent dans le PDF du mandat de gestion** mais Althy n'en fait rien côté flux financier.
+- **PAS de Stripe Connect**, **PAS de prélèvement automatique**, **PAS de webhook commission**, **PAS de compte de transit Althy**.
+- Sunimmo facture directement le propriétaire sur sa compta interne (hors Althy).
+- Cette doctrine `agence sans commission tracking` est compatible avec §B.15 ligne `Stripe Connect commission loyers (3-5 %)` qui reste interdit Phase 1.0.
+
+Phase 2 ouvrira l'inscription publique du rôle `agence` + Stripe Connect commission optionnel (avec opt-in agence) — cf §2.5.
+
+#### Décision #3 — Approbation propriétaire = Interprétation A
+
+**Contexte** : Sprint 10 introduit un workflow d'approbation par le propriétaire d'un candidat locataire avant l'envoi du bail en signature Skribble. Deux interprétations possibles :
+- **Interprétation A** : le candidat approuvé est **issu d'une invitation** (`magic_links type='invitation'`) — le bailleur invite explicitement un locataire à constituer son dossier, l'agence pré-valide, le propriétaire approuve. Pas de marketplace publique.
+- **Interprétation B** : candidature spontanée marketplace publique (Phase 2) → bailleur approuve → frais CHF 45 → bail. Interdit Phase 1.0.
+
+**Décision actée 2026-05-14** : Interprétation A. Le workflow Sprint 10 est :
+1. Bailleur ou agence invite un locataire (`magic_links type='invitation'` existant Sprint 1B).
+2. Locataire constitue son dossier (10 étapes — module Dossier Locataire livré Sprint 1-3).
+3. Dossier 100 % complet → agence (ou super_admin en Phase 1.0) pré-valide.
+4. Pré-validation OK → magic link `type='approbation_dossier'` envoyé au propriétaire (nouveau type Sprint 10, migration 0052).
+5. Propriétaire clique le lien → page publique `/approuver/[token]` → approuve ou refuse.
+6. Approbation → `Contract` créé en draft → `signature_orchestrator.send_contract_to_skribble` (si Plan A activé, sinon flow Sprint 8 Plan B).
+7. Refus → email locataire `candidat_refuse` → locataire libéré.
+
+Magic link `type='approbation_dossier'` : scope STRICT (lecture/écriture du seul `dossier_id` ciblé), TTL 14 jours, no-auth bearer token. Aucune route marketplace publique réactivée.
+
+#### Conséquences techniques Sprint 10
+
+- **Migration 0051** : extension `contracts` (12 colonnes USPI), nouvelles tables `mandats_gestion` + `avenants` + `resiliations`, ajouts Skribble sur `contracts`, `convention_sortie` sur `changements_locataire`, bucket Supabase Storage `signable-documents` (privé, retention 10 ans CO 962).
+- **Migration 0052** : extension `dossiers_locataires` (`proprio_approbation_*` columns) + magic_links enum `type='approbation_dossier'`.
+- **Skribble** : 8 variables d'env déjà provisionnées par Killian (.env backend + Railway le 2026-05-14, à exposer côté `settings`).
+- **Plan B SES renforcée** conservé : flow Sprint 8 intact, flag `SKRIBBLE_ENABLED` bascule A/B.
+- **Tests E2E** : 1 spec Playwright bail end-to-end (invitation → dossier → pré-validation → approbation → signature → loyer activé).
+
+#### Historique modifications doctrinales
+
+| Date | Décision | Auteur | Référence |
+|---|---|---|---|
+| 2026-05-09 | Phase 1.0 logiciel de gestion pure (vs marketplace publique) | Killian | §2.4 + §B.7 + §B.15 doctrine initiale |
+| 2026-05-14 | Skribble bascule P1.0, `agence` confirmée P1.0 Sunimmo, approbation propriétaire interprétation A | Killian | §2.4.16 (cette section) + Sprint 10 brief |
 
 ---
 

@@ -360,8 +360,10 @@ function ContractDetailPageInner() {
         </div>
       </div>
 
-      {/* Acceptation contractuelle — §B.10 (pas une signature électronique
-          qualifiée Skribble, mais une acceptation horodatée + IP). */}
+      {/* Acceptation contractuelle — Plan B SES renforcée (§B.10).
+          Acceptation horodatée + IP + nom saisi. Plan A Skribble SES
+          (Sprint 10, cf docs/2-ROADMAP.md §2.4.16) coexiste via
+          `contracts.skribble_session_id`. */}
       <div style={cardStyle}>
         <h2 style={{ fontSize: 13, fontWeight: 600, color: C.text2, marginBottom: "0.75rem" }}>
           Acceptation contractuelle

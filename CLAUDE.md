@@ -78,12 +78,13 @@
 
 ### B.7 Phase actuelle
 
-- **Phase 1.0 = logiciel de gestion pure** (doctrine 2026-05-09) — proprio_solo + locataire (via invitation uniquement) + super_admin.
+- **Phase 1.0 = logiciel de gestion pure** (doctrine 2026-05-09, complétée 2026-05-14 Sprint 10) — `proprio_solo` + `locataire` (via invitation uniquement) + `super_admin` + `agence` **provisionnée en DB** (signup public interdit, `ALLOWED_SIGNUP_ROLES = ["proprio_solo"]`).
 - Cible commerciale immédiate : **migration Sunimmo Riviera**, gate dur 10 biens au 01/06/2026.
-- Tout autre rôle = ComingSoon Phase 2-3 (artisan partiellement gelé M1 GE+VD).
+- Rôle `agence` Phase 1.0 (décision 2026-05-14 Sprint 10) : Sunimmo Riviera est provisionnée manuellement par super_admin. Agence peut être mandataire d'un propriétaire (mandat de gestion signé) — données contractuelles stockées (commission_pct_*) mais **AUCUN tracking transactionnel Althy** (pas de Stripe Connect, pas de prélèvement, pas de webhook commission — Sunimmo facture le propriétaire en direct).
+- Tout autre rôle (`portail_proprio`, `artisan`, `opener`, `expert`, `hunter`, `acheteur_premium`) = ComingSoon Phase 2-3 (artisan partiellement gelé M1 GE+VD).
 - Marketplace publique = **CODE DORMANT Phase 2** (middleware redirect + composants landing désactivés).
 - Périmètre interdit Phase 1.0 + procédure STOP : §B.15.
-- Détail : [`docs/2-ROADMAP.md`](docs/2-ROADMAP.md) §2.4.
+- Détail : [`docs/2-ROADMAP.md`](docs/2-ROADMAP.md) §2.4 + §2.4.16 (décisions doctrinales Sprint 10).
 
 ### B.8 Sprint en cours
 
@@ -166,7 +167,12 @@ Si une livraison échoue **un seul** des 3 critères → retour à la planche à
 
 ### B.15 Phase 1 scope strict — interdictions doctrinales
 
-⚠️ **Doctrine figée 2026-05-09.** Phase 1 = **logiciel de gestion pure** (cf [`docs/2-ROADMAP.md`](docs/2-ROADMAP.md#24-phase-10--logiciel-de-gestion-sunimmo-test-) §2.4 + §2.10 Règle 10).
+⚠️ **Doctrine figée 2026-05-09, complétée 2026-05-14 (Sprint 10 décisions doctrinales — cf [`docs/2-ROADMAP.md`](docs/2-ROADMAP.md) §2.4.16).** Phase 1 = **logiciel de gestion pure** (cf [`docs/2-ROADMAP.md`](docs/2-ROADMAP.md#24-phase-10--logiciel-de-gestion-sunimmo-test-) §2.4 + §2.10 Règle 10).
+
+**Décisions doctrinales 2026-05-14 (Sprint 10)** qui modifient les interdictions ci-dessous :
+- ✅ **Skribble SES bascule en Phase 1.0** (était Phase 1.1) — signature électronique simple via Skribble validée pour les 5 documents Sprint 10 (bail, avenant, résiliation, mandat de gestion, EDL + convention de sortie). Le flow Sprint 8 (`signed_at` + `tenant_signed_at` + IP horodatée) reste en place comme **Plan B SES renforcée** si KYC Skribble traîne ou en mode admin fallback.
+- ✅ **Rôle `agence` confirmé Phase 1.0 pour Sunimmo Riviera uniquement**, provisionné en DB par super_admin. `ALLOWED_SIGNUP_ROLES = ["proprio_solo"]` reste strict (pas de signup agence public). Mandat de gestion agence ↔ propriétaire = autorisé Phase 1.0 avec `commission_pct_*` en **donnée contractuelle pure** (apparaît dans le PDF mandat) — **AUCUN tracking transactionnel Althy** (pas de Stripe Connect, pas de prélèvement, pas de webhook commission, Sunimmo facture le propriétaire en direct).
+- ✅ **Approbation propriétaire = Interprétation A** : bailleur (`proprio_solo`) approuve un candidat **issu d'une invitation existante** (`magic_links type='invitation'`). Magic link dédié `type='approbation_dossier'` pour les bailleurs sans compte. **Pas de candidature spontanée** (interdit ci-dessous), **pas de frais CHF 45** locataire/propriétaire.
 
 **Toute demande utilisateur ou prompt qui implique l'un des périmètres suivants déclenche un STOP** :
 

@@ -129,9 +129,16 @@ async def sign_contract(
 ) -> ContractRead:
     """Acceptation contractuelle bailleur — horodatage + IP (§B.10).
 
-    Pas de signature électronique qualifiée Skribble en Phase 1.0 — c'est
-    Phase 1.1 (§B.15). Une fois le bailleur accepte, le bail reste « en
-    attente de contre-signature » : le locataire doit appeler
+    Plan B SES renforcée (Sprint 8 Lot A). Phase 1.0 supporte deux flows
+    parallèles de signature :
+      - Plan A = Skribble SES (`POST /contracts/{id}/send-to-skribble`,
+        Sprint 10) — actif quand `settings.SKRIBBLE_ENABLED=True`.
+      - Plan B = acceptation horodatée renforcée (cet endpoint + countersign) —
+        toujours utilisable comme fallback admin ou si Skribble KYC traîne.
+    Cf doctrine 2026-05-14 docs/2-ROADMAP.md §2.4.16.
+
+    Une fois le bailleur accepte, le bail reste « en attente de
+    contre-signature » : le locataire doit appeler
     POST /contracts/{id}/countersign depuis /app/mon-bien pour activer le
     bail (status → active + 1re loyer_transaction).
     """
@@ -151,10 +158,14 @@ async def countersign_contract(
 ) -> ContractRead:
     """Contre-signature locataire — clôt le workflow d'acceptation à 2 parties.
 
-    Sprint 8 Lot A. Doctrine :
-      - §B.10 : « tenant_signed_at » est une acceptation horodatée + IP,
-        pas une signature électronique qualifiée. Pas de prétention SES.
-      - §B.15 : Phase 1.0 logiciel de gestion pure — pas d'OAuth Skribble.
+    Sprint 8 Lot A — Plan B SES renforcée (cf doctrine 2026-05-14
+    docs/2-ROADMAP.md §2.4.16). Doctrine :
+      - §B.10 : « tenant_signed_at » est une acceptation horodatée + IP.
+      - Plan A (Skribble SES Sprint 10) coexiste — quand
+        `settings.SKRIBBLE_ENABLED=True`, le flow recommandé passe par
+        `POST /contracts/{id}/send-to-skribble`. Plan B reste actif comme
+        fallback admin (Skribble down, KYC en attente, signataire ne peut
+        accéder au flow Skribble).
 
     Workflow :
       1. RBAC : seul `Contract.tenant_id == current_user.id` peut contre-signer.

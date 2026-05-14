@@ -8,8 +8,7 @@ Contexte (Sprint 8 Lot A — 2026-05-14) :
   Cette migration :
     1. Ajoute `contracts.tenant_signed_at` + `contracts.tenant_signed_ip`
        (preuve d'acceptation contractuelle horodatée — §B.10 honnête,
-        pas une signature électronique qualifiée Skribble qui est
-        Phase 1.1).
+        complète Sprint 10 Skribble SES, cf MAJ doctrinale ci-dessous).
     2. Ajoute `locataires.current_contract_id` FK → `contracts.id`
        (ondelete SET NULL) pour lier de façon non destructive le bail
        actif au locataire (un locataire peut enchaîner plusieurs baux
@@ -23,8 +22,18 @@ Contexte (Sprint 8 Lot A — 2026-05-14) :
 
 Doctrine §B.13 : Python pur (aucun fichier `.sql` orphelin).
 Doctrine §B.10 : champ « tenant_signed_at » et non « tenant_signed_es »
-                 — on ne prétend pas faire de signature électronique
-                 qualifiée en Phase 1.0.
+                 — Phase 1.0 = acceptation horodatée renforcée, sémantique
+                 conservée même après bascule Skribble Sprint 10.
+
+MISE À JOUR DOCTRINALE 2026-05-14 (Sprint 10, cf docs/2-ROADMAP.md §2.4.16) :
+  La bascule Skribble en Phase 1.0 (était Phase 1.1) n'invalide PAS cette
+  migration. Les colonnes `signed_at` + `tenant_signed_at` + `signed_ip` +
+  `tenant_signed_ip` continuent d'exister et servent désormais de
+  **Plan B SES renforcée** (fallback admin si Skribble KYC traîne ou si
+  Skribble est down). Plan A = Skribble SES via `contracts.skribble_*`
+  ajoutés en migration 0051 Sprint 10. Le flag `settings.SKRIBBLE_ENABLED`
+  bascule entre Plan A (`/send-to-skribble`) et Plan B (`/sign` + `/countersign`
+  Sprint 8 — endpoints conservés intacts).
 
 Revision ID: 0049
 Revises: 0048

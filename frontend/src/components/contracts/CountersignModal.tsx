@@ -2,17 +2,23 @@
 
 /**
  * CountersignModal — Sprint 8 Lot C — Contre-signature locataire d'un bail.
+ * Mis à jour 2026-05-14 (doctrine Sprint 10, cf docs/2-ROADMAP.md §2.4.16).
  *
- * Workflow Phase 1.0 (doctrine §B.10 + §B.15) :
+ * Workflow Phase 1.0 (doctrine §B.10) :
  *   1. Le bailleur accepte le bail depuis /app/contracts/[id] → signed_at posé.
  *   2. Le locataire voit son bail dans /app/mon-bien et ouvre cette modale.
  *   3. Modal : prévisualisation PDF (iframe) + champ nom complet + case d'acceptation.
  *   4. Submit → POST /contracts/{id}/countersign (backend Lot A pose
  *      tenant_signed_at + tenant_signed_ip) → fully_signed = true côté backend.
  *
- * §B.10 — vocabulaire honnête : "acceptation contractuelle" pas "signature
- * électronique qualifiée". On enregistre IP + horodatage + nom saisi, suffisant
- * pour Phase 1.0 (Skribble = Phase 2+).
+ * §B.10 — vocabulaire honnête : "acceptation contractuelle" horodatée +
+ * IP + nom saisi. Sémantique SES suisse (art. 14 al. 1 CO) suffisante pour
+ * baux d'habitation civils.
+ *
+ * Coexiste avec Plan A Skribble SES (Sprint 10) — quand
+ * `process.env.NEXT_PUBLIC_SKRIBBLE_ENABLED=true` ou le contract a un
+ * `skribble_session_id`, l'UI redirige vers le flow Skribble. Cette
+ * modale reste utilisable comme **Plan B fallback admin**.
  */
 
 import { useState } from "react";
