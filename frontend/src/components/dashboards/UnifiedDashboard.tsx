@@ -8,11 +8,15 @@ import {
   AlertTriangle, ArrowRight, Banknote, Bell, Briefcase, Building2,
   Calendar, CheckCircle2, Clock, Download, Euro,
   FileText, Globe, Home, Layers, MapPin, Plus, Send,
-  Sparkles, Star, TrendingUp, Users, Wrench, X,
+  Sparkles, Star, TrendingUp, UserPlus, Users, Wrench, X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import {
+  useDashboardSummary,
+  type DashboardSummary,
+} from "@/lib/api/dashboard";
 import { useRole } from "@/lib/hooks/useRole";
 import type { UserRole } from "@/lib/types";
 import { useAuthStore } from "@/lib/store/authStore";
@@ -462,9 +466,24 @@ interface KpiValue { value: string; sub?: string; isUrgent: boolean; trend?: "up
 function computeKpiValues(
   role: UserRole | null,
   d: UnifiedData,
+  summary: DashboardSummary | null = null,
 ): Record<string, KpiValue> {
   const kpiLoyer   = d.locataire?.loyer ? Number(d.locataire.loyer) : d.bien?.loyer ? Number(d.bien.loyer) : 0;
   const kpiEcheance = (d.paiementMois as { date_echeance?: string | null } | null)?.date_echeance ?? d.locataire?.date_sortie ?? null;
+
+  // Sprint 9 Lot D — agrégat backend prioritaire pour le KPI loyers managers
+  // (source = loyer_transactions, §B.13). Quand summary est dispo on
+  // remplace la somme paiements legacy pour cohérence avec le graph 6 mois
+  // et la donut "% reçu".
+  const loyersMoisRecu  = summary?.loyers_mois_recu ?? d.loyersMois;
+  const loyersMoisAttendu = summary?.loyers_mois_attendu ?? (d.loyersMois + d.loyersAttente);
+  const biensCount      = summary?.biens_count ?? d.biens.length;
+  // Sub honnête (§B.10/§B.11) : "X / Y CHF reçus" plutôt qu'un placeholder.
+  const loyersSub       = summary
+    ? (loyersMoisAttendu > 0
+        ? `${fmtCHF(loyersMoisRecu)} sur ${fmtCHF(loyersMoisAttendu)} attendus`
+        : "Aucun loyer attendu ce mois")
+    : "Loyers encaissés";
 
   // Portail mock fallback
   const PORT_MOCK: PortailData = {
@@ -483,9 +502,9 @@ function computeKpiValues(
 
   return {
     // Manager / agence
-    biens_actifs:          { value: String(d.biens.length),      sub: "Biens enregistrés",              isUrgent: false, trend: "neutral" },
-    biens_geres:           { value: String(d.biens.length),      sub: "Dans votre portefeuille",         isUrgent: false, trend: "neutral" },
-    loyers_mois:           { value: fmtCHF(d.loyersMois),        sub: "Loyers encaissés",               isUrgent: false, trend: d.loyersMois > 0 ? "up" : "neutral" },
+    biens_actifs:          { value: String(biensCount),          sub: "Biens enregistrés",              isUrgent: false, trend: "neutral" },
+    biens_geres:           { value: String(biensCount),          sub: "Dans votre portefeuille",         isUrgent: false, trend: "neutral" },
+    loyers_mois:           { value: loyersMoisAttendu === 0 ? "—" : fmtCHF(loyersMoisRecu), sub: loyersSub, isUrgent: false, trend: loyersMoisRecu > 0 ? "up" : "neutral" },
     impayes:               { value: fmtCHF(d.loyersAttente),     sub: "À recevoir",                     isUrgent: d.loyersAttente > 0, trend: d.loyersAttente > 0 ? "down" : "neutral" },
     interventions_actives: { value: String(d.interOuvertes),     sub: "En cours",                       isUrgent: false, trend: "neutral" },
     agents_actifs:         { value: "3",                         sub: "Agents dans l'équipe",            isUrgent: false, trend: "neutral" },
@@ -534,7 +553,7 @@ const DOCS_MOCK = [
 
 // ── Section components ────────────────────────────────────────────────────────
 
-interface SectionProps { data: UnifiedData }
+interface SectionProps { data: UnifiedData; summary?: DashboardSummary | null }
 
 function SectionActionsSphere({ data }: SectionProps) {
   const actions = data.briefingActions;
@@ -562,18 +581,46 @@ function SectionActionsSphere({ data }: SectionProps) {
   );
 }
 
-function SectionBiensRecent({ data }: SectionProps) {
-  const biens = data.biens;
+function SectionBiensRecent({ data, summary }: SectionProps) {
+  // Sprint 9 Lot D — agrégat backend (summary.biens_apercu) en priorité.
+  // Le summary expose un `titre` distinct (jamais "Rue X" × 3 sans contexte),
+  // l'adresse complète, le statut et le loyer en une seule requête.
+  // Fallback : ancien path `data.biens` si summary pas (encore) chargé.
+  type BienRow = {
+    id: string;
+    titre: string;
+    adresse: string;
+    statut: string;
+    loyer: number | null;
+  };
+
+  const rows: BienRow[] = summary
+    ? summary.biens_apercu
+    : data.biens.slice(0, 5).map((b) => {
+        const titre = (b as { titre?: string | null }).titre
+          ?? (b as { type?: string }).type
+          ?? "Bien";
+        const adresse = `${(b as { adresse?: string }).adresse ?? ""}, ${(b as { ville?: string }).ville ?? ""}`;
+        const loyer = (b as { loyer?: number | null }).loyer ?? null;
+        return {
+          id: b.id,
+          titre,
+          adresse,
+          statut: b.statut,
+          loyer: loyer !== null ? Number(loyer) : null,
+        };
+      });
+
   return (
     <div style={{ marginBottom: "2rem" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
         <DSectionTitle style={{ marginBottom: 0 }}>Mes biens</DSectionTitle>
-        <Link href="/app/biens" style={{ fontSize: 12, color: DC.orange, textDecoration: "none", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+        <Link href="/app/biens" style={{ fontSize: 12, color: "var(--althy-prussian)", textDecoration: "none", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
           Voir tout <ArrowRight size={12} />
         </Link>
       </div>
-      {biens.length === 0 ? (
-        <DEmptyState icon={Building2} title="Aucun bien enregistré" subtitle="Commencez par ajouter votre premier bien." ctaLabel="Ajouter un bien" ctaHref="/app/biens/nouveau" />
+      {rows.length === 0 ? (
+        <DEmptyState icon={Building2} title="Aucun bien — Ajoutez votre premier bien" subtitle="Commencez par enregistrer votre premier bien pour activer le suivi des loyers et la gestion locative." ctaLabel="Ajouter un bien" ctaHref="/app/biens/nouveau" />
       ) : (
         <DCard style={{ padding: 0, overflow: "hidden" }}>
           <div style={{ overflowX: "auto" }}>
@@ -586,12 +633,12 @@ function SectionBiensRecent({ data }: SectionProps) {
                 </tr>
               </thead>
               <tbody>
-                {biens.slice(0, 5).map(b => (
+                {rows.slice(0, 5).map((b) => (
                   <tr key={b.id} style={{ borderBottom: `1px solid ${DC.border}` }}>
-                    <td style={{ padding: "10px 12px", fontWeight: 600, color: DC.text }}>{(b as { type?: string }).type ?? "Bien"}</td>
-                    <td style={{ padding: "10px 12px", color: DC.muted }}>{(b as { adresse?: string }).adresse}, {(b as { ville?: string }).ville}</td>
+                    <td style={{ padding: "10px 12px", fontWeight: 600, color: DC.text }}>{b.titre}</td>
+                    <td style={{ padding: "10px 12px", color: DC.muted }}>{b.adresse}</td>
                     <td style={{ padding: "10px 12px" }}><StatusBadge statut={b.statut} /></td>
-                    <td style={{ padding: "10px 12px", color: DC.text, fontWeight: 600 }}>{(b as { loyer?: number }).loyer ? fmtCHF(Number((b as { loyer?: number }).loyer)) : "—"}</td>
+                    <td style={{ padding: "10px 12px", color: DC.text, fontWeight: 600 }}>{b.loyer !== null ? fmtCHF(b.loyer) : "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1023,7 +1070,7 @@ type SectionRendererFn = (props: SectionProps) => React.ReactNode;
 
 const SECTION_REGISTRY: Record<string, SectionRendererFn> = {
   actions_sphere:     (p) => <SectionActionsSphere {...p} />,
-  biens_recent:       (p) => <SectionBiensRecent {...p} />,
+  biens_recent:       (p) => <SectionBiensRecent data={p.data} summary={p.summary} />,
   loyers_status:      (p) => <SectionLoyersStatus {...p} />,
   interventions_actives: (p) => <SectionInterventionsActives {...p} />,
   mon_bail:           (p) => <SectionMonBail {...p} />,
@@ -1100,7 +1147,7 @@ function HKpiCard({ icon: Icon, iconColor, iconBg, value, label, sub, isUrgent }
 
 // ── H-care Bleu de Prusse highlight card ─────────────────────────────────────
 
-function HHighlightCard({ value, label }: { value: string; label: string }) {
+function HHighlightCard({ value, label, sub }: { value: string; label: string; sub?: string }) {
   return (
     <Link href="/app/sphere" style={{
       background: "linear-gradient(145deg, var(--althy-prussian), var(--althy-signature, #1A4975))",
@@ -1123,6 +1170,9 @@ function HHighlightCard({ value, label }: { value: string; label: string }) {
         <div style={{ fontSize: 40, fontWeight: 600, fontFamily: "var(--font-serif)", lineHeight: 1 }}>
           {value}
         </div>
+        {sub && (
+          <div style={{ fontSize: 12, opacity: 0.8, marginTop: 6 }}>{sub}</div>
+        )}
       </div>
 
       {/* Sparkline */}
@@ -1142,45 +1192,83 @@ function HHighlightCard({ value, label }: { value: string; label: string }) {
 
 // ── H-care Bar chart ──────────────────────────────────────────────────────────
 
-function HBarChart({ paiements }: { paiements: Paiement[] }) {
+function HBarChart({
+  historique,
+  paiements,
+}: {
+  historique?: DashboardSummary["historique_6_mois"];
+  paiements: Paiement[];
+}) {
+  // Génère 6 mois (rangs i=0..5, du plus ancien au plus récent).
   const months = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(); d.setMonth(d.getMonth() - 5 + i);
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - 5 + i);
     return d.toISOString().slice(0, 7);
   });
-  const MOCK_BASE = [1800, 2200, 1950, 2400, 2100, 2600];
-  const values = months.map((m, i) => {
-    const sum = paiements.filter(p => p.mois === m && p.statut === "recu").reduce((s, p) => s + Number(p.montant), 0);
-    return sum || MOCK_BASE[i];
+
+  // Source de vérité (Sprint 9 Lot D) : agrégat backend. Fallback historique
+  // local (paiements legacy) si l'API n'a pas (encore) répondu.
+  const values: number[] = months.map((m) => {
+    if (historique) {
+      return historique.find((h) => h.mois === m)?.recu ?? 0;
+    }
+    return paiements
+      .filter((p) => p.mois === m && p.statut === "recu")
+      .reduce((s, p) => s + Number(p.montant), 0);
   });
+
   const currentMois = new Date().toISOString().slice(0, 7);
-  const maxVal = Math.max(...values, 1);
+  const totalRecu   = values.reduce((s, v) => s + v, 0);
+  const isEmpty     = totalRecu === 0;
+  const maxVal      = Math.max(...values, 1);
 
   return (
     <div style={{ background: "#fff", borderRadius: 24, border: "1px solid var(--border-subtle)", boxShadow: H_SHADOW, padding: 24, flex: 1 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--charcoal)", marginBottom: 20 }}>Loyers encaissés — 6 mois</div>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 96 }}>
-        {months.map((m, i) => {
-          const h   = Math.max((values[i] / maxVal) * 80, 8);
-          const isCur  = m === currentMois;
-          const isLast = i === months.length - 1;
-          const lbl = new Date(m + "-01").toLocaleDateString("fr-CH", { month: "short" });
-          return (
-            <div key={m} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-              <div style={{
-                width: "100%", maxWidth: 32, height: h,
-                borderRadius: "12px 12px 4px 4px",
-                background: isLast
-                  ? "linear-gradient(to top, var(--althy-prussian), var(--althy-gold))"
-                  : "var(--althy-prussian-bg)",
-                transition: "height 0.4s ease",
-              }} />
-              <span style={{ fontSize: 10, color: isCur || isLast ? "var(--terracotta-primary)" : "var(--text-tertiary)", fontWeight: isCur || isLast ? 600 : 400, whiteSpace: "nowrap" }}>
-                {lbl}
-              </span>
-            </div>
-          );
-        })}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--charcoal)" }}>
+          Loyers encaissés — 6 mois
+        </div>
+        {!isEmpty && (
+          <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
+            Total : {fmtCHF(totalRecu)}
+          </div>
+        )}
       </div>
+      {isEmpty ? (
+        // §B.10/§B.11 : pas de barres "fake" — empty state honnête.
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 96, gap: 6, color: "var(--text-tertiary)" }}>
+          <TrendingUp size={20} strokeWidth={1.5} />
+          <span style={{ fontSize: 12 }}>Aucun loyer encaissé sur les 6 derniers mois</span>
+        </div>
+      ) : (
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 96 }}>
+          {months.map((m, i) => {
+            const h      = Math.max((values[i] / maxVal) * 80, values[i] > 0 ? 8 : 2);
+            const isCur  = m === currentMois;
+            const isLast = i === months.length - 1;
+            const lbl    = new Date(m + "-01").toLocaleDateString("fr-CH", { month: "short" });
+            const isZero = values[i] === 0;
+            return (
+              <div key={m} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                <div style={{
+                  width: "100%", maxWidth: 32, height: h,
+                  borderRadius: "12px 12px 4px 4px",
+                  background: isZero
+                    ? "var(--althy-border)"
+                    : isLast
+                      ? "linear-gradient(to top, var(--althy-prussian), var(--althy-gold))"
+                      : "var(--althy-prussian-bg)",
+                  transition: "height 0.4s ease",
+                }} />
+                <span style={{ fontSize: 10, color: isCur || isLast ? "var(--althy-prussian)" : "var(--text-tertiary)", fontWeight: isCur || isLast ? 600 : 400, whiteSpace: "nowrap" }}>
+                  {lbl}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -1188,30 +1276,48 @@ function HBarChart({ paiements }: { paiements: Paiement[] }) {
 // ── H-care Donut ──────────────────────────────────────────────────────────────
 
 function HDonut({ recu, total }: { recu: number; total: number }) {
-  const pct = total > 0 ? Math.round((recu / total) * 100) : 0;
-  const R = 34; const C = 2 * Math.PI * R;
-  const dash = (pct / 100) * C;
+  // §B.10/§B.11 : si aucun loyer attendu, pas de "100%" mensonger.
+  const isEmpty = total <= 0;
+  const pct  = isEmpty ? 0 : Math.round((recu / total) * 100);
+  const R    = 34;
+  const CIRC = 2 * Math.PI * R;
+  const dash = (pct / 100) * CIRC;
 
   return (
     <div style={{ background: "#fff", borderRadius: 24, border: "1px solid var(--border-subtle)", boxShadow: H_SHADOW, padding: 24, display: "flex", alignItems: "center", gap: 20, minWidth: 220 }}>
       <div style={{ position: "relative", width: 88, height: 88, flexShrink: 0 }}>
         <svg width="88" height="88" viewBox="0 0 88 88">
-          <circle cx="44" cy="44" r={R} fill="none" stroke="var(--terracotta-ghost)" strokeWidth={12} />
-          <circle cx="44" cy="44" r={R} fill="none" stroke="var(--terracotta-primary)" strokeWidth={12}
-            strokeLinecap="round"
-            strokeDasharray={`${dash} ${C - dash}`}
-            transform="rotate(-90 44 44)"
-            style={{ transition: "stroke-dasharray 0.6s ease" }}
-          />
+          <circle cx="44" cy="44" r={R} fill="none" stroke="var(--althy-prussian-bg)" strokeWidth={12} />
+          {!isEmpty && (
+            <circle cx="44" cy="44" r={R} fill="none" stroke="var(--althy-prussian)" strokeWidth={12}
+              strokeLinecap="round"
+              strokeDasharray={`${dash} ${CIRC - dash}`}
+              transform="rotate(-90 44 44)"
+              style={{ transition: "stroke-dasharray 0.6s ease" }}
+            />
+          )}
         </svg>
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontSize: 22, fontWeight: 600, color: "var(--charcoal)", lineHeight: 1, fontFamily: "var(--font-serif)" }}>{pct}%</span>
+          <span style={{ fontSize: 22, fontWeight: 600, color: "var(--charcoal)", lineHeight: 1, fontFamily: "var(--font-serif)" }}>
+            {isEmpty ? "—" : `${pct}%`}
+          </span>
           <span style={{ fontSize: 9, fontWeight: 600, color: "var(--text-tertiary)", letterSpacing: "0.08em", textTransform: "uppercase" }}>REÇUS</span>
         </div>
       </div>
       <div>
-        <div style={{ fontSize: 20, fontWeight: 600, color: "var(--charcoal)", lineHeight: 1, fontFamily: "var(--font-serif)" }}>{fmtCHF(recu)}</div>
-        <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>sur {fmtCHF(total)} attendus</div>
+        {isEmpty ? (
+          <>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--charcoal)", lineHeight: 1.2 }}>
+              Aucun loyer attendu
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>ce mois-ci</div>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 20, fontWeight: 600, color: "var(--charcoal)", lineHeight: 1, fontFamily: "var(--font-serif)" }}>{fmtCHF(recu)}</div>
+            <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>sur {fmtCHF(total)} attendus</div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -1256,6 +1362,16 @@ export function UnifiedDashboard() {
   // Always call hooks unconditionally (React rules)
   const data      = useUnifiedData(role);
 
+  // Sprint 9 Lot D — agrégat dashboard managers. Activé pour proprio_solo /
+  // agence / super_admin uniquement (les autres rôles ont leurs propres
+  // sources : portail, locataire confiné, artisan dormant Phase 2).
+  // Doit être appelé inconditionnellement (règle des hooks) — le gating se
+  // fait via `enabled`.
+  const isManagerRole =
+    role === "proprio_solo" || role === "agence" || role === "super_admin";
+  const summaryQ = useDashboardSummary({ enabled: isManagerRole });
+  const summary  = summaryQ.data ?? null;
+
   // Portail proprio has its own dedicated component
   if (role === "portail_proprio") {
     return <DashboardPortail firstName={firstName} />;
@@ -1269,10 +1385,12 @@ export function UnifiedDashboard() {
     return <LocataireRedirect />;
   }
   const config    = DASHBOARD_CONFIGS[role ?? "proprio_solo"];
-  const kpiValues = computeKpiValues(role, data);
-  const isManager = role === "proprio_solo" || role === "agence" || role === "super_admin";
+  const kpiValues = computeKpiValues(role, data, summary);
+  const isManager = isManagerRole;
 
-  const nbBiens   = data.biens.length;
+  // Sprint 9 Lot D — biens_count vient en priorité du backend (agrégat
+  // loyer_transactions / biens cohérent avec le reste du summary).
+  const nbBiens   = summary?.biens_count ?? data.biens.length;
   const moisAnnee = new Date().toLocaleDateString("fr-CH", { month: "long", year: "numeric" });
 
   return (
@@ -1379,11 +1497,22 @@ export function UnifiedDashboard() {
                   />
                 );
               })}
-              {/* Highlight card orange — 3e colonne, managers uniquement */}
+              {/* Highlight card — 3e colonne, managers uniquement */}
               {isManager && (
                 <HHighlightCard
-                  value={kpiValues["loyers_mois"]?.value ?? "—"}
+                  value={
+                    summary && summary.loyers_mois_attendu === 0
+                      ? "—"
+                      : (kpiValues["loyers_mois"]?.value ?? "—")
+                  }
                   label="Loyers récupérés"
+                  sub={
+                    summary
+                      ? (summary.loyers_mois_attendu > 0
+                          ? `${summary.loyers_recu_pct}% du mois attendu`
+                          : "Aucun loyer attendu ce mois")
+                      : undefined
+                  }
                 />
               )}
             </>
@@ -1393,10 +1522,13 @@ export function UnifiedDashboard() {
         {/* Bar chart + donut — managers uniquement */}
         {isManager && !data.isLoading && (
           <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-            <HBarChart paiements={data.paiements} />
+            <HBarChart
+              historique={summary?.historique_6_mois}
+              paiements={data.paiements}
+            />
             <HDonut
-              recu={data.loyersMois}
-              total={data.loyersMois + data.loyersAttente}
+              recu={summary?.loyers_mois_recu ?? data.loyersMois}
+              total={summary?.loyers_mois_attendu ?? (data.loyersMois + data.loyersAttente)}
             />
           </div>
         )}
@@ -1421,7 +1553,7 @@ export function UnifiedDashboard() {
                       textDecoration: "none", transition: "box-shadow 0.15s",
                     }}
                   >
-                    <Icon size={14} style={{ color: "var(--terracotta-primary)" }} />
+                    <Icon size={14} style={{ color: "var(--althy-prussian)" }} />
                     {qa.label}
                   </Link>
                 );
@@ -1434,7 +1566,7 @@ export function UnifiedDashboard() {
         {config.sections.map(section => {
           const render = SECTION_REGISTRY[section.component];
           if (!render) return null;
-          return <div key={section.key}>{render({ data })}</div>;
+          return <div key={section.key}>{render({ data, summary })}</div>;
         })}
       </div>
     </div>
