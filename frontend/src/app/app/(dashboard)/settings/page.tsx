@@ -849,7 +849,6 @@ function TabSecurite() {
   const [pwSaving, setPwSaving] = useState(false);
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
-  const [twofa, setTwofa] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
 
@@ -922,12 +921,10 @@ function TabSecurite() {
       <Card>
         <SectionTitle>Authentification à deux facteurs (2FA)</SectionTitle>
         <FormStack>
-          <Toggle label="Activer la 2FA" hint="TOTP (Google Authenticator) ou SMS" value={twofa} onChange={setTwofa} />
-          {twofa && (
-            <div style={{ padding: "1rem", background: C.amberBg, borderRadius: 12, border: `1px solid ${C.amber}` }}>
-              <p style={{ fontSize: 12, color: C.amber, fontWeight: 600 }}>Configuration 2FA disponible via le portail Supabase Auth. Contactez privacy@althy.ch pour l'activer sur votre compte.</p>
-            </div>
-          )}
+          <DisabledToggle
+            label="Activer la 2FA"
+            hint="Bientôt — Phase 1.1 (TOTP via application authenticator). Le SMS reste réservé à Phase 2 (coût Twilio)."
+          />
         </FormStack>
       </Card>
 
