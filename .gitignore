@@ -65,3 +65,9 @@ prod-dump-*
 
 # Supabase CLI local cache (link state, versions)
 **/supabase/.temp/
+
+# Sunimmo templates — réels documents Sunimmo Riviera avec PII locataires
+# (noms, adresses, courriers de relance, formules officielles de résiliation, etc.).
+# Référentiel pour le travail de Lot 3 Sprint 10 (templates PDF), mais ne JAMAIS
+# committer en repo public ni propager via dépôt partagé. Cf docs/2-ROADMAP.md §2.4.16.
+docs/sunimmo-templates/
