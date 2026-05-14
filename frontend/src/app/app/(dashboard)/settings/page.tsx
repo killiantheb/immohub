@@ -1250,13 +1250,34 @@ function TabIntegrations() {
 // ──────────────────────────────────────────────────────────────────────────────
 const DEFAULT_CATEGORIES = ["Entretien courant", "Réparations", "Charges communes", "Assurances", "Impôts fonciers", "Honoraires de gestion", "Travaux de rénovation", "Frais divers"];
 
+// BUG 4 + BUG 5 Sprint 9 Lot E : §B.2 (CHF) + standard fiscal suisse (01-01).
+// Defaults figés ici en const exportable pour éviter dérive future.
+const COMPTABILITE_DEFAULTS = {
+  fiscal_year_start: "01-01",          // 1er janvier — standard suisse
+  devise: "CHF",                        // §B.2 — pricing unique CHF Phase 1
+  export_format: "pdf",
+  export_auto: false,
+  export_email: "",
+  invoice_logo: true,
+  invoice_conditions: "Paiement à 30 jours",
+} as const;
+
+const FISCAL_YEAR_OPTIONS = [
+  { value: "01-01", label: "1er janvier" },
+  { value: "04-01", label: "1er avril" },
+  { value: "07-01", label: "1er juillet" },
+  { value: "10-01", label: "1er octobre" },
+] as const;
+
+const DEVISE_OPTIONS = [
+  { value: "CHF", label: "CHF (Franc suisse)" },
+  { value: "EUR", label: "EUR (Euro)" },
+] as const;
+
 function TabComptabilite() {
   const { show, Toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [f, setF] = useState({
-    fiscal_year_start: "01-01", devise: "CHF", export_format: "pdf",
-    export_auto: false, export_email: "", invoice_logo: true, invoice_conditions: "Paiement à 30 jours",
-  });
+  const [f, setF] = useState({ ...COMPTABILITE_DEFAULTS });
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
   const [newCategory, setNewCategory] = useState("");
   const set = (k: string, v: unknown) => setF(prev => ({ ...prev, [k]: v }));
@@ -1276,13 +1297,32 @@ function TabComptabilite() {
         <SectionTitle>Exercice fiscal</SectionTitle>
         <FormStack>
           <Row>
-            <SelectField label="Début de l'exercice" value={f.fiscal_year_start} onChange={v => set("fiscal_year_start", v)} options={[
-              { value: "01-01", label: "1er janvier" }, { value: "04-01", label: "1er avril" },
-              { value: "07-01", label: "1er juillet" }, { value: "10-01", label: "1er octobre" },
-            ]} hint="01.01 par défaut (standard suisse)" />
-            <SelectField label="Devise" value={f.devise} onChange={v => set("devise", v)} options={[
-              { value: "CHF", label: "CHF (Franc suisse)" }, { value: "EUR", label: "EUR (Euro)" },
-            ]} />
+            <SelectField
+              label="Début de l'exercice"
+              // Si la valeur courante n'est pas dans les options (corruption
+              // d'état, ancien stockage périmé), on retombe sur le default
+              // suisse 01-01. BUG 5 Sprint 9 Lot E.
+              value={
+                FISCAL_YEAR_OPTIONS.some(o => o.value === f.fiscal_year_start)
+                  ? f.fiscal_year_start
+                  : COMPTABILITE_DEFAULTS.fiscal_year_start
+              }
+              onChange={v => set("fiscal_year_start", v)}
+              options={[...FISCAL_YEAR_OPTIONS]}
+              hint="01.01 par défaut (standard suisse)"
+            />
+            <SelectField
+              label="Devise"
+              // §B.2 + BUG 4 Sprint 9 Lot E : fallback CHF si valeur invalide.
+              value={
+                DEVISE_OPTIONS.some(o => o.value === f.devise)
+                  ? f.devise
+                  : COMPTABILITE_DEFAULTS.devise
+              }
+              onChange={v => set("devise", v)}
+              options={[...DEVISE_OPTIONS]}
+              hint="CHF par défaut (§B.2)"
+            />
           </Row>
         </FormStack>
       </Card>
