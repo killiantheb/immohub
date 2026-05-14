@@ -1357,7 +1357,7 @@ function LocataireRedirect() {
 // ── UnifiedDashboard ──────────────────────────────────────────────────────────
 
 export function UnifiedDashboard() {
-  const { role, label: roleLabel } = useRole();
+  const { role } = useRole();
   const { user }         = useAuthStore();
   const { data: profile } = useUser();
 
@@ -1400,59 +1400,8 @@ export function UnifiedDashboard() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--cream)" }}>
 
-      {/* ── Top bar ── */}
-      <div style={{
-        height: 64, background: "var(--althy-surface)",
-        borderBottom: "1px solid var(--border-subtle)",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 40px", flexShrink: 0,
-      }}>
-        {/* Spacer left — search bar removed (Sprint 9 Lot C) */}
-        <div />
-
-        {/* Right side — bell + avatar */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          {/* Bell */}
-          <button style={{
-            position: "relative", padding: 8,
-            background: "transparent", border: "none", cursor: "pointer",
-            borderRadius: 10,
-          }}>
-            <Bell size={18} strokeWidth={1.5} style={{ color: "var(--text-secondary)" }} />
-            <span style={{
-              position: "absolute", top: 6, right: 6,
-              width: 7, height: 7, borderRadius: "50%",
-              background: "var(--terracotta-primary)",
-              border: "2px solid #fff",
-            }} />
-          </button>
-
-          {/* Séparateur */}
-          <div style={{ width: 1, height: 24, background: "var(--border-subtle)" }} />
-
-          {/* Avatar — cercle gradient */}
-          <button style={{
-            display: "flex", alignItems: "center", gap: 10,
-            background: "transparent", border: "none", cursor: "pointer",
-            padding: "4px 8px 4px 4px", borderRadius: 12,
-          }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: "50%",
-              background: "linear-gradient(135deg, var(--althy-gold), var(--althy-prussian))",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>
-                {firstName ? firstName[0] : "?"}
-              </span>
-            </div>
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--charcoal)" }}>{firstName || "—"}</div>
-              <div style={{ fontSize: 10, color: "var(--text-tertiary)" }}>{roleLabel || ""}</div>
-            </div>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5"><path d="m6 9 6 6 6-6"/></svg>
-          </button>
-        </div>
-      </div>
+      {/* Top bar (search/bell/avatar) déplacée vers DashboardShell — Sprint 9 Lot C.
+          La cloche + le UserMenu vivent désormais dans .althy-desktop-header. */}
 
       <div style={{ padding: "2rem 3rem", maxWidth: 1280 }}>
         {/* Greeting — §B.11 message honnete adapte au nombre de biens reel. */}

@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Bell, Menu, X } from "lucide-react";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { AlthyLogo } from "@/components/AlthyLogo";
+import { UserMenu } from "@/components/header/UserMenu";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -40,10 +41,55 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         onMobileClose={() => setMobileOpen(false)}
       />
 
-      {/* ── Main ───────────────────────────────────────────────── */}
-      <main className="althy-main">
-        {children}
-      </main>
+      {/* ── Right column : global header + main content ────────── */}
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+        {/* Global desktop header — bell + UserMenu dropdown (Sprint 9 Lot C) */}
+        <header className="althy-desktop-header">
+          <div style={{ flex: 1 }} />
+          <button
+            type="button"
+            aria-label="Notifications"
+            style={{
+              position: "relative",
+              padding: 8,
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              borderRadius: 10,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Bell size={18} strokeWidth={1.5} style={{ color: "var(--text-secondary, var(--althy-text-2))" }} />
+            <span
+              style={{
+                position: "absolute",
+                top: 6,
+                right: 6,
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: "var(--althy-prussian)",
+                border: "2px solid #fff",
+              }}
+            />
+          </button>
+          <div
+            style={{
+              width: 1,
+              height: 24,
+              background: "var(--border-subtle, var(--althy-border))",
+              margin: "0 8px",
+            }}
+          />
+          <UserMenu />
+        </header>
+
+        <main className="althy-main">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

@@ -582,6 +582,19 @@
 }
 .bien-sidebar-trigger:hover { background: var(--althy-surface-2); }
 
+/* ── Desktop header (Sprint 9 Lot C) ────────────────────────────────────── */
+/* Top bar global posée par DashboardShell : bell + UserMenu dropdown.
+   Masquée sur mobile (la mobile topbar prend le relai). */
+.althy-desktop-header {
+  display: flex;
+  align-items: center;
+  height: 64px;
+  padding: 0 40px;
+  background: var(--althy-surface);
+  border-bottom: 1px solid var(--althy-border);
+  flex-shrink: 0;
+}
+
 /* ── Main content ───────────────────────────────────────────────────────── */
 .althy-main {
   flex: 1;
@@ -628,6 +641,9 @@
 
 /* ── Mobile (≤ 768px) ───────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+
+  /* Hide desktop global header (mobile topbar takes over) */
+  .althy-desktop-header { display: none; }
 
   /* Show mobile top bar */
   .althy-topbar { display: flex; }
