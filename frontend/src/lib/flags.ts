@@ -32,6 +32,20 @@ export const FLAGS = {
   // Réactivation Phase 2 : NEXT_PUBLIC_FLAG_OAUTH_COMMUNICATION=true côté Vercel.
   OAUTH_COMMUNICATION:   process.env.NEXT_PUBLIC_FLAG_OAUTH_COMMUNICATION === "true",
 
+  // ── Phase 2 — Marketplace publique (favoris locataire) ───────────────────
+  // Doctrine §B.15 : pas de marketplace publique en Phase 1.0 (Sunimmo).
+  // Backend symétrique : BACKEND_FLAG_FAVORITES=false par défaut → /api/v1/
+  // favorites/* retourne 503. Tant que ce flag est off côté frontend, on
+  // évite l'appel pour ne pas polluer la console Sunimmo de 503.
+  // Sprint 9 Lot E BUG 3.
+  FAVORITES:             process.env.NEXT_PUBLIC_FLAG_FAVORITES === "true",
+
+  // ── Phase 2 — Scoring IA candidature ──────────────────────────────────────
+  // Doctrine §B.15 : "Scoring IA candidature" listé dans le périmètre interdit
+  // Phase 1.0. Backend : BACKEND_FLAG_SCORING=false par défaut → 503.
+  // Sprint 9 Lot E BUG 3.
+  SCORING:               process.env.NEXT_PUBLIC_FLAG_SCORING === "true",
+
   // ── Hors phase — désactivé en dur ─────────────────────────────────────────
   ROLE_EXPERT:           false,
   ROLE_HUNTER:           false,

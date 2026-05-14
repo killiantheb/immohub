@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import type { BienImage, BienListItem, BienStatut } from "@/lib/types";
 import { AlthyMap, type AlthyMapMarker } from "@/components/map/AlthyMap";
 import { C } from "@/lib/design-tokens";
+import { FLAGS } from "@/lib/flags";
 
 // ── Coordonnées par ville (fallback) ──────────────────────────────────────────
 
@@ -174,7 +175,8 @@ function BienCard({
             {st.label}
           </span>
 
-          {/* Favorite button */}
+          {/* Favorite button — masqué tant que FLAGS.FAVORITES off (BUG 3) */}
+          {FLAGS.FAVORITES && (
           <button
             onClick={e => onToggleFavorite(e, bien)}
             title={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
@@ -196,6 +198,7 @@ function BienCard({
               color={isFav ? "var(--terracotta-primary)" : "var(--text-tertiary)"}
             />
           </button>
+          )}
         </div>
 
         {/* Content */}
@@ -233,10 +236,19 @@ const FILTRES: { key: BienStatut | ""; label: string }[] = [
   { key: "en_travaux", label: "Rénovation"  },
 ];
 
-const TABS = [
-  { key: "tous",    label: "Tous mes biens" },
-  { key: "favoris", label: "Favoris"        },
-];
+// Favoris = feature Phase 2 (marketplace). Tant que FLAGS.FAVORITES est
+// off, on masque l'onglet pour ne pas exposer une feature non fonctionnelle
+// (cf BUG 3 Sprint 9 Lot E + doctrine §B.15).
+const TABS = (
+  FLAGS.FAVORITES
+    ? [
+        { key: "tous",    label: "Tous mes biens" },
+        { key: "favoris", label: "Favoris"        },
+      ]
+    : [
+        { key: "tous",    label: "Tous mes biens" },
+      ]
+);
 
 function BiensPageInner() {
   const searchParams = useSearchParams();
@@ -255,6 +267,13 @@ function BiensPageInner() {
   const [favLoading,      setFavLoading]      = useState(false);
 
   useEffect(() => {
+    // Favoris = feature Phase 2 (marketplace). Si BACKEND_FLAG_FAVORITES
+    // est off, l'endpoint /favorites retourne 503 — on évite l'appel.
+    // Sprint 9 Lot E BUG 3 : ne pas polluer la console Sunimmo de 503.
+    if (!FLAGS.FAVORITES) {
+      setFavLoading(false);
+      return;
+    }
     setFavLoading(true);
     api.get<FavoriteItem[] | { items?: FavoriteItem[]; data?: FavoriteItem[] }>("/favorites")
       .then(r => {
@@ -300,6 +319,9 @@ function BiensPageInner() {
   async function toggleFavorite(e: React.MouseEvent, bien: DisplayBien) {
     e.preventDefault();
     e.stopPropagation();
+    // BUG 3 Sprint 9 Lot E : flag off → on no-op. Le bouton n'est en
+    // principe pas rendu (cf BienCard), mais ceinture + bretelles.
+    if (!FLAGS.FAVORITES) return;
     const isFav = favoriteBienIds.has(bien.id);
 
     if (isFav) {

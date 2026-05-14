@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api";
+import { FLAGS } from "../flags";
 import type {
   AuditLogEntry,
   Bien,
@@ -770,7 +771,11 @@ export function useScoring(locataireId: string | null | undefined) {
       );
       return data;
     },
-    enabled: Boolean(locataireId),
+    // BUG 3 Sprint 9 Lot E + doctrine §B.15 : scoring IA candidature gelé
+    // Phase 2. Backend renvoie 503 si BACKEND_FLAG_SCORING=false. Tant que
+    // FLAGS.SCORING (NEXT_PUBLIC_FLAG_SCORING) est off, on n'émet pas la
+    // requête — évite 503 dans la console Sunimmo.
+    enabled: Boolean(locataireId) && FLAGS.SCORING,
     staleTime: 60_000,
     retry: false,
   });
