@@ -2,11 +2,21 @@
 
 `BankAccount` permet à un utilisateur d'attacher plusieurs IBAN selon l'usage
 métier (régie, cautions, charges, travaux, général). Source de vérité unique
-pour les coordonnées bancaires côté Althy.
+pour les coordonnées bancaires côté Althy (Sprint 9 Lot A, 2026-05-14).
 
-`User.iban` reste pour rétrocompatibilité (déprécié — sera supprimé Phase 2).
-La migration 0035 seede 1 ligne `bank_accounts` (usage='general',
-est_principal=true) pour chaque user qui a un iban non vide.
+Cascade de résolution (cf `app.services.iban_resolver.get_effective_iban`) :
+    Bien.iban_compte_id  ──>  bank_accounts.id (override par bien)
+                          \
+                           ─>  bank_accounts WHERE user_id = bien.owner_id
+                                AND est_principal = true (défaut bailleur)
+                          \
+                           ─>  None (aucun IBAN → fallback Althy_QR_IBAN)
+
+`User.iban_legacy` / `bic_legacy` / `bank_account_holder_legacy` restent
+pour rétrocompatibilité (suppression Phase 2). Aucune écriture ne doit
+plus toucher ces colonnes. Les migrations 0035 et 0050 ont seedé
+`bank_accounts` (usage='general', est_principal=true) pour chaque user
+qui avait un IBAN legacy non vide.
 """
 
 from __future__ import annotations
@@ -27,8 +37,8 @@ class BankAccount(BaseModel):
     """Compte bancaire multi-usage attaché à un utilisateur.
 
     Note durcissement Phase 2 : l'iban est stocké en clair pour P1
-    (cohérent état actuel `User.iban`). Phase 2 — chiffrement at-rest via
-    Postgres pgcrypto ou solution KMS dédiée.
+    (cohérent état actuel `User.iban_legacy`). Phase 2 — chiffrement at-rest
+    via Postgres pgcrypto ou solution KMS dédiée.
     """
 
     __tablename__ = "bank_accounts"

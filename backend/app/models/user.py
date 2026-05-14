@@ -38,16 +38,26 @@ class User(BaseModel):
     is_verified: Mapped[bool] = mapped_column(nullable=False, default=False, server_default="false")
     supabase_uid: Mapped[str | None] = mapped_column(String(36), unique=True)
 
-    # ── Coordonnées bancaires ─────────────────────────────────────────────────
-    # ⚠️ DÉPRÉCIÉ depuis PR-A11.A.6.a (migration 0035) : la nouvelle source
-    # de vérité est `bank_accounts` (multi-comptes par usage). Ces 3 colonnes
-    # restent pour rétrocompatibilité. Migration 0035 a seedé un BankAccount
-    # `usage='general'`, `est_principal=true` pour chaque user qui avait un
-    # iban non vide. Suppression prévue Phase 2 quand tous les call sites
-    # auront migré vers `user.bank_accounts`.
-    iban: Mapped[str | None] = mapped_column(String(34))
-    bic: Mapped[str | None] = mapped_column(String(11))
-    bank_account_holder: Mapped[str | None] = mapped_column(String(200))
+    # ── Coordonnées bancaires (DEPRECATED — colonnes legacy) ─────────────────
+    # ⚠️ DEPRECATED Sprint 9 Lot A (migration 0050, 2026-05-14) :
+    # Colonnes physiques DB renommées `iban_legacy` / `bic_legacy` /
+    # `bank_account_holder_legacy` pour rendre la dépréciation visible côté
+    # DBA (`psql \d+ users` + COMMENT ON COLUMN). L'attribut Python conserve
+    # le nom historique (`iban` / `bic` / `bank_account_holder`) pour ne pas
+    # casser la rétrocompatibilité côté schemas (UserProfileResponse,
+    # UpdateProfileRequest) ni les API publiques `/auth/me` côté Phase 1.
+    #
+    # Source de vérité unique : table `bank_accounts` (multi-comptes par
+    # usage). Lecture canonique via `iban_resolver.get_effective_iban`
+    # (cascade : Bien.iban_compte_id → bank_account principal → None).
+    # Suppression prévue Phase 2 quand tous les call sites historiques
+    # (UpdateProfileRequest, schemas auth, documents.py templates) auront
+    # migré vers la table `bank_accounts`.
+    iban: Mapped[str | None] = mapped_column("iban_legacy", String(34))
+    bic: Mapped[str | None] = mapped_column("bic_legacy", String(11))
+    bank_account_holder: Mapped[str | None] = mapped_column(
+        "bank_account_holder_legacy", String(200)
+    )
 
     # ── Profil personnel ──────────────────────────────────────────────────────
     adresse: Mapped[str | None] = mapped_column(String(300))
