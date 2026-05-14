@@ -1407,18 +1407,8 @@ export function UnifiedDashboard() {
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 40px", flexShrink: 0,
       }}>
-        {/* Search — discret */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8,
-          background: "var(--cream)", borderRadius: 12,
-          padding: "9px 16px", border: "1px solid var(--border-subtle)",
-          width: 280, cursor: "text",
-        }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-          <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Rechercher...</span>
-        </div>
+        {/* Spacer left — search bar removed (Sprint 9 Lot C) */}
+        <div />
 
         {/* Right side — bell + avatar */}
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
