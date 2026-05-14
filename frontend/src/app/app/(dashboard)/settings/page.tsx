@@ -692,16 +692,44 @@ function TabPaiement() {
 // ──────────────────────────────────────────────────────────────────────────────
 // TAB 4 — NOTIFICATIONS
 // ──────────────────────────────────────────────────────────────────────────────
+// Toggle désactivé (Phase 1.0 / ComingSoon). Affiche un état grisé + libellé.
+function DisabledToggle({ label, hint }: { label: string; hint?: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, opacity: 0.6 }}>
+      <div>
+        <p style={{ fontSize: 13, color: C.text2, fontWeight: 500 }}>{label}</p>
+        {hint && <p style={{ fontSize: 11, color: C.text3, marginTop: 2 }}>{hint}</p>}
+      </div>
+      <div
+        aria-disabled="true"
+        style={{
+          width: 44, height: 24, borderRadius: 12, background: C.border,
+          position: "relative", flexShrink: 0, cursor: "not-allowed",
+        }}
+      >
+        <span style={{ position: "absolute", top: 3, left: 3, width: 18, height: 18, borderRadius: "50%", background: "#fff" }} />
+      </div>
+    </div>
+  );
+}
+
 function TabNotifications() {
-  const { isManager, isAgence, isMarketplace, role } = useRole();
+  const { isManager, isAgence, isMarketplace } = useRole();
   const { show, Toast } = useToast();
   const [saving, setSaving] = useState(false);
 
-  const [channels, setChannels] = useState({ push: true, email: true, sms: false, whatsapp: false });
+  // Phase 1.0 (doctrine §B.15) :
+  //   - Canaux SMS + WhatsApp gelés (coût Twilio + WhatsApp Business API
+  //     reportés Phase 2). Push + Email seulement.
+  //   - Événements marketplace (nouveau_candidat, candidat_retenu, devis_recu)
+  //     masqués : Phase 2 ouverture publique.
+  const [channels, setChannels] = useState({ push: true, email: true });
   const [events, setEvents] = useState<Record<string, boolean>>({
     loyer_recu: true, loyer_retard: true, bail_expirant: true,
-    nouveau_candidat: true, candidat_retenu: true, intervention_demandee: true,
-    devis_recu: true, document_genere: false, briefing_ia: false, message_agence: true,
+    intervention_demandee: true, document_genere: false, briefing_ia: false,
+    message_agence: true,
+    // Marketplace / agence — gardés en state pour cohérence backend mais
+    // pas exposés Phase 1.0 :
     nouvelle_mission: true, mission_annulee: true, paiement_recu: true,
     message_client: true, rappel_24h: true, rappel_2h: true,
     nouveau_mandat: true, offre_recue: true, dossier_soumis: true, message_proprio: true,
@@ -710,7 +738,7 @@ function TabNotifications() {
   const [loyerRetardDelai, setLoyerRetardDelai] = useState("7j");
   const [bailExpirantDelai, setBailExpirantDelai] = useState("30j");
 
-  const toggleChannel = (k: string) => setChannels(prev => ({ ...prev, [k]: !prev[k as keyof typeof prev] }));
+  const toggleChannel = (k: keyof typeof channels) => setChannels(prev => ({ ...prev, [k]: !prev[k] }));
   const toggleEvent = (k: string) => setEvents(prev => ({ ...prev, [k]: !prev[k] }));
 
   async function save() {
@@ -729,8 +757,8 @@ function TabNotifications() {
         <FormStack>
           <Toggle label="Push mobile" hint="Notifications sur l'application mobile" value={channels.push} onChange={() => toggleChannel("push")} />
           <Toggle label="Email" hint="Récapitulatifs et alertes par email" value={channels.email} onChange={() => toggleChannel("email")} />
-          <Toggle label="SMS" value={channels.sms} onChange={() => toggleChannel("sms")} />
-          <Toggle label="WhatsApp" hint="Si votre numéro WhatsApp est configuré" value={channels.whatsapp} onChange={() => toggleChannel("whatsapp")} />
+          <DisabledToggle label="SMS" hint="Bientôt — Phase 2 (Twilio)" />
+          <DisabledToggle label="WhatsApp" hint="Bientôt — Phase 2 (WhatsApp Business API). Phase 1.0 : liens wa.me générés à la demande depuis votre numéro de téléphone." />
         </FormStack>
       </Card>
 
@@ -738,9 +766,9 @@ function TabNotifications() {
         <Card>
           <SectionTitle>Événements — Propriétaire</SectionTitle>
           <FormStack>
-            <Toggle label="Loyer reçu" value={events.loyer_recu} onChange={() => toggleEvent("loyer_recu")} />
+            <Toggle label="Loyer reçu" hint="Notification dès qu'un loyer est encaissé sur votre IBAN principal." value={events.loyer_recu} onChange={() => toggleEvent("loyer_recu")} />
             <div>
-              <Toggle label="Loyer en retard" value={events.loyer_retard} onChange={() => toggleEvent("loyer_retard")} />
+              <Toggle label="Loyer en retard" hint="Alerte envoyée si le loyer n'est pas reçu après le délai choisi." value={events.loyer_retard} onChange={() => toggleEvent("loyer_retard")} />
               {events.loyer_retard && (
                 <div style={{ marginTop: 8, paddingLeft: 16 }}>
                   <FieldLabel>Délai d'alerte</FieldLabel>
@@ -751,7 +779,7 @@ function TabNotifications() {
               )}
             </div>
             <div>
-              <Toggle label="Bail expirant" value={events.bail_expirant} onChange={() => toggleEvent("bail_expirant")} />
+              <Toggle label="Bail expirant" hint="Alerte avant la fin du bail pour anticiper le renouvellement ou la résiliation." value={events.bail_expirant} onChange={() => toggleEvent("bail_expirant")} />
               {events.bail_expirant && (
                 <div style={{ marginTop: 8, paddingLeft: 16 }}>
                   <FieldLabel>Délai d'alerte</FieldLabel>
@@ -761,13 +789,10 @@ function TabNotifications() {
                 </div>
               )}
             </div>
-            <Toggle label="Nouveau candidat locataire" value={events.nouveau_candidat} onChange={() => toggleEvent("nouveau_candidat")} />
-            <Toggle label="Candidat retenu (→ CHF 45 prélevé)" value={events.candidat_retenu} onChange={() => toggleEvent("candidat_retenu")} />
-            <Toggle label="Intervention demandée" value={events.intervention_demandee} onChange={() => toggleEvent("intervention_demandee")} />
-            <Toggle label="Devis reçu" value={events.devis_recu} onChange={() => toggleEvent("devis_recu")} />
-            <Toggle label="Document généré" value={events.document_genere} onChange={() => toggleEvent("document_genere")} />
+            <Toggle label="Intervention demandée" hint="Notification quand un locataire signale un problème (panne, fuite, etc.)." value={events.intervention_demandee} onChange={() => toggleEvent("intervention_demandee")} />
+            <Toggle label="Document généré" hint="Notification quand un document est produit automatiquement (quittance, bail, EDL, etc.)." value={events.document_genere} onChange={() => toggleEvent("document_genere")} />
             <div>
-              <Toggle label="Briefing IA quotidien" hint="Résumé de la journée par Althy" value={events.briefing_ia} onChange={() => toggleEvent("briefing_ia")} />
+              <Toggle label="Briefing IA quotidien" hint="Résumé de la journée par votre Sphère (loyers reçus, échéances, alertes)." value={events.briefing_ia} onChange={() => toggleEvent("briefing_ia")} />
               {events.briefing_ia && (
                 <div style={{ marginTop: 8, paddingLeft: 16 }}>
                   <FieldLabel>Heure</FieldLabel>
