@@ -625,151 +625,66 @@ function TabZone() {
 // TAB 3 — PAIEMENT & ABONNEMENT
 // ──────────────────────────────────────────────────────────────────────────────
 function TabPaiement() {
-  const { isMarketplace, isManager, isAgence, role } = useRole();
-  const { show, Toast } = useToast();
-  const [saving, setSaving] = useState(false);
+  const { isMarketplace, isManager } = useRole();
+  const { Toast } = useToast();
 
-  const { data: sub } = useQuery({ queryKey: ["subscription"], queryFn: async () => { const { data } = await api.get("/abonnement/current"); return data; }, staleTime: 60_000, retry: false });
-  const { data: invoices } = useQuery({ queryKey: ["invoices"], queryFn: async () => { const { data } = await api.get("/abonnement/invoices"); return data; }, staleTime: 60_000, retry: false });
-
-  const [f, setF] = useState({
-    iban: "", bic: "", account_holder: "", bank_name: "",
-    payout_frequency: "mission", min_payout: "50", billing_mode: "auto",
-    uid_tva: "",
-    // Proprio/Agence
-    iban_loyers: "", holder_loyers: "", bank_loyers: "", bic_loyers: "",
-    virement_groupement: "bien", libelle_format: "{nom_locataire} — {adresse}",
-  });
-  const set = (k: string, v: string) => setF(prev => ({ ...prev, [k]: v }));
-
-  async function save() {
-    setSaving(true);
-    try {
-      await api.patch("/auth/me", {
-        iban: f.iban || undefined, bic: f.bic || undefined,
-        account_holder: f.account_holder || undefined,
-        bank_name: f.bank_name || undefined,
-        payout_frequency: f.payout_frequency,
-        min_payout: Number(f.min_payout),
-        billing_mode: f.billing_mode,
-        uid_tva: f.uid_tva || undefined,
-        iban_loyers: f.iban_loyers || undefined,
-        holder_loyers: f.holder_loyers || undefined,
-        bank_loyers: f.bank_loyers || undefined,
-        bic_loyers: f.bic_loyers || undefined,
-        virement_groupement: f.virement_groupement,
-        libelle_format: f.libelle_format,
-      });
-      show("Paiement sauvegardé");
-    } catch { /* noop */ } finally { setSaving(false); }
-  }
-
-  const planColor: Record<string, string> = { standard: C.blue, pro: C.orange, agence: "var(--althy-purple)", free: C.green };
+  // Phase 1.0 (doctrine §B.15) :
+  //   • Pas d'abonnement actif pour proprio_solo (Sunimmo migration).
+  //   • IBAN de réception + regroupement virements + libellé virements
+  //     déplacés vers /app/settings tab "Bancaire" (source de vérité unique
+  //     bank_accounts livrée Lot A11.A.6).
+  //   • Stripe Connect (payout marketplace) reporté Phase 2.
+  // Cette page reste minimaliste : redirige vers le tab Bancaire pour les
+  // managers (proprio/agence) et reste un placeholder vide pour marketplace
+  // tant que Stripe Connect n'est pas livré.
 
   return (
     <FormStack>
       <Toast />
-      {/* Abonnement */}
       <Card>
-        <SectionTitle>Mon abonnement</SectionTitle>
-        <p style={{ fontSize: 13, color: C.text3, marginBottom: "1rem" }}>
-          Consultez votre plan actuel, changez d'offre et gérez vos factures depuis la page dédiée.
+        <SectionTitle>Compte de réception des loyers</SectionTitle>
+        <p style={{ fontSize: 13, color: C.text2, marginBottom: "1rem" }}>
+          {isManager
+            ? "La gestion des coordonnées bancaires (IBAN, BIC, titulaire) est centralisée dans l'onglet « Bancaire » de vos paramètres."
+            : "Les coordonnées de versement seront gérées via Stripe Connect (Phase 2). Aucune saisie nécessaire en Phase 1.0."}
         </p>
-        <Link href="/app/abonnement" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 10, background: C.orangeBg, border: `1px solid ${C.orange}`, color: C.orange, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
-          Gérer mon abonnement →
-        </Link>
+        {isManager && (
+          <Link
+            href="/app/settings"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 20px",
+              borderRadius: 10,
+              background: C.prussianBg,
+              border: `1px solid ${C.prussian}`,
+              color: C.prussian,
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
+            Voir Settings &gt; Bancaire →
+          </Link>
+        )}
       </Card>
 
-      {/* Factures */}
-      {(invoices?.items?.length ?? 0) > 0 && (
-        <Card>
-          <SectionTitle>Historique des factures</SectionTitle>
-          <FormStack>
-            {(invoices?.items ?? []).slice(0, 12).map((inv: { id: string; date: string; amount: number; pdf_url: string; status: string }) => (
-              <div key={inv.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{new Date(inv.date).toLocaleDateString("fr-CH")}</p>
-                  <p style={{ fontSize: 11, color: C.text3 }}>CHF {(inv.amount / 100).toFixed(2)}</p>
-                </div>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <Badge color={inv.status === "paid" ? C.green : C.amber}>{inv.status === "paid" ? "Payée" : "En attente"}</Badge>
-                  {inv.pdf_url && (
-                    <a href={inv.pdf_url} target="_blank" rel="noreferrer" style={{ padding: "6px 10px", borderRadius: 8, background: C.surface2, border: `1px solid ${C.border}`, color: C.text2, fontSize: 12, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
-                      <Download size={12} /> PDF
-                    </a>
-                  )}
-                </div>
-              </div>
-            ))}
-          </FormStack>
-        </Card>
-      )}
-
-      {/* Coordonnées bancaires — Marketplace */}
       {isMarketplace && (
         <Card>
-          <SectionTitle>Coordonnées bancaires (réception des paiements)</SectionTitle>
-          <FormStack>
-            <Field label="IBAN" value={f.iban} onChange={v => set("iban", v)} placeholder="CH93 0076 2011 6238 5295 7" hint="Formats CH, FR ou DE acceptés" />
-            <Row>
-              <Field label="BIC / SWIFT" value={f.bic} onChange={v => set("bic", v)} placeholder="UBSWCHZH80A" />
-              <Field label="Nom du titulaire" value={f.account_holder} onChange={v => set("account_holder", v)} placeholder="Marie Dupont" />
-            </Row>
-            <Field label="Nom de la banque" value={f.bank_name} onChange={v => set("bank_name", v)} placeholder="UBS SA" />
-            <div>
-              <FieldLabel>Délai de paiement</FieldLabel>
-              <div style={{ display: "flex", gap: "0.75rem", marginTop: 6, flexWrap: "wrap" }}>
-                {[{ v: "mission", l: "Après chaque mission" }, { v: "hebdomadaire", l: "Hebdomadaire" }, { v: "mensuel", l: "Mensuel" }].map(o => (
-                  <Chip key={o.v} label={o.l} active={f.payout_frequency === o.v} onClick={() => set("payout_frequency", o.v)} />
-                ))}
-              </div>
-            </div>
-            <div>
-              <FieldLabel>Montant minimum de versement</FieldLabel>
-              <div style={{ display: "flex", gap: "0.75rem", marginTop: 6 }}>
-                {["50", "100", "200"].map(v => (
-                  <Chip key={v} label={`CHF ${v}`} active={f.min_payout === v} onClick={() => set("min_payout", v)} />
-                ))}
-              </div>
-            </div>
-            <div>
-              <FieldLabel>Mode de facturation</FieldLabel>
-              <div style={{ display: "flex", gap: "0.75rem", marginTop: 6 }}>
-                {[{ v: "auto", l: "Auto (Althy génère)" }, { v: "manuel", l: "Manuelle (je fournis)" }].map(o => (
-                  <Chip key={o.v} label={o.l} active={f.billing_mode === o.v} onClick={() => set("billing_mode", o.v)} />
-                ))}
-              </div>
-            </div>
-            <Field label="UID TVA (si assujetti)" value={f.uid_tva} onChange={v => set("uid_tva", v)} placeholder="CHE-123.456.789 TVA" />
-          </FormStack>
+          <SectionTitle>Abonnement &amp; reversements</SectionTitle>
+          <div style={{ padding: "1rem", background: C.surface2, borderRadius: 12, border: `1px solid ${C.border}` }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: C.text2, marginBottom: 4 }}>
+              Bientôt — Phase 2
+            </p>
+            <p style={{ fontSize: 12, color: C.text3 }}>
+              La gestion des paiements marketplace (Stripe Connect, fréquence
+              de versement, facturation TVA) sera disponible à l'ouverture
+              de la marketplace publique.
+            </p>
+          </div>
         </Card>
       )}
-
-      {/* Coordonnées bancaires — Proprio/Agence */}
-      {isManager && (
-        <Card>
-          <SectionTitle>Compte de réception des loyers</SectionTitle>
-          <FormStack>
-            <Field label="IBAN de réception" value={f.iban_loyers} onChange={v => set("iban_loyers", v)} placeholder="CH93 0076 2011 6238 5295 7" />
-            <Row>
-              <Field label="Nom du titulaire" value={f.holder_loyers} onChange={v => set("holder_loyers", v)} placeholder="Marie Dupont" />
-              <Field label="BIC / SWIFT" value={f.bic_loyers} onChange={v => set("bic_loyers", v)} placeholder="UBSWCHZH80A" />
-            </Row>
-            <Field label="Nom de la banque" value={f.bank_loyers} onChange={v => set("bank_loyers", v)} placeholder="UBS SA" />
-            <div>
-              <FieldLabel>Regroupement des virements</FieldLabel>
-              <div style={{ display: "flex", gap: "0.75rem", marginTop: 6, flexWrap: "wrap" }}>
-                {[{ v: "bien", l: "Bien par bien" }, { v: "proprietaire", l: "Par propriétaire" }, { v: "global", l: "Global mensuel" }].map(o => (
-                  <Chip key={o.v} label={o.l} active={f.virement_groupement === o.v} onClick={() => set("virement_groupement", o.v)} />
-                ))}
-              </div>
-            </div>
-            <Field label="Libellé des virements" value={f.libelle_format} onChange={v => set("libelle_format", v)} hint="Variables : {nom_locataire} {adresse} {periode} {mois}" />
-          </FormStack>
-        </Card>
-      )}
-
-      <SaveBtn saving={saving} saved={false} onClick={save} />
     </FormStack>
   );
 }
