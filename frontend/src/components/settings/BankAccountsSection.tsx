@@ -64,6 +64,16 @@ const COUNTRY_OPTIONS = [
 // strict, sprint sécurité financière dédié).
 const IBAN_REGEX = /^[A-Z]{2}\d{2}\s?(\d{4}\s?){2,7}(\d{1,4})?$/;
 
+/**
+ * Formate un IBAN en groupes de 4 caractères séparés par des espaces
+ * (convention suisse / SEPA). Ex : "CH9300762011623852957"
+ *   → "CH93 0076 2011 6238 5295 7".
+ */
+function formatIban(iban: string): string {
+  const clean = iban.replace(/\s/g, "").toUpperCase();
+  return clean.replace(/(.{4})/g, "$1 ").trim();
+}
+
 function maskIban(iban: string): string {
   const clean = iban.replace(/\s/g, "");
   if (clean.length <= 4) return clean;
@@ -113,10 +123,14 @@ export function BankAccountsSection() {
       {isLoading ? (
         <p style={loadingStyle}>Chargement…</p>
       ) : accounts.length === 0 ? (
-        <p style={emptyStyle}>
-          Aucun compte bancaire enregistré. Cliquez sur « Ajouter un compte »
-          pour commencer.
-        </p>
+        <div style={emptyStateStyle}>
+          <p style={emptyStateTitleStyle}>
+            Aucun compte bancaire enregistré
+          </p>
+          <p style={emptyStateBodyStyle}>
+            Ajoutez votre premier compte pour recevoir les loyers.
+          </p>
+        </div>
       ) : (
         <div style={listStyle}>
           {accounts.map((account) =>
@@ -215,29 +229,16 @@ function BankAccountCard({
         >
           {USAGE_LABEL[account.usage] ?? account.usage}
         </span>
-        <div className="bank-account-card-actions" style={cardActionsStyle}>
-          <button
-            type="button"
-            onClick={onEdit}
-            aria-label="Modifier"
-            title="Modifier"
-            style={iconBtnStyle}
-          >
-            <Pencil size={14} />
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            aria-label="Supprimer"
-            title="Supprimer"
-            style={{ ...iconBtnStyle, color: C.red }}
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
+        {account.est_principal ? (
+          <span style={principalBadgeStyle}>
+            <Star size={12} fill={C.gold} stroke={C.gold} /> Compte principal
+          </span>
+        ) : null}
       </div>
 
-      <p style={ibanStyle}>{maskIban(account.iban)}</p>
+      <p style={ibanStyle} title={`IBAN masqué — affiché : ${formatIban(account.iban)}`}>
+        {maskIban(account.iban)}
+      </p>
 
       <div>
         <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: C.text }}>
@@ -250,12 +251,8 @@ function BankAccountCard({
         </p>
       </div>
 
-      <div style={{ marginTop: 4 }}>
-        {account.est_principal ? (
-          <span style={principalBadgeStyle}>
-            <Star size={12} fill={C.gold} stroke={C.gold} /> Compte principal
-          </span>
-        ) : (
+      <div style={cardFooterStyle}>
+        {!account.est_principal && (
           <button
             type="button"
             onClick={onSetPrincipal}
@@ -264,6 +261,22 @@ function BankAccountCard({
             <Star size={12} /> Définir comme principal
           </button>
         )}
+        <button
+          type="button"
+          onClick={onEdit}
+          style={editBtnStyle}
+        >
+          <Pencil size={12} /> Modifier ce compte
+        </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          aria-label="Supprimer ce compte"
+          title="Supprimer ce compte"
+          style={deleteBtnStyle}
+        >
+          <Trash2 size={12} />
+        </button>
       </div>
     </div>
   );
@@ -479,6 +492,7 @@ function FormFields({
           type="text"
           value={form.iban}
           onChange={(e) => set("iban", e.target.value)}
+          onBlur={(e) => set("iban", formatIban(e.target.value))}
           placeholder="CH00 0000 0000 0000 0000 0"
           required
           style={{
@@ -487,9 +501,13 @@ function FormFields({
             fontFamily: "monospace",
           }}
         />
-        {ibanError && (
+        {ibanError ? (
           <p style={{ fontSize: 11, color: C.red, margin: "4px 0 0" }}>
             {ibanError}
+          </p>
+        ) : (
+          <p style={{ fontSize: 11, color: C.text3, margin: "4px 0 0" }}>
+            Format suisse : groupes de 4 caractères séparés par un espace.
           </p>
         )}
       </div>
@@ -567,13 +585,24 @@ const loadingStyle: React.CSSProperties = {
   margin: 0,
 };
 
-const emptyStyle: React.CSSProperties = {
+const emptyStateStyle: React.CSSProperties = {
+  padding: "32px 24px",
+  background: C.surface2,
+  border: `1px dashed ${C.border}`,
+  borderRadius: 14,
+  textAlign: "center",
+};
+
+const emptyStateTitleStyle: React.CSSProperties = {
+  fontSize: 14,
+  fontWeight: 600,
+  color: C.text,
+  margin: "0 0 6px",
+};
+
+const emptyStateBodyStyle: React.CSSProperties = {
   fontSize: 13,
   color: C.text3,
-  padding: "16px 20px",
-  background: C.surface2,
-  borderRadius: 12,
-  fontStyle: "italic",
   margin: 0,
 };
 
@@ -622,23 +651,42 @@ const setPrincipalBtnStyle: React.CSSProperties = {
   fontFamily: "inherit",
 };
 
-const cardActionsStyle: React.CSSProperties = {
+const cardFooterStyle: React.CSSProperties = {
   display: "flex",
-  gap: 4,
-  opacity: 0,
-  transition: "opacity 150ms ease",
+  alignItems: "center",
+  gap: 8,
+  flexWrap: "wrap",
+  marginTop: 6,
+  paddingTop: 10,
+  borderTop: `1px solid ${C.border}`,
 };
 
-const iconBtnStyle: React.CSSProperties = {
-  background: "rgba(255,255,255,0.92)",
-  border: `1px solid ${C.border}`,
-  borderRadius: 6,
-  padding: 5,
+const editBtnStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  padding: "6px 12px",
+  borderRadius: 8,
+  border: `1px solid ${C.prussian}`,
+  background: C.prussianBg,
+  color: C.prussian,
+  fontSize: 12,
+  fontWeight: 600,
   cursor: "pointer",
-  color: C.text2,
+  fontFamily: "inherit",
+};
+
+const deleteBtnStyle: React.CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
+  padding: 7,
+  borderRadius: 8,
+  border: `1px solid ${C.border}`,
+  background: "transparent",
+  color: C.red,
+  cursor: "pointer",
+  fontFamily: "inherit",
 };
 
 const addBtnStyle: React.CSSProperties = {
